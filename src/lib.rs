@@ -62,6 +62,19 @@ impl Lexer {
         })
     }
 
+    pub fn token_print(&self, token: &LexToken) {
+        let s = &self.src[token.start_pos..token.end_pos + 1];
+        let fmt = format!("{}:{}:", token.start_line, token.start_column);
+        println!("{}{}", fmt, s);
+        for _ in 0..fmt.len() {
+            print!(" ");
+        }
+        for _ in 0..s.len() {
+            print!("^");
+        }
+        print!("\n");
+    }
+
     fn cur_char(&self) -> Option<&str> {
         self.src.get(self.pos..self.pos + 1)
     }
@@ -87,7 +100,6 @@ impl Lexer {
     }
 
     pub fn lex(&mut self) -> Result<LexToken, String> {
-        dbg!(&self.src);
         let start_pos = self.pos;
         let start_line = self.line;
         let start_column = self.column;

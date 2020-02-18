@@ -25,7 +25,7 @@ fn run() -> Result<(), String> {
                         kind: LexTokenKind::Eof,
                         ..
                     } => break,
-                    tok => println!("lex tok={:?}", tok),
+                    tok => lexer.token_print(&tok),
                 }
             }
             Ok(())
@@ -45,7 +45,7 @@ fn run() -> Result<(), String> {
                         kind: LexTokenKind::Eof,
                         ..
                     } => break,
-                    tok => println!("lex tok={:?}", tok),
+                    tok => lexer.token_print(&tok),
                 }
             }
 
