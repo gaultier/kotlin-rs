@@ -13,7 +13,7 @@ pub enum LexToken {
 
 pub fn lex(src: &str, i: &mut usize) -> Result<LexToken, String> {
     dbg!(src);
-    if *i == src.len() - 1 {
+    if *i > src.len() - 1 {
         return Ok(LexToken::Eof);
     }
 
@@ -22,9 +22,22 @@ pub fn lex(src: &str, i: &mut usize) -> Result<LexToken, String> {
             *i = *i + 1;
             Ok(LexToken::Plus)
         }
-        "-" => Ok(LexToken::Minus),
-        "/" => Ok(LexToken::Star),
-        "*" => Ok(LexToken::Slash),
+        "-" => {
+            *i = *i + 1;
+            Ok(LexToken::Minus)
+        }
+        "/" => {
+            *i = *i + 1;
+            Ok(LexToken::Star)
+        }
+        "*" => {
+            *i = *i + 1;
+            Ok(LexToken::Slash)
+        }
+        "=" => {
+            *i = *i + 1;
+            Ok(LexToken::Equal)
+        }
         c => Err(format!("Unknown token `{}`", c)),
     }
 }
