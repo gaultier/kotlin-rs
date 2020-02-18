@@ -33,7 +33,10 @@ fn run() -> Result<(), String> {
             println!("lex tok={:?}", tok);
             Ok(())
         }
-        _ => Ok(println!("Usage: {} build", args[0])),
+        _ => {
+            println!("Usage: {} build", args[0]);
+            Ok(())
+        }
     }
 }
 
