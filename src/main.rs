@@ -18,7 +18,7 @@ fn run() -> Result<(), String> {
                 )
             })?;
 
-            let mut lexer = Lexer::new(contents);
+            let mut lexer = Lexer::new(&contents);
             loop {
                 match lexer.lex()? {
                     LexToken {
@@ -38,7 +38,7 @@ fn run() -> Result<(), String> {
                 .read_to_string(&mut contents)
                 .map_err(|err| format!("Could not read stdin: {}", err))?;
 
-            let mut lexer = Lexer::new(contents);
+            let mut lexer = Lexer::new(&contents);
             loop {
                 match lexer.lex()? {
                     LexToken {

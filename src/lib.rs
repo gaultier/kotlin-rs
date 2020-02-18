@@ -1,4 +1,5 @@
 use std::option::Option;
+use std::str::Chars;
 use std::result::Result;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -23,21 +24,23 @@ pub struct LexToken {
     end_column: usize,
 }
 
-pub struct Lexer {
-    src: String,
+pub struct Lexer<'a> {
+    src: &'a str,
+    chars: Chars<'a>,
     pos: usize,
     line: usize,
     column: usize,
 }
 
-impl Lexer {
+impl<'a> Lexer<'a> {
     fn is_at_end(&self) -> bool {
         self.pos >= self.src.len()
     }
 
-    pub fn new(src: String) -> Lexer {
+    pub fn new(src: &'a str) -> Lexer<'a> {
         Lexer {
             src,
+            chars: src.chars(),
             pos: 0,
             line: 1,
             column: 1,
@@ -75,11 +78,11 @@ impl Lexer {
         print!("\n");
     }
 
-    fn cur_char(&self) -> Option<&str> {
-        self.src.get(self.pos..self.pos + 1)
+    fn cur_char(&self) -> Option<char> {
+        self.chars.next()
     }
 
-    fn advance(&mut self) -> Option<&str> {
+    fn advance(&mut self) -> Option<char> {
         self.pos += 1;
         self.column += 1;
         self.src.get(self.pos - 1..self.pos)
