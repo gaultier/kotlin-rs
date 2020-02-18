@@ -17,9 +17,9 @@ fn run() -> Result<(), String> {
                 )
             })?;
 
-            let mut i: usize = 0;
+            let mut lexer = kotlin::Lexer::new(contents);
             loop {
-                match kotlin::lex(&contents, &mut i)? {
+                match lexer.lex()? {
                     kotlin::LexToken::Eof => break,
                     tok => println!("lex tok={:?}", tok),
                 }
@@ -34,9 +34,9 @@ fn run() -> Result<(), String> {
                 .read_to_string(&mut contents)
                 .map_err(|err| format!("Could not read stdin: {}", err))?;
 
-            let mut i: usize = 0;
+            let mut lexer = kotlin::Lexer::new(contents);
             loop {
-                match kotlin::lex(&contents, &mut i)? {
+                match lexer.lex()? {
                     kotlin::LexToken::Eof => break,
                     tok => println!("lex tok={:?}", tok),
                 }
