@@ -37,8 +37,24 @@ impl Lexer {
         self.src.get(self.pos..self.pos + 1)
     }
 
-    fn advance(&mut self) {
+    fn advance(&mut self) -> Option<&str> {
         self.pos += 1;
+        self.column += 1;
+        self.src.get(self.pos - 1..self.pos)
+    }
+
+    fn match_char(&mut self, c: &str) -> bool {
+        if self.is_at_end() {
+            return false;
+        }
+
+        match self.cur_char() {
+            Some(ch) if c == ch => {
+                self.advance();
+                true
+            }
+            _ => false,
+        }
     }
 
     pub fn lex(&mut self) -> Result<LexToken, String> {
@@ -46,27 +62,19 @@ impl Lexer {
         if self.is_at_end() {
             return Ok(LexToken::Eof);
         }
+        let c = self.advance();
 
-        match self.cur_char() {
-            Some("+") => {
-                self.advance();
-                Ok(LexToken::Plus)
-            }
-            Some("-") => {
-                self.advance();
-                Ok(LexToken::Minus)
-            }
-            Some("/") => {
-                self.advance();
-                Ok(LexToken::Star)
-            }
-            Some("*") => {
-                self.advance();
-                Ok(LexToken::Slash)
-            }
+        match c {
+            Some("+") => Ok(LexToken::Plus),
+            Some("-") => Ok(LexToken::Minus),
+            Some("/") => Ok(LexToken::Star),
+            Some("*") => Ok(LexToken::Slash),
             Some("=") => {
-                self.advance();
-                Ok(LexToken::Equal)
+                if self.match_char("=") {
+                    Ok(LexToken::EqualEqual)
+                } else {
+                    Ok(LexToken::Equal)
+                }
             }
             Some(c) => Err(format!("Unknown token `{}`", c)),
             None => unreachable!(),
