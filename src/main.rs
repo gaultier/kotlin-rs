@@ -21,6 +21,18 @@ fn run() -> Result<(), String> {
             println!("lex tok={:?}", tok);
             Ok(())
         }
+        [_, "build"] => {
+            let mut contents = String::new();
+            let stdin = std::io::stdin();
+            let mut handle = stdin.lock();
+            handle
+                .read_to_string(&mut contents)
+                .map_err(|err| format!("Could not read stdin: {}", err))?;
+
+            let tok = kotlin::lex(&contents)?;
+            println!("lex tok={:?}", tok);
+            Ok(())
+        }
         _ => Ok(println!("Usage: {} build", args[0])),
     }
 }
