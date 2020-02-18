@@ -17,8 +17,13 @@ fn run() -> Result<(), String> {
                 )
             })?;
 
-            let tok = kotlin::lex(&contents)?;
-            println!("lex tok={:?}", tok);
+            let mut i: usize = 0;
+            loop {
+                match kotlin::lex(&contents, &mut i)? {
+                    kotlin::LexToken::Eof => break,
+                    tok => println!("lex tok={:?}", tok),
+                }
+            }
             Ok(())
         }
         [_, "build"] => {
@@ -29,8 +34,14 @@ fn run() -> Result<(), String> {
                 .read_to_string(&mut contents)
                 .map_err(|err| format!("Could not read stdin: {}", err))?;
 
-            let tok = kotlin::lex(&contents)?;
-            println!("lex tok={:?}", tok);
+            let mut i: usize = 0;
+            loop {
+                match kotlin::lex(&contents, &mut i)? {
+                    kotlin::LexToken::Eof => break,
+                    tok => println!("lex tok={:?}", tok),
+                }
+            }
+
             Ok(())
         }
         _ => {

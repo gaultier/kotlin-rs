@@ -1,6 +1,6 @@
 use std::result::Result;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum LexToken {
     Plus,
     Minus,
@@ -11,14 +11,17 @@ pub enum LexToken {
     Eof,
 }
 
-pub fn lex(src: &str) -> Result<LexToken, String> {
-    if src.is_empty() {
+pub fn lex(src: &str, i: &mut usize) -> Result<LexToken, String> {
+    dbg!(src);
+    if *i == src.len() - 1 {
         return Ok(LexToken::Eof);
     }
-    dbg!(src);
 
-    match &src[0..1] {
-        "+" => Ok(LexToken::Plus),
+    match &src[*i..*i + 1] {
+        "+" => {
+            *i = *i + 1;
+            Ok(LexToken::Plus)
+        }
         "-" => Ok(LexToken::Minus),
         "/" => Ok(LexToken::Star),
         "*" => Ok(LexToken::Slash),
