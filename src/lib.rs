@@ -43,7 +43,6 @@ pub struct Lexer<'a> {
     pos: usize,
     line: usize,
     column: usize,
-    previous: Option<char>,
     cur: Option<char>,
 }
 
@@ -59,7 +58,6 @@ impl<'a> Lexer<'a> {
             pos: 0,
             line: 1,
             column: 1,
-            previous: None,
             cur: None,
         }
     }
@@ -85,7 +83,6 @@ impl<'a> Lexer<'a> {
         self.pos += 1;
         self.column += 1;
         let c = self.chars.next();
-        self.previous = self.cur;
         self.cur = c;
         c
     }
