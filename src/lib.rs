@@ -14,14 +14,27 @@ pub enum LexTokenKind {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct LexToken {
+pub struct LexToken<'a> {
     pub kind: LexTokenKind,
-    start_pos: usize,
+    src: &'a str,
     start_line: usize,
     start_column: usize,
-    end_pos: usize,
     end_line: usize,
     end_column: usize,
+}
+
+impl<'a> LexToken<'a> {
+    pub fn print(&self) {
+        let fmt = format!("{}:{}:", self.start_line, self.start_column);
+        println!("{}{}", fmt, self.src);
+        for _ in 0..fmt.len() {
+            print!(" ");
+        }
+        for _ in 0..self.src.len() {
+            print!("^");
+        }
+        print!("\n");
+    }
 }
 
 pub struct Lexer<'a> {
@@ -60,26 +73,12 @@ impl<'a> Lexer<'a> {
     ) -> Result<LexToken, String> {
         Ok(LexToken {
             kind,
-            end_pos: self.pos - 1,
+            src: &self.src[start_pos..self.pos],
             end_line: self.line,
             end_column: self.column - 1,
-            start_pos,
             start_line,
             start_column,
         })
-    }
-
-    pub fn token_print(&self, token: &LexToken) {
-        let s = &self.src[token.start_pos..token.end_pos + 1];
-        let fmt = format!("{}:{}:", token.start_line, token.start_column);
-        println!("{}{}", fmt, s);
-        for _ in 0..fmt.len() {
-            print!(" ");
-        }
-        for _ in 0..s.len() {
-            print!("^");
-        }
-        print!("\n");
     }
 
     fn advance(&mut self) -> Option<char> {
