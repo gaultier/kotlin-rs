@@ -45,7 +45,10 @@ fn run() -> Result<(), String> {
                         kind: LexTokenKind::Eof,
                         ..
                     } => break,
-                    tok => lexer.token_print(&tok),
+                    tok => {
+                        dbg!(&tok);
+                        lexer.token_print(&tok);
+                    }
                 }
             }
 

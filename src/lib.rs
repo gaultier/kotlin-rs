@@ -1,6 +1,6 @@
 use std::option::Option;
-use std::str::Chars;
 use std::result::Result;
+use std::str::Chars;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum LexTokenKind {
@@ -30,6 +30,8 @@ pub struct Lexer<'a> {
     pos: usize,
     line: usize,
     column: usize,
+    previous: Option<char>,
+    cur: Option<char>,
 }
 
 impl<'a> Lexer<'a> {
@@ -44,6 +46,8 @@ impl<'a> Lexer<'a> {
             pos: 0,
             line: 1,
             column: 1,
+            previous: None,
+            cur: None,
         }
     }
 
@@ -78,22 +82,21 @@ impl<'a> Lexer<'a> {
         print!("\n");
     }
 
-    fn cur_char(&self) -> Option<char> {
-        self.chars.next()
-    }
-
     fn advance(&mut self) -> Option<char> {
         self.pos += 1;
         self.column += 1;
-        self.src.get(self.pos - 1..self.pos)
+        let c = self.chars.next();
+        self.previous = self.cur;
+        self.cur = c;
+        c
     }
 
-    fn match_char(&mut self, c: &str) -> bool {
+    fn match_char(&mut self, c: char) -> bool {
         if self.is_at_end() {
             return false;
         }
 
-        match self.cur_char() {
+        match self.cur {
             Some(ch) if c == ch => {
                 self.advance();
                 true
@@ -113,20 +116,20 @@ impl<'a> Lexer<'a> {
         let c = self.advance();
 
         match c {
-            Some("+") => {
+            Some('+') => {
                 self.new_token_here(LexTokenKind::Plus, start_pos, start_line, start_column)
             }
-            Some("-") => {
+            Some('-') => {
                 self.new_token_here(LexTokenKind::Minus, start_pos, start_line, start_column)
             }
-            Some("/") => {
+            Some('/') => {
                 self.new_token_here(LexTokenKind::Star, start_pos, start_line, start_column)
             }
-            Some("*") => {
+            Some('*') => {
                 self.new_token_here(LexTokenKind::Slash, start_pos, start_line, start_column)
             }
-            Some("=") => {
-                if self.match_char("=") {
+            Some('=') => {
+                if self.match_char('=') {
                     self.new_token_here(
                         LexTokenKind::EqualEqual,
                         start_pos,
