@@ -35,6 +35,23 @@ impl<'a> LexToken<'a> {
         }
         println!("");
     }
+
+    pub fn new<'b>(
+        lexer: &'b Lexer<'a>,
+        kind: LexTokenKind,
+        start_pos: usize,
+        start_line: usize,
+        start_column: usize,
+    ) -> LexToken<'a> {
+        LexToken {
+            kind,
+            src: &lexer.src[start_pos..lexer.pos],
+            end_line: lexer.line,
+            end_column: lexer.column - 1,
+            start_line,
+            start_column,
+        }
+    }
 }
 
 pub struct Lexer<'a> {
@@ -60,23 +77,6 @@ impl<'a> Lexer<'a> {
             column: 1,
             cur: None,
         }
-    }
-
-    pub fn new_token_here(
-        &self,
-        kind: LexTokenKind,
-        start_pos: usize,
-        start_line: usize,
-        start_column: usize,
-    ) -> Result<LexToken, String> {
-        Ok(LexToken {
-            kind,
-            src: &self.src[start_pos..self.pos],
-            end_line: self.line,
-            end_column: self.column - 1,
-            start_line,
-            start_column,
-        })
     }
 
     fn advance(&mut self) -> Option<char> {
@@ -107,33 +107,62 @@ impl<'a> Lexer<'a> {
         let start_column = self.column;
 
         if self.is_at_end() {
-            return self.new_token_here(LexTokenKind::Eof, start_pos, start_line, start_column);
+            return Ok(LexToken::new(
+                &self,
+                LexTokenKind::Eof,
+                start_pos,
+                start_line,
+                start_column,
+            ));
         }
         let c = self.advance();
 
         match c {
-            Some('+') => {
-                self.new_token_here(LexTokenKind::Plus, start_pos, start_line, start_column)
-            }
-            Some('-') => {
-                self.new_token_here(LexTokenKind::Minus, start_pos, start_line, start_column)
-            }
-            Some('/') => {
-                self.new_token_here(LexTokenKind::Star, start_pos, start_line, start_column)
-            }
-            Some('*') => {
-                self.new_token_here(LexTokenKind::Slash, start_pos, start_line, start_column)
-            }
+            Some('+') => Ok(LexToken::new(
+                &self,
+                LexTokenKind::Plus,
+                start_pos,
+                start_line,
+                start_column,
+            )),
+            Some('-') => Ok(LexToken::new(
+                &self,
+                LexTokenKind::Minus,
+                start_pos,
+                start_line,
+                start_column,
+            )),
+            Some('/') => Ok(LexToken::new(
+                &self,
+                LexTokenKind::Star,
+                start_pos,
+                start_line,
+                start_column,
+            )),
+            Some('*') => Ok(LexToken::new(
+                &self,
+                LexTokenKind::Slash,
+                start_pos,
+                start_line,
+                start_column,
+            )),
             Some('=') => {
                 if self.match_char('=') {
-                    self.new_token_here(
+                    Ok(LexToken::new(
+                        &self,
                         LexTokenKind::EqualEqual,
                         start_pos,
                         start_line,
                         start_column,
-                    )
+                    ))
                 } else {
-                    self.new_token_here(LexTokenKind::Equal, start_pos, start_line, start_column)
+                    Ok(LexToken::new(
+                        &self,
+                        LexTokenKind::Equal,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
                 }
             }
             Some(c) => Err(format!("Unknown token `{}`", c)),
