@@ -33,7 +33,7 @@ impl<'a> LexToken<'a> {
         for _ in 0..self.src.len() {
             print!("^");
         }
-        println!("");
+        println!();
     }
 
     pub fn new<'b>(
