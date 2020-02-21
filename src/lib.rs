@@ -135,8 +135,15 @@ impl<'a> Lexer<'a> {
                 None | Some(' ') | Some('\t') | Some('\r') | Some('\n') => {
                     self.advance();
                 }
+                // TODO: check that the shebang is on the first line
                 Some('#') => match self.peek_next() {
                     Some('!') => {
+                        self.skip_until('\n');
+                    }
+                    _ => {}
+                },
+                Some('/') => match self.peek_next() {
+                    Some('/') => {
                         self.skip_until('\n');
                     }
                     _ => {}
