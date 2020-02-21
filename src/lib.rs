@@ -43,13 +43,19 @@ impl<'a> LexToken<'a> {
         start_line: usize,
         start_column: usize,
     ) -> LexToken<'a> {
+        let src = if kind == LexTokenKind::Eof {
+            &lexer.src[0..=0]
+        } else {
+            &lexer.src[start_pos - 1..lexer.pos - 1]
+        };
+
         LexToken {
             kind,
-            src: &lexer.src[start_pos..lexer.pos],
+            src,
             end_line: lexer.line,
-            end_column: lexer.column - 1,
+            end_column: lexer.column - 2,
             start_line,
-            start_column,
+            start_column: start_column - 2,
         }
     }
 }
@@ -60,7 +66,7 @@ pub struct Lexer<'a> {
     pos: usize,
     line: usize,
     column: usize,
-    cur: Option<char>,
+    cur: [Option<char>; 2],
 }
 
 impl<'a> Lexer<'a> {
@@ -75,16 +81,16 @@ impl<'a> Lexer<'a> {
             pos: 0,
             line: 1,
             column: 1,
-            cur: None,
+            cur: [None, None],
         }
     }
 
     fn advance(&mut self) -> Option<char> {
         self.pos += 1;
         self.column += 1;
-        let c = self.chars.next();
-        self.cur = c;
-        c
+        self.cur[0] = self.cur[1];
+        self.cur[1] = self.chars.next();
+        self.cur[0]
     }
 
     fn match_char(&mut self, c: char) -> bool {
@@ -92,7 +98,7 @@ impl<'a> Lexer<'a> {
             return false;
         }
 
-        match self.cur {
+        match self.cur[0] {
             Some(ch) if c == ch => {
                 self.advance();
                 true
@@ -101,20 +107,25 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    fn skip_whitespace(&mut self) {
+        while !self.is_at_end() {
+            match self.cur[0] {
+                None | Some(' ') | Some('\t') => {
+                    self.advance();
+                }
+                Some(_) => {
+                    break;
+                }
+            }
+        }
+    }
+
     pub fn lex(&mut self) -> Result<LexToken, String> {
+        self.skip_whitespace();
         let start_pos = self.pos;
         let start_line = self.line;
         let start_column = self.column;
 
-        if self.is_at_end() {
-            return Ok(LexToken::new(
-                &self,
-                LexTokenKind::Eof,
-                start_pos,
-                start_line,
-                start_column,
-            ));
-        }
         let c = self.advance();
 
         match c {
@@ -166,7 +177,13 @@ impl<'a> Lexer<'a> {
                 }
             }
             Some(c) => Err(format!("Unknown token `{}`", c)),
-            None => unreachable!(),
+            None => Ok(LexToken::new(
+                &self,
+                LexTokenKind::Eof,
+                start_pos,
+                start_line,
+                start_column,
+            )),
         }
     }
 }
