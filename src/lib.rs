@@ -71,7 +71,7 @@ pub struct Lexer<'a> {
 
 impl<'a> Lexer<'a> {
     fn is_at_end(&self) -> bool {
-        self.pos >= self.src.len()
+        self.pos >= (self.src.len() + 2)
     }
 
     pub fn new(src: &'a str) -> Lexer<'a> {
@@ -109,7 +109,7 @@ impl<'a> Lexer<'a> {
 
     fn skip_whitespace(&mut self) {
         while !self.is_at_end() {
-            match self.cur[0] {
+            match self.cur[1] {
                 None | Some(' ') | Some('\t') => {
                     self.advance();
                 }
@@ -126,7 +126,9 @@ impl<'a> Lexer<'a> {
         let start_line = self.line;
         let start_column = self.column;
 
+        dbg!(self.cur);
         let c = self.advance();
+        dbg!(self.cur);
 
         match c {
             Some('+') => Ok(LexToken::new(
