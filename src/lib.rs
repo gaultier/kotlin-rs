@@ -88,7 +88,7 @@ impl<'a> Lexer<'a> {
     fn advance(&mut self) -> Option<char> {
         self.pos += 1;
         self.column += 1;
-        let c = self.cur[0];
+        let c = self.peek();
         self.cur[0] = self.cur[1];
         self.cur[1] = self.chars.next();
         c
@@ -99,7 +99,7 @@ impl<'a> Lexer<'a> {
             return false;
         }
 
-        match self.cur[0] {
+        match self.peek() {
             Some(ch) if c == ch => {
                 self.advance();
                 true
