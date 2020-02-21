@@ -142,6 +142,7 @@ impl<'a> Lexer<'a> {
                     }
                     _ => {}
                 },
+                // TODO: add option to store comments in the ast
                 Some('/') => match self.peek_next() {
                     Some('/') => {
                         self.skip_until('\n');
