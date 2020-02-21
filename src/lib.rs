@@ -108,15 +108,39 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    fn peek(&self) -> Option<char> {
+        self.cur[0]
+    }
+
+    fn peek_next(&self) -> Option<char> {
+        self.cur[1]
+    }
+
+    fn skip_until(&mut self, c: char) {
+        while !self.is_at_end() {
+            match self.peek() {
+                Some(ch) if c != ch => {
+                    self.advance();
+                } // keep skipping
+                _ => {
+                    break;
+                }
+            }
+        }
+    }
+
     fn skip_whitespace(&mut self) {
         while !self.is_at_end() {
-            match self.cur[0] {
-                None | Some(' ') | Some('\t') | Some('\r') => {
+            match self.peek() {
+                None | Some(' ') | Some('\t') | Some('\r') | Some('\n') => {
                     self.advance();
+                }
+                Some('#') => match self.peek_next() {
+                    Some('!') => {
+                        self.skip_until('\n');
+                    }
+                    _ => {}
                 },
-                // Some('#') => {
-                //     if self.cur[]
-                // },
                 Some(_) => {
                     break;
                 }
