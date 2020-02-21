@@ -46,16 +46,16 @@ impl<'a> LexToken<'a> {
         let src = if kind == LexTokenKind::Eof {
             &lexer.src[0..=0]
         } else {
-            &lexer.src[start_pos - 1..lexer.pos - 1]
+            &lexer.src[start_pos - 2..lexer.pos - 2]
         };
 
         LexToken {
             kind,
             src,
             end_line: lexer.line,
-            end_column: lexer.column - 2,
+            end_column: lexer.column - 3,
             start_line,
-            start_column: start_column - 2,
+            start_column: start_column - 3,
         }
     }
 }
@@ -88,9 +88,10 @@ impl<'a> Lexer<'a> {
     fn advance(&mut self) -> Option<char> {
         self.pos += 1;
         self.column += 1;
+        let c = self.cur[0];
         self.cur[0] = self.cur[1];
         self.cur[1] = self.chars.next();
-        self.cur[0]
+        c
     }
 
     fn match_char(&mut self, c: char) -> bool {
@@ -109,10 +110,13 @@ impl<'a> Lexer<'a> {
 
     fn skip_whitespace(&mut self) {
         while !self.is_at_end() {
-            match self.cur[1] {
-                None | Some(' ') | Some('\t') => {
+            match self.cur[0] {
+                None | Some(' ') | Some('\t') | Some('\r') => {
                     self.advance();
-                }
+                },
+                // Some('#') => {
+                //     if self.cur[]
+                // },
                 Some(_) => {
                     break;
                 }
