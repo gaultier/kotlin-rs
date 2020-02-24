@@ -122,7 +122,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn skip_whitespace(&mut self) {
+    fn skip_whitespace(&mut self) -> Result<(), String> {
         while !self.is_at_end() {
             match self.peek() {
                 None | Some(' ') | Some('\t') | Some('\r') | Some('\n') => {
@@ -132,25 +132,34 @@ impl<'a> Lexer<'a> {
                 Some('#') => match self.peek_next() {
                     Some('!') => {
                         self.skip_until('\n');
+                        return Ok(());
                     }
-                    _ => {}
+                    _ => {
+                        return Ok(());
+                    }
                 },
                 // TODO: add option to store comments in the ast
                 Some('/') => match self.peek_next() {
                     Some('/') => {
                         self.skip_until('\n');
                     }
-                    _ => {}
+                    _ => {
+                        return Ok(());
+                    }
                 },
                 Some(_) => {
-                    break;
+                    return Ok(());
                 }
             }
         }
+        Ok(())
     }
 
     pub fn lex(&mut self) -> Option<Result<LexToken, String>> {
-        self.skip_whitespace();
+        if let Err(err) = self.skip_whitespace() {
+            return Some(Err(err));
+        }
+
         let start_pos = self.pos;
         let start_line = self.line;
         let start_column = self.column;
