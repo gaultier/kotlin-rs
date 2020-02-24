@@ -240,6 +240,8 @@ impl<'a> Lexer<'a> {
                     )))
                 }
             }
+            Some('0') | Some('1') | Some('2') | Some('3') | Some('4') | Some('5') | Some('6')
+            | Some('7') | Some('8') | Some('9') => Ok(self.number()),
             Some(c) => Some(Err(format!("Unknown token `{}`", c))),
             None => None,
         }
