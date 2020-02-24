@@ -19,7 +19,7 @@ fn run() -> Result<(), String> {
             })?;
 
             let mut lexer = Lexer::new(&contents);
-            for token in lexer.lex() {
+            while let Some(token) = lexer.lex() {
                 match token {
                     Ok(token) => {
                         token.print();
@@ -40,7 +40,7 @@ fn run() -> Result<(), String> {
                 .map_err(|err| format!("Could not read stdin: {}", err))?;
 
             let mut lexer = Lexer::new(&contents);
-            for token in lexer.lex() {
+            while let Some(token) = lexer.lex() {
                 match token {
                     Ok(token) => {
                         token.print();
