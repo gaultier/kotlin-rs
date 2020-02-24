@@ -1,4 +1,3 @@
-use std::iter::Iterator;
 use std::option::Option;
 use std::result::Result;
 use std::str::Chars;
@@ -213,11 +212,3 @@ impl<'a> Lexer<'a> {
         }
     }
 }
-
-//impl<'b> Iterator for Lexer<'b> {
-//    type Item = Result<LexToken<'b>, String>;
-//
-//    fn next<'a: 'b>(&'a mut self) -> Option<Self::Item> {
-//        self.lex()
-//    }
-//}
