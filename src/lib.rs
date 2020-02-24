@@ -12,6 +12,7 @@ pub enum LexTokenKind {
     EqualEqual,
     Int(i32),
     Unknown,
+    ShebangNotOnFirstLine,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -160,7 +161,12 @@ impl<'a> Lexer<'a> {
         ))
     }
 
-    fn skip_whitespace(&mut self) -> Result<(), String> {
+    fn skip_whitespace(
+        &mut self,
+        start_pos: usize,
+        start_line: usize,
+        start_column: usize,
+    ) -> Result<(), LexToken> {
         while !self.is_at_end() {
             match self.peek() {
                 None | Some(' ') | Some('\t') | Some('\r') => {
@@ -172,10 +178,12 @@ impl<'a> Lexer<'a> {
                 Some('#') => match self.peek_next() {
                     Some('!') => {
                         if self.line != 1 {
-                            return Err(format!(
-                                "Shebang can only be located on the first line: {}{}",
-                                self.peek().unwrap(),
-                                self.peek_next().unwrap()
+                            return Err(LexToken::new(
+                                self,
+                                LexTokenKind::ShebangNotOnFirstLine,
+                                start_pos,
+                                start_line,
+                                start_column,
                             ));
                         }
                         self.skip_until('\n');
@@ -202,8 +210,12 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn lex(&mut self) -> Option<Result<LexToken, String>> {
-        if let Err(err) = self.skip_whitespace() {
-            return Some(Err(err));
+        let start_pos = self.pos as usize;
+        let start_line = self.line;
+        let start_column = self.column as usize;
+
+        if let Err(err) = self.skip_whitespace(start_pos, start_line, start_column) {
+            return Some(Ok(err));
         }
 
         let start_pos = self.pos as usize;
