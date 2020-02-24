@@ -278,7 +278,7 @@ mod tests {
     #[test]
     fn test_lex_number() {
         let s = " 123  ";
-            let mut lexer = Lexer::new(&s);
+        let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
 
         assert_eq!(tok.is_some(), true);
@@ -294,7 +294,7 @@ mod tests {
     #[test]
     fn test_lex_shebang() {
         let s = "#!/bin/cat\n+";
-            let mut lexer = Lexer::new(&s);
+        let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
 
         assert_eq!(tok.is_some(), true);
