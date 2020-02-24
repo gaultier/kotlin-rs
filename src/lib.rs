@@ -142,7 +142,6 @@ impl<'a> Lexer<'a> {
                 Some('\n') => {
                     self.newline();
                 }
-                // TODO: check that the shebang is on the first line
                 Some('#') => match self.peek_next() {
                     Some('!') => {
                         if self.line != 1 {
