@@ -1,3 +1,4 @@
+use std::iter::Iterator;
 use std::option::Option;
 use std::result::Result;
 use std::str::Chars;
@@ -10,7 +11,6 @@ pub enum LexTokenKind {
     Star,
     Equal,
     EqualEqual,
-    Eof,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -43,15 +43,9 @@ impl<'a> LexToken<'a> {
         start_line: usize,
         start_column: usize,
     ) -> LexToken<'a> {
-        let src = if kind == LexTokenKind::Eof {
-            &lexer.src[0..=0]
-        } else {
-            &lexer.src[start_pos - 2..lexer.pos - 2]
-        };
-
         LexToken {
             kind,
-            src,
+            src: &lexer.src[start_pos - 2..lexer.pos - 2],
             end_line: lexer.line,
             end_column: lexer.column - 3,
             start_line,
@@ -156,7 +150,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn lex(&mut self) -> Result<LexToken, String> {
+    pub fn lex(&mut self) -> Option<Result<LexToken, String>> {
         self.skip_whitespace();
         let start_pos = self.pos;
         let start_line = self.line;
@@ -167,61 +161,63 @@ impl<'a> Lexer<'a> {
         dbg!(self.cur);
 
         match c {
-            Some('+') => Ok(LexToken::new(
+            Some('+') => Some(Ok(LexToken::new(
                 &self,
                 LexTokenKind::Plus,
                 start_pos,
                 start_line,
                 start_column,
-            )),
-            Some('-') => Ok(LexToken::new(
+            ))),
+            Some('-') => Some(Ok(LexToken::new(
                 &self,
                 LexTokenKind::Minus,
                 start_pos,
                 start_line,
                 start_column,
-            )),
-            Some('/') => Ok(LexToken::new(
+            ))),
+            Some('/') => Some(Ok(LexToken::new(
                 &self,
                 LexTokenKind::Star,
                 start_pos,
                 start_line,
                 start_column,
-            )),
-            Some('*') => Ok(LexToken::new(
+            ))),
+            Some('*') => Some(Ok(LexToken::new(
                 &self,
                 LexTokenKind::Slash,
                 start_pos,
                 start_line,
                 start_column,
-            )),
+            ))),
             Some('=') => {
                 if self.match_char('=') {
-                    Ok(LexToken::new(
+                    Some(Ok(LexToken::new(
                         &self,
                         LexTokenKind::EqualEqual,
                         start_pos,
                         start_line,
                         start_column,
-                    ))
+                    )))
                 } else {
-                    Ok(LexToken::new(
+                    Some(Ok(LexToken::new(
                         &self,
                         LexTokenKind::Equal,
                         start_pos,
                         start_line,
                         start_column,
-                    ))
+                    )))
                 }
             }
-            Some(c) => Err(format!("Unknown token `{}`", c)),
-            None => Ok(LexToken::new(
-                &self,
-                LexTokenKind::Eof,
-                start_pos,
-                start_line,
-                start_column,
-            )),
+            Some(c) => Some(Err(format!("Unknown token `{}`", c))),
+            None => None,
         }
+    }
+}
+
+impl<'b> Iterator for Lexer<'b> {
+    type Item = Result<LexToken<'b>, String>;
+
+    fn next<'a: 'b>(&'a mut self) -> Option<Self::Item> {
+        self.lex()
     }
 }
