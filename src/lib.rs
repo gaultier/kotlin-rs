@@ -134,6 +134,10 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    fn number(&mut self) -> Result<isize, String> {
+        Ok(0)
+    }
+
     fn skip_whitespace(&mut self) -> Result<(), String> {
         while !self.is_at_end() {
             match self.peek() {
