@@ -10,6 +10,7 @@ pub enum LexTokenKind {
     Star,
     Equal,
     EqualEqual,
+    Int(i32),
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -134,8 +135,19 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn number(&mut self) -> Result<isize, String> {
-        Ok(0)
+    fn number(
+        &mut self,
+        start_pos: usize,
+        start_line: usize,
+        start_column: usize,
+    ) -> Result<LexToken, String> {
+        Ok(LexToken::new(
+            self,
+            LexTokenKind::Int(0),
+            start_pos,
+            start_line,
+            start_column,
+        ))
     }
 
     fn skip_whitespace(&mut self) -> Result<(), String> {
@@ -241,7 +253,9 @@ impl<'a> Lexer<'a> {
                 }
             }
             Some('0') | Some('1') | Some('2') | Some('3') | Some('4') | Some('5') | Some('6')
-            | Some('7') | Some('8') | Some('9') => Ok(self.number()),
+            | Some('7') | Some('8') | Some('9') => {
+                Some(self.number(start_pos, start_line, start_column))
+            }
             Some(c) => Some(Err(format!("Unknown token `{}`", c))),
             None => None,
         }
