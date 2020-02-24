@@ -122,17 +122,37 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    fn newline(&mut self) {
+        match self.peek() {
+            Some('\n') => {
+                self.advance();
+                self.line += 1;
+                self.column = 1;
+            }
+            _ => unreachable!(),
+        }
+    }
+
     fn skip_whitespace(&mut self) -> Result<(), String> {
         while !self.is_at_end() {
             match self.peek() {
-                None | Some(' ') | Some('\t') | Some('\r') | Some('\n') => {
+                None | Some(' ') | Some('\t') | Some('\r') => {
                     self.advance();
+                }
+                Some('\n') => {
+                    self.newline();
                 }
                 // TODO: check that the shebang is on the first line
                 Some('#') => match self.peek_next() {
                     Some('!') => {
+                        if self.line != 1 {
+                            return Err(format!(
+                                "Shebang can only be located on the first line: {}{}",
+                                self.peek().unwrap(),
+                                self.peek_next().unwrap()
+                            ));
+                        }
                         self.skip_until('\n');
-                        return Ok(());
                     }
                     _ => {
                         return Ok(());
