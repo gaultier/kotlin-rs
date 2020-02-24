@@ -11,6 +11,7 @@ pub enum LexTokenKind {
     Equal,
     EqualEqual,
     Int(i32),
+    Unknown,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -84,7 +85,7 @@ impl<'a> Lexer<'a> {
         self.cur[0] = self.cur[1];
         self.cur[1] = self.chars.next();
 
-        self.pos += 1;
+        self.pos += c.map(|c| c.len_utf8()).unwrap_or(1) as isize;
         self.column += 1;
         c
     }
@@ -265,7 +266,13 @@ impl<'a> Lexer<'a> {
             | Some('7') | Some('8') | Some('9') => {
                 Some(self.number(start_pos, start_line, start_column))
             }
-            Some(c) => Some(Err(format!("Unknown token `{}`", c))),
+            Some(_) => Some(Ok(LexToken::new(
+                self,
+                LexTokenKind::Unknown,
+                start_pos,
+                start_line,
+                start_column,
+            ))),
             None => None,
         }
     }
@@ -320,6 +327,22 @@ mod tests {
         assert_eq!(tok.start_line, 2);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 2);
+        assert_eq!(tok.end_column, 2);
+    }
+
+    #[test]
+    fn test_lex_unknown() {
+        let s = "§+~";
+        let mut lexer = Lexer::new(&s);
+        let tok = lexer.lex();
+
+        assert_eq!(tok.is_some(), true);
+        assert_eq!(tok.as_ref().unwrap().as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap().as_ref().unwrap();
+        assert_eq!(tok.kind, LexTokenKind::Unknown);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 2);
     }
 }
