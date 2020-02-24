@@ -44,11 +44,11 @@ impl<'a> LexToken<'a> {
     ) -> LexToken<'a> {
         LexToken {
             kind,
-            src: &lexer.src[start_pos - 2..lexer.pos - 2],
+            src: &lexer.src[start_pos..lexer.pos as usize],
             end_line: lexer.line,
-            end_column: lexer.column - 3,
+            end_column: lexer.column as usize,
             start_line,
-            start_column: start_column - 3,
+            start_column: start_column,
         }
     }
 }
@@ -56,34 +56,35 @@ impl<'a> LexToken<'a> {
 pub struct Lexer<'a> {
     src: &'a str,
     chars: Chars<'a>,
-    pos: usize,
+    pos: isize,
     line: usize,
-    column: usize,
+    column: isize,
     cur: [Option<char>; 2],
 }
 
 impl<'a> Lexer<'a> {
     fn is_at_end(&self) -> bool {
-        self.pos >= (self.src.len() + 2)
+        self.pos >= (self.src.len() as isize + 2)
     }
 
     pub fn new(src: &'a str) -> Lexer<'a> {
         Lexer {
             src,
             chars: src.chars(),
-            pos: 0,
+            pos: -2,
             line: 1,
-            column: 1,
+            column: -1,
             cur: [None, None],
         }
     }
 
     fn advance(&mut self) -> Option<char> {
-        self.pos += 1;
-        self.column += 1;
         let c = self.peek();
         self.cur[0] = self.cur[1];
         self.cur[1] = self.chars.next();
+
+        self.pos += 1;
+        self.column += 1;
         c
     }
 
@@ -179,11 +180,12 @@ impl<'a> Lexer<'a> {
             return Some(Err(err));
         }
 
-        let start_pos = self.pos;
+        let start_pos = self.pos as usize;
         let start_line = self.line;
-        let start_column = self.column;
+        let start_column = self.column as usize;
 
         dbg!(self.cur);
+        dbg!(self.column);
         let c = self.advance();
         dbg!(self.cur);
 
