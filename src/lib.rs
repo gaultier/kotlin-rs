@@ -184,10 +184,7 @@ impl<'a> Lexer<'a> {
         let start_line = self.line;
         let start_column = self.column as usize;
 
-        dbg!(self.cur);
-        dbg!(self.column);
         let c = self.advance();
-        dbg!(self.cur);
 
         match c {
             Some('+') => Some(Ok(LexToken::new(
