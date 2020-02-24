@@ -23,6 +23,7 @@ fn run() -> Result<(), String> {
                 match token {
                     Ok(token) => {
                         token.print();
+                        dbg!(token.kind);
                     }
                     Err(err) => {
                         eprintln!("Error: {}", err);
@@ -44,6 +45,7 @@ fn run() -> Result<(), String> {
                 match token {
                     Ok(token) => {
                         token.print();
+                        dbg!(token.kind);
                     }
                     Err(err) => {
                         eprintln!("Error: {}", err);

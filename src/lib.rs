@@ -141,9 +141,18 @@ impl<'a> Lexer<'a> {
         start_line: usize,
         start_column: usize,
     ) -> Result<LexToken, String> {
+        while let Some(c) = self.peek() {
+            if c.is_digit(10) {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+        let s = &self.src[start_pos..self.pos as usize];
+        let n: i32 = s.parse().unwrap();
         Ok(LexToken::new(
             self,
-            LexTokenKind::Int(0),
+            LexTokenKind::Int(n),
             start_pos,
             start_line,
             start_column,
