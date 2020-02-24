@@ -36,8 +36,8 @@ impl<'a> LexToken<'a> {
         println!();
     }
 
-    pub fn new<'b>(
-        lexer: &'b Lexer<'a>,
+    pub fn new(
+        lexer: &'a Lexer,
         kind: LexTokenKind,
         start_pos: usize,
         start_line: usize,
@@ -162,28 +162,28 @@ impl<'a> Lexer<'a> {
 
         match c {
             Some('+') => Some(Ok(LexToken::new(
-                &self,
+                self,
                 LexTokenKind::Plus,
                 start_pos,
                 start_line,
                 start_column,
             ))),
             Some('-') => Some(Ok(LexToken::new(
-                &self,
+                self,
                 LexTokenKind::Minus,
                 start_pos,
                 start_line,
                 start_column,
             ))),
             Some('/') => Some(Ok(LexToken::new(
-                &self,
+                self,
                 LexTokenKind::Star,
                 start_pos,
                 start_line,
                 start_column,
             ))),
             Some('*') => Some(Ok(LexToken::new(
-                &self,
+                self,
                 LexTokenKind::Slash,
                 start_pos,
                 start_line,
@@ -192,7 +192,7 @@ impl<'a> Lexer<'a> {
             Some('=') => {
                 if self.match_char('=') {
                     Some(Ok(LexToken::new(
-                        &self,
+                        self,
                         LexTokenKind::EqualEqual,
                         start_pos,
                         start_line,
@@ -200,7 +200,7 @@ impl<'a> Lexer<'a> {
                     )))
                 } else {
                     Some(Ok(LexToken::new(
-                        &self,
+                        self,
                         LexTokenKind::Equal,
                         start_pos,
                         start_line,
@@ -214,10 +214,10 @@ impl<'a> Lexer<'a> {
     }
 }
 
-impl<'b> Iterator for Lexer<'b> {
-    type Item = Result<LexToken<'b>, String>;
-
-    fn next<'a: 'b>(&'a mut self) -> Option<Self::Item> {
-        self.lex()
-    }
-}
+//impl<'b> Iterator for Lexer<'b> {
+//    type Item = Result<LexToken<'b>, String>;
+//
+//    fn next<'a: 'b>(&'a mut self) -> Option<Self::Item> {
+//        self.lex()
+//    }
+//}

@@ -19,13 +19,14 @@ fn run() -> Result<(), String> {
             })?;
 
             let mut lexer = Lexer::new(&contents);
-            loop {
-                match lexer.lex()? {
-                    LexToken {
-                        kind: LexTokenKind::Eof,
-                        ..
-                    } => break,
-                    tok => tok.print(),
+            while let Some(token) = lexer.lex() {
+                match token {
+                    Ok(token) => {
+                        token.print();
+                    }
+                    Err(err) => {
+                        eprintln!("Error: {}", err);
+                    }
                 }
             }
             Ok(())
@@ -39,15 +40,13 @@ fn run() -> Result<(), String> {
                 .map_err(|err| format!("Could not read stdin: {}", err))?;
 
             let mut lexer = Lexer::new(&contents);
-            loop {
-                match lexer.lex()? {
-                    LexToken {
-                        kind: LexTokenKind::Eof,
-                        ..
-                    } => break,
-                    tok => {
-                        dbg!(&tok);
-                        tok.print();
+            while let Some(token) = lexer.lex() {
+                match token {
+                    Ok(token) => {
+                        token.print();
+                    }
+                    Err(err) => {
+                        eprintln!("Error: {}", err);
                     }
                 }
             }
