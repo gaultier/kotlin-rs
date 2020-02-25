@@ -21,6 +21,7 @@ pub enum LexTokenKind {
     UnexpectedChar(char),
     ShebangNotOnFirstLine,
     NewlineInString,
+    TrailingUnderscoreInNumber,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -160,10 +161,23 @@ impl<'a> Lexer<'a> {
                 break;
             }
         }
+        dbg!(&self.src[start_pos..self.pos as usize]);
         let s = &self.src[start_pos..self.pos as usize]
             .to_string()
             .replace("_", "");
         dbg!(&s);
+
+        // Trailing underscore
+        if self.src.as_bytes()[self.pos as usize - 1] == 95 {
+            return Err(LexToken::new(
+                self,
+                LexTokenKind::TrailingUnderscoreInNumber,
+                start_pos,
+                start_line,
+                start_column,
+            ));
+        }
+
         match self.peek() {
             Some('L') => {
                 let n: i64 = s.parse().unwrap();
@@ -423,6 +437,21 @@ mod tests {
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 13);
+    }
+
+    #[test]
+    fn test_lex_number_int_with_trailing_underscore() {
+        let s = " 123_000_000_  ";
+        let mut lexer = Lexer::new(&s);
+        let tok = lexer.lex();
+
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, LexTokenKind::TrailingUnderscoreInNumber);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 14);
     }
 
     #[test]
