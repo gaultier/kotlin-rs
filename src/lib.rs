@@ -167,7 +167,7 @@ impl<'a> Lexer<'a> {
             .replace("_", "");
         dbg!(&s);
 
-        // Trailing underscore
+        // Trailing underscore. Hacky way but it works (assuming utf8).
         if self.src.as_bytes()[self.pos as usize - 1] == 95 {
             return Err(LexToken::new(
                 self,
