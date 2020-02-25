@@ -14,9 +14,11 @@ pub enum LexTokenKind {
     Long(i64),
     Shebang,
     Comment,
+    TString,
     Eof,
     // Errors
     Unknown,
+    UnexpectedChar,
     ShebangNotOnFirstLine,
 }
 
@@ -146,6 +148,7 @@ impl<'a> Lexer<'a> {
 
     fn number(
         &mut self,
+
         start_pos: usize,
         start_line: usize,
         start_column: usize,
@@ -179,6 +182,44 @@ impl<'a> Lexer<'a> {
                 start_column,
             ))
         }
+    }
+
+    fn expect(
+        &mut self,
+        c: char,
+        start_pos: usize,
+        start_line: usize,
+        start_column: usize,
+    ) -> Result<(), LexToken> {
+        if self.peek() == Some(c) {
+            self.advance();
+            Ok(())
+        } else {
+            Err(LexToken::new(
+                self,
+                LexTokenKind::UnexpectedChar,
+                start_pos,
+                start_line,
+                start_column,
+            ))
+        }
+    }
+
+    fn string(
+        &mut self,
+        start_pos: usize,
+        start_line: usize,
+        start_column: usize,
+    ) -> Result<LexToken, LexToken> {
+        self.expect('"', start_pos, start_line, start_column)?;
+        self.expect('"', start_pos, start_line, start_column)?;
+        Ok(LexToken::new(
+            self,
+            LexTokenKind::TString,
+            start_pos,
+            start_line,
+            start_column,
+        ))
     }
 
     fn skip_whitespace(&mut self) -> Result<Option<LexToken>, LexToken> {
@@ -307,6 +348,7 @@ impl<'a> Lexer<'a> {
             }
             Some('0') | Some('1') | Some('2') | Some('3') | Some('4') | Some('5') | Some('6')
             | Some('7') | Some('8') | Some('9') => self.number(start_pos, start_line, start_column),
+            Some('"') => self.string(start_pos, start_line, start_column),
             Some(_) => Ok(LexToken::new(
                 self,
                 LexTokenKind::Unknown,
