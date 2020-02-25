@@ -154,9 +154,6 @@ impl<'a> Lexer<'a> {
                 '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '_' => {
                     self.advance();
                 }
-                'L' => {
-                    return;
-                }
                 _ => {
                     return;
                 }
@@ -179,7 +176,6 @@ impl<'a> Lexer<'a> {
         dbg!(&s);
 
         let last_digit = self.src[start_pos..self.pos as usize].chars().last();
-        dbg!(last_digit);
         // Forbid trailing underscore.
         if last_digit == Some('_') {
             return Err(LexToken::new(
@@ -191,7 +187,7 @@ impl<'a> Lexer<'a> {
             ));
         }
 
-        match self.peek() {
+        match last_digit {
             Some('L') => {
                 let n: i64 = s.parse().unwrap();
                 self.advance();
