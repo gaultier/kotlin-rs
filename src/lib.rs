@@ -55,7 +55,7 @@ impl LexToken {
             end_column: lexer.column as usize,
             start_pos,
             start_line,
-            start_column: start_column,
+            start_column,
         }
     }
 }
