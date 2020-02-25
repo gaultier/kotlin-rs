@@ -513,32 +513,29 @@ impl<'a> Lexer<'a> {
         }
         let s = &self.src[start_pos..self.pos as usize];
 
-        if s == "true" {
-            Ok(LexToken::new(
+        match s {
+            "true" => Ok(LexToken::new(
                 self,
                 LexTokenKind::Bool(true),
                 start_pos,
                 start_line,
                 start_column,
-            ))
-        } else if s == "false" {
-            Ok(LexToken::new(
+            )),
+            "false" => Ok(LexToken::new(
                 self,
                 LexTokenKind::Bool(false),
                 start_pos,
                 start_line,
                 start_column,
-            ))
-        } else if s == "null" {
-            Ok(LexToken::new(
+            )),
+            "null" => Ok(LexToken::new(
                 self,
                 LexTokenKind::Null,
                 start_pos,
                 start_line,
                 start_column,
-            ))
-        } else {
-            unimplemented!();
+            )),
+            _ => unimplemented!(),
         }
     }
 
