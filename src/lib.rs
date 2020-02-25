@@ -155,10 +155,13 @@ impl<'a> Lexer<'a> {
         start_column: usize,
     ) -> Result<LexToken, LexToken> {
         while let Some(c) = self.peek() {
-            if c.is_digit(10) || c == '_' {
-                self.advance();
-            } else {
-                break;
+            match c {
+                '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '_' => {
+                    self.advance();
+                }
+                _ => {
+                    break;
+                }
             }
         }
         dbg!(&self.src[start_pos..self.pos as usize]);
@@ -167,7 +170,7 @@ impl<'a> Lexer<'a> {
             .replace("_", "");
         dbg!(&s);
 
-        // Trailing underscore. Hacky way but it works (assuming utf8).
+        // Forbid trailing underscore. Hacky way but it works (assuming utf8).
         if self.src.as_bytes()[self.pos as usize - 1] == 95 {
             return Err(LexToken::new(
                 self,
