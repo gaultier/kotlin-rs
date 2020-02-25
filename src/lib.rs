@@ -143,7 +143,7 @@ impl<'a> Lexer<'a> {
         start_pos: usize,
         start_line: usize,
         start_column: usize,
-    ) -> Result<LexToken, String> {
+    ) -> Result<LexToken, LexToken> {
         while let Some(c) = self.peek() {
             if c.is_digit(10) {
                 self.advance();
@@ -209,8 +209,8 @@ impl<'a> Lexer<'a> {
         Ok(())
     }
 
-    pub fn lex(&mut self) -> Result<LexToken, String> {
-        let _ = self.skip_whitespace();
+    pub fn lex(&mut self) -> Result<LexToken, LexToken> {
+        self.skip_whitespace()?;
 
         let start_pos = self.pos as usize;
         let start_line = self.line;
