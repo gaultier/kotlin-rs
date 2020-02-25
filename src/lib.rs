@@ -18,6 +18,7 @@ pub enum LexTokenKind {
     Comment,
     TString,
     Bool(bool),
+    Null,
     Eof,
     // Errors
     Unknown,
@@ -524,6 +525,14 @@ impl<'a> Lexer<'a> {
             Ok(LexToken::new(
                 self,
                 LexTokenKind::Bool(false),
+                start_pos,
+                start_line,
+                start_column,
+            ))
+        } else if s == "null" {
+            Ok(LexToken::new(
+                self,
+                LexTokenKind::Null,
                 start_pos,
                 start_line,
                 start_column,
@@ -1086,5 +1095,20 @@ mod tests {
         assert_eq!(tok.start_column, 7);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 12);
+    }
+
+    #[test]
+    fn test_lex_null() {
+        let s = " null ";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, LexTokenKind::Null);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 6);
     }
 }
