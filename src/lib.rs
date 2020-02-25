@@ -20,6 +20,7 @@ pub enum LexTokenKind {
     Unknown,
     UnexpectedChar(char),
     ShebangNotOnFirstLine,
+    NewlineInString,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -210,8 +211,25 @@ impl<'a> Lexer<'a> {
         start_line: usize,
         start_column: usize,
     ) -> Result<LexToken, LexToken> {
-        while self.peek() != Some('"') {
-            self.advance();
+        while let Some(c) = self.peek() {
+            match c {
+                '"' => {
+                    break;
+                }
+                '\n' => {
+                    self.newline();
+                    return Err(LexToken::new(
+                        self,
+                        LexTokenKind::NewlineInString,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ));
+                }
+                _ => {
+                    self.advance();
+                }
+            }
         }
         self.expect('"', start_pos, start_line, start_column)?;
         Ok(LexToken::new(
@@ -522,5 +540,35 @@ mod tests {
         assert_eq!(tok.end_line, 2);
         assert_eq!(tok.end_column, 25);
         assert_eq!(&s[tok.start_pos..tok.end_pos], "\"abc123老虎老虎\"");
+    }
+
+    #[test]
+    fn test_lex_unterminated_string() {
+        let s = "\"";
+        let mut lexer = Lexer::new(&s);
+        let tok = lexer.lex();
+
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, LexTokenKind::UnexpectedChar('"'));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 2);
+    }
+
+    #[test]
+    fn test_lex_newline_in_string() {
+        let s = "\"\n";
+        let mut lexer = Lexer::new(&s);
+        let tok = lexer.lex();
+
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, LexTokenKind::NewlineInString);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 2);
+        assert_eq!(tok.end_column, 1);
     }
 }
