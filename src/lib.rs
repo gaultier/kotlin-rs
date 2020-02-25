@@ -155,7 +155,6 @@ impl<'a> Lexer<'a> {
             }
         }
         if self.peek() == Some('L') {
-
             let s = &self.src[start_pos..self.pos as usize];
             let n: i64 = s.parse().unwrap();
             self.advance();
