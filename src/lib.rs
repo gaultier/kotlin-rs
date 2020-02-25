@@ -165,10 +165,6 @@ impl<'a> Lexer<'a> {
     }
 
     fn skip_whitespace(&mut self) -> Result<(), LexToken> {
-        let start_pos = self.pos as usize;
-        let start_line = self.line;
-        let start_column = self.column as usize;
-
         while !self.is_at_end() {
             match self.peek() {
                 None | Some(' ') | Some('\t') | Some('\r') => {
@@ -179,7 +175,12 @@ impl<'a> Lexer<'a> {
                 }
                 Some('#') => match self.peek_next() {
                     Some('!') => {
+                        let start_pos = self.pos as usize;
+                        let start_line = self.line;
+                        let start_column = self.column as usize;
                         if self.line != 1 {
+                            // Only to get the right `end_pos`, `end_column`
+                            self.skip_until('\n');
                             return Err(LexToken::new(
                                 self,
                                 LexTokenKind::ShebangNotOnFirstLine,
@@ -351,6 +352,30 @@ mod tests {
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 2);
+    }
+
+    #[test]
+    fn test_lex_shebang_not_on_first_line() {
+        let s = "\n#!/bin/cat\n+";
+        let mut lexer = Lexer::new(&s);
+        let tok = lexer.lex();
+
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, LexTokenKind::ShebangNotOnFirstLine);
+        assert_eq!(tok.start_line, 2);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 2);
+        assert_eq!(tok.end_column, 11);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, LexTokenKind::Plus);
+        assert_eq!(tok.start_line, 3);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 3);
         assert_eq!(tok.end_column, 2);
     }
 }
