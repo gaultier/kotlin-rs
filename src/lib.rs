@@ -160,9 +160,12 @@ impl<'a> Lexer<'a> {
                 break;
             }
         }
+        let s = &self.src[start_pos..self.pos as usize]
+            .to_string()
+            .replace("_", "");
+        dbg!(&s);
         match self.peek() {
             Some('L') => {
-                let s = &self.src[start_pos..self.pos as usize];
                 let n: i64 = s.parse().unwrap();
                 self.advance();
                 Ok(LexToken::new(
@@ -174,7 +177,6 @@ impl<'a> Lexer<'a> {
                 ))
             }
             _ => {
-                let s = &self.src[start_pos..self.pos as usize];
                 let n: i32 = s.parse().unwrap();
                 Ok(LexToken::new(
                     self,
@@ -406,6 +408,21 @@ mod tests {
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 5);
+    }
+
+    #[test]
+    fn test_lex_number_int_with_underscores() {
+        let s = " 123_000_000  ";
+        let mut lexer = Lexer::new(&s);
+        let tok = lexer.lex();
+
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, LexTokenKind::Int(123_000_000));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 13);
     }
 
     #[test]
