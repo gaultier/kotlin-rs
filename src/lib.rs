@@ -350,7 +350,7 @@ impl<'a> Lexer<'a> {
             Some('0') | Some('1') | Some('2') | Some('3') | Some('4') | Some('5') | Some('6')
             | Some('7') | Some('8') | Some('9') => self.number(start_pos, start_line, start_column),
             Some('"') => self.string(start_pos, start_line, start_column),
-            Some(_) => Ok(LexToken::new(
+            Some(_) => Err(LexToken::new(
                 self,
                 LexTokenKind::Unknown,
                 start_pos,
@@ -456,8 +456,8 @@ mod tests {
         let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
 
-        assert_eq!(tok.as_ref().is_ok(), true);
-        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, LexTokenKind::Unknown);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 1);
