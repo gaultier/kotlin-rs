@@ -12,6 +12,7 @@ pub enum LexTokenKind {
     EqualEqual,
     Int(i32),
     Long(i64),
+    Uint(u32),
     Shebang,
     Comment,
     TString,
@@ -187,13 +188,24 @@ impl<'a> Lexer<'a> {
             ));
         }
 
-        match last_digit {
+        match self.peek() {
             Some('L') => {
                 let n: i64 = s.parse().unwrap();
                 self.advance();
                 Ok(LexToken::new(
                     self,
                     LexTokenKind::Long(n),
+                    start_pos,
+                    start_line,
+                    start_column,
+                ))
+            }
+            Some('U') | Some('u') => {
+                let n: u32 = s.parse().unwrap();
+                self.advance();
+                Ok(LexToken::new(
+                    self,
+                    LexTokenKind::Uint(n),
                     start_pos,
                     start_line,
                     start_column,
