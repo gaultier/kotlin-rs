@@ -30,11 +30,11 @@ pub struct LexToken {
 impl LexToken {
     pub fn print(&self, src: &str) {
         let fmt = format!("{}:{}:", self.start_line, self.start_column);
-        println!("{}{}", fmt, src);
+        println!("{}{}", fmt, &src[self.start_pos..self.end_pos]);
         for _ in 0..fmt.len() {
             print!(" ");
         }
-        for _ in 0..src.len() {
+        for _ in self.start_pos..self.end_pos {
             print!("^");
         }
         println!();

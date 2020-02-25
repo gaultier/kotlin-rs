@@ -27,7 +27,7 @@ fn run() -> Result<(), String> {
                     }
                     Ok(token) | Err(token) => {
                         token.print(&contents);
-                        dbg!(token.kind);
+                        println!("{:?}", token);
                     }
                 }
             }
@@ -49,7 +49,7 @@ fn run() -> Result<(), String> {
                     }
                     Ok(token) | Err(token) => {
                         token.print(&contents);
-                        dbg!(token.kind);
+                        println!("{:?}", token);
                     }
                 }
             }
