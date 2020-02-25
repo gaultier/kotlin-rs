@@ -12,7 +12,7 @@ pub enum LexTokenKind {
     EqualEqual,
     Int(i32),
     Long(i64),
-    Uint(u32),
+    UInt(u32),
     ULong(u64),
     Shebang,
     Comment,
@@ -219,7 +219,7 @@ impl<'a> Lexer<'a> {
                     self.advance();
                     Ok(LexToken::new(
                         self,
-                        LexTokenKind::Uint(n),
+                        LexTokenKind::UInt(n),
                         start_pos,
                         start_line,
                         start_column,
@@ -498,7 +498,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Uint(123u32));
+        assert_eq!(tok.kind, LexTokenKind::UInt(123u32));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
@@ -507,7 +507,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Uint(456u32));
+        assert_eq!(tok.kind, LexTokenKind::UInt(456u32));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 8);
         assert_eq!(tok.end_line, 1);
