@@ -150,6 +150,33 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    fn bin_digits(&mut self) {
+        while let Some(c) = self.peek() {
+            match c {
+                '0' | '1' | '_' => {
+                    self.advance();
+                }
+                _ => {
+                    return;
+                }
+            }
+        }
+    }
+
+    fn hex_digits(&mut self) {
+        while let Some(c) = self.peek() {
+            match c {
+                '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | 'a' | 'b' | 'c'
+                | 'd' | 'e' | 'f' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | '_' => {
+                    self.advance();
+                }
+                _ => {
+                    return;
+                }
+            }
+        }
+    }
+
     fn digits(&mut self) {
         while let Some(c) = self.peek() {
             match c {
@@ -161,7 +188,6 @@ impl<'a> Lexer<'a> {
                 }
             }
         }
-        unreachable!()
     }
 
     fn bin_number(
@@ -170,7 +196,31 @@ impl<'a> Lexer<'a> {
         start_line: usize,
         start_column: usize,
     ) -> Result<LexToken, LexToken> {
-        unimplemented!()
+        // Consume `b|B`
+        self.advance();
+        self.bin_digits();
+        let s = &self.src[start_pos + 2..self.pos as usize]
+            .to_string()
+            .replace("_", "");
+        dbg!(s);
+        let n = i64::from_str_radix(s, 2).unwrap();
+        if n < std::i32::MAX as i64 {
+            Ok(LexToken::new(
+                self,
+                LexTokenKind::Int(n as i32),
+                start_pos,
+                start_line,
+                start_column,
+            ))
+        } else {
+            Ok(LexToken::new(
+                self,
+                LexTokenKind::Long(n),
+                start_pos,
+                start_line,
+                start_column,
+            ))
+        }
     }
 
     fn hex_number(
@@ -438,7 +488,7 @@ impl<'a> Lexer<'a> {
                     ))
                 }
             }
-            Some('0') => match self.peek_next() {
+            Some('0') => match self.peek() {
                 Some('x') | Some('X') => self.hex_number(start_pos, start_line, start_column),
                 Some('b') | Some('B') => self.bin_number(start_pos, start_line, start_column),
                 _ => self.number(start_pos, start_line, start_column),
@@ -574,6 +624,30 @@ mod tests {
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 6);
+    }
+
+    #[test]
+    fn test_lex_number_bin_number() {
+        let s = " 0b101 0B1_00000000_00000000_00000000_00000000";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, LexTokenKind::Int(5));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 7);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, LexTokenKind::Long(std::u32::MAX as i64 + 1));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 8);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 47);
     }
 
     #[test]
