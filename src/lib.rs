@@ -13,6 +13,7 @@ pub enum LexTokenKind {
     Int(i32),
     Long(i64),
     Uint(u32),
+    ULong(u64),
     Shebang,
     Comment,
     TString,
@@ -200,17 +201,31 @@ impl<'a> Lexer<'a> {
                     start_column,
                 ))
             }
-            Some('U') | Some('u') => {
-                let n: u32 = s.parse().unwrap();
-                self.advance();
-                Ok(LexToken::new(
-                    self,
-                    LexTokenKind::Uint(n),
-                    start_pos,
-                    start_line,
-                    start_column,
-                ))
-            }
+            Some('U') | Some('u') => match self.peek_next() {
+                Some('L') => {
+                    let n: u64 = s.parse().unwrap();
+                    self.advance();
+                    self.advance();
+                    Ok(LexToken::new(
+                        self,
+                        LexTokenKind::ULong(n),
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                }
+                _ => {
+                    let n: u32 = s.parse().unwrap();
+                    self.advance();
+                    Ok(LexToken::new(
+                        self,
+                        LexTokenKind::Uint(n),
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                }
+            },
             _ => {
                 let n: i32 = s.parse().unwrap();
                 Ok(LexToken::new(
@@ -497,6 +512,30 @@ mod tests {
         assert_eq!(tok.start_column, 8);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 12);
+    }
+
+    #[test]
+    fn test_lex_number_ulong() {
+        let s = " 123UL  456uL";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, LexTokenKind::ULong(123u64));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 7);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, LexTokenKind::ULong(456u64));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 9);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 14);
     }
 
     #[test]
