@@ -11,6 +11,7 @@ pub enum LexTokenKind {
     Equal,
     EqualEqual,
     Int(i32),
+    Long(i64),
     Unknown,
     ShebangNotOnFirstLine,
     Eof,
@@ -153,15 +154,29 @@ impl<'a> Lexer<'a> {
                 break;
             }
         }
-        let s = &self.src[start_pos..self.pos as usize];
-        let n: i32 = s.parse().unwrap();
-        Ok(LexToken::new(
-            self,
-            LexTokenKind::Int(n),
-            start_pos,
-            start_line,
-            start_column,
-        ))
+        if self.peek() == Some('L') {
+
+            let s = &self.src[start_pos..self.pos as usize];
+            let n: i64 = s.parse().unwrap();
+            self.advance();
+            Ok(LexToken::new(
+                self,
+                LexTokenKind::Long(n),
+                start_pos,
+                start_line,
+                start_column,
+            ))
+        } else {
+            let s = &self.src[start_pos..self.pos as usize];
+            let n: i32 = s.parse().unwrap();
+            Ok(LexToken::new(
+                self,
+                LexTokenKind::Int(n),
+                start_pos,
+                start_line,
+                start_column,
+            ))
+        }
     }
 
     fn skip_whitespace(&mut self) -> Result<(), LexToken> {
@@ -296,7 +311,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_lex_number() {
+    fn test_lex_number_int() {
         let s = " 123  ";
         let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
@@ -308,6 +323,21 @@ mod tests {
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 5);
+    }
+
+    #[test]
+    fn test_lex_number_long() {
+        let s = " 123L  ";
+        let mut lexer = Lexer::new(&s);
+        let tok = lexer.lex();
+
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, LexTokenKind::Long(123i64));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 6);
     }
 
     #[test]
