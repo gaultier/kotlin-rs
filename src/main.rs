@@ -25,12 +25,9 @@ fn run() -> Result<(), String> {
                     Ok(token) if token.kind == LexTokenKind::Eof => {
                         return Ok(());
                     }
-                    Ok(token) => {
-                        token.print();
+                    Ok(token) | Err(token) => {
+                        token.print(&contents);
                         dbg!(token.kind);
-                    }
-                    Err(err) => {
-                        eprintln!("Error: {}", err);
                     }
                 }
             }
@@ -50,12 +47,9 @@ fn run() -> Result<(), String> {
                     Ok(token) if token.kind == LexTokenKind::Eof => {
                         return Ok(());
                     }
-                    Ok(token) => {
-                        token.print();
+                    Ok(token) | Err(token) => {
+                        token.print(&contents);
                         dbg!(token.kind);
-                    }
-                    Err(err) => {
-                        eprintln!("Error: {}", err);
                     }
                 }
             }

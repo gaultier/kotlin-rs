@@ -17,40 +17,42 @@ pub enum LexTokenKind {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct LexToken<'a> {
+pub struct LexToken {
     pub kind: LexTokenKind,
-    src: &'a str,
+    start_pos: usize,
     start_line: usize,
     start_column: usize,
+    end_pos: usize,
     end_line: usize,
     end_column: usize,
 }
 
-impl<'a> LexToken<'a> {
-    pub fn print(&self) {
+impl LexToken {
+    pub fn print(&self, src: &str) {
         let fmt = format!("{}:{}:", self.start_line, self.start_column);
-        println!("{}{}", fmt, self.src);
+        println!("{}{}", fmt, src);
         for _ in 0..fmt.len() {
             print!(" ");
         }
-        for _ in 0..self.src.len() {
+        for _ in 0..src.len() {
             print!("^");
         }
         println!();
     }
 
     pub fn new(
-        lexer: &'a Lexer,
+        lexer: &Lexer,
         kind: LexTokenKind,
         start_pos: usize,
         start_line: usize,
         start_column: usize,
-    ) -> LexToken<'a> {
+    ) -> LexToken {
         LexToken {
             kind,
-            src: &lexer.src[start_pos..lexer.pos as usize],
+            end_pos: lexer.pos as usize,
             end_line: lexer.line,
             end_column: lexer.column as usize,
+            start_pos,
             start_line,
             start_column: start_column,
         }
