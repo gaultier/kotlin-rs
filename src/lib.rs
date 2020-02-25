@@ -298,9 +298,8 @@ mod tests {
         let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
 
-        assert_eq!(tok.is_some(), true);
-        assert_eq!(tok.as_ref().unwrap().as_ref().is_ok(), true);
-        let tok = tok.as_ref().unwrap().as_ref().unwrap();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, LexTokenKind::Int(123));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
@@ -314,9 +313,8 @@ mod tests {
         let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
 
-        assert_eq!(tok.is_some(), true);
-        assert_eq!(tok.as_ref().unwrap().as_ref().is_ok(), true);
-        let tok = tok.as_ref().unwrap().as_ref().unwrap();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, LexTokenKind::Plus);
         assert_eq!(tok.start_line, 2);
         assert_eq!(tok.start_column, 1);
@@ -330,9 +328,8 @@ mod tests {
         let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
 
-        assert_eq!(tok.is_some(), true);
-        assert_eq!(tok.as_ref().unwrap().as_ref().is_ok(), true);
-        let tok = tok.as_ref().unwrap().as_ref().unwrap();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, LexTokenKind::Plus);
         assert_eq!(tok.start_line, 2);
         assert_eq!(tok.start_column, 1);
@@ -346,9 +343,8 @@ mod tests {
         let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
 
-        assert_eq!(tok.is_some(), true);
-        assert_eq!(tok.as_ref().unwrap().as_ref().is_ok(), true);
-        let tok = tok.as_ref().unwrap().as_ref().unwrap();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, LexTokenKind::Unknown);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 1);
