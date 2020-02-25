@@ -164,6 +164,24 @@ impl<'a> Lexer<'a> {
         unreachable!()
     }
 
+    fn bin_number(
+        &mut self,
+        start_pos: usize,
+        start_line: usize,
+        start_column: usize,
+    ) -> Result<LexToken, LexToken> {
+        unimplemented!()
+    }
+
+    fn hex_number(
+        &mut self,
+        start_pos: usize,
+        start_line: usize,
+        start_column: usize,
+    ) -> Result<LexToken, LexToken> {
+        unimplemented!()
+    }
+
     fn number(
         &mut self,
         start_pos: usize,
@@ -420,8 +438,13 @@ impl<'a> Lexer<'a> {
                     ))
                 }
             }
-            Some('0') | Some('1') | Some('2') | Some('3') | Some('4') | Some('5') | Some('6')
-            | Some('7') | Some('8') | Some('9') => self.number(start_pos, start_line, start_column),
+            Some('0') => match self.peek_next() {
+                Some('x') | Some('X') => self.hex_number(start_pos, start_line, start_column),
+                Some('b') | Some('B') => self.bin_number(start_pos, start_line, start_column),
+                _ => self.number(start_pos, start_line, start_column),
+            },
+            Some('1') | Some('2') | Some('3') | Some('4') | Some('5') | Some('6') | Some('7')
+            | Some('8') | Some('9') => self.number(start_pos, start_line, start_column),
             Some('"') => self.string(start_pos, start_line, start_column),
             Some(_) => Err(LexToken::new(
                 self,
