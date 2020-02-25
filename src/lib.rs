@@ -13,6 +13,7 @@ pub enum LexTokenKind {
     Int(i32),
     Unknown,
     ShebangNotOnFirstLine,
+    Eof,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -208,7 +209,7 @@ impl<'a> Lexer<'a> {
         Ok(())
     }
 
-    pub fn lex(&mut self) -> Option<Result<LexToken, String>> {
+    pub fn lex(&mut self) -> Result<LexToken, String> {
         let _ = self.skip_whitespace();
 
         let start_pos = self.pos as usize;
@@ -220,65 +221,69 @@ impl<'a> Lexer<'a> {
         // dbg!(self.cur);
 
         match c {
-            Some('+') => Some(Ok(LexToken::new(
+            Some('+') => Ok(LexToken::new(
                 self,
                 LexTokenKind::Plus,
                 start_pos,
                 start_line,
                 start_column,
-            ))),
-            Some('-') => Some(Ok(LexToken::new(
+            )),
+            Some('-') => Ok(LexToken::new(
                 self,
                 LexTokenKind::Minus,
                 start_pos,
                 start_line,
                 start_column,
-            ))),
-            Some('/') => Some(Ok(LexToken::new(
+            )),
+            Some('/') => Ok(LexToken::new(
                 self,
                 LexTokenKind::Star,
                 start_pos,
                 start_line,
                 start_column,
-            ))),
-            Some('*') => Some(Ok(LexToken::new(
+            )),
+            Some('*') => Ok(LexToken::new(
                 self,
                 LexTokenKind::Slash,
                 start_pos,
                 start_line,
                 start_column,
-            ))),
+            )),
             Some('=') => {
                 if self.match_char('=') {
-                    Some(Ok(LexToken::new(
+                    Ok(LexToken::new(
                         self,
                         LexTokenKind::EqualEqual,
                         start_pos,
                         start_line,
                         start_column,
-                    )))
+                    ))
                 } else {
-                    Some(Ok(LexToken::new(
+                    Ok(LexToken::new(
                         self,
                         LexTokenKind::Equal,
                         start_pos,
                         start_line,
                         start_column,
-                    )))
+                    ))
                 }
             }
             Some('0') | Some('1') | Some('2') | Some('3') | Some('4') | Some('5') | Some('6')
-            | Some('7') | Some('8') | Some('9') => {
-                Some(self.number(start_pos, start_line, start_column))
-            }
-            Some(_) => Some(Ok(LexToken::new(
+            | Some('7') | Some('8') | Some('9') => self.number(start_pos, start_line, start_column),
+            Some(_) => Ok(LexToken::new(
                 self,
                 LexTokenKind::Unknown,
                 start_pos,
                 start_line,
                 start_column,
-            ))),
-            None => None,
+            )),
+            None => Ok(LexToken::new(
+                self,
+                LexTokenKind::Eof,
+                start_pos,
+                start_line,
+                start_column,
+            )),
         }
     }
 }

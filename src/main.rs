@@ -19,8 +19,12 @@ fn run() -> Result<(), String> {
             })?;
 
             let mut lexer = Lexer::new(&contents);
-            while let Some(token) = lexer.lex() {
+            loop {
+                let token = lexer.lex();
                 match token {
+                    Ok(token) if token.kind == LexTokenKind::Eof => {
+                        return Ok(());
+                    }
                     Ok(token) => {
                         token.print();
                         dbg!(token.kind);
@@ -30,7 +34,6 @@ fn run() -> Result<(), String> {
                     }
                 }
             }
-            Ok(())
         }
         [_, "build"] => {
             let mut contents = String::new();
@@ -41,8 +44,12 @@ fn run() -> Result<(), String> {
                 .map_err(|err| format!("Could not read stdin: {}", err))?;
 
             let mut lexer = Lexer::new(&contents);
-            while let Some(token) = lexer.lex() {
+            loop {
+                let token = lexer.lex();
                 match token {
+                    Ok(token) if token.kind == LexTokenKind::Eof => {
+                        return Ok(());
+                    }
                     Ok(token) => {
                         token.print();
                         dbg!(token.kind);
@@ -52,8 +59,6 @@ fn run() -> Result<(), String> {
                     }
                 }
             }
-
-            Ok(())
         }
         _ => {
             println!("Usage: {} build", args[0]);
