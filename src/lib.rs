@@ -154,33 +154,36 @@ impl<'a> Lexer<'a> {
         start_column: usize,
     ) -> Result<LexToken, LexToken> {
         while let Some(c) = self.peek() {
-            if c.is_digit(10) {
+            if c.is_digit(10) || c == '_' {
                 self.advance();
             } else {
                 break;
             }
         }
-        if self.peek() == Some('L') {
-            let s = &self.src[start_pos..self.pos as usize];
-            let n: i64 = s.parse().unwrap();
-            self.advance();
-            Ok(LexToken::new(
-                self,
-                LexTokenKind::Long(n),
-                start_pos,
-                start_line,
-                start_column,
-            ))
-        } else {
-            let s = &self.src[start_pos..self.pos as usize];
-            let n: i32 = s.parse().unwrap();
-            Ok(LexToken::new(
-                self,
-                LexTokenKind::Int(n),
-                start_pos,
-                start_line,
-                start_column,
-            ))
+        match self.peek() {
+            Some('L') => {
+                let s = &self.src[start_pos..self.pos as usize];
+                let n: i64 = s.parse().unwrap();
+                self.advance();
+                Ok(LexToken::new(
+                    self,
+                    LexTokenKind::Long(n),
+                    start_pos,
+                    start_line,
+                    start_column,
+                ))
+            }
+            _ => {
+                let s = &self.src[start_pos..self.pos as usize];
+                let n: i32 = s.parse().unwrap();
+                Ok(LexToken::new(
+                    self,
+                    LexTokenKind::Int(n),
+                    start_pos,
+                    start_line,
+                    start_column,
+                ))
+            }
         }
     }
 
