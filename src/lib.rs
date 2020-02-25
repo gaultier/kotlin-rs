@@ -148,30 +148,38 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    fn digits(&mut self) -> Option<char> {
+        let mut last_digit = None;
+        while let Some(c) = self.peek() {
+            last_digit = match c {
+                '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '_' => self.advance(),
+
+                'L' => {
+                    return Some('L');
+                }
+                _ => {
+                    return last_digit;
+                }
+            }
+        }
+        None
+    }
+
     fn number(
         &mut self,
         start_pos: usize,
         start_line: usize,
         start_column: usize,
     ) -> Result<LexToken, LexToken> {
-        while let Some(c) = self.peek() {
-            match c {
-                '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '_' => {
-                    self.advance();
-                }
-                _ => {
-                    break;
-                }
-            }
-        }
+        let last_digit = self.digits();
         dbg!(&self.src[start_pos..self.pos as usize]);
         let s = &self.src[start_pos..self.pos as usize]
             .to_string()
             .replace("_", "");
         dbg!(&s);
 
-        // Forbid trailing underscore. Hacky way but it works (assuming utf8).
-        if self.src.as_bytes()[self.pos as usize - 1] == 95 {
+        // Forbid trailing underscore.
+        if last_digit == Some('_') {
             return Err(LexToken::new(
                 self,
                 LexTokenKind::TrailingUnderscoreInNumber,
