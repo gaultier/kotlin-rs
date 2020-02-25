@@ -13,6 +13,7 @@ pub enum LexTokenKind {
     Int(i32),
     Long(i64),
     Shebang,
+    Comment,
     Eof,
     // Errors
     Unknown,
@@ -195,7 +196,6 @@ impl<'a> Lexer<'a> {
                         let start_line = self.line;
                         let start_column = self.column as usize;
                         if self.line != 1 {
-                            // Only to get the right `end_pos`, `end_column`
                             self.skip_until('\n');
                             return Err(LexToken::new(
                                 self,
@@ -218,10 +218,19 @@ impl<'a> Lexer<'a> {
                         return Ok(None);
                     }
                 },
-                // TODO: add option to store comments in the ast
                 Some('/') => match self.peek_next() {
                     Some('/') => {
+                        let start_pos = self.pos as usize;
+                        let start_line = self.line;
+                        let start_column = self.column as usize;
                         self.skip_until('\n');
+                        return Ok(Some(LexToken::new(
+                            self,
+                            LexTokenKind::Comment,
+                            start_pos,
+                            start_line,
+                            start_column,
+                        )));
                     }
                     _ => {
                         return Ok(None);
@@ -378,8 +387,17 @@ mod tests {
     fn test_lex_comment() {
         let s = "//bin/cat\n+";
         let mut lexer = Lexer::new(&s);
-        let tok = lexer.lex();
 
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, LexTokenKind::Comment);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 10);
+
+        let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, LexTokenKind::Plus);
