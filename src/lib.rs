@@ -12,9 +12,11 @@ pub enum LexTokenKind {
     EqualEqual,
     Int(i32),
     Long(i64),
+    Shebang,
+    Eof,
+    // Errors
     Unknown,
     ShebangNotOnFirstLine,
-    Eof,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -178,7 +180,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn skip_whitespace(&mut self) -> Result<(), LexToken> {
+    fn skip_whitespace(&mut self) -> Result<Option<LexToken>, LexToken> {
         while !self.is_at_end() {
             match self.peek() {
                 None | Some(' ') | Some('\t') | Some('\r') => {
@@ -204,9 +206,16 @@ impl<'a> Lexer<'a> {
                             ));
                         }
                         self.skip_until('\n');
+                        return Ok(Some(LexToken::new(
+                            self,
+                            LexTokenKind::Shebang,
+                            start_pos,
+                            start_line,
+                            start_column,
+                        )));
                     }
                     _ => {
-                        return Ok(());
+                        return Ok(None);
                     }
                 },
                 // TODO: add option to store comments in the ast
@@ -215,19 +224,21 @@ impl<'a> Lexer<'a> {
                         self.skip_until('\n');
                     }
                     _ => {
-                        return Ok(());
+                        return Ok(None);
                     }
                 },
                 Some(_) => {
-                    return Ok(());
+                    return Ok(None);
                 }
             }
         }
-        Ok(())
+        Ok(None)
     }
 
     pub fn lex(&mut self) -> Result<LexToken, LexToken> {
-        self.skip_whitespace()?;
+        if let Some(tok) = self.skip_whitespace()? {
+            return Ok(tok);
+        }
 
         let start_pos = self.pos as usize;
         let start_line = self.line;
@@ -343,8 +354,17 @@ mod tests {
     fn test_lex_shebang() {
         let s = "#!/bin/cat\n+";
         let mut lexer = Lexer::new(&s);
-        let tok = lexer.lex();
 
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, LexTokenKind::Shebang);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 11);
+
+        let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, LexTokenKind::Plus);
