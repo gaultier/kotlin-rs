@@ -210,7 +210,9 @@ impl<'a> Lexer<'a> {
         start_line: usize,
         start_column: usize,
     ) -> Result<LexToken, LexToken> {
-        assert_eq!(self.peek(), Some('"'));
+        while self.peek() != Some('"') {
+            self.advance();
+        }
         self.expect('"', start_pos, start_line, start_column)?;
         Ok(LexToken::new(
             self,
@@ -502,5 +504,23 @@ mod tests {
         assert_eq!(tok.start_column, 13);
         assert_eq!(tok.end_line, 2);
         assert_eq!(tok.end_column, 15);
+    }
+
+    #[test]
+    fn test_lex_string() {
+        let s = r##"
+            "abc123老虎老虎"
+            "##;
+        let mut lexer = Lexer::new(&s);
+        let tok = lexer.lex();
+
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, LexTokenKind::TString);
+        assert_eq!(tok.start_line, 2);
+        assert_eq!(tok.start_column, 13);
+        assert_eq!(tok.end_line, 2);
+        assert_eq!(tok.end_column, 25);
+        assert_eq!(&s[tok.start_pos..tok.end_pos], "\"abc123老虎老虎\"");
     }
 }
