@@ -198,28 +198,82 @@ impl<'a> Lexer<'a> {
     ) -> Result<LexToken, LexToken> {
         // Consume `b|B`
         self.advance();
+
         self.bin_digits();
         let s = &self.src[start_pos + 2..self.pos as usize]
             .to_string()
             .replace("_", "");
-        dbg!(s);
-        let n = i64::from_str_radix(s, 2).unwrap();
-        if n < std::i32::MAX as i64 {
-            Ok(LexToken::new(
+        dbg!(&s);
+
+        let last_digit = self.src[start_pos + 2..self.pos as usize].chars().last();
+        // Forbid trailing underscore.
+        if last_digit == Some('_') {
+            return Err(LexToken::new(
                 self,
-                LexTokenKind::Int(n as i32),
+                LexTokenKind::TrailingUnderscoreInNumber,
                 start_pos,
                 start_line,
                 start_column,
-            ))
-        } else {
-            Ok(LexToken::new(
-                self,
-                LexTokenKind::Long(n),
-                start_pos,
-                start_line,
-                start_column,
-            ))
+            ));
+        }
+
+        match self.peek() {
+            Some('L') => {
+                let n = i64::from_str_radix(s, 2).unwrap();
+                self.advance();
+                Ok(LexToken::new(
+                    self,
+                    LexTokenKind::Long(n),
+                    start_pos,
+                    start_line,
+                    start_column,
+                ))
+            }
+            Some('U') | Some('u') => match self.peek_next() {
+                Some('L') => {
+                    let n = u64::from_str_radix(s, 2).unwrap();
+                    self.advance();
+                    self.advance();
+                    Ok(LexToken::new(
+                        self,
+                        LexTokenKind::ULong(n),
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                }
+                _ => {
+                    let n = u32::from_str_radix(s, 2).unwrap();
+                    self.advance();
+                    Ok(LexToken::new(
+                        self,
+                        LexTokenKind::UInt(n),
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                }
+            },
+            _ => {
+                let n = i64::from_str_radix(s, 2).unwrap();
+                if n < std::i32::MAX as i64 {
+                    Ok(LexToken::new(
+                        self,
+                        LexTokenKind::Int(n as i32),
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else {
+                    Ok(LexToken::new(
+                        self,
+                        LexTokenKind::Long(n),
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                }
+            }
         }
     }
 
@@ -672,6 +726,39 @@ mod tests {
         assert_eq!(tok.start_column, 8);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 47);
+    }
+
+    #[test]
+    fn test_lex_number_bin_number_with_suffixes() {
+        let s = " 0b101uL 0B1L 0b11U";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, LexTokenKind::ULong(5));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 9);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, LexTokenKind::Long(0b1));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 10);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 14);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, LexTokenKind::UInt(0b11));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 15);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 20);
     }
 
     #[test]
