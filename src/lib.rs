@@ -18,7 +18,7 @@ pub enum LexTokenKind {
     Eof,
     // Errors
     Unknown,
-    UnexpectedChar,
+    UnexpectedChar(char),
     ShebangNotOnFirstLine,
 }
 
@@ -148,7 +148,6 @@ impl<'a> Lexer<'a> {
 
     fn number(
         &mut self,
-
         start_pos: usize,
         start_line: usize,
         start_column: usize,
@@ -197,7 +196,7 @@ impl<'a> Lexer<'a> {
         } else {
             Err(LexToken::new(
                 self,
-                LexTokenKind::UnexpectedChar,
+                LexTokenKind::UnexpectedChar(c),
                 start_pos,
                 start_line,
                 start_column,
@@ -211,7 +210,7 @@ impl<'a> Lexer<'a> {
         start_line: usize,
         start_column: usize,
     ) -> Result<LexToken, LexToken> {
-        self.expect('"', start_pos, start_line, start_column)?;
+        assert_eq!(self.peek(), Some('"'));
         self.expect('"', start_pos, start_line, start_column)?;
         Ok(LexToken::new(
             self,
@@ -486,5 +485,22 @@ mod tests {
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 3);
         assert_eq!(tok.end_column, 2);
+    }
+
+    #[test]
+    fn test_lex_empty_string() {
+        let s = r##"
+            ""
+            "##;
+        let mut lexer = Lexer::new(&s);
+        let tok = lexer.lex();
+
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, LexTokenKind::TString);
+        assert_eq!(tok.start_line, 2);
+        assert_eq!(tok.start_column, 13);
+        assert_eq!(tok.end_line, 2);
+        assert_eq!(tok.end_column, 15);
     }
 }
