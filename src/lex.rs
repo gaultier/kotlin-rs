@@ -95,6 +95,8 @@ pub enum TokenKind {
     NewlineInString,
     TrailingUnderscoreInNumber,
     LeadingZeroInNumber,
+    MissingDigitsInBinaryNumber,
+    MissingDigitsInHexNumber,
 }
 
 #[derive(Debug, PartialEq)]
@@ -289,6 +291,15 @@ impl<'a> Lexer<'a> {
             .to_string()
             .replace("_", "");
         dbg!(&s);
+        if s.len() == 0 {
+            return Err(Token::new(
+                self,
+                TokenKind::MissingDigitsInBinaryNumber,
+                start_pos,
+                start_line,
+                start_column,
+            ));
+        }
 
         let last_digit = self.src[start_pos + 2..self.pos as usize].chars().last();
         // Forbid trailing underscore.
@@ -376,6 +387,15 @@ impl<'a> Lexer<'a> {
             .to_string()
             .replace("_", "");
         dbg!(&s);
+        if s.len() == 0 {
+            return Err(Token::new(
+                self,
+                TokenKind::MissingDigitsInHexNumber,
+                start_pos,
+                start_line,
+                start_column,
+            ));
+        }
 
         let last_digit = self.src[start_pos + 2..self.pos as usize].chars().last();
         // Forbid trailing underscore.
@@ -1510,6 +1530,36 @@ mod tests {
         assert_eq!(tok.start_column, 15);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 20);
+    }
+
+    #[test]
+    fn test_lex_bin_number_missing_digits() {
+        let s = " 0b ";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, TokenKind::MissingDigitsInBinaryNumber);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 4);
+    }
+
+    #[test]
+    fn test_lex_hex_number_missing_digits() {
+        let s = " 0x ";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, TokenKind::MissingDigitsInHexNumber);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 4);
     }
 
     #[test]
