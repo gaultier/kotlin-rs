@@ -1314,6 +1314,8 @@ impl<'a> Lexer<'a> {
                         while let Some(c) = self.peek() {
                             match c {
                                 '*' if self.peek_next() == Some('/') => {
+                                    self.advance();
+                                    self.advance();
                                     break;
                                 }
                                 '\n' => {
@@ -2138,5 +2140,29 @@ mod tests {
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 11);
         assert_eq!(&s[tok.start_pos..tok.end_pos], "藏");
+    }
+
+    #[test]
+    fn test_lex_comment_multiline() {
+        let s = "/* foo \n bar */ + ";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Comment);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 2);
+        assert_eq!(tok.end_column, 8);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Plus);
+        assert_eq!(tok.start_line, 2);
+        assert_eq!(tok.start_column, 9);
+        assert_eq!(tok.end_line, 2);
+        assert_eq!(tok.end_column, 10);
     }
 }
