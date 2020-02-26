@@ -1,5 +1,5 @@
 # kotlin-rs
-A work-in-progress kotlin compiler written in Rust.
+A work-in-progress Kotlin compiler written in Rust.
 
 The goals of the project are:
 
