@@ -2,7 +2,7 @@ use std::option::Option;
 use std::result::Result;
 use std::str::Chars;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum TokenKind {
     Plus,
     Minus,
@@ -14,6 +14,8 @@ pub enum TokenKind {
     Long(i64),
     UInt(u32),
     ULong(u64),
+    Float(f32),
+    Double(f64),
     Shebang,
     Comment,
     TString,
@@ -94,7 +96,7 @@ pub enum TokenKind {
     TrailingUnderscoreInNumber,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
     start_pos: usize,
