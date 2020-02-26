@@ -3,7 +3,7 @@ use std::result::Result;
 use std::str::Chars;
 
 #[derive(Debug, Eq, PartialEq)]
-enum NumberType {
+pub enum NumberType {
     Integer,
     Real,
 }
