@@ -109,6 +109,20 @@ pub struct Token {
 }
 
 impl Token {
+    pub fn is_real(&self) -> bool {
+        match self {
+            Token {
+                kind: TokenKind::Float(_),
+                ..
+            }
+            | Token {
+                kind: TokenKind::Double(_),
+                ..
+            } => true,
+            _ => false,
+        }
+    }
+
     pub fn print(&self, src: &str) {
         let fmt = format!("{}:{}:", self.start_line, self.start_column);
         println!("{}{}", fmt, &src[self.start_pos..self.end_pos]);
@@ -510,7 +524,7 @@ impl<'a> Lexer<'a> {
             ));
         }
 
-        match self.peek() {
+        let res = match self.peek() {
             Some('L') => {
                 let n: i64 = s.parse().unwrap();
                 self.advance();
@@ -558,6 +572,19 @@ impl<'a> Lexer<'a> {
                     start_column,
                 ))
             }
+        };
+
+        let first_digit = self.src[start_pos..self.pos as usize].chars().next();
+        if !res.as_ref().unwrap().is_real() && first_digit == Some('0') && s.len() > 1 {
+            Err(Token::new(
+                self,
+                TokenKind::LeadingZeroInNumber,
+                start_pos,
+                start_line,
+                start_column,
+            ))
+        } else {
+            res
         }
     }
 
@@ -1248,7 +1275,7 @@ impl<'a> Lexer<'a> {
             Some('0') => match self.peek() {
                 Some('x') | Some('X') => self.hex_number(start_pos, start_line, start_column),
                 Some('b') | Some('B') => self.bin_number(start_pos, start_line, start_column),
-                _ => self.real(start_pos, start_line, start_column),
+                _ => self.integer(start_pos, start_line, start_column),
             },
             Some('1') | Some('2') | Some('3') | Some('4') | Some('5') | Some('6') | Some('7')
             | Some('8') | Some('9') => self.integer(start_pos, start_line, start_column),
@@ -1324,14 +1351,14 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_int_with_heading_zero() {
+    fn test_lex_int_with_leading_zero() {
         let s = " 0 0123 0456L 0u  ";
         let mut lexer = Lexer::new(&s);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, TokenKind::Int(0u32));
+        assert_eq!(tok.kind, TokenKind::Int(0i32));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
@@ -1342,9 +1369,9 @@ mod tests {
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, TokenKind::LeadingZeroInNumber);
         assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.start_column, 4);
         assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 6);
+        assert_eq!(tok.end_column, 8);
     }
 
     #[test]
