@@ -104,6 +104,7 @@ pub enum TokenKind {
     MissingDigitsInBinaryNumber,
     MissingDigitsInHexNumber,
     TrailingDotInNumber,
+    MissingExponentInNumber,
 }
 
 #[derive(Debug, PartialEq)]
@@ -271,7 +272,12 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn digits(&mut self) -> NumberType {
+    fn digits(
+        &mut self,
+        start_pos: usize,
+        start_line: usize,
+        start_column: usize,
+    ) -> Result<NumberType, Token> {
         let mut num_type = NumberType::Integer;
 
         while let Some(c) = self.peek() {
@@ -322,13 +328,19 @@ impl<'a> Lexer<'a> {
                         }
                     }
                     _ => {
-                        unimplemented!();
+                        return Err(Token::new(
+                            self,
+                            TokenKind::MissingExponentInNumber,
+                            start_pos,
+                            start_line,
+                            start_column,
+                        ))
                     }
                 }
             }
             _ => {}
         }
-        num_type
+        Ok(num_type)
     }
 
     fn bin_number(
@@ -529,7 +541,7 @@ impl<'a> Lexer<'a> {
         start_line: usize,
         start_column: usize,
     ) -> Result<Token, Token> {
-        self.digits();
+        self.digits(start_pos, start_line, start_column)?;
         dbg!(&self.src[start_pos..self.pos as usize]);
         let s = &self.src[start_pos..self.pos as usize]
             .to_string()
@@ -587,7 +599,7 @@ impl<'a> Lexer<'a> {
         start_line: usize,
         start_column: usize,
     ) -> Result<Token, Token> {
-        if self.digits() == NumberType::Real {
+        if self.digits(start_pos, start_line, start_column)? == NumberType::Real {
             return self.real(start_pos, start_line, start_column);
         }
         dbg!(&self.src[start_pos..self.pos as usize]);
@@ -1833,7 +1845,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::Double(123e-2));
+        assert_eq!(tok.kind, TokenKind::MissingExponentInNumber);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 22);
         assert_eq!(tok.end_line, 1);
