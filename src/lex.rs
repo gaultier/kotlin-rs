@@ -1719,6 +1719,57 @@ mod tests {
     }
 
     #[test]
+    fn test_lex_double() {
+        let s = " 123.0 456.0 0.0 .1 2.";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Double(123f64));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 7);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Double(456f64));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 8);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 13);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Double(0f64));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 14);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 17);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Double(0.1f64));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 18);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 20);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, TokenKind::TrailingDotInNumber);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 21);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 23);
+    }
+
+    #[test]
     fn test_lex_shebang() {
         let s = "#!/bin/cat\n+";
         let mut lexer = Lexer::new(&s);
