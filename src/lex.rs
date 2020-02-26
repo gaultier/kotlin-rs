@@ -16,6 +16,7 @@ pub enum TokenKind {
     Star,
     Equal,
     EqualEqual,
+    Dot,
     Int(i32),
     Long(i64),
     UInt(u32),
@@ -1407,12 +1408,19 @@ impl<'a> Lexer<'a> {
                     ))
                 }
             }
+            Some('.') if !self.peek().map(|c| c.is_digit(10)).unwrap_or(false) => Ok(Token::new(
+                self,
+                TokenKind::Dot,
+                start_pos,
+                start_line,
+                start_column,
+            )),
+            Some('.') => self.real(start_pos, start_line, start_column),
             Some('0') => match self.peek() {
                 Some('x') | Some('X') => self.hex_number(start_pos, start_line, start_column),
                 Some('b') | Some('B') => self.bin_number(start_pos, start_line, start_column),
                 _ => self.integer(start_pos, start_line, start_column),
             },
-            Some('.') => self.real(start_pos, start_line, start_column),
             Some('1') | Some('2') | Some('3') | Some('4') | Some('5') | Some('6') | Some('7')
             | Some('8') | Some('9') => self.integer(start_pos, start_line, start_column),
             Some('"') => self.string(start_pos, start_line, start_column),
@@ -2164,5 +2172,29 @@ mod tests {
         assert_eq!(tok.start_column, 9);
         assert_eq!(tok.end_line, 2);
         assert_eq!(tok.end_column, 10);
+    }
+
+    #[test]
+    fn test_lex_dot() {
+        let s = " . .";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Dot);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 3);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Dot);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 4);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 5);
     }
 }
