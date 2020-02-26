@@ -1,6 +1,14 @@
 # kotlin-rs
 A work-in-progress kotlin compiler written in Rust.
 
+The goals of the project are:
+
+- An alternative implementation of the Kotlin language
+- Non-JVM
+- Can be integrated as a library (for example to build a language server)
+- Fast 
+- Produces beautiful error messages
+
 ## Quick start
 Prerequisite: a Rust toolchain installed.
 
