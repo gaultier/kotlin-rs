@@ -94,6 +94,7 @@ pub enum TokenKind {
     ShebangNotOnFirstLine,
     NewlineInString,
     TrailingUnderscoreInNumber,
+    LeadingZeroInNumber,
 }
 
 #[derive(Debug, PartialEq)]
@@ -434,7 +435,57 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn number(
+    fn real(
+        &mut self,
+        start_pos: usize,
+        start_line: usize,
+        start_column: usize,
+    ) -> Result<Token, Token> {
+        self.digits();
+        dbg!(&self.src[start_pos..self.pos as usize]);
+        let s = &self.src[start_pos..self.pos as usize]
+            .to_string()
+            .replace("_", "");
+        dbg!(&s);
+
+        let last_digit = self.src[start_pos..self.pos as usize].chars().last();
+        // Forbid trailing underscore.
+        if last_digit == Some('_') {
+            return Err(Token::new(
+                self,
+                TokenKind::TrailingUnderscoreInNumber,
+                start_pos,
+                start_line,
+                start_column,
+            ));
+        }
+
+        match self.peek() {
+            Some('F') | Some('f') => {
+                let n: f32 = s.parse().unwrap();
+                self.advance();
+                Ok(Token::new(
+                    self,
+                    TokenKind::Float(n),
+                    start_pos,
+                    start_line,
+                    start_column,
+                ))
+            }
+            _ => {
+                let n: f64 = s.parse().unwrap();
+                Ok(Token::new(
+                    self,
+                    TokenKind::Double(n),
+                    start_pos,
+                    start_line,
+                    start_column,
+                ))
+            }
+        }
+    }
+
+    fn integer(
         &mut self,
         start_pos: usize,
         start_line: usize,
@@ -471,17 +522,7 @@ impl<'a> Lexer<'a> {
                     start_column,
                 ))
             }
-            Some('F') | Some('f') => {
-                let n: f32 = s.parse().unwrap();
-                self.advance();
-                Ok(Token::new(
-                    self,
-                    TokenKind::Float(n),
-                    start_pos,
-                    start_line,
-                    start_column,
-                ))
-            }
+            Some('F') | Some('f') => self.real(start_pos, start_line, start_column),
             Some('U') | Some('u') => match self.peek_next() {
                 Some('L') => {
                     let n: u64 = s.parse().unwrap();
@@ -1207,10 +1248,10 @@ impl<'a> Lexer<'a> {
             Some('0') => match self.peek() {
                 Some('x') | Some('X') => self.hex_number(start_pos, start_line, start_column),
                 Some('b') | Some('B') => self.bin_number(start_pos, start_line, start_column),
-                _ => self.number(start_pos, start_line, start_column),
+                _ => self.real(start_pos, start_line, start_column),
             },
             Some('1') | Some('2') | Some('3') | Some('4') | Some('5') | Some('6') | Some('7')
-            | Some('8') | Some('9') => self.number(start_pos, start_line, start_column),
+            | Some('8') | Some('9') => self.integer(start_pos, start_line, start_column),
             Some('"') => self.string(start_pos, start_line, start_column),
             Some(c) if c.is_ascii_alphanumeric() => {
                 self.identifier(start_pos, start_line, start_column)
