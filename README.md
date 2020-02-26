@@ -13,8 +13,9 @@ The goals of the project are:
 Prerequisite: a Rust toolchain installed.
 
 ```sh
+# Build
 $ cargo build --release
-# With a file
+# Run with a file
 $ cargo run -- build /path/to/file.kt
 # Or with stdin
 $ echo '123' | cargo run -- build
@@ -26,3 +27,4 @@ Pre-pre alpha. Do not use yet.
 
 - [ ] Lexer: WIP
 - [ ] Parser
+- [ ] Multi files
