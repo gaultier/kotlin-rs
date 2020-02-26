@@ -103,6 +103,7 @@ pub enum TokenKind {
     LeadingZeroInNumber,
     MissingDigitsInBinaryNumber,
     MissingDigitsInHexNumber,
+    TrailingDotInNumber,
 }
 
 #[derive(Debug, PartialEq)]
@@ -512,6 +513,14 @@ impl<'a> Lexer<'a> {
             return Err(Token::new(
                 self,
                 TokenKind::TrailingUnderscoreInNumber,
+                start_pos,
+                start_line,
+                start_column,
+            ));
+        } else if last_digit == Some('.') {
+            return Err(Token::new(
+                self,
+                TokenKind::TrailingDotInNumber,
                 start_pos,
                 start_line,
                 start_column,
@@ -1702,11 +1711,11 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::Float(0f32));
+        assert_eq!(tok.kind, TokenKind::TrailingDotInNumber);
         assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 12);
+        assert_eq!(tok.start_column, 24);
         assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 14);
+        assert_eq!(tok.end_column, 26);
     }
 
     #[test]
