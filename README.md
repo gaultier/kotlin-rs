@@ -28,4 +28,4 @@ Pre-pre alpha. Do not use yet.
 
 - [ ] Lexer: WIP
 - [ ] Parser
-- [ ] Multi files
+- [ ] Multi files given on the command line
