@@ -471,6 +471,17 @@ impl<'a> Lexer<'a> {
                     start_column,
                 ))
             }
+            Some('F') | Some('f') => {
+                let n: f32 = s.parse().unwrap();
+                self.advance();
+                Ok(Token::new(
+                    self,
+                    TokenKind::Float(n),
+                    start_pos,
+                    start_line,
+                    start_column,
+                ))
+            }
             Some('U') | Some('u') => match self.peek_next() {
                 Some('L') => {
                     let n: u64 = s.parse().unwrap();
@@ -1446,6 +1457,39 @@ mod tests {
         assert_eq!(tok.start_column, 15);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 20);
+    }
+
+    #[test]
+    fn test_lex_float() {
+        let s = " 123f 456F 0f";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Float(123f32));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 6);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Float(456f32));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 7);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 11);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Float(0f32));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 12);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 14);
     }
 
     #[test]
