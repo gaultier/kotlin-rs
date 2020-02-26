@@ -3,7 +3,7 @@ A work-in-progress kotlin compiler written in Rust.
 
 The goals of the project are:
 
-- An alternative implementation of the Kotlin language
+- An alternative implementation of a compiler for the Kotlin language
 - Non-JVM
 - Can be integrated as a library (for example to build a language server)
 - Fast 
@@ -23,3 +23,6 @@ $ echo '123' | cargo run -- build
 ## Status
 
 Pre-pre alpha. Do not use yet.
+
+- [ ] Lexer: WIP
+- [ ] Parser
