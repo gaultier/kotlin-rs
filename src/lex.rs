@@ -3,7 +3,7 @@ use std::result::Result;
 use std::str::Chars;
 
 #[derive(Debug, Eq, PartialEq)]
-pub enum LexTokenKind {
+pub enum TokenKind {
     Plus,
     Minus,
     Slash,
@@ -95,8 +95,8 @@ pub enum LexTokenKind {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct LexToken {
-    pub kind: LexTokenKind,
+pub struct Token {
+    pub kind: TokenKind,
     start_pos: usize,
     start_line: usize,
     start_column: usize,
@@ -105,7 +105,7 @@ pub struct LexToken {
     end_column: usize,
 }
 
-impl LexToken {
+impl Token {
     pub fn print(&self, src: &str) {
         let fmt = format!("{}:{}:", self.start_line, self.start_column);
         println!("{}{}", fmt, &src[self.start_pos..self.end_pos]);
@@ -120,12 +120,12 @@ impl LexToken {
 
     pub fn new(
         lexer: &Lexer,
-        kind: LexTokenKind,
+        kind: TokenKind,
         start_pos: usize,
         start_line: usize,
         start_column: usize,
-    ) -> LexToken {
-        LexToken {
+    ) -> Token {
+        Token {
             kind,
             end_pos: lexer.pos as usize,
             end_line: lexer.line,
@@ -263,7 +263,7 @@ impl<'a> Lexer<'a> {
         start_pos: usize,
         start_line: usize,
         start_column: usize,
-    ) -> Result<LexToken, LexToken> {
+    ) -> Result<Token, Token> {
         // Consume `b|B`
         self.advance();
 
@@ -276,9 +276,9 @@ impl<'a> Lexer<'a> {
         let last_digit = self.src[start_pos + 2..self.pos as usize].chars().last();
         // Forbid trailing underscore.
         if last_digit == Some('_') {
-            return Err(LexToken::new(
+            return Err(Token::new(
                 self,
-                LexTokenKind::TrailingUnderscoreInNumber,
+                TokenKind::TrailingUnderscoreInNumber,
                 start_pos,
                 start_line,
                 start_column,
@@ -289,9 +289,9 @@ impl<'a> Lexer<'a> {
             Some('L') => {
                 let n = i64::from_str_radix(s, 2).unwrap();
                 self.advance();
-                Ok(LexToken::new(
+                Ok(Token::new(
                     self,
-                    LexTokenKind::Long(n),
+                    TokenKind::Long(n),
                     start_pos,
                     start_line,
                     start_column,
@@ -302,9 +302,9 @@ impl<'a> Lexer<'a> {
                     let n = u64::from_str_radix(s, 2).unwrap();
                     self.advance();
                     self.advance();
-                    Ok(LexToken::new(
+                    Ok(Token::new(
                         self,
-                        LexTokenKind::ULong(n),
+                        TokenKind::ULong(n),
                         start_pos,
                         start_line,
                         start_column,
@@ -313,9 +313,9 @@ impl<'a> Lexer<'a> {
                 _ => {
                     let n = u32::from_str_radix(s, 2).unwrap();
                     self.advance();
-                    Ok(LexToken::new(
+                    Ok(Token::new(
                         self,
-                        LexTokenKind::UInt(n),
+                        TokenKind::UInt(n),
                         start_pos,
                         start_line,
                         start_column,
@@ -325,17 +325,17 @@ impl<'a> Lexer<'a> {
             _ => {
                 let n = i64::from_str_radix(s, 2).unwrap();
                 if n < std::i32::MAX as i64 {
-                    Ok(LexToken::new(
+                    Ok(Token::new(
                         self,
-                        LexTokenKind::Int(n as i32),
+                        TokenKind::Int(n as i32),
                         start_pos,
                         start_line,
                         start_column,
                     ))
                 } else {
-                    Ok(LexToken::new(
+                    Ok(Token::new(
                         self,
-                        LexTokenKind::Long(n),
+                        TokenKind::Long(n),
                         start_pos,
                         start_line,
                         start_column,
@@ -350,7 +350,7 @@ impl<'a> Lexer<'a> {
         start_pos: usize,
         start_line: usize,
         start_column: usize,
-    ) -> Result<LexToken, LexToken> {
+    ) -> Result<Token, Token> {
         // Consume `x|X`
         self.advance();
 
@@ -363,9 +363,9 @@ impl<'a> Lexer<'a> {
         let last_digit = self.src[start_pos + 2..self.pos as usize].chars().last();
         // Forbid trailing underscore.
         if last_digit == Some('_') {
-            return Err(LexToken::new(
+            return Err(Token::new(
                 self,
-                LexTokenKind::TrailingUnderscoreInNumber,
+                TokenKind::TrailingUnderscoreInNumber,
                 start_pos,
                 start_line,
                 start_column,
@@ -376,9 +376,9 @@ impl<'a> Lexer<'a> {
             Some('L') => {
                 let n = i64::from_str_radix(s, 16).unwrap();
                 self.advance();
-                Ok(LexToken::new(
+                Ok(Token::new(
                     self,
-                    LexTokenKind::Long(n),
+                    TokenKind::Long(n),
                     start_pos,
                     start_line,
                     start_column,
@@ -389,9 +389,9 @@ impl<'a> Lexer<'a> {
                     let n = u64::from_str_radix(s, 16).unwrap();
                     self.advance();
                     self.advance();
-                    Ok(LexToken::new(
+                    Ok(Token::new(
                         self,
-                        LexTokenKind::ULong(n),
+                        TokenKind::ULong(n),
                         start_pos,
                         start_line,
                         start_column,
@@ -400,9 +400,9 @@ impl<'a> Lexer<'a> {
                 _ => {
                     let n = u32::from_str_radix(s, 16).unwrap();
                     self.advance();
-                    Ok(LexToken::new(
+                    Ok(Token::new(
                         self,
-                        LexTokenKind::UInt(n),
+                        TokenKind::UInt(n),
                         start_pos,
                         start_line,
                         start_column,
@@ -412,17 +412,17 @@ impl<'a> Lexer<'a> {
             _ => {
                 let n = i64::from_str_radix(s, 16).unwrap();
                 if n < std::i32::MAX as i64 {
-                    Ok(LexToken::new(
+                    Ok(Token::new(
                         self,
-                        LexTokenKind::Int(n as i32),
+                        TokenKind::Int(n as i32),
                         start_pos,
                         start_line,
                         start_column,
                     ))
                 } else {
-                    Ok(LexToken::new(
+                    Ok(Token::new(
                         self,
-                        LexTokenKind::Long(n),
+                        TokenKind::Long(n),
                         start_pos,
                         start_line,
                         start_column,
@@ -437,7 +437,7 @@ impl<'a> Lexer<'a> {
         start_pos: usize,
         start_line: usize,
         start_column: usize,
-    ) -> Result<LexToken, LexToken> {
+    ) -> Result<Token, Token> {
         self.digits();
         dbg!(&self.src[start_pos..self.pos as usize]);
         let s = &self.src[start_pos..self.pos as usize]
@@ -448,9 +448,9 @@ impl<'a> Lexer<'a> {
         let last_digit = self.src[start_pos..self.pos as usize].chars().last();
         // Forbid trailing underscore.
         if last_digit == Some('_') {
-            return Err(LexToken::new(
+            return Err(Token::new(
                 self,
-                LexTokenKind::TrailingUnderscoreInNumber,
+                TokenKind::TrailingUnderscoreInNumber,
                 start_pos,
                 start_line,
                 start_column,
@@ -461,9 +461,9 @@ impl<'a> Lexer<'a> {
             Some('L') => {
                 let n: i64 = s.parse().unwrap();
                 self.advance();
-                Ok(LexToken::new(
+                Ok(Token::new(
                     self,
-                    LexTokenKind::Long(n),
+                    TokenKind::Long(n),
                     start_pos,
                     start_line,
                     start_column,
@@ -474,9 +474,9 @@ impl<'a> Lexer<'a> {
                     let n: u64 = s.parse().unwrap();
                     self.advance();
                     self.advance();
-                    Ok(LexToken::new(
+                    Ok(Token::new(
                         self,
-                        LexTokenKind::ULong(n),
+                        TokenKind::ULong(n),
                         start_pos,
                         start_line,
                         start_column,
@@ -485,9 +485,9 @@ impl<'a> Lexer<'a> {
                 _ => {
                     let n: u32 = s.parse().unwrap();
                     self.advance();
-                    Ok(LexToken::new(
+                    Ok(Token::new(
                         self,
-                        LexTokenKind::UInt(n),
+                        TokenKind::UInt(n),
                         start_pos,
                         start_line,
                         start_column,
@@ -496,9 +496,9 @@ impl<'a> Lexer<'a> {
             },
             _ => {
                 let n: i32 = s.parse().unwrap();
-                Ok(LexToken::new(
+                Ok(Token::new(
                     self,
-                    LexTokenKind::Int(n),
+                    TokenKind::Int(n),
                     start_pos,
                     start_line,
                     start_column,
@@ -513,14 +513,14 @@ impl<'a> Lexer<'a> {
         start_pos: usize,
         start_line: usize,
         start_column: usize,
-    ) -> Result<(), LexToken> {
+    ) -> Result<(), Token> {
         if self.peek() == Some(c) {
             self.advance();
             Ok(())
         } else {
-            Err(LexToken::new(
+            Err(Token::new(
                 self,
-                LexTokenKind::UnexpectedChar(c),
+                TokenKind::UnexpectedChar(c),
                 start_pos,
                 start_line,
                 start_column,
@@ -533,7 +533,7 @@ impl<'a> Lexer<'a> {
         start_pos: usize,
         start_line: usize,
         start_column: usize,
-    ) -> Result<LexToken, LexToken> {
+    ) -> Result<Token, Token> {
         while let Some(c) = self.peek() {
             match c {
                 '"' => {
@@ -541,9 +541,9 @@ impl<'a> Lexer<'a> {
                 }
                 '\n' => {
                     self.newline();
-                    return Err(LexToken::new(
+                    return Err(Token::new(
                         self,
-                        LexTokenKind::NewlineInString,
+                        TokenKind::NewlineInString,
                         start_pos,
                         start_line,
                         start_column,
@@ -555,9 +555,9 @@ impl<'a> Lexer<'a> {
             }
         }
         self.expect('"', start_pos, start_line, start_column)?;
-        Ok(LexToken::new(
+        Ok(Token::new(
             self,
-            LexTokenKind::TString,
+            TokenKind::TString,
             start_pos,
             start_line,
             start_column,
@@ -569,7 +569,7 @@ impl<'a> Lexer<'a> {
         start_pos: usize,
         start_line: usize,
         start_column: usize,
-    ) -> Result<LexToken, LexToken> {
+    ) -> Result<Token, Token> {
         while let Some(c) = self.peek() {
             if c.is_ascii_alphanumeric() || c == '_' {
                 self.advance();
@@ -580,485 +580,485 @@ impl<'a> Lexer<'a> {
         let s = &self.src[start_pos..self.pos as usize];
 
         match s {
-            "true" => Ok(LexToken::new(
+            "true" => Ok(Token::new(
                 self,
-                LexTokenKind::Bool(true),
+                TokenKind::Bool(true),
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "false" => Ok(LexToken::new(
+            "false" => Ok(Token::new(
                 self,
-                LexTokenKind::Bool(false),
+                TokenKind::Bool(false),
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "null" => Ok(LexToken::new(
+            "null" => Ok(Token::new(
                 self,
-                LexTokenKind::Null,
+                TokenKind::Null,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "abstract" => Ok(LexToken::new(
+            "abstract" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordAbstract,
+                TokenKind::KeywordAbstract,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "annotation" => Ok(LexToken::new(
+            "annotation" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordAnnotation,
+                TokenKind::KeywordAnnotation,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "by" => Ok(LexToken::new(
+            "by" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordBy,
+                TokenKind::KeywordBy,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "catch" => Ok(LexToken::new(
+            "catch" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordCatch,
+                TokenKind::KeywordCatch,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "companion" => Ok(LexToken::new(
+            "companion" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordCompanion,
+                TokenKind::KeywordCompanion,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "constructor" => Ok(LexToken::new(
+            "constructor" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordConstructor,
+                TokenKind::KeywordConstructor,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "crossinline" => Ok(LexToken::new(
+            "crossinline" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordCrossinline,
+                TokenKind::KeywordCrossinline,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "data" => Ok(LexToken::new(
+            "data" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordData,
+                TokenKind::KeywordData,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "dynamic" => Ok(LexToken::new(
+            "dynamic" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordDynamic,
+                TokenKind::KeywordDynamic,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "enum" => Ok(LexToken::new(
+            "enum" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordEnum,
+                TokenKind::KeywordEnum,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "external" => Ok(LexToken::new(
+            "external" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordExternal,
+                TokenKind::KeywordExternal,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "final" => Ok(LexToken::new(
+            "final" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordFinal,
+                TokenKind::KeywordFinal,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "finally" => Ok(LexToken::new(
+            "finally" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordFinally,
+                TokenKind::KeywordFinally,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "import" => Ok(LexToken::new(
+            "import" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordImport,
+                TokenKind::KeywordImport,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "infix" => Ok(LexToken::new(
+            "infix" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordInfix,
+                TokenKind::KeywordInfix,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "init" => Ok(LexToken::new(
+            "init" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordInit,
+                TokenKind::KeywordInit,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "inline" => Ok(LexToken::new(
+            "inline" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordInline,
+                TokenKind::KeywordInline,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "inner" => Ok(LexToken::new(
+            "inner" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordInner,
+                TokenKind::KeywordInner,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "internal" => Ok(LexToken::new(
+            "internal" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordInternal,
+                TokenKind::KeywordInternal,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "lateinit" => Ok(LexToken::new(
+            "lateinit" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordLateinit,
+                TokenKind::KeywordLateinit,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "noinline" => Ok(LexToken::new(
+            "noinline" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordNoinline,
+                TokenKind::KeywordNoinline,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "open" => Ok(LexToken::new(
+            "open" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordOpen,
+                TokenKind::KeywordOpen,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "operator" => Ok(LexToken::new(
+            "operator" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordOperator,
+                TokenKind::KeywordOperator,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "out" => Ok(LexToken::new(
+            "out" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordOut,
+                TokenKind::KeywordOut,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "override" => Ok(LexToken::new(
+            "override" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordOverride,
+                TokenKind::KeywordOverride,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "private" => Ok(LexToken::new(
+            "private" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordPrivate,
+                TokenKind::KeywordPrivate,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "protected" => Ok(LexToken::new(
+            "protected" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordProtected,
+                TokenKind::KeywordProtected,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "public" => Ok(LexToken::new(
+            "public" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordPublic,
+                TokenKind::KeywordPublic,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "reified" => Ok(LexToken::new(
+            "reified" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordReified,
+                TokenKind::KeywordReified,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "sealed" => Ok(LexToken::new(
+            "sealed" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordSealed,
+                TokenKind::KeywordSealed,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "tailrec" => Ok(LexToken::new(
+            "tailrec" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordTailrec,
+                TokenKind::KeywordTailrec,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "vararg" => Ok(LexToken::new(
+            "vararg" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordVararg,
+                TokenKind::KeywordVararg,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "where" => Ok(LexToken::new(
+            "where" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordWhere,
+                TokenKind::KeywordWhere,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "get" => Ok(LexToken::new(
+            "get" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordGet,
+                TokenKind::KeywordGet,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "set" => Ok(LexToken::new(
+            "set" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordSet,
+                TokenKind::KeywordSet,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "field" => Ok(LexToken::new(
+            "field" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordField,
+                TokenKind::KeywordField,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "property" => Ok(LexToken::new(
+            "property" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordProperty,
+                TokenKind::KeywordProperty,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "receiver" => Ok(LexToken::new(
+            "receiver" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordReceiver,
+                TokenKind::KeywordReceiver,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "param" => Ok(LexToken::new(
+            "param" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordParam,
+                TokenKind::KeywordParam,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "setparam" => Ok(LexToken::new(
+            "setparam" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordSetparam,
+                TokenKind::KeywordSetparam,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "delegate" => Ok(LexToken::new(
+            "delegate" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordDelegate,
+                TokenKind::KeywordDelegate,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "file" => Ok(LexToken::new(
+            "file" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordFile,
+                TokenKind::KeywordFile,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "expect" => Ok(LexToken::new(
+            "expect" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordExpect,
+                TokenKind::KeywordExpect,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "actual" => Ok(LexToken::new(
+            "actual" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordActual,
+                TokenKind::KeywordActual,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "const" => Ok(LexToken::new(
+            "const" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordConst,
+                TokenKind::KeywordConst,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "suspend" => Ok(LexToken::new(
+            "suspend" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordSuspend,
+                TokenKind::KeywordSuspend,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "package" => Ok(LexToken::new(
+            "package" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordPackage,
+                TokenKind::KeywordPackage,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "class" => Ok(LexToken::new(
+            "class" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordClass,
+                TokenKind::KeywordClass,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "interface" => Ok(LexToken::new(
+            "interface" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordInterface,
+                TokenKind::KeywordInterface,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "fun" => Ok(LexToken::new(
+            "fun" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordFun,
+                TokenKind::KeywordFun,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "object" => Ok(LexToken::new(
+            "object" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordObject,
+                TokenKind::KeywordObject,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "val" => Ok(LexToken::new(
+            "val" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordVal,
+                TokenKind::KeywordVal,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "var" => Ok(LexToken::new(
+            "var" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordVar,
+                TokenKind::KeywordVar,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "typeof" => Ok(LexToken::new(
+            "typeof" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordTypeof,
+                TokenKind::KeywordTypeof,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "if" => Ok(LexToken::new(
+            "if" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordIf,
+                TokenKind::KeywordIf,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "else" => Ok(LexToken::new(
+            "else" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordElse,
+                TokenKind::KeywordElse,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "when" => Ok(LexToken::new(
+            "when" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordWhen,
+                TokenKind::KeywordWhen,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "try" => Ok(LexToken::new(
+            "try" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordTry,
+                TokenKind::KeywordTry,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "for" => Ok(LexToken::new(
+            "for" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordFor,
+                TokenKind::KeywordFor,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "do" => Ok(LexToken::new(
+            "do" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordDo,
+                TokenKind::KeywordDo,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "throw" => Ok(LexToken::new(
+            "throw" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordThrow,
+                TokenKind::KeywordThrow,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "return" => Ok(LexToken::new(
+            "return" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordReturn,
+                TokenKind::KeywordReturn,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "continue" => Ok(LexToken::new(
+            "continue" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordContinue,
+                TokenKind::KeywordContinue,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "as" => Ok(LexToken::new(
+            "as" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordAs,
+                TokenKind::KeywordAs,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "is" => Ok(LexToken::new(
+            "is" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordIs,
+                TokenKind::KeywordIs,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            "in" => Ok(LexToken::new(
+            "in" => Ok(Token::new(
                 self,
-                LexTokenKind::KeywordIn,
+                TokenKind::KeywordIn,
                 start_pos,
                 start_line,
                 start_column,
@@ -1067,7 +1067,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn skip_whitespace(&mut self) -> Result<Option<LexToken>, LexToken> {
+    fn skip_whitespace(&mut self) -> Result<Option<Token>, Token> {
         while !self.is_at_end() {
             match self.peek() {
                 None | Some(' ') | Some('\t') | Some('\r') => {
@@ -1083,18 +1083,18 @@ impl<'a> Lexer<'a> {
                         let start_column = self.column as usize;
                         if self.line != 1 {
                             self.skip_until('\n');
-                            return Err(LexToken::new(
+                            return Err(Token::new(
                                 self,
-                                LexTokenKind::ShebangNotOnFirstLine,
+                                TokenKind::ShebangNotOnFirstLine,
                                 start_pos,
                                 start_line,
                                 start_column,
                             ));
                         }
                         self.skip_until('\n');
-                        return Ok(Some(LexToken::new(
+                        return Ok(Some(Token::new(
                             self,
-                            LexTokenKind::Shebang,
+                            TokenKind::Shebang,
                             start_pos,
                             start_line,
                             start_column,
@@ -1110,9 +1110,9 @@ impl<'a> Lexer<'a> {
                         let start_line = self.line;
                         let start_column = self.column as usize;
                         self.skip_until('\n');
-                        return Ok(Some(LexToken::new(
+                        return Ok(Some(Token::new(
                             self,
-                            LexTokenKind::Comment,
+                            TokenKind::Comment,
                             start_pos,
                             start_line,
                             start_column,
@@ -1130,7 +1130,7 @@ impl<'a> Lexer<'a> {
         Ok(None)
     }
 
-    pub fn lex(&mut self) -> Result<LexToken, LexToken> {
+    pub fn lex(&mut self) -> Result<Token, Token> {
         if let Some(tok) = self.skip_whitespace()? {
             return Ok(tok);
         }
@@ -1144,47 +1144,47 @@ impl<'a> Lexer<'a> {
         // dbg!(self.cur);
 
         match c {
-            Some('+') => Ok(LexToken::new(
+            Some('+') => Ok(Token::new(
                 self,
-                LexTokenKind::Plus,
+                TokenKind::Plus,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            Some('-') => Ok(LexToken::new(
+            Some('-') => Ok(Token::new(
                 self,
-                LexTokenKind::Minus,
+                TokenKind::Minus,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            Some('/') => Ok(LexToken::new(
+            Some('/') => Ok(Token::new(
                 self,
-                LexTokenKind::Star,
+                TokenKind::Star,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            Some('*') => Ok(LexToken::new(
+            Some('*') => Ok(Token::new(
                 self,
-                LexTokenKind::Slash,
+                TokenKind::Slash,
                 start_pos,
                 start_line,
                 start_column,
             )),
             Some('=') => {
                 if self.match_char('=') {
-                    Ok(LexToken::new(
+                    Ok(Token::new(
                         self,
-                        LexTokenKind::EqualEqual,
+                        TokenKind::EqualEqual,
                         start_pos,
                         start_line,
                         start_column,
                     ))
                 } else {
-                    Ok(LexToken::new(
+                    Ok(Token::new(
                         self,
-                        LexTokenKind::Equal,
+                        TokenKind::Equal,
                         start_pos,
                         start_line,
                         start_column,
@@ -1202,16 +1202,16 @@ impl<'a> Lexer<'a> {
             Some(c) if c.is_ascii_alphanumeric() => {
                 self.identifier(start_pos, start_line, start_column)
             }
-            Some(_) => Err(LexToken::new(
+            Some(_) => Err(Token::new(
                 self,
-                LexTokenKind::Unknown,
+                TokenKind::Unknown,
                 start_pos,
                 start_line,
                 start_column,
             )),
-            None => Ok(LexToken::new(
+            None => Ok(Token::new(
                 self,
-                LexTokenKind::Eof,
+                TokenKind::Eof,
                 start_pos,
                 start_line,
                 start_column,
@@ -1232,7 +1232,7 @@ mod tests {
 
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Int(123));
+        assert_eq!(tok.kind, TokenKind::Int(123));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
@@ -1247,7 +1247,7 @@ mod tests {
 
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Int(123_000_000));
+        assert_eq!(tok.kind, TokenKind::Int(123_000_000));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
@@ -1262,7 +1262,7 @@ mod tests {
 
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, LexTokenKind::TrailingUnderscoreInNumber);
+        assert_eq!(tok.kind, TokenKind::TrailingUnderscoreInNumber);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
@@ -1277,7 +1277,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::UInt(123u32));
+        assert_eq!(tok.kind, TokenKind::UInt(123u32));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
@@ -1286,7 +1286,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::UInt(456u32));
+        assert_eq!(tok.kind, TokenKind::UInt(456u32));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 8);
         assert_eq!(tok.end_line, 1);
@@ -1301,7 +1301,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::ULong(123u64));
+        assert_eq!(tok.kind, TokenKind::ULong(123u64));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
@@ -1310,7 +1310,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::ULong(456u64));
+        assert_eq!(tok.kind, TokenKind::ULong(456u64));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 9);
         assert_eq!(tok.end_line, 1);
@@ -1325,7 +1325,7 @@ mod tests {
 
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Long(123i64));
+        assert_eq!(tok.kind, TokenKind::Long(123i64));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
@@ -1340,7 +1340,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Int(5));
+        assert_eq!(tok.kind, TokenKind::Int(5));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
@@ -1349,7 +1349,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Long(std::u32::MAX as i64 + 1));
+        assert_eq!(tok.kind, TokenKind::Long(std::u32::MAX as i64 + 1));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 8);
         assert_eq!(tok.end_line, 1);
@@ -1364,7 +1364,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::ULong(5));
+        assert_eq!(tok.kind, TokenKind::ULong(5));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
@@ -1373,7 +1373,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Long(0b1));
+        assert_eq!(tok.kind, TokenKind::Long(0b1));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 10);
         assert_eq!(tok.end_line, 1);
@@ -1382,7 +1382,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::UInt(0b11));
+        assert_eq!(tok.kind, TokenKind::UInt(0b11));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 15);
         assert_eq!(tok.end_line, 1);
@@ -1397,7 +1397,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Int(0x1a1));
+        assert_eq!(tok.kind, TokenKind::Int(0x1a1));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
@@ -1406,7 +1406,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Long(0xdeadbeef));
+        assert_eq!(tok.kind, TokenKind::Long(0xdeadbeef));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 8);
         assert_eq!(tok.end_line, 1);
@@ -1421,7 +1421,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::ULong(0x101));
+        assert_eq!(tok.kind, TokenKind::ULong(0x101));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
@@ -1430,7 +1430,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Long(0x1));
+        assert_eq!(tok.kind, TokenKind::Long(0x1));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 10);
         assert_eq!(tok.end_line, 1);
@@ -1439,7 +1439,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::UInt(0x11));
+        assert_eq!(tok.kind, TokenKind::UInt(0x11));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 15);
         assert_eq!(tok.end_line, 1);
@@ -1454,7 +1454,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Shebang);
+        assert_eq!(tok.kind, TokenKind::Shebang);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 1);
@@ -1463,7 +1463,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Plus);
+        assert_eq!(tok.kind, TokenKind::Plus);
         assert_eq!(tok.start_line, 2);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 2);
@@ -1478,7 +1478,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Comment);
+        assert_eq!(tok.kind, TokenKind::Comment);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 1);
@@ -1487,7 +1487,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Plus);
+        assert_eq!(tok.kind, TokenKind::Plus);
         assert_eq!(tok.start_line, 2);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 2);
@@ -1502,7 +1502,7 @@ mod tests {
 
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, LexTokenKind::Unknown);
+        assert_eq!(tok.kind, TokenKind::Unknown);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 1);
@@ -1517,7 +1517,7 @@ mod tests {
 
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, LexTokenKind::ShebangNotOnFirstLine);
+        assert_eq!(tok.kind, TokenKind::ShebangNotOnFirstLine);
         assert_eq!(tok.start_line, 2);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 2);
@@ -1526,7 +1526,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Plus);
+        assert_eq!(tok.kind, TokenKind::Plus);
         assert_eq!(tok.start_line, 3);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 3);
@@ -1543,7 +1543,7 @@ mod tests {
 
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::TString);
+        assert_eq!(tok.kind, TokenKind::TString);
         assert_eq!(tok.start_line, 2);
         assert_eq!(tok.start_column, 13);
         assert_eq!(tok.end_line, 2);
@@ -1560,7 +1560,7 @@ mod tests {
 
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::TString);
+        assert_eq!(tok.kind, TokenKind::TString);
         assert_eq!(tok.start_line, 2);
         assert_eq!(tok.start_column, 13);
         assert_eq!(tok.end_line, 2);
@@ -1576,7 +1576,7 @@ mod tests {
 
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, LexTokenKind::UnexpectedChar('"'));
+        assert_eq!(tok.kind, TokenKind::UnexpectedChar('"'));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 1);
@@ -1591,7 +1591,7 @@ mod tests {
 
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, LexTokenKind::NewlineInString);
+        assert_eq!(tok.kind, TokenKind::NewlineInString);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 2);
@@ -1606,7 +1606,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Bool(true));
+        assert_eq!(tok.kind, TokenKind::Bool(true));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
@@ -1615,7 +1615,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Bool(false));
+        assert_eq!(tok.kind, TokenKind::Bool(false));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 7);
         assert_eq!(tok.end_line, 1);
@@ -1630,7 +1630,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, LexTokenKind::Null);
+        assert_eq!(tok.kind, TokenKind::Null);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);

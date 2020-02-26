@@ -22,7 +22,7 @@ fn run() -> Result<(), String> {
             loop {
                 let token = lexer.lex();
                 match token {
-                    Ok(token) if token.kind == LexTokenKind::Eof => {
+                    Ok(token) if token.kind == TokenKind::Eof => {
                         return Ok(());
                     }
                     Ok(token) | Err(token) => {
@@ -44,7 +44,7 @@ fn run() -> Result<(), String> {
             loop {
                 let token = lexer.lex();
                 match token {
-                    Ok(token) if token.kind == LexTokenKind::Eof => {
+                    Ok(token) if token.kind == TokenKind::Eof => {
                         return Ok(());
                     }
                     Ok(token) | Err(token) => {
