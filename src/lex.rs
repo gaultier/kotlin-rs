@@ -117,7 +117,7 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn is_real(&self) -> bool {
+    pub fn num_type(&self) -> NumberType {
         match self {
             Token {
                 kind: TokenKind::Float(_),
@@ -126,8 +126,8 @@ impl Token {
             | Token {
                 kind: TokenKind::Double(_),
                 ..
-            } => true,
-            _ => false,
+            } => NumberType::Real,
+            _ => NumberType::Integer,
         }
     }
 
@@ -621,7 +621,10 @@ impl<'a> Lexer<'a> {
         };
 
         let first_digit = self.src[start_pos..self.pos as usize].chars().next();
-        if !res.as_ref().unwrap().is_real() && first_digit == Some('0') && s.len() > 1 {
+        if res.as_ref().unwrap().num_type() == NumberType::Integer
+            && first_digit == Some('0')
+            && s.len() > 1
+        {
             Err(Token::new(
                 self,
                 TokenKind::LeadingZeroInNumber,
