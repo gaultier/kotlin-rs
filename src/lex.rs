@@ -1383,9 +1383,9 @@ mod tests {
         assert_eq!(tok.end_column, 14);
 
         let tok = lexer.lex();
-        assert_eq!(tok.as_ref().is_err(), true);
-        let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::LeadingZeroInNumber);
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::UInt(0u32));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 15);
         assert_eq!(tok.end_line, 1);
