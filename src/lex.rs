@@ -2,6 +2,12 @@ use std::option::Option;
 use std::result::Result;
 use std::str::Chars;
 
+#[derive(Debug, Eq, PartialEq)]
+enum NumberType {
+    Integer,
+    Real,
+}
+
 #[derive(Debug, PartialEq)]
 pub enum TokenKind {
     Plus,
@@ -264,17 +270,35 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn digits(&mut self) {
+    fn digits(&mut self) -> NumberType {
+        let mut num_type = NumberType::Integer;
+
         while let Some(c) = self.peek() {
             match c {
                 '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '_' => {
                     self.advance();
                 }
                 _ => {
-                    return;
+                    break;
                 }
             }
         }
+        if self.peek() == Some('.') {
+            self.advance();
+            num_type = NumberType::Real;
+        }
+
+        while let Some(c) = self.peek() {
+            match c {
+                '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '_' => {
+                    self.advance();
+                }
+                _ => {
+                    break;
+                }
+            }
+        }
+        num_type
     }
 
     fn bin_number(
@@ -525,7 +549,9 @@ impl<'a> Lexer<'a> {
         start_line: usize,
         start_column: usize,
     ) -> Result<Token, Token> {
-        self.digits();
+        if self.digits() == NumberType::Real {
+            return self.real(start_pos, start_line, start_column);
+        }
         dbg!(&self.src[start_pos..self.pos as usize]);
         let s = &self.src[start_pos..self.pos as usize]
             .to_string()
