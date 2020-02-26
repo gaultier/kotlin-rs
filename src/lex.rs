@@ -2069,7 +2069,7 @@ mod tests {
 
     #[test]
     fn test_lex_identifier() {
-        let s = " _ _a B_ ";
+        let s = " _ _a B_ 藏";
         let mut lexer = Lexer::new(&s);
 
         let tok = lexer.lex();
@@ -2102,14 +2102,14 @@ mod tests {
         assert_eq!(tok.end_column, 9);
         assert_eq!(&s[tok.start_pos..tok.end_pos], "B_");
 
-        //  let tok = lexer.lex();
-        //  assert_eq!(tok.as_ref().is_ok(), true);
-        //  let tok = tok.as_ref().unwrap();
-        //  assert_eq!(tok.kind, TokenKind::Identifier);
-        //  assert_eq!(tok.start_line, 1);
-        //  assert_eq!(tok.start_column, 2);
-        //  assert_eq!(tok.end_line, 1);
-        //  assert_eq!(tok.end_column, 3);
-        //  assert_eq!(&s[tok.start_pos..tok.end_pos], "_");
+         let tok = lexer.lex();
+         assert_eq!(tok.as_ref().is_ok(), true);
+         let tok = tok.as_ref().unwrap();
+         assert_eq!(tok.kind, TokenKind::Identifier);
+         assert_eq!(tok.start_line, 1);
+         assert_eq!(tok.start_column, 10);
+         assert_eq!(tok.end_line, 1);
+         assert_eq!(tok.end_column, 11);
+         assert_eq!(&s[tok.start_pos..tok.end_pos], "藏");
     }
 }
