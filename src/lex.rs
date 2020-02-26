@@ -1238,7 +1238,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_lex_number_int() {
+    fn test_lex_int() {
         let s = " 123  ";
         let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
@@ -1253,7 +1253,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_number_int_with_underscores() {
+    fn test_lex_int_with_underscores() {
         let s = " 123_000_000  ";
         let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
@@ -1268,7 +1268,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_number_int_with_trailing_underscore() {
+    fn test_lex_int_with_trailing_underscore() {
         let s = " 123_000_000_  ";
         let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
@@ -1283,7 +1283,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_number_uint() {
+    fn test_lex_uint() {
         let s = " 123U  456u";
         let mut lexer = Lexer::new(&s);
 
@@ -1307,7 +1307,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_number_ulong() {
+    fn test_lex_ulong() {
         let s = " 123UL  456uL";
         let mut lexer = Lexer::new(&s);
 
@@ -1331,7 +1331,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_number_long() {
+    fn test_lex_long() {
         let s = " 123L  ";
         let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
@@ -1346,7 +1346,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_number_bin_number() {
+    fn test_lex_bin_number() {
         let s = " 0b101 0B1_00000000_00000000_00000000_00000000";
         let mut lexer = Lexer::new(&s);
 
@@ -1370,7 +1370,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_number_bin_number_with_suffixes() {
+    fn test_lex_bin_number_with_suffixes() {
         let s = " 0b101uL 0B1L 0b11U";
         let mut lexer = Lexer::new(&s);
 
@@ -1403,7 +1403,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_number_hex_number() {
+    fn test_lex_hex_number() {
         let s = " 0x1a1 0XdeadBEEF";
         let mut lexer = Lexer::new(&s);
 
@@ -1427,7 +1427,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_number_hex_number_with_suffixes() {
+    fn test_lex_hex_number_with_suffixes() {
         let s = " 0x101uL 0X1L 0x11U";
         let mut lexer = Lexer::new(&s);
 
