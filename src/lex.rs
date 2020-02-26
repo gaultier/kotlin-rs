@@ -93,6 +93,7 @@ pub enum TokenKind {
     KeywordThrow,
     KeywordDo,
     KeywordFor,
+    Identifier,
     Eof,
     // Errors
     Unknown,
@@ -1243,7 +1244,13 @@ impl<'a> Lexer<'a> {
                 start_line,
                 start_column,
             )),
-            _ => unimplemented!(),
+            _ => Ok(Token::new(
+                self,
+                TokenKind::Identifier,
+                start_pos,
+                start_line,
+                start_column,
+            )),
         }
     }
 
@@ -1380,7 +1387,8 @@ impl<'a> Lexer<'a> {
             Some('1') | Some('2') | Some('3') | Some('4') | Some('5') | Some('6') | Some('7')
             | Some('8') | Some('9') => self.integer(start_pos, start_line, start_column),
             Some('"') => self.string(start_pos, start_line, start_column),
-            Some(c) if c.is_ascii_alphanumeric() => {
+            // TODO: expand to more unicode classes
+            Some(c) if c.is_alphanumeric() || c == '_' => {
                 self.identifier(start_pos, start_line, start_column)
             }
             Some(_) => Err(Token::new(
@@ -2041,5 +2049,67 @@ mod tests {
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 6);
+    }
+
+    #[test]
+    fn test_lex_keyword() {
+        // TODO: many more keywords
+        let s = " abstract ";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::KeywordAbstract);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 10);
+    }
+
+    #[test]
+    fn test_lex_identifier() {
+        let s = " _ _a B_ ";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Identifier);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 3);
+        assert_eq!(&s[tok.start_pos..tok.end_pos], "_");
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Identifier);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 4);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 6);
+        assert_eq!(&s[tok.start_pos..tok.end_pos], "_a");
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Identifier);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 7);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 9);
+        assert_eq!(&s[tok.start_pos..tok.end_pos], "B_");
+
+        //  let tok = lexer.lex();
+        //  assert_eq!(tok.as_ref().is_ok(), true);
+        //  let tok = tok.as_ref().unwrap();
+        //  assert_eq!(tok.kind, TokenKind::Identifier);
+        //  assert_eq!(tok.start_line, 1);
+        //  assert_eq!(tok.start_column, 2);
+        //  assert_eq!(tok.end_line, 1);
+        //  assert_eq!(tok.end_column, 3);
+        //  assert_eq!(&s[tok.start_pos..tok.end_pos], "_");
     }
 }
