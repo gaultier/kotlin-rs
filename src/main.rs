@@ -1,4 +1,4 @@
-use kotlin::*;
+use kotlin::lex::*;
 use std::fs;
 use std::io::prelude::*;
 use std::result::Result;
