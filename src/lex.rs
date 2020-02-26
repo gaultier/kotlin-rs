@@ -299,6 +299,35 @@ impl<'a> Lexer<'a> {
                 }
             }
         }
+
+        match self.peek() {
+            Some('e') | Some('E') => {
+                num_type = NumberType::Real;
+                self.advance();
+                match self.peek() {
+                    Some('+') | Some('-') => {
+                        self.advance();
+                    }
+                    Some('0') | Some('1') | Some('2') | Some('3') | Some('4') | Some('5')
+                    | Some('6') | Some('7') | Some('8') | Some('9') => {
+                        while let Some(c) = self.peek() {
+                            match c {
+                                '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '_' => {
+                                    self.advance();
+                                }
+                                _ => {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    _ => {
+                        unimplemented!();
+                    }
+                }
+            }
+            _ => {}
+        }
         num_type
     }
 
@@ -1767,6 +1796,21 @@ mod tests {
         assert_eq!(tok.start_column, 21);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 23);
+    }
+
+    #[test]
+    fn test_lex_double_with_exp() {
+        let s = " 123e2 ";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Double(123e2));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 7);
     }
 
     #[test]
