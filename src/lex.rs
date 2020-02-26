@@ -1800,7 +1800,7 @@ mod tests {
 
     #[test]
     fn test_lex_double_with_exp() {
-        let s = " 123e2 123E+2 123E-2";
+        let s = " 123e2 123E+2 123E-2 123e ";
         let mut lexer = Lexer::new(&s);
 
         let tok = lexer.lex();
@@ -1829,6 +1829,15 @@ mod tests {
         assert_eq!(tok.start_column, 15);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 21);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, TokenKind::Double(123e-2));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 22);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 26);
     }
 
     #[test]
