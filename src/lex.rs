@@ -1326,6 +1326,7 @@ impl<'a> Lexer<'a> {
                 Some('b') | Some('B') => self.bin_number(start_pos, start_line, start_column),
                 _ => self.integer(start_pos, start_line, start_column),
             },
+            Some('.') => self.real(start_pos, start_line, start_column),
             Some('1') | Some('2') | Some('3') | Some('4') | Some('5') | Some('6') | Some('7')
             | Some('8') | Some('9') => self.integer(start_pos, start_line, start_column),
             Some('"') => self.string(start_pos, start_line, start_column),
@@ -1650,7 +1651,7 @@ mod tests {
 
     #[test]
     fn test_lex_float() {
-        let s = " 123f 456F 0f";
+        let s = " 123f 456F 0f 0.0f .1f 2. ";
         let mut lexer = Lexer::new(&s);
 
         let tok = lexer.lex();
@@ -1674,6 +1675,33 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Float(0f32));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 12);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 14);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Float(0f32));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 15);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 19);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Float(0.1f32));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 20);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 23);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, TokenKind::Float(0f32));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 12);
