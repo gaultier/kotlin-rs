@@ -1305,6 +1305,33 @@ impl<'a> Lexer<'a> {
                             start_column,
                         )));
                     }
+                    Some('*') => {
+                        let start_pos = self.pos as usize;
+                        let start_line = self.line;
+                        let start_column = self.column as usize;
+                        self.advance();
+                        self.advance();
+                        while let Some(c) = self.peek() {
+                            match c {
+                                '*' if self.peek_next() == Some('/') => {
+                                    break;
+                                }
+                                '\n' => {
+                                    self.newline();
+                                }
+                                _ => {
+                                    self.advance();
+                                }
+                            }
+                        }
+                        return Ok(Some(Token::new(
+                            self,
+                            TokenKind::Comment,
+                            start_pos,
+                            start_line,
+                            start_column,
+                        )));
+                    }
                     _ => {
                         return Ok(None);
                     }
@@ -2102,14 +2129,14 @@ mod tests {
         assert_eq!(tok.end_column, 9);
         assert_eq!(&s[tok.start_pos..tok.end_pos], "B_");
 
-         let tok = lexer.lex();
-         assert_eq!(tok.as_ref().is_ok(), true);
-         let tok = tok.as_ref().unwrap();
-         assert_eq!(tok.kind, TokenKind::Identifier);
-         assert_eq!(tok.start_line, 1);
-         assert_eq!(tok.start_column, 10);
-         assert_eq!(tok.end_line, 1);
-         assert_eq!(tok.end_column, 11);
-         assert_eq!(&s[tok.start_pos..tok.end_pos], "藏");
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Identifier);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 10);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 11);
+        assert_eq!(&s[tok.start_pos..tok.end_pos], "藏");
     }
 }
