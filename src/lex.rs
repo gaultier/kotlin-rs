@@ -2555,7 +2555,7 @@ mod tests {
 
     #[test]
     fn single_char_tokens() {
-        let s = "-*/:;";
+        let s = "-*/:;@";
         let mut lexer = Lexer::new(&s);
 
         let tok = lexer.lex();
@@ -2602,6 +2602,15 @@ mod tests {
         assert_eq!(tok.start_column, 5);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 6);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::At);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 6);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 7);
     }
 
     #[test]
