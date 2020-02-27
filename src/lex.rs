@@ -753,7 +753,7 @@ impl<'a> Lexer<'a> {
         start_column: usize,
     ) -> Result<Token, Token> {
         while let Some(c) = self.peek() {
-            if c.is_ascii_alphanumeric() || c == '_' {
+            if c.is_alphanumeric() || c == '_' {
                 self.advance();
             } else {
                 break;
@@ -2106,7 +2106,13 @@ mod tests {
 
     #[test]
     fn test_lex_identifier() {
-        let s = " _ _a B_ 藏";
+        // `ƍ` is of category Ll (letter lowercase)
+        // `ᴽ` is of category Lm (letter modifier)
+        // `א` is of categoy Lo (other letter)
+        // `ᾯ` is of category Lt (letter titlecase)
+        // `Ʊ` is of category Lu (letter uppercase)
+        // `ᛮ` is of category Nl (letter number)
+        let s = " _ _a B_ ᛮƍᴽאᾯƱ";
         let mut lexer = Lexer::new(&s);
 
         let tok = lexer.lex();
@@ -2146,8 +2152,8 @@ mod tests {
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 10);
         assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 11);
-        assert_eq!(&s[tok.start_pos..tok.end_pos], "藏");
+        assert_eq!(tok.end_column, 16);
+        assert_eq!(&s[tok.start_pos..tok.end_pos], "ᛮƍᴽאᾯƱ");
     }
 
     #[test]
