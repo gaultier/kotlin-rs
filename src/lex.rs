@@ -44,6 +44,10 @@ pub enum TokenKind {
     SlashEqual,
     Percent,
     PercentEqual,
+    Smaller,
+    SmallerEqual,
+    Greater,
+    GreaterEqual,
     Arrow,
     FatArrow,
     Int(i32),
@@ -1431,6 +1435,44 @@ impl<'a> Lexer<'a> {
                     Ok(Token::new(
                         self,
                         TokenKind::Plus,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                }
+            }
+            Some('<') => {
+                if self.match_char('=') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::SmallerEqual,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::Smaller,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                }
+            }
+            Some('>') => {
+                if self.match_char('=') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::GreaterEqual,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::Greater,
                         start_pos,
                         start_line,
                         start_column,
@@ -2849,5 +2891,53 @@ mod tests {
         assert_eq!(tok.start_column, 4);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 7);
+    }
+
+    #[test]
+    fn smaller() {
+        let s = "<<=";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Smaller);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 2);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::SmallerEqual);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 4);
+    }
+
+    #[test]
+    fn greater() {
+        let s = ">>=";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Greater);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 2);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::GreaterEqual);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 4);
     }
 }
