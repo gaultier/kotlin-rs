@@ -11,12 +11,34 @@ pub enum NumberType {
 #[derive(Debug, PartialEq)]
 pub enum TokenKind {
     Plus,
+    PlusPlus,
     Minus,
+    MinusMinus,
     Slash,
     Star,
     Equal,
     EqualEqual,
+    Comma,
+    LeftParen,
+    RightParen,
+    LeftSquareBracket,
+    RightSquareBracket,
+    LeftCurlyBracket,
+    RightCurlyBracket,
     Dot,
+    Ampersand,
+    AmpersandAmpersand,
+    Pipe,
+    PipePipe,
+    ExclamationMark,
+    Colon,
+    Semicolon,
+    PlusEqual,
+    MinusEqual,
+    StarEqual,
+    SlashEqual,
+    Percent,
+    PercentEqual,
     Int(i32),
     Long(i64),
     UInt(u32),
@@ -1361,13 +1383,25 @@ impl<'a> Lexer<'a> {
         // dbg!(self.cur);
 
         match c {
-            Some('+') => Ok(Token::new(
-                self,
-                TokenKind::Plus,
-                start_pos,
-                start_line,
-                start_column,
-            )),
+            Some('+') => {
+                if self.match_char('+') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::PlusPlus,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::Plus,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                }
+            }
             Some('-') => Ok(Token::new(
                 self,
                 TokenKind::Minus,
@@ -2255,6 +2289,30 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Slash);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 3);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 4);
+    }
+
+    #[test]
+    fn test_lex_plus_plus() {
+        let s = "+++";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::PlusPlus);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 3);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Plus);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 3);
         assert_eq!(tok.end_line, 1);
