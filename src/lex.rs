@@ -1574,6 +1574,14 @@ impl<'a> Lexer<'a> {
                         start_line,
                         start_column,
                     ))
+                } else if self.match_char('>') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::FatArrow,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
                 } else {
                     Ok(Token::new(
                         self,
@@ -2706,5 +2714,38 @@ mod tests {
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 4);
+    }
+
+    #[test]
+    fn equal() {
+        let s = "=== =>";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::EqualEqual);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 3);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Equal);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 3);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 4);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::FatArrow);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 5);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 7);
     }
 }
