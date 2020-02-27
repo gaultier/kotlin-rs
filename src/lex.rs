@@ -1423,6 +1423,14 @@ impl<'a> Lexer<'a> {
                         start_line,
                         start_column,
                     ))
+                } else if self.match_char('=') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::MinusEqual,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
                 } else {
                     Ok(Token::new(
                         self,
@@ -1509,20 +1517,44 @@ impl<'a> Lexer<'a> {
                     ))
                 }
             }
-            Some('/') => Ok(Token::new(
-                self,
-                TokenKind::Slash,
-                start_pos,
-                start_line,
-                start_column,
-            )),
-            Some('*') => Ok(Token::new(
-                self,
-                TokenKind::Star,
-                start_pos,
-                start_line,
-                start_column,
-            )),
+            Some('/') => {
+                if self.match_char('=') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::SlashEqual,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::Slash,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                }
+            }
+            Some('*') => {
+                if self.match_char('=') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::StarEqual,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::Star,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                }
+            }
             Some('=') => {
                 if self.match_char('=') {
                     Ok(Token::new(
@@ -2564,5 +2596,53 @@ mod tests {
         assert_eq!(tok.start_column, 3);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 4);
+    }
+
+    #[test]
+    fn star() {
+        let s = "**=";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Star);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 2);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::StarEqual);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 4);
+    }
+
+    #[test]
+    fn slash() {
+        let s = "/ /=";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Slash);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 2);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::SlashEqual);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 3);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 5);
     }
 }
