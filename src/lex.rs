@@ -1574,6 +1574,25 @@ impl<'a> Lexer<'a> {
                     ))
                 }
             }
+            Some('%') => {
+                if self.match_char('=') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::PercentEqual,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::Percent,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                }
+            }
             Some('.') if !self.peek().map(|c| c.is_digit(10)).unwrap_or(false) => Ok(Token::new(
                 self,
                 TokenKind::Dot,
@@ -2644,5 +2663,29 @@ mod tests {
         assert_eq!(tok.start_column, 3);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 5);
+    }
+
+    #[test]
+    fn percent() {
+        let s = "%%=";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Percent);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 2);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::PercentEqual);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 4);
     }
 }
