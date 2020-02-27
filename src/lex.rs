@@ -1497,7 +1497,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_lex_int() {
+    fn int() {
         let s = " 123  ";
         let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
@@ -1512,7 +1512,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_int_with_underscores() {
+    fn int_with_underscores() {
         let s = " 123_000_000  ";
         let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
@@ -1527,7 +1527,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_int_with_trailing_underscore() {
+    fn int_with_trailing_underscore() {
         let s = " 123_000_000_  ";
         let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
@@ -1542,7 +1542,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_int_with_leading_zero() {
+    fn int_with_leading_zero() {
         let s = " 0 0123 0456L 0u  ";
         let mut lexer = Lexer::new(&s);
 
@@ -1584,7 +1584,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_uint() {
+    fn uint() {
         let s = " 123U  456u";
         let mut lexer = Lexer::new(&s);
 
@@ -1608,7 +1608,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_ulong() {
+    fn ulong() {
         let s = " 123UL  456uL";
         let mut lexer = Lexer::new(&s);
 
@@ -1632,7 +1632,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_long() {
+    fn long() {
         let s = " 123L  ";
         let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
@@ -1647,7 +1647,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_bin_number() {
+    fn bin_number() {
         let s = " 0b101 0B1_00000000_00000000_00000000_00000000";
         let mut lexer = Lexer::new(&s);
 
@@ -1671,7 +1671,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_bin_number_with_suffixes() {
+    fn bin_number_with_suffixes() {
         let s = " 0b101uL 0B1L 0b11U";
         let mut lexer = Lexer::new(&s);
 
@@ -1704,7 +1704,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_bin_number_missing_digits() {
+    fn bin_number_missing_digits() {
         let s = " 0b ";
         let mut lexer = Lexer::new(&s);
 
@@ -1719,7 +1719,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_hex_number_missing_digits() {
+    fn hex_number_missing_digits() {
         let s = " 0x ";
         let mut lexer = Lexer::new(&s);
 
@@ -1734,7 +1734,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_hex_number() {
+    fn hex_number() {
         let s = " 0x1a1 0XdeadBEEF";
         let mut lexer = Lexer::new(&s);
 
@@ -1758,7 +1758,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_hex_number_with_suffixes() {
+    fn hex_number_with_suffixes() {
         let s = " 0x101uL 0X1L 0x11U";
         let mut lexer = Lexer::new(&s);
 
@@ -1791,7 +1791,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_float() {
+    fn float() {
         let s = " 123f 456F 0f 0.0f .1f 2. ";
         let mut lexer = Lexer::new(&s);
 
@@ -1851,7 +1851,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_double() {
+    fn double() {
         let s = " 123.0 456.0 0.0 .1 2.";
         let mut lexer = Lexer::new(&s);
 
@@ -1902,7 +1902,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_double_with_exp() {
+    fn double_with_exp() {
         let s = " 123e2 123E+2 123E-2 123e ";
         let mut lexer = Lexer::new(&s);
 
@@ -1944,7 +1944,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_shebang() {
+    fn shebang() {
         let s = "#!/bin/cat\n+";
         let mut lexer = Lexer::new(&s);
 
@@ -1968,7 +1968,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_comment() {
+    fn comment() {
         let s = "//bin/cat\n+";
         let mut lexer = Lexer::new(&s);
 
@@ -1992,7 +1992,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_unknown() {
+    fn unknown() {
         let s = "§+~";
         let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
@@ -2007,7 +2007,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_shebang_not_on_first_line() {
+    fn shebang_not_on_first_line() {
         let s = "\n#!/bin/cat\n+";
         let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
@@ -2031,7 +2031,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_empty_string() {
+    fn empty_string() {
         let s = r##"
             ""
             "##;
@@ -2048,7 +2048,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_string() {
+    fn string() {
         let s = r##"
             "abc123老虎老虎"
             "##;
@@ -2066,7 +2066,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_unterminated_string() {
+    fn unterminated_string() {
         let s = "\"";
         let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
@@ -2081,7 +2081,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_newline_in_string() {
+    fn newline_in_string() {
         let s = "\"\n";
         let mut lexer = Lexer::new(&s);
         let tok = lexer.lex();
@@ -2096,7 +2096,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_bool() {
+    fn bool() {
         let s = " true false";
         let mut lexer = Lexer::new(&s);
 
@@ -2120,7 +2120,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_null() {
+    fn null() {
         let s = " null ";
         let mut lexer = Lexer::new(&s);
 
@@ -2135,7 +2135,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_keyword() {
+    fn keyword() {
         // TODO: many more keywords
         let s = " abstract ";
         let mut lexer = Lexer::new(&s);
@@ -2151,7 +2151,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_identifier() {
+    fn identifier() {
         // `ƍ` is of category Ll (letter lowercase)
         // `ᴽ` is of category Lm (letter modifier)
         // `א` is of categoy Lo (other letter)
@@ -2203,7 +2203,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_comment_multiline() {
+    fn comment_multiline() {
         let s = "/* foo \n bar */ + ";
         let mut lexer = Lexer::new(&s);
 
@@ -2227,7 +2227,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_empty_comment_multiline() {
+    fn empty_comment_multiline() {
         let s = "/**/+";
         let mut lexer = Lexer::new(&s);
 
@@ -2251,7 +2251,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_dot() {
+    fn dot() {
         let s = " . .";
         let mut lexer = Lexer::new(&s);
 
@@ -2275,7 +2275,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_single_char_tokens() {
+    fn single_char_tokens() {
         let s = "-*/";
         let mut lexer = Lexer::new(&s);
 
@@ -2308,7 +2308,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_plus_plus() {
+    fn plus_plus() {
         let s = "+++";
         let mut lexer = Lexer::new(&s);
 
@@ -2332,7 +2332,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lex_minus_minus() {
+    fn minus_minus() {
         let s = "---";
         let mut lexer = Lexer::new(&s);
 
