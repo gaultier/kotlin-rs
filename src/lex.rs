@@ -61,6 +61,7 @@ pub enum TokenKind {
     KeywordActual,
     KeywordAnnotation,
     KeywordAs,
+    KeywordAsSafe,
     KeywordBy,
     KeywordCatch,
     KeywordClass,
@@ -1253,13 +1254,25 @@ impl<'a> Lexer<'a> {
                 start_line,
                 start_column,
             )),
-            "as" => Ok(Token::new(
-                self,
-                TokenKind::KeywordAs,
-                start_pos,
-                start_line,
-                start_column,
-            )),
+            "as" => {
+                if self.match_char('?') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::KeywordAsSafe,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::KeywordAs,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                }
+            }
             "is" => Ok(Token::new(
                 self,
                 TokenKind::KeywordIs,
@@ -2332,7 +2345,7 @@ mod tests {
     #[test]
     fn keyword() {
         // TODO: many more keywords
-        let s = " abstract ";
+        let s = " abstract as as?";
         let mut lexer = Lexer::new(&s);
 
         let tok = lexer.lex();
@@ -2343,6 +2356,24 @@ mod tests {
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 10);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::KeywordAs);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 11);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 13);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::KeywordAsSafe);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 14);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 17);
     }
 
     #[test]
