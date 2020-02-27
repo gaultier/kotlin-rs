@@ -1423,6 +1423,48 @@ impl<'a> Lexer<'a> {
                 start_line,
                 start_column,
             )),
+            Some('(') => Ok(Token::new(
+                self,
+                TokenKind::LeftParen,
+                start_pos,
+                start_line,
+                start_column,
+            )),
+            Some(')') => Ok(Token::new(
+                self,
+                TokenKind::RightParen,
+                start_pos,
+                start_line,
+                start_column,
+            )),
+            Some('{') => Ok(Token::new(
+                self,
+                TokenKind::LeftCurlyBracket,
+                start_pos,
+                start_line,
+                start_column,
+            )),
+            Some('}') => Ok(Token::new(
+                self,
+                TokenKind::RightCurlyBracket,
+                start_pos,
+                start_line,
+                start_column,
+            )),
+            Some('[') => Ok(Token::new(
+                self,
+                TokenKind::LeftSquareBracket,
+                start_pos,
+                start_line,
+                start_column,
+            )),
+            Some(']') => Ok(Token::new(
+                self,
+                TokenKind::RightSquareBracket,
+                start_pos,
+                start_line,
+                start_column,
+            )),
             Some('+') => {
                 if self.match_char('+') {
                     Ok(Token::new(
