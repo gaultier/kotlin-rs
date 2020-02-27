@@ -1440,6 +1440,25 @@ impl<'a> Lexer<'a> {
                     ))
                 }
             }
+            Some('|') => {
+                if self.match_char('|') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::PipePipe,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::Pipe,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                }
+            }
             Some('/') => Ok(Token::new(
                 self,
                 TokenKind::Slash,
@@ -2327,7 +2346,7 @@ mod tests {
     }
 
     #[test]
-    fn plus_plus() {
+    fn plus() {
         let s = "+++";
         let mut lexer = Lexer::new(&s);
 
@@ -2351,7 +2370,7 @@ mod tests {
     }
 
     #[test]
-    fn minus_minus() {
+    fn minus() {
         let s = "---";
         let mut lexer = Lexer::new(&s);
 
@@ -2375,7 +2394,7 @@ mod tests {
     }
 
     #[test]
-    fn ampersand_ampersand() {
+    fn ampersand() {
         let s = "&&&";
         let mut lexer = Lexer::new(&s);
 
@@ -2392,6 +2411,30 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Ampersand);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 3);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 4);
+    }
+
+    #[test]
+    fn pipe() {
+        let s = "|||";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::PipePipe);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 3);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Pipe);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 3);
         assert_eq!(tok.end_line, 1);
