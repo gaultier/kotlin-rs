@@ -39,4 +39,10 @@ fn test() {
         infix: Some(&binary),
         prefix: None,
     };
+    let rule_slash = ParseRule {
+        precedence: Precedence::Factor,
+        infix: Some(&binary),
+        prefix: None,
+    };
+    let rules: [ParseRule; 2] = [rule_plus, rule_slash];
 }
