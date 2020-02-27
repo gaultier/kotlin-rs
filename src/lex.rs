@@ -21,6 +21,7 @@ pub enum TokenKind {
     EqualEqualEqual,
     Comma,
     At,
+    Dollar,
     LeftParen,
     RightParen,
     LeftSquareBracket,
@@ -1415,6 +1416,13 @@ impl<'a> Lexer<'a> {
                 start_line,
                 start_column,
             )),
+            Some('$') => Ok(Token::new(
+                self,
+                TokenKind::Dollar,
+                start_pos,
+                start_line,
+                start_column,
+            )),
             Some('+') => {
                 if self.match_char('+') {
                     Ok(Token::new(
@@ -2555,7 +2563,7 @@ mod tests {
 
     #[test]
     fn single_char_tokens() {
-        let s = "-*/:;@";
+        let s = "-*/:;@$";
         let mut lexer = Lexer::new(&s);
 
         let tok = lexer.lex();
@@ -2611,6 +2619,15 @@ mod tests {
         assert_eq!(tok.start_column, 6);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 7);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Dollar);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 7);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 8);
     }
 
     #[test]
