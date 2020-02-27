@@ -1394,6 +1394,14 @@ impl<'a> Lexer<'a> {
                         start_line,
                         start_column,
                     ))
+                } else if self.match_char('=') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::PlusEqual,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
                 } else {
                     Ok(Token::new(
                         self,
@@ -2405,7 +2413,7 @@ mod tests {
 
     #[test]
     fn plus() {
-        let s = "+++";
+        let s = "+++ +=";
         let mut lexer = Lexer::new(&s);
 
         let tok = lexer.lex();
@@ -2425,6 +2433,15 @@ mod tests {
         assert_eq!(tok.start_column, 3);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 4);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::PlusEqual);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 5);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 7);
     }
 
     #[test]
