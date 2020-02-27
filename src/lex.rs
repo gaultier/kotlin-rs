@@ -32,7 +32,9 @@ pub enum TokenKind {
     PipePipe,
     ExclamationMark,
     Colon,
+    ColonColon,
     Semicolon,
+    SemicolonSemicolon,
     PlusEqual,
     MinusEqual,
     StarEqual,
@@ -1440,20 +1442,44 @@ impl<'a> Lexer<'a> {
                     ))
                 }
             }
-            Some(':') => Ok(Token::new(
-                self,
-                TokenKind::Colon,
-                start_pos,
-                start_line,
-                start_column,
-            )),
-            Some(';') => Ok(Token::new(
-                self,
-                TokenKind::Semicolon,
-                start_pos,
-                start_line,
-                start_column,
-            )),
+            Some(':') => {
+                if self.match_char(':') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::ColonColon,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::Colon,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                }
+            }
+            Some(';') => {
+                if self.match_char(';') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::SemicolonSemicolon,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::Semicolon,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                }
+            }
             Some('|') => {
                 if self.match_char('|') {
                     Ok(Token::new(
@@ -2467,6 +2493,54 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Pipe);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 3);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 4);
+    }
+
+    #[test]
+    fn colon() {
+        let s = ":::";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::ColonColon);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 3);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Colon);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 3);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 4);
+    }
+
+    #[test]
+    fn semicolon() {
+        let s = ";;;";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::SemicolonSemicolon);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 3);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Semicolon);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 3);
         assert_eq!(tok.end_line, 1);
