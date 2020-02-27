@@ -19,6 +19,7 @@ pub enum TokenKind {
     Equal,
     EqualEqual,
     Comma,
+    At,
     LeftParen,
     RightParen,
     LeftSquareBracket,
@@ -1389,6 +1390,13 @@ impl<'a> Lexer<'a> {
         // dbg!(self.cur);
 
         match c {
+            Some('@') => Ok(Token::new(
+                self,
+                TokenKind::At,
+                start_pos,
+                start_line,
+                start_column,
+            )),
             Some('+') => {
                 if self.match_char('+') {
                     Ok(Token::new(
@@ -1410,6 +1418,36 @@ impl<'a> Lexer<'a> {
                     Ok(Token::new(
                         self,
                         TokenKind::Plus,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                }
+            }
+            Some('!') => {
+                if self.match_char('=') {
+                    if self.peek() == Some('=') {
+                        self.advance();
+                        Ok(Token::new(
+                            self,
+                            TokenKind::BangEqualEqual,
+                            start_pos,
+                            start_line,
+                            start_column,
+                        ))
+                    } else {
+                        Ok(Token::new(
+                            self,
+                            TokenKind::BangEqual,
+                            start_pos,
+                            start_line,
+                            start_column,
+                        ))
+                    }
+                } else {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::Bang,
                         start_pos,
                         start_line,
                         start_column,
@@ -2745,6 +2783,39 @@ mod tests {
         assert_eq!(tok.kind, TokenKind::FatArrow);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 5);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 7);
+    }
+
+    #[test]
+    fn bang() {
+        let s = "!!=!==";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Bang);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 2);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::BangEqual);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 2);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 4);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::BangEqualEqual);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 4);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 7);
     }
