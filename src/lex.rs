@@ -2181,6 +2181,30 @@ mod tests {
     }
 
     #[test]
+    fn test_lex_empty_comment_multiline() {
+        let s = "/**/+";
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Comment);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 5);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Plus);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 5);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 6);
+    }
+
+    #[test]
     fn test_lex_dot() {
         let s = " . .";
         let mut lexer = Lexer::new(&s);
