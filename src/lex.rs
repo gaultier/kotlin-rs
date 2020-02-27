@@ -202,6 +202,7 @@ impl Token {
     }
 }
 
+#[derive(Debug)]
 pub struct Lexer<'a> {
     src: &'a str,
     chars: Chars<'a>,
