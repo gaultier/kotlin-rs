@@ -1,4 +1,4 @@
-use crate::lex::{Lexer, Token};
+use crate::lex::{Lexer, Token, TokenKind};
 use std::option::Option;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -33,16 +33,25 @@ struct ParseRule {
 
 fn binary(parser: &mut Parser) {}
 
-fn test() {
-    let rule_plus = ParseRule {
+const RULES: [ParseRule; 2] = [
+    ParseRule {
         precedence: Precedence::Term,
         infix: Some(&binary),
         prefix: None,
-    };
-    let rule_slash = ParseRule {
-        precedence: Precedence::Factor,
-        infix: Some(&binary),
-        prefix: None,
-    };
-    let rules: [ParseRule; 2] = [rule_plus, rule_slash];
+    },
+ ParseRule {
+    precedence: Precedence::Factor,
+    infix: Some(&binary),
+    prefix: None,
+}    
+];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn t() {
+        dbg!(&RULES[usize::from(TokenKind::Plus)].precedence);
+    }
 }
