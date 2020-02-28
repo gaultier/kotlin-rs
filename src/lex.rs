@@ -152,6 +152,7 @@ pub enum TokenKind {
     MissingDigitsInHexNumber,
     TrailingDotInNumber,
     MissingExponentInNumber,
+    UnknownEscapeSequence(Option<char>),
 }
 
 impl From<TokenKind> for usize {
@@ -298,6 +299,7 @@ impl From<TokenKind> for usize {
             TokenKind::EscapedDoubleQuote => 138,
             TokenKind::EscapedDollar => 139,
             TokenKind::EscapedBackSlash => 140,
+            TokenKind::UnknownEscapeSequence(_) => 141,
         }
     }
 }
@@ -1635,7 +1637,19 @@ impl<'a> Lexer<'a> {
                         start_column,
                     ))
                 } else {
-                    unimplemented!()
+                    let c = if self.peek().is_some() {
+                        self.advance()
+                    } else {
+                        None
+                    };
+
+                    Err(Token::new(
+                        self,
+                        TokenKind::UnknownEscapeSequence(c),
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
                 }
             }
             Some('@') => Ok(Token::new(
@@ -3314,7 +3328,7 @@ mod tests {
 
     #[test]
     fn escape_sequence_literals() {
-        let s = r##"\n\r\b\t\'\"\$\\"##;
+        let s = r##"\n\r\b\t\'\"\$\\\+\"##;
         let mut lexer = Lexer::new(&s);
 
         let tok = lexer.lex();
@@ -3388,5 +3402,23 @@ mod tests {
         assert_eq!(tok.start_column, 15);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 17);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, TokenKind::UnknownEscapeSequence(Some('+')));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 17);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 19);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, TokenKind::UnknownEscapeSequence(None));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 19);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 20);
     }
 }
