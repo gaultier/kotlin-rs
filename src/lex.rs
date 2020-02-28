@@ -54,6 +54,9 @@ pub enum TokenKind {
     FatArrow,
     Newline,
     NewlineLiteral,
+    CarriageReturnLiteral,
+    TabLiteral,
+    BackspaceLiteral,
     Int(i32),
     Long(i64),
     UInt(u32),
@@ -284,6 +287,9 @@ impl From<TokenKind> for usize {
             TokenKind::MissingExponentInNumber => 131,
             TokenKind::Newline => 132,
             TokenKind::NewlineLiteral => 133,
+            TokenKind::CarriageReturnLiteral => 134,
+            TokenKind::BackspaceLiteral => 135,
+            TokenKind::TabLiteral => 136,
         }
     }
 }
@@ -1560,6 +1566,30 @@ impl<'a> Lexer<'a> {
                     Ok(Token::new(
                         self,
                         TokenKind::NewlineLiteral,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else if self.match_char('r') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::CarriageReturnLiteral,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else if self.match_char('t') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::TabLiteral,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else if self.match_char('b') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::BackspaceLiteral,
                         start_pos,
                         start_line,
                         start_column,
@@ -3244,7 +3274,7 @@ mod tests {
 
     #[test]
     fn escape_sequence_literals() {
-        let s = r##"\n"##;
+        let s = r##"\n\r\b\t"##;
         let mut lexer = Lexer::new(&s);
 
         let tok = lexer.lex();
@@ -3255,5 +3285,32 @@ mod tests {
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 3);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::CarriageReturnLiteral);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 3);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 5);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::BackspaceLiteral);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 5);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 7);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::TabLiteral);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 7);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 9);
     }
 }
