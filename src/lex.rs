@@ -1640,6 +1640,7 @@ impl<'a> Lexer<'a> {
                     let c = if self.peek().is_some() {
                         self.advance()
                     } else {
+                        // Do not advance past the end to avoid giving a `end_column` past the end
                         None
                     };
 
