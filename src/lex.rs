@@ -57,6 +57,10 @@ pub enum TokenKind {
     EscapeSequenceCarriageReturn,
     EscapeSequenceTab,
     EscapeSequenceBackspace,
+    EscapedQuote,
+    EscapedDoubleQuote,
+    EscapedBackSlash,
+    EscapedDollar,
     Int(i32),
     Long(i64),
     UInt(u32),
@@ -290,6 +294,10 @@ impl From<TokenKind> for usize {
             TokenKind::EscapeSequenceCarriageReturn => 134,
             TokenKind::EscapeSequenceBackspace => 135,
             TokenKind::EscapeSequenceTab => 136,
+            TokenKind::EscapedQuote => 137,
+            TokenKind::EscapedDoubleQuote => 138,
+            TokenKind::EscapedDollar => 139,
+            TokenKind::EscapedBackSlash => 140,
         }
     }
 }
@@ -1590,6 +1598,38 @@ impl<'a> Lexer<'a> {
                     Ok(Token::new(
                         self,
                         TokenKind::EscapeSequenceBackspace,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else if self.match_char('\'') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::EscapedQuote,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else if self.match_char('"') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::EscapedDoubleQuote,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else if self.match_char('$') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::EscapedDollar,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else if self.match_char('\\') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::EscapedBackSlash,
                         start_pos,
                         start_line,
                         start_column,
@@ -3274,7 +3314,7 @@ mod tests {
 
     #[test]
     fn escape_sequence_literals() {
-        let s = r##"\n\r\b\t"##;
+        let s = r##"\n\r\b\t\'\"\$\\"##;
         let mut lexer = Lexer::new(&s);
 
         let tok = lexer.lex();
@@ -3312,5 +3352,41 @@ mod tests {
         assert_eq!(tok.start_column, 7);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 9);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::EscapedQuote);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 9);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 11);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::EscapedDoubleQuote);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 11);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 13);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::EscapedDollar);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 13);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 15);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::EscapedBackSlash);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 15);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 17);
     }
 }
