@@ -52,6 +52,7 @@ pub enum TokenKind {
     GreaterEqual,
     Arrow,
     FatArrow,
+    Newline,
     Int(i32),
     Long(i64),
     UInt(u32),
@@ -148,138 +149,139 @@ pub enum TokenKind {
 impl From<TokenKind> for usize {
     fn from(t: TokenKind) -> Self {
         match t {
-TokenKind::Plus=>0,
-TokenKind::PlusPlus=>1,
-TokenKind::Minus=>2,
-TokenKind::MinusMinus=>3,
-TokenKind::Slash=>4,
-TokenKind::Star=>5,
-TokenKind::Equal=>6,
-TokenKind::EqualEqual=>7,
-TokenKind::EqualEqualEqual=>8,
-TokenKind::Comma=>9,
-TokenKind::At=>10,
-TokenKind::Dollar=>11,
-TokenKind::LeftParen=>12,
-TokenKind::RightParen=>13,
-TokenKind::LeftSquareBracket=>14,
-TokenKind::RightSquareBracket=>15,
-TokenKind::LeftCurlyBracket=>16,
-TokenKind::RightCurlyBracket=>17,
-TokenKind::Dot=>18,
-TokenKind::Ampersand=>19,
-TokenKind::AmpersandAmpersand=>20,
-TokenKind::Pipe=>21,
-TokenKind::PipePipe=>22,
-TokenKind::Bang=>23,
-TokenKind::BangEqual=>24,
-TokenKind::BangEqualEqual=>25,
-TokenKind::Colon=>26,
-TokenKind::ColonColon=>27,
-TokenKind::Semicolon=>28,
-TokenKind::SemicolonSemicolon=>29,
-TokenKind::PlusEqual=>30,
-TokenKind::MinusEqual=>31,
-TokenKind::StarEqual=>32,
-TokenKind::SlashEqual=>33,
-TokenKind::Percent=>34,
-TokenKind::PercentEqual=>35,
-TokenKind::Smaller=>36,
-TokenKind::SmallerEqual=>37,
-TokenKind::Greater=>38,
-TokenKind::GreaterEqual=>39,
-TokenKind::Arrow=>40,
-TokenKind::FatArrow=>41,
-TokenKind::Int(_)=>42,
-TokenKind::Long(_)=>43,
-TokenKind::UInt(_)=>44,
-TokenKind::ULong(_)=>45,
-TokenKind::Float(_)=>46,
-TokenKind::Double(_)=>47,
-TokenKind::Shebang=>48,
-TokenKind::Comment=>49,
-TokenKind::TString=>50,
-TokenKind::Bool(_)=>51,
-TokenKind::Null=>52,
-TokenKind::KeywordAbstract=>53,
-TokenKind::KeywordActual=>54,
-TokenKind::KeywordAnnotation=>55,
-TokenKind::KeywordAs=>56,
-TokenKind::KeywordAsSafe=>57,
-TokenKind::KeywordBy=>58,
-TokenKind::KeywordCatch=>59,
-TokenKind::KeywordClass=>60,
-TokenKind::KeywordCompanion=>61,
-TokenKind::KeywordConst=>62,
-TokenKind::KeywordConstructor=>63,
-TokenKind::KeywordContinue=>64,
-TokenKind::KeywordCrossinline=>65,
-TokenKind::KeywordData=>66,
-TokenKind::KeywordDelegate=>67,
-TokenKind::KeywordDo=>68,
-TokenKind::KeywordDynamic=>69,
-TokenKind::KeywordElse=>70,
-TokenKind::KeywordEnum=>71,
-TokenKind::KeywordExpect=>72,
-TokenKind::KeywordExternal=>73,
-TokenKind::KeywordField=>74,
-TokenKind::KeywordFile=>75,
-TokenKind::KeywordFinal=>76,
-TokenKind::KeywordFinally=>77,
-TokenKind::KeywordFor=>78,
-TokenKind::KeywordFun=>79,
-TokenKind::KeywordGet=>80,
-TokenKind::KeywordIf=>81,
-TokenKind::KeywordImport=>82,
-TokenKind::KeywordIn=>83,
-TokenKind::KeywordInfix=>84,
-TokenKind::KeywordInit=>85,
-TokenKind::KeywordInline=>86,
-TokenKind::KeywordInner=>87,
-TokenKind::KeywordInterface=>88,
-TokenKind::KeywordInternal=>89,
-TokenKind::KeywordIs=>90,
-TokenKind::KeywordLateinit=>91,
-TokenKind::KeywordNoinline=>92,
-TokenKind::KeywordObject=>93,
-TokenKind::KeywordOpen=>94,
-TokenKind::KeywordOperator=>95,
-TokenKind::KeywordOut=>96,
-TokenKind::KeywordOverride=>97,
-TokenKind::KeywordPackage=>98,
-TokenKind::KeywordParam=>99,
-TokenKind::KeywordPrivate=>100,
-TokenKind::KeywordProperty=>101,
-TokenKind::KeywordProtected=>102,
-TokenKind::KeywordPublic=>103,
-TokenKind::KeywordReceiver=>104,
-TokenKind::KeywordReified=>105,
-TokenKind::KeywordReturn=>106,
-TokenKind::KeywordSealed=>107,
-TokenKind::KeywordSet=>108,
-TokenKind::KeywordSetparam=>109,
-TokenKind::KeywordSuspend=>110,
-TokenKind::KeywordTailrec=>111,
-TokenKind::KeywordThrow=>112,
-TokenKind::KeywordTry=>113,
-TokenKind::KeywordTypeof=>114,
-TokenKind::KeywordVal=>115,
-TokenKind::KeywordVar=>116,
-TokenKind::KeywordVararg=>117,
-TokenKind::KeywordWhen=>118,
-TokenKind::KeywordWhere=>119,
-TokenKind::Identifier=>120,
-TokenKind::Eof=>121,
-TokenKind::Unknown=>122,
-TokenKind::UnexpectedChar(_)=>123,
-TokenKind::ShebangNotOnFirstLine=>124,
-TokenKind::NewlineInString=>125,
-TokenKind::TrailingUnderscoreInNumber=>126,
-TokenKind::LeadingZeroInNumber=>127,
-TokenKind::MissingDigitsInBinaryNumber=>128,
-TokenKind::MissingDigitsInHexNumber=>129,
-TokenKind::TrailingDotInNumber=>130,
-TokenKind::MissingExponentInNumber=>131,
+            TokenKind::Plus => 0,
+            TokenKind::PlusPlus => 1,
+            TokenKind::Minus => 2,
+            TokenKind::MinusMinus => 3,
+            TokenKind::Slash => 4,
+            TokenKind::Star => 5,
+            TokenKind::Equal => 6,
+            TokenKind::EqualEqual => 7,
+            TokenKind::EqualEqualEqual => 8,
+            TokenKind::Comma => 9,
+            TokenKind::At => 10,
+            TokenKind::Dollar => 11,
+            TokenKind::LeftParen => 12,
+            TokenKind::RightParen => 13,
+            TokenKind::LeftSquareBracket => 14,
+            TokenKind::RightSquareBracket => 15,
+            TokenKind::LeftCurlyBracket => 16,
+            TokenKind::RightCurlyBracket => 17,
+            TokenKind::Dot => 18,
+            TokenKind::Ampersand => 19,
+            TokenKind::AmpersandAmpersand => 20,
+            TokenKind::Pipe => 21,
+            TokenKind::PipePipe => 22,
+            TokenKind::Bang => 23,
+            TokenKind::BangEqual => 24,
+            TokenKind::BangEqualEqual => 25,
+            TokenKind::Colon => 26,
+            TokenKind::ColonColon => 27,
+            TokenKind::Semicolon => 28,
+            TokenKind::SemicolonSemicolon => 29,
+            TokenKind::PlusEqual => 30,
+            TokenKind::MinusEqual => 31,
+            TokenKind::StarEqual => 32,
+            TokenKind::SlashEqual => 33,
+            TokenKind::Percent => 34,
+            TokenKind::PercentEqual => 35,
+            TokenKind::Smaller => 36,
+            TokenKind::SmallerEqual => 37,
+            TokenKind::Greater => 38,
+            TokenKind::GreaterEqual => 39,
+            TokenKind::Arrow => 40,
+            TokenKind::FatArrow => 41,
+            TokenKind::Int(_) => 42,
+            TokenKind::Long(_) => 43,
+            TokenKind::UInt(_) => 44,
+            TokenKind::ULong(_) => 45,
+            TokenKind::Float(_) => 46,
+            TokenKind::Double(_) => 47,
+            TokenKind::Shebang => 48,
+            TokenKind::Comment => 49,
+            TokenKind::TString => 50,
+            TokenKind::Bool(_) => 51,
+            TokenKind::Null => 52,
+            TokenKind::KeywordAbstract => 53,
+            TokenKind::KeywordActual => 54,
+            TokenKind::KeywordAnnotation => 55,
+            TokenKind::KeywordAs => 56,
+            TokenKind::KeywordAsSafe => 57,
+            TokenKind::KeywordBy => 58,
+            TokenKind::KeywordCatch => 59,
+            TokenKind::KeywordClass => 60,
+            TokenKind::KeywordCompanion => 61,
+            TokenKind::KeywordConst => 62,
+            TokenKind::KeywordConstructor => 63,
+            TokenKind::KeywordContinue => 64,
+            TokenKind::KeywordCrossinline => 65,
+            TokenKind::KeywordData => 66,
+            TokenKind::KeywordDelegate => 67,
+            TokenKind::KeywordDo => 68,
+            TokenKind::KeywordDynamic => 69,
+            TokenKind::KeywordElse => 70,
+            TokenKind::KeywordEnum => 71,
+            TokenKind::KeywordExpect => 72,
+            TokenKind::KeywordExternal => 73,
+            TokenKind::KeywordField => 74,
+            TokenKind::KeywordFile => 75,
+            TokenKind::KeywordFinal => 76,
+            TokenKind::KeywordFinally => 77,
+            TokenKind::KeywordFor => 78,
+            TokenKind::KeywordFun => 79,
+            TokenKind::KeywordGet => 80,
+            TokenKind::KeywordIf => 81,
+            TokenKind::KeywordImport => 82,
+            TokenKind::KeywordIn => 83,
+            TokenKind::KeywordInfix => 84,
+            TokenKind::KeywordInit => 85,
+            TokenKind::KeywordInline => 86,
+            TokenKind::KeywordInner => 87,
+            TokenKind::KeywordInterface => 88,
+            TokenKind::KeywordInternal => 89,
+            TokenKind::KeywordIs => 90,
+            TokenKind::KeywordLateinit => 91,
+            TokenKind::KeywordNoinline => 92,
+            TokenKind::KeywordObject => 93,
+            TokenKind::KeywordOpen => 94,
+            TokenKind::KeywordOperator => 95,
+            TokenKind::KeywordOut => 96,
+            TokenKind::KeywordOverride => 97,
+            TokenKind::KeywordPackage => 98,
+            TokenKind::KeywordParam => 99,
+            TokenKind::KeywordPrivate => 100,
+            TokenKind::KeywordProperty => 101,
+            TokenKind::KeywordProtected => 102,
+            TokenKind::KeywordPublic => 103,
+            TokenKind::KeywordReceiver => 104,
+            TokenKind::KeywordReified => 105,
+            TokenKind::KeywordReturn => 106,
+            TokenKind::KeywordSealed => 107,
+            TokenKind::KeywordSet => 108,
+            TokenKind::KeywordSetparam => 109,
+            TokenKind::KeywordSuspend => 110,
+            TokenKind::KeywordTailrec => 111,
+            TokenKind::KeywordThrow => 112,
+            TokenKind::KeywordTry => 113,
+            TokenKind::KeywordTypeof => 114,
+            TokenKind::KeywordVal => 115,
+            TokenKind::KeywordVar => 116,
+            TokenKind::KeywordVararg => 117,
+            TokenKind::KeywordWhen => 118,
+            TokenKind::KeywordWhere => 119,
+            TokenKind::Identifier => 120,
+            TokenKind::Eof => 121,
+            TokenKind::Unknown => 122,
+            TokenKind::UnexpectedChar(_) => 123,
+            TokenKind::ShebangNotOnFirstLine => 124,
+            TokenKind::NewlineInString => 125,
+            TokenKind::TrailingUnderscoreInNumber => 126,
+            TokenKind::LeadingZeroInNumber => 127,
+            TokenKind::MissingDigitsInBinaryNumber => 128,
+            TokenKind::MissingDigitsInHexNumber => 129,
+            TokenKind::TrailingDotInNumber => 130,
+            TokenKind::MissingExponentInNumber => 131,
+            TokenKind::Newline => 132,
         }
     }
 }
@@ -412,15 +414,17 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn newline(&mut self) {
-        match self.peek() {
-            Some('\n') => {
-                self.advance();
-                self.line += 1;
-                self.column = 1;
-            }
-            _ => unreachable!(),
-        }
+    fn newline(&mut self, start_pos: usize, start_line: usize, start_column: usize) -> Token {
+        self.line += 1;
+        self.column = 1;
+
+        Token::new(
+            self,
+            TokenKind::Newline,
+            start_pos,
+            start_line,
+            start_column,
+        )
     }
 
     fn bin_digits(&mut self) {
@@ -898,7 +902,8 @@ impl<'a> Lexer<'a> {
                     break;
                 }
                 '\n' => {
-                    self.newline();
+                    self.advance();
+                    self.newline(start_pos, start_line, start_column);
                     return Err(Token::new(
                         self,
                         TokenKind::NewlineInString,
@@ -1449,9 +1454,6 @@ impl<'a> Lexer<'a> {
                 None | Some(' ') | Some('\t') | Some('\r') => {
                     self.advance();
                 }
-                Some('\n') => {
-                    self.newline();
-                }
                 Some('#') => match self.peek_next() {
                     Some('!') => {
                         let start_pos = self.pos as usize;
@@ -1508,7 +1510,8 @@ impl<'a> Lexer<'a> {
                                     break;
                                 }
                                 '\n' => {
-                                    self.newline();
+                                    self.advance();
+                                    self.newline(start_pos, start_line, start_column);
                                 }
                                 _ => {
                                     self.advance();
@@ -1549,6 +1552,7 @@ impl<'a> Lexer<'a> {
         // dbg!(self.cur);
 
         match c {
+            Some('\n') => Ok(self.newline(start_pos, start_line, start_column)),
             Some('@') => Ok(Token::new(
                 self,
                 TokenKind::At,
@@ -2411,6 +2415,15 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Newline);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 11);
+        assert_eq!(tok.end_line, 2);
+        assert_eq!(tok.end_column, 1);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Plus);
         assert_eq!(tok.start_line, 2);
         assert_eq!(tok.start_column, 1);
@@ -2431,6 +2444,15 @@ mod tests {
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 10);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Newline);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 10);
+        assert_eq!(tok.end_line, 2);
+        assert_eq!(tok.end_column, 1);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -2461,8 +2483,17 @@ mod tests {
     fn shebang_not_on_first_line() {
         let s = "\n#!/bin/cat\n+";
         let mut lexer = Lexer::new(&s);
-        let tok = lexer.lex();
 
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Newline);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 2);
+        assert_eq!(tok.end_column, 1);
+
+        let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, TokenKind::ShebangNotOnFirstLine);
@@ -2470,6 +2501,15 @@ mod tests {
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 2);
         assert_eq!(tok.end_column, 11);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Newline);
+        assert_eq!(tok.start_line, 2);
+        assert_eq!(tok.start_column, 11);
+        assert_eq!(tok.end_line, 3);
+        assert_eq!(tok.end_column, 1);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -2487,8 +2527,17 @@ mod tests {
             ""
             "##;
         let mut lexer = Lexer::new(&s);
-        let tok = lexer.lex();
 
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Newline);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 2);
+        assert_eq!(tok.end_column, 1);
+
+        let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::TString);
@@ -2504,8 +2553,18 @@ mod tests {
             "abc123老虎老虎"
             "##;
         let mut lexer = Lexer::new(&s);
-        let tok = lexer.lex();
 
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Newline);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 2);
+        assert_eq!(tok.end_column, 1);
+
+
+        let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::TString);
