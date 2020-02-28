@@ -53,6 +53,7 @@ pub enum TokenKind {
     Arrow,
     FatArrow,
     Newline,
+    NewlineLiteral,
     Int(i32),
     Long(i64),
     UInt(u32),
@@ -282,6 +283,7 @@ impl From<TokenKind> for usize {
             TokenKind::TrailingDotInNumber => 130,
             TokenKind::MissingExponentInNumber => 131,
             TokenKind::Newline => 132,
+            TokenKind::NewlineLiteral => 133,
         }
     }
 }
@@ -1553,6 +1555,19 @@ impl<'a> Lexer<'a> {
 
         match c {
             Some('\n') => Ok(self.newline(start_pos, start_line, start_column)),
+            Some('\\') => {
+                if self.match_char('n') {
+                    Ok(Token::new(
+                        self,
+                        TokenKind::NewlineLiteral,
+                        start_pos,
+                        start_line,
+                        start_column,
+                    ))
+                } else {
+                    unimplemented!()
+                }
+            }
             Some('@') => Ok(Token::new(
                 self,
                 TokenKind::At,
@@ -2563,7 +2578,6 @@ mod tests {
         assert_eq!(tok.end_line, 2);
         assert_eq!(tok.end_column, 1);
 
-
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
@@ -3226,5 +3240,20 @@ mod tests {
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 4);
+    }
+
+    #[test]
+    fn escape_sequence_literals() {
+        let s = r##"\n"##;
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::NewlineLiteral);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 3);
     }
 }
