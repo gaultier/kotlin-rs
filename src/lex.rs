@@ -53,10 +53,10 @@ pub enum TokenKind {
     Arrow,
     FatArrow,
     Newline,
-    NewlineLiteral,
-    CarriageReturnLiteral,
-    TabLiteral,
-    BackspaceLiteral,
+    EscapeSequenceNewline,
+    EscapeSequenceCarriageReturn,
+    EscapeSequenceTab,
+    EscapeSequenceBackspace,
     Int(i32),
     Long(i64),
     UInt(u32),
@@ -286,10 +286,10 @@ impl From<TokenKind> for usize {
             TokenKind::TrailingDotInNumber => 130,
             TokenKind::MissingExponentInNumber => 131,
             TokenKind::Newline => 132,
-            TokenKind::NewlineLiteral => 133,
-            TokenKind::CarriageReturnLiteral => 134,
-            TokenKind::BackspaceLiteral => 135,
-            TokenKind::TabLiteral => 136,
+            TokenKind::EscapeSequenceNewline => 133,
+            TokenKind::EscapeSequenceCarriageReturn => 134,
+            TokenKind::EscapeSequenceBackspace => 135,
+            TokenKind::EscapeSequenceTab => 136,
         }
     }
 }
@@ -1565,7 +1565,7 @@ impl<'a> Lexer<'a> {
                 if self.match_char('n') {
                     Ok(Token::new(
                         self,
-                        TokenKind::NewlineLiteral,
+                        TokenKind::EscapeSequenceNewline,
                         start_pos,
                         start_line,
                         start_column,
@@ -1573,7 +1573,7 @@ impl<'a> Lexer<'a> {
                 } else if self.match_char('r') {
                     Ok(Token::new(
                         self,
-                        TokenKind::CarriageReturnLiteral,
+                        TokenKind::EscapeSequenceCarriageReturn,
                         start_pos,
                         start_line,
                         start_column,
@@ -1581,7 +1581,7 @@ impl<'a> Lexer<'a> {
                 } else if self.match_char('t') {
                     Ok(Token::new(
                         self,
-                        TokenKind::TabLiteral,
+                        TokenKind::EscapeSequenceTab,
                         start_pos,
                         start_line,
                         start_column,
@@ -1589,7 +1589,7 @@ impl<'a> Lexer<'a> {
                 } else if self.match_char('b') {
                     Ok(Token::new(
                         self,
-                        TokenKind::BackspaceLiteral,
+                        TokenKind::EscapeSequenceBackspace,
                         start_pos,
                         start_line,
                         start_column,
@@ -3280,7 +3280,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, TokenKind::NewlineLiteral);
+        assert_eq!(tok.kind, TokenKind::EscapeSequenceNewline);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 1);
@@ -3289,7 +3289,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, TokenKind::CarriageReturnLiteral);
+        assert_eq!(tok.kind, TokenKind::EscapeSequenceCarriageReturn);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 3);
         assert_eq!(tok.end_line, 1);
@@ -3298,7 +3298,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, TokenKind::BackspaceLiteral);
+        assert_eq!(tok.kind, TokenKind::EscapeSequenceBackspace);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 5);
         assert_eq!(tok.end_line, 1);
@@ -3307,7 +3307,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, TokenKind::TabLiteral);
+        assert_eq!(tok.kind, TokenKind::EscapeSequenceTab);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 7);
         assert_eq!(tok.end_line, 1);
