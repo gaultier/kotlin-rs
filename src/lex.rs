@@ -47,8 +47,8 @@ pub enum TokenKind {
     SlashEqual,
     Percent,
     PercentEqual,
-    Smaller,
-    SmallerEqual,
+    Lesser,
+    LesserEqual,
     Greater,
     GreaterEqual,
     Arrow,
@@ -199,8 +199,8 @@ impl From<&TokenKind> for usize {
             TokenKind::SlashEqual => 33,
             TokenKind::Percent => 34,
             TokenKind::PercentEqual => 35,
-            TokenKind::Smaller => 36,
-            TokenKind::SmallerEqual => 37,
+            TokenKind::Lesser => 36,
+            TokenKind::LesserEqual => 37,
             TokenKind::Greater => 38,
             TokenKind::GreaterEqual => 39,
             TokenKind::Arrow => 40,
@@ -1804,7 +1804,7 @@ impl<'a> Lexer<'a> {
                 if self.match_char('=') {
                     Ok(Token::new(
                         self,
-                        TokenKind::SmallerEqual,
+                        TokenKind::LesserEqual,
                         start_pos,
                         start_line,
                         start_column,
@@ -1812,7 +1812,7 @@ impl<'a> Lexer<'a> {
                 } else {
                     Ok(Token::new(
                         self,
-                        TokenKind::Smaller,
+                        TokenKind::Lesser,
                         start_pos,
                         start_line,
                         start_column,
@@ -3351,7 +3351,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, TokenKind::Smaller);
+        assert_eq!(tok.kind, TokenKind::Lesser);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 1);
@@ -3360,7 +3360,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, TokenKind::SmallerEqual);
+        assert_eq!(tok.kind, TokenKind::LesserEqual);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
