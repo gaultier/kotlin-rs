@@ -1,4 +1,4 @@
-use crate::lex::{Lexer, Token};
+use crate::lex::{Lexer, Token, TokenKind};
 use std::option::Option;
 
 type Precedence = u8;
@@ -34,9 +34,17 @@ fn binary(parser: &mut Parser) {
         "binary: prev={:?} cur={:?}",
         parser.previous, parser.current
     );
-    let previous_type = &parser.previous.as_ref().unwrap().kind;
-    let previous_precedence = RULES[usize::from(previous_type)].precedence;
+    let previous_type = parser.previous.as_ref().unwrap().kind.clone();
+    dbg!(&previous_type);
+    let previous_precedence = RULES[usize::from(&previous_type)].precedence;
     parser.precedence(previous_precedence + 1);
+
+    match previous_type {
+        TokenKind::Plus => {
+            dbg!("plus");
+        }
+        _ => unimplemented!(),
+    }
 }
 
 fn number(parser: &mut Parser) {
@@ -876,5 +884,6 @@ mod tests {
         };
         // parser.advance();
         parser.expression();
+        assert!(false);
     }
 }
