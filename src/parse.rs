@@ -8,6 +8,7 @@ pub enum AstNodeStmt {
 #[derive(Debug)]
 pub enum AstNodeExpr {
     Binary(Box<AstNodeExpr>, Token, Box<AstNodeExpr>),
+    Unary(Token, Box<AstNodeExpr>),
     Literal(Token),
 }
 
@@ -44,8 +45,21 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn unary(&mut self) -> Result<AstNodeExpr, Token> {
+        let previous = self.previous.clone().unwrap();
+        dbg!(&self.previous);
+        match previous.kind {
+            TokenKind::Bang | TokenKind::Minus => {
+                self.advance()?;
+                let right = self.unary()?;
+                Ok(AstNodeExpr::Unary(previous, Box::new(right)))
+            }
+            _ => self.primary(),
+        }
+    }
+
     fn multiplication(&mut self) -> Result<AstNodeExpr, Token> {
-        let left = self.primary()?;
+        let left = self.unary()?;
         let previous = self.previous.clone().unwrap();
         dbg!(&self.previous);
         match previous.kind {
