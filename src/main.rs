@@ -23,13 +23,7 @@ fn main() -> Result<(), String> {
                         return Ok(());
                     }
                     Ok(token) => {
-                        println!(
-                            "{}",
-                            OwnedToken {
-                                token: &token,
-                                src: &contents
-                            }
-                        );
+                        println!("{}", token.to_owned(&contents));
                         println!("{:?}", token);
                     }
                     Err(token) => {

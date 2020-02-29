@@ -219,9 +219,9 @@ impl Token {
         }
     }
 
-    // pub fn to_owned(&self, src: &str) -> OwnedToken {
-    //     OwnedToken { token: &self, src }
-    // }
+    pub fn to_owned<'a>(&'a self, src: &'a str) -> OwnedToken<'a> {
+        OwnedToken { token: &self, src }
+    }
 
     pub fn new(
         lexer: &Lexer,
