@@ -46,10 +46,6 @@ fn number(parser: &mut Parser) {
     );
 }
 
-fn expression(parser: &mut Parser) {
-    parser.precedence(PREC_ASSIGNEMENT)
-}
-
 const RULES: [ParseRule; 144] = [
     // Plus
     ParseRule {
@@ -818,6 +814,10 @@ const RULES: [ParseRule; 144] = [
 ];
 
 impl<'a> Parser<'a> {
+    fn expression(&mut self) {
+        self.precedence(PREC_ASSIGNEMENT)
+    }
+
     fn advance(&mut self) {
         self.previous = self.current.clone();
 
@@ -874,7 +874,7 @@ mod tests {
             current: None,
             lexer: Lexer::new(&s),
         };
-        parser.advance();
+        // parser.advance();
         parser.expression();
     }
 }
