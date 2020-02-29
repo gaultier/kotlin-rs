@@ -9,6 +9,13 @@ impl fmt::Display for AstNodeExpr {
                 kind: TokenKind::Int(n),
                 ..
             }) => write!(f, "{}", n),
+            AstNodeExpr::Unary(
+                Token {
+                    kind: TokenKind::Minus,
+                    ..
+                },
+                right,
+            ) => write!(f, "(-{})", right),
             _ => unimplemented!(),
         }
     }
