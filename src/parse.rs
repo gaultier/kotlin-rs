@@ -853,10 +853,10 @@ impl<'a> Parser<'a> {
         self.advance();
         dbg!(&self.current);
 
-        let current_kind = &self.current.as_ref().unwrap().kind;
-        let current_index = usize::from(current_kind);
-        dbg!(current_kind, current_index);
-        let prefix_rule = RULES[current_index].prefix.unwrap();
+        let previous_kind = &self.previous.as_ref().unwrap().kind;
+        let previous_index = usize::from(previous_kind);
+        dbg!(previous_kind, previous_index);
+        let prefix_rule = RULES[previous_index].prefix.unwrap();
         prefix_rule(self);
 
         let current_kind = &self.current.as_ref().unwrap().kind;
@@ -892,7 +892,7 @@ mod tests {
             current: None,
             lexer: Lexer::new(&s),
         };
-        // parser.advance();
+        parser.advance();
         parser.expression();
         assert!(false);
     }
