@@ -40,7 +40,7 @@ impl<'a> Parser<'a> {
                 self.advance()?;
                 Ok(AstNodeExpr::Literal(previous))
             }
-            _ => unimplemented!(),
+            _ => Err(previous),
         }
     }
 

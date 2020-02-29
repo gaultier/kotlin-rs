@@ -38,9 +38,15 @@ fn main() -> Result<(), String> {
                 .map_err(|err| format!("Could not read stdin: {}", err))?;
 
             let mut parser = Parser::new(&contents);
-            let ast = parser.parse().unwrap();
-            println!("{:?}", ast);
-            Ok(())
+            let ast = parser.parse();
+            if let Ok(ast) = ast {
+                println!("{:?}", ast);
+                Ok(())
+            } else {
+                let err = ast.unwrap_err();
+                err.print(&contents);
+                Err("".to_string())
+            }
         }
         _ => {
             println!("Usage: {} lex|parse", args[0]);
