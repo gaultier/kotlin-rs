@@ -1,4 +1,5 @@
 use std::convert::TryFrom;
+use std::fmt;
 use std::option::Option;
 use std::result::Result;
 use std::str::Chars;
@@ -323,6 +324,31 @@ pub struct Token {
     end_column: usize,
 }
 
+#[derive(Debug, PartialEq, Clone)]
+pub struct OwnedToken<'a> {
+    pub token: &'a Token,
+    pub src: &'a str,
+}
+
+impl<'a> fmt::Display for OwnedToken<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let fmt = format!("{}:{}:", self.token.start_line, self.token.start_column);
+        write!(
+            f,
+            "{}{}\n",
+            fmt,
+            &self.src[self.token.start_pos..self.token.end_pos]
+        )?;
+        for _ in 0..fmt.len() {
+            write!(f, " ")?;
+        }
+        for _ in self.token.start_pos..self.token.end_pos {
+            write!(f, "^")?;
+        }
+        Ok(())
+    }
+}
+
 impl Token {
     pub fn is_eof(&self) -> bool {
         match self.kind {
@@ -345,17 +371,9 @@ impl Token {
         }
     }
 
-    pub fn to_string(&self, src: &str) -> String {
-        let fmt = format!("{}:{}:", self.start_line, self.start_column);
-        let mut res = format!("{}{}\n", fmt, &src[self.start_pos..self.end_pos]);
-        for _ in 0..fmt.len() {
-            res += " ";
-        }
-        for _ in self.start_pos..self.end_pos {
-            res += "^";
-        }
-        res
-    }
+    // pub fn to_owned(&self, src: &str) -> OwnedToken {
+    //     OwnedToken { token: &self, src }
+    // }
 
     pub fn new(
         lexer: &Lexer,
