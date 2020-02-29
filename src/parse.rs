@@ -40,6 +40,7 @@ fn binary(parser: &mut Parser) {
 }
 
 const RULES: [ParseRule; 2] = [
+    // Plus
     ParseRule {
         precedence: PREC_TERM,
         infix: Some(binary),
@@ -57,12 +58,14 @@ impl<'a> Parser<'a> {
         self.previous = self.current.clone();
 
         loop {
-            let current = self.lexer.lex();
-            if current.is_ok() {
+            let cur = self.lexer.lex();
+            if let Ok(cur) = cur {
+                self.current = Some(cur);
                 return;
+            } else {
+                println!("Lexer error: {:?}", self.current);
+                // TODO: error
             }
-            println!("Lexer error: {:?}", current);
-            // TODO: error
         }
     }
 
@@ -74,7 +77,9 @@ impl<'a> Parser<'a> {
     }
 
     fn precedence(&mut self, precedence: Precedence) {
+        dbg!(&self.current);
         self.advance();
+        dbg!(&self.current);
 
         let kind = &self.current.as_ref().unwrap().kind;
         let prefix_rule = RULES[usize::from(kind)].prefix.unwrap();
