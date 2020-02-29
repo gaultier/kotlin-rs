@@ -13,36 +13,73 @@ pub enum AstNodeExpr {
 
 #[derive(Debug)]
 pub struct Parser<'a> {
+    previous: Option<Token>,
+    current: Option<Token>,
     lexer: Lexer<'a>,
 }
 
 impl<'a> Parser<'a> {
+    fn advance(&mut self) -> Result<(), Token> {
+        self.previous = self.current.clone();
+        self.current = Some(self.lexer.lex()?);
+        Ok(())
+    }
+
     fn primary(&mut self) -> Result<AstNodeExpr, String> {
-        let tok = self.lexer.lex().unwrap(); // FIXME
-        dbg!(&tok);
-        match tok.kind {
-            TokenKind::Int(_) => Ok(AstNodeExpr::Literal(tok)),
+        dbg!(&self.previous);
+        let previous = self.previous.clone().unwrap();
+        match previous.kind {
+            TokenKind::Int(_) => {
+                self.advance().unwrap();
+                Ok(AstNodeExpr::Literal(previous))
+            }
             _ => unimplemented!(),
         }
     }
 
-    // fn multiplication(&mut self) -> Result<AstNodeExpr, String> {
-    //     let left = self.primary().unwrap(); // FIXME
-    //     Ok(left)
-    // }
-
-    fn addition(&mut self) -> Result<AstNodeExpr, String> {
+    fn multiplication(&mut self) -> Result<AstNodeExpr, String> {
         let left = self.primary().unwrap(); // FIXME
-        let tok = self.lexer.lex().unwrap(); // FIXME
-        dbg!(&tok);
-        match tok.kind {
-            TokenKind::Plus => {
-                let right = self.addition().unwrap(); // FIXME
-                Ok(AstNodeExpr::Binary(Box::new(left), tok, Box::new(right)))
+        let previous = self.previous.clone().unwrap();
+        dbg!(&self.previous);
+        match previous.kind {
+            TokenKind::Star | TokenKind::Slash => {
+                self.advance().unwrap();
+                let right = self.multiplication().unwrap(); //FIXME
+                Ok(AstNodeExpr::Binary(
+                    Box::new(left),
+                    previous,
+                    Box::new(right),
+                ))
             }
             _ => Ok(left),
         }
     }
+
+    fn addition(&mut self) -> Result<AstNodeExpr, String> {
+        let left = self.multiplication().unwrap(); // FIXME
+        let previous = self.previous.clone().unwrap();
+        dbg!(&self.previous);
+        match previous.kind {
+            TokenKind::Plus | TokenKind::Minus => {
+                self.advance().unwrap();
+                let right = self.addition().unwrap(); // FIXME
+                Ok(AstNodeExpr::Binary(
+                    Box::new(left),
+                    previous,
+                    Box::new(right),
+                ))
+            }
+            _ => Ok(left),
+        }
+    }
+
+    // fn comparison(&mut self) -> Result<AstNodeExpr, String> {
+    //     let left = self.addition().unwrap(); // FIXME
+    //     match tok.kind {
+    //         TokenKind::GreaterEqual => unimplemented!(),
+    //         _ => Ok(left),
+    //     }
+    // }
 
     fn expression(&mut self) -> Result<AstNodeExpr, String> {
         self.addition()
@@ -50,11 +87,15 @@ impl<'a> Parser<'a> {
 
     pub fn new(s: &str) -> Parser {
         Parser {
+            previous: None,
+            current: None,
             lexer: Lexer::new(s),
         }
     }
 
     pub fn parse(&mut self) -> Result<AstNodeExpr, String> {
+        self.advance().unwrap();
+        self.advance().unwrap(); // FIXME
         self.expression()
     }
 }
