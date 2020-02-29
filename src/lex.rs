@@ -3508,7 +3508,9 @@ mod tests {
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(
             tok.kind,
-            TokenKind::InvalidUnicodeLiteral("converted integer out of range for `char`".to_string())
+            TokenKind::InvalidUnicodeLiteral(
+                "converted integer out of range for `char`".to_string()
+            )
         );
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 14);
