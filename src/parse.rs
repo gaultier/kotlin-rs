@@ -41,12 +41,18 @@ impl<'a> Parser<'a> {
                 let right = self.addition().unwrap(); // FIXME
                 Ok(AstNodeExpr::Binary(Box::new(left), tok, Box::new(right)))
             }
-            _ => Ok(left)
+            _ => Ok(left),
         }
     }
 
     fn expression(&mut self) -> Result<AstNodeExpr, String> {
         self.addition()
+    }
+
+    pub fn new(s: &str) -> Parser {
+        Parser {
+            lexer: Lexer::new(s),
+        }
     }
 }
 
@@ -57,9 +63,7 @@ mod tests {
     #[test]
     fn t() {
         let s = "1 + 2";
-        let mut parser = Parser {
-            lexer: Lexer::new(&s),
-        };
+        let mut parser = Parser::new(&s);
         let ast = parser.expression();
         assert!(ast.is_ok());
         let ast = ast.as_ref().unwrap();
