@@ -23,12 +23,12 @@ struct Parser<'a> {
     lexer: Lexer<'a>,
 }
 
-type ParseFn = dyn FnMut(&mut Parser) -> ();
+type ParseFn = fn(&mut Parser) -> ();
 
 struct ParseRule {
     precedence: Precedence,
-    prefix: Option<&'static ParseFn>,
-    infix: Option<&'static ParseFn>,
+    prefix: Option<ParseFn>,
+    infix: Option<ParseFn>,
 }
 
 fn binary(parser: &mut Parser) {
@@ -41,12 +41,12 @@ fn binary(parser: &mut Parser) {
 const RULES: [ParseRule; 2] = [
     ParseRule {
         precedence: Precedence::Term,
-        infix: Some(&binary),
+        infix: Some(binary),
         prefix: None,
     },
     ParseRule {
         precedence: Precedence::Factor,
-        infix: Some(&binary),
+        infix: Some(binary),
         prefix: None,
     },
 ];
