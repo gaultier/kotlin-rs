@@ -73,16 +73,29 @@ impl<'a> Parser<'a> {
         }
     }
 
-    // fn comparison(&mut self) -> Result<AstNodeExpr, String> {
-    //     let left = self.addition().unwrap(); // FIXME
-    //     match tok.kind {
-    //         TokenKind::GreaterEqual => unimplemented!(),
-    //         _ => Ok(left),
-    //     }
-    // }
+    fn comparison(&mut self) -> Result<AstNodeExpr, String> {
+        let left = self.addition().unwrap(); // FIXME
+        let previous = self.previous.clone().unwrap();
+        dbg!(&self.previous);
+        match previous.kind {
+            TokenKind::Greater
+            | TokenKind::GreaterEqual
+            | TokenKind::Lesser
+            | TokenKind::LesserEqual => {
+                self.advance().unwrap();
+                let right = self.comparison().unwrap(); // FIXME
+                Ok(AstNodeExpr::Binary(
+                    Box::new(left),
+                    previous,
+                    Box::new(right),
+                ))
+            }
+            _ => Ok(left),
+        }
+    }
 
     fn expression(&mut self) -> Result<AstNodeExpr, String> {
-        self.addition()
+        self.comparison()
     }
 
     pub fn new(s: &str) -> Parser {
