@@ -23,7 +23,7 @@ struct Parser<'a> {
 
 type ParseFn = fn(&mut Parser) -> ();
 
-struct ParseRule {
+struct Rule {
     precedence: Precedence,
     prefix: Option<ParseFn>,
     infix: Option<ParseFn>,
@@ -54,767 +54,767 @@ fn number(parser: &mut Parser) {
     );
 }
 
-const RULES: [ParseRule; 144] = [
+const RULES: [Rule; 144] = [
     // Plus
-    ParseRule {
+    Rule {
         precedence: PREC_TERM,
         infix: Some(binary),
         prefix: None,
     },
     // PlusPlus
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // Minus
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // MinusMinus
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // Slash
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // Star
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // Equal
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // EqualEqual
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // EqualEqualEqual
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // Comma
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // At
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // Dollar
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // LeftParen
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // RightParen
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // LeftSquareBracket
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // RightSquareBracket
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // LeftCurlyBracket
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // RightCurlyBracket
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // Dot
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // Ampersand
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // AmpersandAmpersand
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // Pipe
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // PipePipe
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // Bang
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // BangEqual
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // BangEqualEqual
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // Colon
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // ColonColon
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // Semicolon
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // SemicolonSemicolon
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // PlusEqual
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // MinusEqual
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // StarEqual
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // SlashEqual
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // Percent
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // PercentEqual
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // Smaller
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // SmallerEqual
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // Greater
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // GreaterEqual
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // Arrow
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // FatArrow
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
     // Int
-    ParseRule {
+    Rule {
         precedence: PREC_NONE,
         infix: None,
         prefix: Some(number),
     },
     // Long
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
     },
-    ParseRule {
+    Rule {
         precedence: PREC_FACTOR,
         infix: None,
         prefix: None,
