@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use std::option::Option;
 use std::result::Result;
 use std::str::Chars;
@@ -1646,7 +1647,7 @@ impl<'a> Lexer<'a> {
                 } else if self.match_char('u') {
                     for _ in 1..=4 {
                         match self.peek() {
-                            Some(c) if c.is_ascii_digit() => {
+                            Some(c) if c.is_ascii_hexdigit() => {
                                 self.advance();
                             }
                             _ => {
@@ -1661,17 +1662,20 @@ impl<'a> Lexer<'a> {
                         }
                     }
 
-                    let s = &self.src[start_pos..self.pos as usize];
-                    dbg!(s);
-                    // let s_first = &self.src[start_pos + 2..self.pos as usize -2];
-                    // let s_second = &self.src[self.pos as usize  -2..self.pos as usize ];
-                    // dbg!(s_first);
-                    // dbg!(s_second);
-                    // let n_first = s_first.parse::<u16>().unwrap();
-                    // let n_second = s_second.parse::<u16>().unwrap();
-                    // let n = n_first as u32 + n_second as u32;
-                    // dbg!(n);
-                    let c = std::str::from_utf8(&s).unwrap().chars().next();
+                    let s = &self.src[start_pos + 2..self.pos as usize];
+                    dbg!(&s);
+                    let bytes = s
+                        .chars()
+                        .map(|c| c.to_digit(16).unwrap() as u8)
+                        .collect::<Vec<u8>>();
+                    dbg!(&bytes);
+                    let n: u16 = bytes[0] as u16 * 16 * 16 * 16
+                        + bytes[1] as u16 * 16 * 16
+                        + bytes[2] as u16 * 16
+                        + bytes[3] as u16;
+                    dbg!(&n);
+                    let c = char::try_from(n as u32);
+                    dbg!(&c);
                     if let Ok(c) = c {
                         Ok(Token::new(
                             self,
@@ -3478,13 +3482,13 @@ mod tests {
 
     #[test]
     fn unicode_literal() {
-        let s = r##"\u1234 \u123"##;
+        let s = r##"\uabcd \u123 \ud800"##;
         let mut lexer = Lexer::new(&s);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, TokenKind::UnicodeLiteral('x'));
+        assert_eq!(tok.kind, TokenKind::UnicodeLiteral('ꯍ'));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 1);
@@ -3498,5 +3502,17 @@ mod tests {
         assert_eq!(tok.start_column, 8);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 13);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(
+            tok.kind,
+            TokenKind::InvalidUnicodeLiteral("converted integer out of range for `char`".to_string())
+        );
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 14);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 20);
     }
 }
