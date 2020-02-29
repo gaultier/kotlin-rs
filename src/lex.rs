@@ -3,13 +3,13 @@ use std::option::Option;
 use std::result::Result;
 use std::str::Chars;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum NumberType {
     Integer,
     Real,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
     Plus,
     PlusPlus,
@@ -160,8 +160,8 @@ pub enum TokenKind {
     InvalidUnicodeLiteral(String),
 }
 
-impl From<TokenKind> for usize {
-    fn from(t: TokenKind) -> Self {
+impl From<&TokenKind> for usize {
+    fn from(t: &TokenKind) -> Self {
         match t {
             TokenKind::Plus => 0,
             TokenKind::PlusPlus => 1,
@@ -312,7 +312,7 @@ impl From<TokenKind> for usize {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub kind: TokenKind,
     start_pos: usize,
@@ -324,6 +324,13 @@ pub struct Token {
 }
 
 impl Token {
+    pub fn is_eof(&self) -> bool {
+        match self.kind {
+            TokenKind::Eof => true,
+            _ => false,
+        }
+    }
+
     pub fn num_type(&self) -> NumberType {
         match self {
             Token {
