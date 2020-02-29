@@ -29,7 +29,14 @@ impl<'a> Parser<'a> {
         dbg!(&self.previous);
         let previous = self.previous.clone().unwrap();
         match previous.kind {
-            TokenKind::Int(_) => {
+            TokenKind::Int(_)
+            | TokenKind::Long(_)
+            | TokenKind::UInt(_)
+            | TokenKind::ULong(_)
+            | TokenKind::Float(_)
+            | TokenKind::Double(_)
+            | TokenKind::Bool(_)
+            | TokenKind::UnicodeLiteral(_) => {
                 self.advance()?;
                 Ok(AstNodeExpr::Literal(previous))
             }
