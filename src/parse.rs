@@ -1,6 +1,16 @@
 use crate::lex::{Lexer, Token, TokenKind};
 use std::option::Option;
 
+#[derive(Debug)]
+enum AstNodeStmt {
+    Expr(AstNodeExpr),
+}
+
+#[derive(Debug)]
+enum AstNodeExpr {
+    Binary(Box<AstNodeExpr>, Token, Box<AstNodeExpr>),
+}
+
 type Precedence = u8;
 const PREC_NONE: Precedence = 0;
 const PREC_ASSIGNEMENT: Precedence = 1; // =
@@ -19,6 +29,7 @@ struct Parser<'a> {
     previous: Option<Token>,
     current: Option<Token>,
     lexer: Lexer<'a>,
+    ast: Option<AstNodeStmt>,
 }
 
 type ParseFn = fn(&mut Parser) -> ();
@@ -891,6 +902,7 @@ mod tests {
             previous: None,
             current: None,
             lexer: Lexer::new(&s),
+            ast: None,
         };
         parser.advance();
         parser.expression();
