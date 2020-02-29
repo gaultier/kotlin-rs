@@ -165,11 +165,11 @@ pub enum TokenKind {
 pub struct Token {
     pub kind: TokenKind,
     start_pos: usize,
-    start_line: usize,
-    start_column: usize,
+    pub start_line: usize,
+    pub start_column: usize,
     end_pos: usize,
-    end_line: usize,
-    end_column: usize,
+    pub end_line: usize,
+    pub end_column: usize,
 }
 
 #[derive(Debug, PartialEq, Clone)]
