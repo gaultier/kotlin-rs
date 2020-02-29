@@ -61,6 +61,7 @@ pub enum TokenKind {
     EscapedDoubleQuote,
     EscapedBackSlash,
     EscapedDollar,
+    UnicodeLiteral(char),
     Int(i32),
     Long(i64),
     UInt(u32),
@@ -141,6 +142,7 @@ pub enum TokenKind {
     KeywordWhere,
     Identifier,
     Eof,
+
     // Errors
     Unknown,
     UnexpectedChar(char),
@@ -153,6 +155,8 @@ pub enum TokenKind {
     TrailingDotInNumber,
     MissingExponentInNumber,
     UnknownEscapeSequence(Option<char>),
+    IncompleteUnicodeLiteral,
+    InvalidUnicodeLiteral(String),
 }
 
 impl From<TokenKind> for usize {
@@ -300,6 +304,9 @@ impl From<TokenKind> for usize {
             TokenKind::EscapedDollar => 139,
             TokenKind::EscapedBackSlash => 140,
             TokenKind::UnknownEscapeSequence(_) => 141,
+            TokenKind::UnicodeLiteral(_) => 142,
+            TokenKind::IncompleteUnicodeLiteral => 143,
+            TokenKind::InvalidUnicodeLiteral(_) => 144,
         }
     }
 }
@@ -1636,6 +1643,52 @@ impl<'a> Lexer<'a> {
                         start_line,
                         start_column,
                     ))
+                } else if self.match_char('u') {
+                    for _ in 1..=4 {
+                        match self.peek() {
+                            Some(c) if c.is_ascii_digit() => {
+                                self.advance();
+                            }
+                            _ => {
+                                return Err(Token::new(
+                                    self,
+                                    TokenKind::IncompleteUnicodeLiteral,
+                                    start_pos,
+                                    start_line,
+                                    start_column,
+                                ))
+                            }
+                        }
+                    }
+
+                    let s = &self.src[start_pos..self.pos as usize];
+                    dbg!(s);
+                    // let s_first = &self.src[start_pos + 2..self.pos as usize -2];
+                    // let s_second = &self.src[self.pos as usize  -2..self.pos as usize ];
+                    // dbg!(s_first);
+                    // dbg!(s_second);
+                    // let n_first = s_first.parse::<u16>().unwrap();
+                    // let n_second = s_second.parse::<u16>().unwrap();
+                    // let n = n_first as u32 + n_second as u32;
+                    // dbg!(n);
+                    let c = std::str::from_utf8(&s).unwrap().chars().next();
+                    if let Ok(c) = c {
+                        Ok(Token::new(
+                            self,
+                            TokenKind::UnicodeLiteral(c),
+                            start_pos,
+                            start_line,
+                            start_column,
+                        ))
+                    } else {
+                        Err(Token::new(
+                            self,
+                            TokenKind::InvalidUnicodeLiteral(c.unwrap_err().to_string()),
+                            start_pos,
+                            start_line,
+                            start_column,
+                        ))
+                    }
                 } else {
                     let c = if self.peek().is_some() {
                         self.advance()
@@ -3421,5 +3474,29 @@ mod tests {
         assert_eq!(tok.start_column, 19);
         assert_eq!(tok.end_line, 1);
         assert_eq!(tok.end_column, 20);
+    }
+
+    #[test]
+    fn unicode_literal() {
+        let s = r##"\u1234 \u123"##;
+        let mut lexer = Lexer::new(&s);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::UnicodeLiteral('x'));
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 1);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 7);
+
+        let tok = lexer.lex();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, TokenKind::IncompleteUnicodeLiteral);
+        assert_eq!(tok.start_line, 1);
+        assert_eq!(tok.start_column, 8);
+        assert_eq!(tok.end_line, 1);
+        assert_eq!(tok.end_column, 13);
     }
 }
