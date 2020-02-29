@@ -27,13 +27,7 @@ fn main() -> Result<(), String> {
                         println!("{:?}", token);
                     }
                     Err(token) => {
-                        eprintln!(
-                            "{}",
-                            OwnedToken {
-                                token: &token,
-                                src: &contents
-                            }
-                        );
+                        eprintln!("{}", token.to_owned(&contents));
                         eprintln!("{:?}", token);
                     }
                 }
@@ -54,13 +48,7 @@ fn main() -> Result<(), String> {
                 Ok(())
             } else {
                 let err = ast.unwrap_err();
-                let err_s = format!(
-                    "{}",
-                    OwnedToken {
-                        token: &err,
-                        src: &contents
-                    }
-                );
+                let err_s = format!("{}", err.to_owned(&contents));
                 eprintln!("{}", err_s);
                 Err(err_s)
             }
