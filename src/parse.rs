@@ -853,19 +853,28 @@ impl<'a> Parser<'a> {
         self.advance();
         dbg!(&self.current);
 
-        let kind = &self.current.as_ref().unwrap().kind;
-        dbg!(kind, usize::from(kind));
-        let prefix_rule = RULES[usize::from(kind)].prefix.unwrap();
+        let current_kind = &self.current.as_ref().unwrap().kind;
+        let current_index = usize::from(current_kind);
+        dbg!(current_kind, current_index);
+        let prefix_rule = RULES[current_index].prefix.unwrap();
         prefix_rule(self);
 
-        let mut current_precedence = PREC_NONE;
+        let current_kind = &self.current.as_ref().unwrap().kind;
+        let current_index = usize::from(current_kind);
+        let mut current_precedence = RULES[current_index].precedence;
+        dbg!(&current_precedence, &precedence);
+
         while !self.is_at_end() && precedence <= current_precedence {
             self.advance();
 
-            let index = usize::from(&self.current.as_ref().unwrap().kind);
-            current_precedence = RULES[index].precedence;
-            let infix_rule = RULES[index].infix.unwrap();
+            let previous_kind = &self.previous.as_ref().unwrap().kind;
+            let previous_index = usize::from(previous_kind);
+            let infix_rule = RULES[previous_index].infix.unwrap();
             infix_rule(self);
+
+            let current_kind = &self.current.as_ref().unwrap().kind;
+            let current_index = usize::from(current_kind);
+            current_precedence = RULES[current_index].precedence;
         }
     }
 }
