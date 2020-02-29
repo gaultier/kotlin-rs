@@ -3,7 +3,7 @@ use kotlin::parse::*;
 use std::io::prelude::*;
 use std::result::Result;
 
-fn run() -> Result<(), String> {
+fn main() -> Result<(), String> {
     let args: Vec<String> = std::env::args().collect();
     let args_ref = args.iter().map(|s| s.as_ref()).collect::<Vec<&str>>();
     match args_ref.as_slice() {
@@ -38,7 +38,7 @@ fn run() -> Result<(), String> {
                 .map_err(|err| format!("Could not read stdin: {}", err))?;
 
             let mut parser = Parser::new(&contents);
-            let ast = parser.parse()?;
+            let ast = parser.parse().unwrap();
             println!("{:?}", ast);
             Ok(())
         }
@@ -46,12 +46,5 @@ fn run() -> Result<(), String> {
             println!("Usage: {} lex|parse", args[0]);
             Ok(())
         }
-    }
-}
-
-fn main() {
-    if let Err(err) = run() {
-        eprintln!("Error: {}", err);
-        std::process::exit(1);
     }
 }
