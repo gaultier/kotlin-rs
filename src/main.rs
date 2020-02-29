@@ -44,7 +44,7 @@ fn main() -> Result<(), String> {
             let mut parser = Parser::new(&contents);
             let ast = parser.parse();
             if let Ok(ast) = ast {
-                println!("{:?}", ast);
+                println!("{}", ast);
                 Ok(())
             } else {
                 let err = ast.unwrap_err();
