@@ -1,19 +1,18 @@
 use crate::lex::{Lexer, Token, TokenKind};
-use std::option::Option;
 
 #[derive(Debug)]
-enum AstNodeStmt {
+pub enum AstNodeStmt {
     Expr(AstNodeExpr),
 }
 
 #[derive(Debug)]
-enum AstNodeExpr {
+pub enum AstNodeExpr {
     Binary(Box<AstNodeExpr>, Token, Box<AstNodeExpr>),
     Literal(Token),
 }
 
 #[derive(Debug)]
-struct Parser<'a> {
+pub struct Parser<'a> {
     lexer: Lexer<'a>,
 }
 
@@ -22,7 +21,7 @@ impl<'a> Parser<'a> {
         let tok = self.lexer.lex().unwrap(); // FIXME
         dbg!(&tok);
         match tok.kind {
-            TokenKind::Int(n) => Ok(AstNodeExpr::Literal(tok)),
+            TokenKind::Int(_) => Ok(AstNodeExpr::Literal(tok)),
             _ => unimplemented!(),
         }
     }
@@ -53,6 +52,10 @@ impl<'a> Parser<'a> {
         Parser {
             lexer: Lexer::new(s),
         }
+    }
+
+    pub fn parse(&mut self) -> Result<AstNodeExpr, String> {
+        self.expression()
     }
 }
 
