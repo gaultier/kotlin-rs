@@ -875,6 +875,7 @@ impl<'a> Parser<'a> {
             let current_kind = &self.current.as_ref().unwrap().kind;
             let current_index = usize::from(current_kind);
             current_precedence = RULES[current_index].precedence;
+            dbg!(current_precedence, precedence);
         }
     }
 }
