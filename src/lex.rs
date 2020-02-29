@@ -345,16 +345,16 @@ impl Token {
         }
     }
 
-    pub fn print(&self, src: &str) {
+    pub fn to_string(&self, src: &str) -> String {
         let fmt = format!("{}:{}:", self.start_line, self.start_column);
-        println!("{}{}", fmt, &src[self.start_pos..self.end_pos]);
+        let mut res = format!("{}{}\n", fmt, &src[self.start_pos..self.end_pos]);
         for _ in 0..fmt.len() {
-            print!(" ");
+            res += " ";
         }
         for _ in self.start_pos..self.end_pos {
-            print!("^");
+            res += "^";
         }
-        println!();
+        res
     }
 
     pub fn new(

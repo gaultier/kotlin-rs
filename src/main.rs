@@ -22,9 +22,13 @@ fn main() -> Result<(), String> {
                     Ok(token) if token.kind == TokenKind::Eof => {
                         return Ok(());
                     }
-                    Ok(token) | Err(token) => {
-                        token.print(&contents);
+                    Ok(token) => {
+                        println!("{}", token.to_string(&contents));
                         println!("{:?}", token);
+                    }
+                    Err(token) => {
+                        eprintln!("{}", token.to_string(&contents));
+                        eprintln!("{:?}", token);
                     }
                 }
             }
@@ -44,8 +48,9 @@ fn main() -> Result<(), String> {
                 Ok(())
             } else {
                 let err = ast.unwrap_err();
-                err.print(&contents);
-                Err("".to_string())
+                let err_s = err.to_string(&contents);
+                eprintln!("{}", err_s);
+                Err(err_s)
             }
         }
         _ => {
