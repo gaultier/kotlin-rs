@@ -114,8 +114,8 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse(&mut self) -> Result<AstNodeExpr, Token> {
-        self.advance().unwrap();
-        self.advance().unwrap(); // FIXME
+        self.advance()?;
+        self.advance()?;
         self.expression()
     }
 }
