@@ -46,7 +46,10 @@ fn main() -> Result<(), String> {
             let ast = parser.parse();
             if let Ok(ast) = ast {
                 println!("{:?}", ast);
-                type_check(&ast, &contents)?;
+                if let Err(err) = type_check(&ast, &contents) {
+                    eprintln!("{}", err.to_owned(&contents));
+                    return Err("".to_string());
+                }
                 let stdout = std::io::stdout();
                 let mut handle = stdout.lock();
                 gen_js(&ast, &contents, &mut handle)?;
