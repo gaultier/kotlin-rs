@@ -2118,7 +2118,7 @@ mod tests {
 
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::TrailingUnderscoreInNumber);
+        assert_eq!(tok.kind, TokenKindError::TrailingUnderscoreInNumber);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
@@ -2142,7 +2142,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::LeadingZeroInNumber);
+        assert_eq!(tok.kind, TokenKindError::LeadingZeroInNumber);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 4);
         assert_eq!(tok.end_line, 1);
@@ -2151,7 +2151,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::LeadingZeroInNumber);
+        assert_eq!(tok.kind, TokenKindError::LeadingZeroInNumber);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 9);
         assert_eq!(tok.end_line, 1);
@@ -2295,7 +2295,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::MissingDigitsInBinaryNumber);
+        assert_eq!(tok.kind, TokenKindError::MissingDigitsInBinaryNumber);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
@@ -2310,7 +2310,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::MissingDigitsInHexNumber);
+        assert_eq!(tok.kind, TokenKindError::MissingDigitsInHexNumber);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 2);
         assert_eq!(tok.end_line, 1);
@@ -2427,7 +2427,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::TrailingDotInNumber);
+        assert_eq!(tok.kind, TokenKindError::TrailingDotInNumber);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 24);
         assert_eq!(tok.end_line, 1);
@@ -2478,7 +2478,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::TrailingDotInNumber);
+        assert_eq!(tok.kind, TokenKindError::TrailingDotInNumber);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 21);
         assert_eq!(tok.end_line, 1);
@@ -2520,7 +2520,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::MissingExponentInNumber);
+        assert_eq!(tok.kind, TokenKindError::MissingExponentInNumber);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 22);
         assert_eq!(tok.end_line, 1);
@@ -2601,7 +2601,7 @@ mod tests {
 
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::UnknownChar);
+        assert_eq!(tok.kind, TokenKindError::UnknownChar);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 1);
@@ -2625,7 +2625,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::ShebangNotOnFirstLine);
+        assert_eq!(tok.kind, TokenKindError::ShebangNotOnFirstLine);
         assert_eq!(tok.start_line, 2);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 2);
@@ -2711,7 +2711,7 @@ mod tests {
 
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::UnexpectedChar('"'));
+        assert_eq!(tok.kind, TokenKindError::UnexpectedChar('"'));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 1);
@@ -2726,7 +2726,7 @@ mod tests {
 
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::NewlineInString);
+        assert_eq!(tok.kind, TokenKindError::NewlineInString);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 2);
@@ -3436,7 +3436,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::UnknownEscapeSequence(Some('+')));
+        assert_eq!(tok.kind, TokenKindError::UnknownEscapeSequence(Some('+')));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 17);
         assert_eq!(tok.end_line, 1);
@@ -3445,7 +3445,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::UnknownEscapeSequence(None));
+        assert_eq!(tok.kind, TokenKindError::UnknownEscapeSequence(None));
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 19);
         assert_eq!(tok.end_line, 1);
@@ -3469,7 +3469,7 @@ mod tests {
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::IncompleteUnicodeLiteral);
+        assert_eq!(tok.kind, TokenKindError::IncompleteUnicodeLiteral);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 8);
         assert_eq!(tok.end_line, 1);
@@ -3480,7 +3480,7 @@ mod tests {
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(
             tok.kind,
-            TokenKind::InvalidUnicodeLiteral(
+            TokenKindError::InvalidUnicodeLiteral(
                 "converted integer out of range for `char`".to_string()
             )
         );
