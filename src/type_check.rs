@@ -62,6 +62,10 @@ pub fn type_check(ast: &AstNodeExpr, src: &str) -> Result<Type, Error> {
             ..
         }) => Ok(Type::Int),
         AstNodeExpr::Literal(Token {
+            kind: TokenKind::UInt(_),
+            ..
+        }) => Ok(Type::UInt),
+        AstNodeExpr::Literal(Token {
             kind: TokenKind::Bool(_),
             ..
         }) => Ok(Type::Bool),
