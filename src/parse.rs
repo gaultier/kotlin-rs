@@ -44,12 +44,12 @@ impl<'a> Parser<'a> {
             }
             _ => Err(Error::new(
                 ErrorKind::ExpectedPrimary,
-                previous.start_pos,
-                previous.start_line,
-                previous.start_column,
-                previous.end_pos,
-                previous.end_line,
-                previous.end_column,
+                previous.location.start_pos,
+                previous.location.start_line,
+                previous.location.start_column,
+                previous.location.end_pos,
+                previous.location.end_line,
+                previous.location.end_column,
             )),
         }
     }

@@ -1,9 +1,9 @@
+use crate::error::*;
 use std::convert::TryFrom;
 use std::fmt;
 use std::option::Option;
 use std::result::Result;
 use std::str::Chars;
-use crate::error::*;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum NumberType {
@@ -150,12 +150,7 @@ pub enum TokenKind {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub kind: TokenKind,
-    pub start_pos: usize,
-    pub start_line: usize,
-    pub start_column: usize,
-    pub end_pos: usize,
-    pub end_line: usize,
-    pub end_column: usize,
+    pub location: Location,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -166,7 +161,7 @@ pub struct OwnedToken<'a> {
 
 impl<'a> fmt::Display for OwnedToken<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", &self.src[self.token.start_pos..self.token.end_pos])
+        write!(f, "{}", &self.src[self.token.location.start_pos..self.token.location.end_pos])
     }
 }
 
@@ -205,16 +200,17 @@ impl Token {
     ) -> Token {
         Token {
             kind,
-            end_pos: lexer.pos as usize,
-            end_line: lexer.line,
-            end_column: lexer.column as usize,
-            start_pos,
-            start_line,
-            start_column,
+            location: Location {
+                end_pos: lexer.pos as usize,
+                end_line: lexer.line,
+                end_column: lexer.column as usize,
+                start_pos,
+                start_line,
+                start_column,
+            },
         }
     }
 }
-
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
@@ -1996,10 +1992,10 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Int(123));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 5);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 5);
     }
 
     #[test]
@@ -2011,10 +2007,10 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Int(123_000_000));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 13);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 13);
     }
 
     #[test]
@@ -2026,10 +2022,10 @@ mod tests {
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, ErrorKind::TrailingUnderscoreInNumber);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 14);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 14);
     }
 
     #[test]
@@ -2041,37 +2037,37 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Int(0i32));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 3);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 3);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, ErrorKind::LeadingZeroInNumber);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 4);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 8);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 4);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 8);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, ErrorKind::LeadingZeroInNumber);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 9);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 14);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 9);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 14);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::UInt(0u32));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 15);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 17);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 15);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 17);
     }
 
     #[test]
@@ -2083,19 +2079,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::UInt(123u32));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 6);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 6);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::UInt(456u32));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 8);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 12);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 8);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 12);
     }
 
     #[test]
@@ -2107,19 +2103,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::ULong(123u64));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 7);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 7);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::ULong(456u64));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 9);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 14);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 9);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 14);
     }
 
     #[test]
@@ -2131,10 +2127,10 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Long(123i64));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 6);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 6);
     }
 
     #[test]
@@ -2146,19 +2142,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Int(5));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 7);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 7);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Long(std::u32::MAX as i64 + 1));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 8);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 47);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 8);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 47);
     }
 
     #[test]
@@ -2170,28 +2166,28 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::ULong(5));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 9);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 9);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Long(0b1));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 10);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 14);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 10);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 14);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::UInt(0b11));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 15);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 20);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 15);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 20);
     }
 
     #[test]
@@ -2203,10 +2199,10 @@ mod tests {
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, ErrorKind::MissingDigitsInBinaryNumber);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 4);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 4);
     }
 
     #[test]
@@ -2218,10 +2214,10 @@ mod tests {
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, ErrorKind::MissingDigitsInHexNumber);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 4);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 4);
     }
 
     #[test]
@@ -2233,19 +2229,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Int(0x1a1));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 7);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 7);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Long(0xdeadbeef));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 8);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 18);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 8);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 18);
     }
 
     #[test]
@@ -2257,28 +2253,28 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::ULong(0x101));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 9);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 9);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Long(0x1));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 10);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 14);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 10);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 14);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::UInt(0x11));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 15);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 20);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 15);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 20);
     }
 
     #[test]
@@ -2290,55 +2286,55 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Float(123f32));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 6);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 6);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Float(456f32));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 7);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 11);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 7);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 11);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Float(0f32));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 12);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 14);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 12);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 14);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Float(0f32));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 15);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 19);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 15);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 19);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Float(0.1f32));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 20);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 23);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 20);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 23);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, ErrorKind::TrailingDotInNumber);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 24);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 26);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 24);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 26);
     }
 
     #[test]
@@ -2350,46 +2346,46 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Double(123f64));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 7);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 7);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Double(456f64));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 8);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 13);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 8);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 13);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Double(0f64));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 14);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 17);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 14);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 17);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Double(0.1f64));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 18);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 20);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 18);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 20);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, ErrorKind::TrailingDotInNumber);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 21);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 23);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 21);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 23);
     }
 
     #[test]
@@ -2401,37 +2397,37 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Double(123e2));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 7);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 7);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Double(123e2));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 8);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 14);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 8);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 14);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Double(123e-2));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 15);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 21);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 15);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 21);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, ErrorKind::MissingExponentInNumber);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 22);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 26);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 22);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 26);
     }
 
     #[test]
@@ -2443,28 +2439,28 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Shebang);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 11);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 11);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Newline);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 11);
-        assert_eq!(tok.end_line, 2);
-        assert_eq!(tok.end_column, 1);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 11);
+        assert_eq!(tok.location.end_line, 2);
+        assert_eq!(tok.location.end_column, 1);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Plus);
-        assert_eq!(tok.start_line, 2);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 2);
-        assert_eq!(tok.end_column, 2);
+        assert_eq!(tok.location.start_line, 2);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 2);
+        assert_eq!(tok.location.end_column, 2);
     }
 
     #[test]
@@ -2476,28 +2472,28 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Comment);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 10);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 10);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Newline);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 10);
-        assert_eq!(tok.end_line, 2);
-        assert_eq!(tok.end_column, 1);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 10);
+        assert_eq!(tok.location.end_line, 2);
+        assert_eq!(tok.location.end_column, 1);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Plus);
-        assert_eq!(tok.start_line, 2);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 2);
-        assert_eq!(tok.end_column, 2);
+        assert_eq!(tok.location.start_line, 2);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 2);
+        assert_eq!(tok.location.end_column, 2);
     }
 
     #[test]
@@ -2509,10 +2505,10 @@ mod tests {
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, ErrorKind::UnknownChar);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 2);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 2);
     }
 
     #[test]
@@ -2524,37 +2520,37 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Newline);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 2);
-        assert_eq!(tok.end_column, 1);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 2);
+        assert_eq!(tok.location.end_column, 1);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, ErrorKind::ShebangNotOnFirstLine);
-        assert_eq!(tok.start_line, 2);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 2);
-        assert_eq!(tok.end_column, 11);
+        assert_eq!(tok.location.start_line, 2);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 2);
+        assert_eq!(tok.location.end_column, 11);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Newline);
-        assert_eq!(tok.start_line, 2);
-        assert_eq!(tok.start_column, 11);
-        assert_eq!(tok.end_line, 3);
-        assert_eq!(tok.end_column, 1);
+        assert_eq!(tok.location.start_line, 2);
+        assert_eq!(tok.location.start_column, 11);
+        assert_eq!(tok.location.end_line, 3);
+        assert_eq!(tok.location.end_column, 1);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Plus);
-        assert_eq!(tok.start_line, 3);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 3);
-        assert_eq!(tok.end_column, 2);
+        assert_eq!(tok.location.start_line, 3);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 3);
+        assert_eq!(tok.location.end_column, 2);
     }
 
     #[test]
@@ -2568,19 +2564,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Newline);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 2);
-        assert_eq!(tok.end_column, 1);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 2);
+        assert_eq!(tok.location.end_column, 1);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::TString);
-        assert_eq!(tok.start_line, 2);
-        assert_eq!(tok.start_column, 13);
-        assert_eq!(tok.end_line, 2);
-        assert_eq!(tok.end_column, 15);
+        assert_eq!(tok.location.start_line, 2);
+        assert_eq!(tok.location.start_column, 13);
+        assert_eq!(tok.location.end_line, 2);
+        assert_eq!(tok.location.end_column, 15);
     }
 
     #[test]
@@ -2594,20 +2590,20 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Newline);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 2);
-        assert_eq!(tok.end_column, 1);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 2);
+        assert_eq!(tok.location.end_column, 1);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::TString);
-        assert_eq!(tok.start_line, 2);
-        assert_eq!(tok.start_column, 13);
-        assert_eq!(tok.end_line, 2);
-        assert_eq!(tok.end_column, 25);
-        assert_eq!(&s[tok.start_pos..tok.end_pos], "\"abc123老虎老虎\"");
+        assert_eq!(tok.location.start_line, 2);
+        assert_eq!(tok.location.start_column, 13);
+        assert_eq!(tok.location.end_line, 2);
+        assert_eq!(tok.location.end_column, 25);
+        assert_eq!(&s[tok.location.start_pos..tok.location.end_pos], "\"abc123老虎老虎\"");
     }
 
     #[test]
@@ -2619,10 +2615,10 @@ mod tests {
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, ErrorKind::UnexpectedChar('"'));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 2);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 2);
     }
 
     #[test]
@@ -2634,10 +2630,10 @@ mod tests {
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, ErrorKind::NewlineInString);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 2);
-        assert_eq!(tok.end_column, 1);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 2);
+        assert_eq!(tok.location.end_column, 1);
     }
 
     #[test]
@@ -2649,19 +2645,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Bool(true));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 6);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 6);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Bool(false));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 7);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 12);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 7);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 12);
     }
 
     #[test]
@@ -2673,10 +2669,10 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Null);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 6);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 6);
     }
 
     #[test]
@@ -2689,28 +2685,28 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::KeywordAbstract);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 10);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 10);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::KeywordAs);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 11);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 13);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 11);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 13);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::KeywordAsSafe);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 14);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 17);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 14);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 17);
     }
 
     #[test]
@@ -2728,41 +2724,41 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Identifier);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 3);
-        assert_eq!(&s[tok.start_pos..tok.end_pos], "_");
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 3);
+        assert_eq!(&s[tok.location.start_pos..tok.location.end_pos], "_");
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Identifier);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 4);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 6);
-        assert_eq!(&s[tok.start_pos..tok.end_pos], "_a");
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 4);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 6);
+        assert_eq!(&s[tok.location.start_pos..tok.location.end_pos], "_a");
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Identifier);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 7);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 9);
-        assert_eq!(&s[tok.start_pos..tok.end_pos], "B_");
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 7);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 9);
+        assert_eq!(&s[tok.location.start_pos..tok.location.end_pos], "B_");
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Identifier);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 10);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 16);
-        assert_eq!(&s[tok.start_pos..tok.end_pos], "ᛮƍᴽאᾯƱ");
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 10);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 16);
+        assert_eq!(&s[tok.location.start_pos..tok.location.end_pos], "ᛮƍᴽאᾯƱ");
     }
 
     #[test]
@@ -2774,19 +2770,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Comment);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 2);
-        assert_eq!(tok.end_column, 8);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 2);
+        assert_eq!(tok.location.end_column, 8);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Plus);
-        assert_eq!(tok.start_line, 2);
-        assert_eq!(tok.start_column, 9);
-        assert_eq!(tok.end_line, 2);
-        assert_eq!(tok.end_column, 10);
+        assert_eq!(tok.location.start_line, 2);
+        assert_eq!(tok.location.start_column, 9);
+        assert_eq!(tok.location.end_line, 2);
+        assert_eq!(tok.location.end_column, 10);
     }
 
     #[test]
@@ -2798,19 +2794,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Comment);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 5);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 5);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Plus);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 5);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 6);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 5);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 6);
     }
 
     #[test]
@@ -2822,19 +2818,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Dot);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 3);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 3);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Dot);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 4);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 5);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 4);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 5);
     }
 
     #[test]
@@ -2846,64 +2842,64 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Minus);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 2);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 2);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Star);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 3);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 3);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Slash);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 3);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 4);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 3);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 4);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Colon);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 4);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 5);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 4);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 5);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Semicolon);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 5);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 6);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 5);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 6);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::At);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 6);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 7);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 6);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 7);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Dollar);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 7);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 8);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 7);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 8);
     }
 
     #[test]
@@ -2915,28 +2911,28 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::PlusPlus);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 3);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 3);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Plus);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 3);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 4);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 3);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 4);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::PlusEqual);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 5);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 7);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 5);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 7);
     }
 
     #[test]
@@ -2948,28 +2944,28 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::MinusMinus);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 3);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 3);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Minus);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 3);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 4);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 3);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 4);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Arrow);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 5);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 7);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 5);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 7);
     }
 
     #[test]
@@ -2981,19 +2977,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::AmpersandAmpersand);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 3);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 3);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Ampersand);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 3);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 4);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 3);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 4);
     }
 
     #[test]
@@ -3005,19 +3001,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::PipePipe);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 3);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 3);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Pipe);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 3);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 4);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 3);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 4);
     }
 
     #[test]
@@ -3029,19 +3025,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::ColonColon);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 3);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 3);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Colon);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 3);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 4);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 3);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 4);
     }
 
     #[test]
@@ -3053,19 +3049,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::SemicolonSemicolon);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 3);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 3);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Semicolon);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 3);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 4);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 3);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 4);
     }
 
     #[test]
@@ -3077,19 +3073,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Star);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 2);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 2);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::StarEqual);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 4);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 4);
     }
 
     #[test]
@@ -3101,19 +3097,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Slash);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 2);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 2);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::SlashEqual);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 3);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 5);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 3);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 5);
     }
 
     #[test]
@@ -3125,19 +3121,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Percent);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 2);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 2);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::PercentEqual);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 4);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 4);
     }
 
     #[test]
@@ -3149,37 +3145,37 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::EqualEqual);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 3);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 3);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Equal);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 4);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 5);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 4);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 5);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::EqualEqualEqual);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 6);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 9);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 6);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 9);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::FatArrow);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 10);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 12);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 10);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 12);
     }
 
     #[test]
@@ -3191,28 +3187,28 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Bang);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 2);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 2);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::BangEqual);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 4);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 4);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::BangEqualEqual);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 4);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 7);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 4);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 7);
     }
 
     #[test]
@@ -3224,19 +3220,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Lesser);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 2);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 2);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::LesserEqual);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 4);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 4);
     }
 
     #[test]
@@ -3248,19 +3244,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Greater);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 2);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 2);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::GreaterEqual);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 2);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 4);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 4);
     }
 
     #[test]
@@ -3272,91 +3268,91 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::EscapeSequenceNewline);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 3);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 3);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::EscapeSequenceCarriageReturn);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 3);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 5);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 3);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 5);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::EscapeSequenceBackspace);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 5);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 7);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 5);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 7);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::EscapeSequenceTab);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 7);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 9);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 7);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 9);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::EscapedQuote);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 9);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 11);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 9);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 11);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::EscapedDoubleQuote);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 11);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 13);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 11);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 13);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::EscapedDollar);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 13);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 15);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 13);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 15);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::EscapedBackSlash);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 15);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 17);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 15);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 17);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, ErrorKind::UnknownEscapeSequence(Some('+')));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 17);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 19);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 17);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 19);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, ErrorKind::UnknownEscapeSequence(None));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 19);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 20);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 19);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 20);
     }
 
     #[test]
@@ -3368,19 +3364,19 @@ mod tests {
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::UnicodeLiteral('ꯍ'));
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 1);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 7);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 7);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
         assert_eq!(tok.kind, ErrorKind::IncompleteUnicodeLiteral);
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 8);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 13);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 8);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 13);
 
         let tok = lexer.lex();
         assert_eq!(tok.as_ref().is_err(), true);
@@ -3391,9 +3387,9 @@ mod tests {
                 "converted integer out of range for `char`".to_string()
             )
         );
-        assert_eq!(tok.start_line, 1);
-        assert_eq!(tok.start_column, 14);
-        assert_eq!(tok.end_line, 1);
-        assert_eq!(tok.end_column, 20);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 14);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 20);
     }
 }
