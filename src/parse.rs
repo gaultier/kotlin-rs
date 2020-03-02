@@ -150,7 +150,7 @@ mod tests {
     fn t() {
         let s = "1 + 2";
         let mut parser = Parser::new(&s);
-        let ast = parser.expression();
+        let ast = parser.parse();
         assert!(ast.is_ok());
         let ast = ast.as_ref().unwrap();
         match ast {
