@@ -238,7 +238,7 @@ impl<'a> fmt::Display for OwnedTokenError<'a> {
             self.token.start_line,
             self.token.start_column,
             self.token.kind,
-            &self.src[self.token.start_pos - 5..self.token.start_pos] // FIXME
+            &self.src[self.token.start_pos - 5..self.token.start_pos] // FIXME: show full source code line
         );
         write!(
             f,
