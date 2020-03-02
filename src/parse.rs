@@ -154,7 +154,7 @@ mod tests {
         assert!(ast.is_ok());
         let ast = ast.as_ref().unwrap();
         match ast {
-            AstNodeExpr::Binary(left, op, right) => {
+            AstNodeExpr::Binary(_, _, _) => {
                 assert!(true);
             }
             _ => assert!(false),
