@@ -148,7 +148,7 @@ pub enum TokenKind {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenKindError {
-    Unknown,
+    UnknownChar,
     UnexpectedChar(char),
     ShebangNotOnFirstLine,
     NewlineInString,
@@ -2057,7 +2057,7 @@ impl<'a> Lexer<'a> {
                 self.identifier(start_pos, start_line, start_column)
             }
             Some(_) => Err(TokenError::new(
-                TokenKindError::Unknown,
+                TokenKindError::UnknownChar,
                 start_pos,
                 start_line,
                 start_column,
@@ -2601,7 +2601,7 @@ mod tests {
 
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, TokenKind::Unknown);
+        assert_eq!(tok.kind, TokenKind::UnknownChar);
         assert_eq!(tok.start_line, 1);
         assert_eq!(tok.start_column, 1);
         assert_eq!(tok.end_line, 1);
