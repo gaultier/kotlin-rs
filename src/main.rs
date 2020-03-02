@@ -28,9 +28,8 @@ fn main() -> Result<(), String> {
                         println!("{}", token.to_owned(&contents));
                         println!("{:?}", token);
                     }
-                    Err(token) => {
-                        eprintln!("{}", token.to_owned(&contents));
-                        eprintln!("{:?}", token);
+                    Err(error) => {
+                        eprintln!("{}", error.to_owned(&contents));
                     }
                 }
             }
