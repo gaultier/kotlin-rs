@@ -144,8 +144,10 @@ pub enum TokenKind {
     KeywordWhere,
     Identifier,
     Eof,
+}
 
-    // Errors
+#[derive(Debug, PartialEq, Clone)]
+pub enum TokenKindError {
     Unknown,
     UnexpectedChar(char),
     ShebangNotOnFirstLine,
@@ -159,11 +161,23 @@ pub enum TokenKind {
     UnknownEscapeSequence(Option<char>),
     IncompleteUnicodeLiteral,
     InvalidUnicodeLiteral(String),
+    ExpectedPrimary(Token),
 }
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub kind: TokenKind,
+    pub start_pos: usize,
+    pub start_line: usize,
+    pub start_column: usize,
+    pub end_pos: usize,
+    pub end_line: usize,
+    pub end_column: usize,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct TokenError {
+    pub kind: TokenKindError,
     start_pos: usize,
     pub start_line: usize,
     pub start_column: usize,
@@ -195,6 +209,31 @@ impl<'a> fmt::Display for OwnedToken<'a> {
         // }
         // Ok(())
         write!(f, "{}", &self.src[self.token.start_pos..self.token.end_pos])
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct OwnedTokenError<'a> {
+    pub token: &'a TokenError,
+    pub src: &'a str,
+}
+
+impl<'a> fmt::Display for OwnedTokenError<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let fmt = format!("{}:{}:", self.token.start_line, self.token.start_column);
+        write!(
+            f,
+            "{}{}\n",
+            fmt,
+            &self.src[self.token.start_pos..self.token.end_pos]
+        )?;
+        for _ in 0..fmt.len() {
+            write!(f, " ")?;
+        }
+        for _ in self.token.start_pos..self.token.end_pos {
+            write!(f, "^")?;
+        }
+        Ok(())
     }
 }
 
@@ -241,6 +280,31 @@ impl Token {
             start_column,
         }
     }
+}
+
+impl TokenError {
+    pub fn new(
+        lexer: &Lexer,
+        kind: TokenKindError,
+        start_pos: usize,
+        start_line: usize,
+        start_column: usize,
+    ) -> TokenError {
+        TokenError {
+            kind,
+            end_pos: lexer.pos as usize,
+            end_line: lexer.line,
+            end_column: lexer.column as usize,
+            start_pos,
+            start_line,
+            start_column,
+        }
+    }
+
+    pub fn to_owned<'a>(&'a self, src: &'a str) -> OwnedTokenError<'a> {
+        OwnedTokenError { token: &self, src }
+    }
+
 }
 
 #[derive(Debug)]
@@ -359,7 +423,7 @@ impl<'a> Lexer<'a> {
         start_pos: usize,
         start_line: usize,
         start_column: usize,
-    ) -> Result<NumberType, Token> {
+    ) -> Result<NumberType, TokenError> {
         let mut num_type = NumberType::Integer;
 
         while let Some(c) = self.peek() {
@@ -410,9 +474,9 @@ impl<'a> Lexer<'a> {
                         }
                     }
                     _ => {
-                        return Err(Token::new(
+                        return Err(TokenError::new(
                             self,
-                            TokenKind::MissingExponentInNumber,
+                            TokenKindError::MissingExponentInNumber,
                             start_pos,
                             start_line,
                             start_column,
@@ -430,7 +494,7 @@ impl<'a> Lexer<'a> {
         start_pos: usize,
         start_line: usize,
         start_column: usize,
-    ) -> Result<Token, Token> {
+    ) -> Result<Token, TokenError> {
         // Consume `b|B`
         self.advance();
 
@@ -440,9 +504,9 @@ impl<'a> Lexer<'a> {
             .replace("_", "");
         dbg!(&s);
         if s.len() == 0 {
-            return Err(Token::new(
+            return Err(TokenError::new(
                 self,
-                TokenKind::MissingDigitsInBinaryNumber,
+                TokenKindError::MissingDigitsInBinaryNumber,
                 start_pos,
                 start_line,
                 start_column,
@@ -452,9 +516,9 @@ impl<'a> Lexer<'a> {
         let last_digit = self.src[start_pos + 2..self.pos as usize].chars().last();
         // Forbid trailing underscore.
         if last_digit == Some('_') {
-            return Err(Token::new(
+            return Err(TokenError::new(
                 self,
-                TokenKind::TrailingUnderscoreInNumber,
+                TokenKindError::TrailingUnderscoreInNumber,
                 start_pos,
                 start_line,
                 start_column,
@@ -526,7 +590,7 @@ impl<'a> Lexer<'a> {
         start_pos: usize,
         start_line: usize,
         start_column: usize,
-    ) -> Result<Token, Token> {
+    ) -> Result<Token, TokenError> {
         // Consume `x|X`
         self.advance();
 
@@ -536,9 +600,9 @@ impl<'a> Lexer<'a> {
             .replace("_", "");
         dbg!(&s);
         if s.len() == 0 {
-            return Err(Token::new(
+            return Err(TokenError::new(
                 self,
-                TokenKind::MissingDigitsInHexNumber,
+                TokenKindError::MissingDigitsInHexNumber,
                 start_pos,
                 start_line,
                 start_column,
@@ -548,9 +612,9 @@ impl<'a> Lexer<'a> {
         let last_digit = self.src[start_pos + 2..self.pos as usize].chars().last();
         // Forbid trailing underscore.
         if last_digit == Some('_') {
-            return Err(Token::new(
+            return Err(TokenError::new(
                 self,
-                TokenKind::TrailingUnderscoreInNumber,
+                TokenKindError::TrailingUnderscoreInNumber,
                 start_pos,
                 start_line,
                 start_column,
@@ -622,7 +686,7 @@ impl<'a> Lexer<'a> {
         start_pos: usize,
         start_line: usize,
         start_column: usize,
-    ) -> Result<Token, Token> {
+    ) -> Result<Token, TokenError> {
         self.digits(start_pos, start_line, start_column)?;
         dbg!(&self.src[start_pos..self.pos as usize]);
         let s = &self.src[start_pos..self.pos as usize]
@@ -633,17 +697,17 @@ impl<'a> Lexer<'a> {
         let last_digit = self.src[start_pos..self.pos as usize].chars().last();
         // Forbid trailing underscore.
         if last_digit == Some('_') {
-            return Err(Token::new(
+            return Err(TokenError::new(
                 self,
-                TokenKind::TrailingUnderscoreInNumber,
+                TokenKindError::TrailingUnderscoreInNumber,
                 start_pos,
                 start_line,
                 start_column,
             ));
         } else if last_digit == Some('.') {
-            return Err(Token::new(
+            return Err(TokenError::new(
                 self,
-                TokenKind::TrailingDotInNumber,
+                TokenKindError::TrailingDotInNumber,
                 start_pos,
                 start_line,
                 start_column,
@@ -680,7 +744,7 @@ impl<'a> Lexer<'a> {
         start_pos: usize,
         start_line: usize,
         start_column: usize,
-    ) -> Result<Token, Token> {
+    ) -> Result<Token, TokenError> {
         if self.digits(start_pos, start_line, start_column)? == NumberType::Real {
             return self.real(start_pos, start_line, start_column);
         }
@@ -693,9 +757,9 @@ impl<'a> Lexer<'a> {
         let last_digit = self.src[start_pos..self.pos as usize].chars().last();
         // Forbid trailing underscore.
         if last_digit == Some('_') {
-            return Err(Token::new(
+            return Err(TokenError::new(
                 self,
-                TokenKind::TrailingUnderscoreInNumber,
+                TokenKindError::TrailingUnderscoreInNumber,
                 start_pos,
                 start_line,
                 start_column,
@@ -757,9 +821,9 @@ impl<'a> Lexer<'a> {
             && first_digit == Some('0')
             && s.len() > 1
         {
-            Err(Token::new(
+            Err(TokenError::new(
                 self,
-                TokenKind::LeadingZeroInNumber,
+                TokenKindError::LeadingZeroInNumber,
                 start_pos,
                 start_line,
                 start_column,
@@ -775,14 +839,14 @@ impl<'a> Lexer<'a> {
         start_pos: usize,
         start_line: usize,
         start_column: usize,
-    ) -> Result<(), Token> {
+    ) -> Result<(), TokenError> {
         if self.peek() == Some(c) {
             self.advance();
             Ok(())
         } else {
-            Err(Token::new(
+            Err(TokenError::new(
                 self,
-                TokenKind::UnexpectedChar(c),
+                TokenKindError::UnexpectedChar(c),
                 start_pos,
                 start_line,
                 start_column,
@@ -795,7 +859,7 @@ impl<'a> Lexer<'a> {
         start_pos: usize,
         start_line: usize,
         start_column: usize,
-    ) -> Result<Token, Token> {
+    ) -> Result<Token, TokenError> {
         while let Some(c) = self.peek() {
             match c {
                 '"' => {
@@ -804,9 +868,9 @@ impl<'a> Lexer<'a> {
                 '\n' => {
                     self.advance();
                     self.newline(start_pos, start_line, start_column);
-                    return Err(Token::new(
+                    return Err(TokenError::new(
                         self,
-                        TokenKind::NewlineInString,
+                        TokenKindError::NewlineInString,
                         start_pos,
                         start_line,
                         start_column,
@@ -832,7 +896,7 @@ impl<'a> Lexer<'a> {
         start_pos: usize,
         start_line: usize,
         start_column: usize,
-    ) -> Result<Token, Token> {
+    ) -> Result<Token, TokenError> {
         while let Some(c) = self.peek() {
             if c.is_alphanumeric() || c == '_' {
                 self.advance();
@@ -1348,7 +1412,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn skip_whitespace(&mut self) -> Result<Option<Token>, Token> {
+    fn skip_whitespace(&mut self) -> Result<Option<Token>, TokenError> {
         while !self.is_at_end() {
             match self.peek() {
                 None | Some(' ') | Some('\t') | Some('\r') => {
@@ -1361,9 +1425,9 @@ impl<'a> Lexer<'a> {
                         let start_column = self.column as usize;
                         if self.line != 1 {
                             self.skip_until('\n');
-                            return Err(Token::new(
+                            return Err(TokenError::new(
                                 self,
-                                TokenKind::ShebangNotOnFirstLine,
+                                TokenKindError::ShebangNotOnFirstLine,
                                 start_pos,
                                 start_line,
                                 start_column,
@@ -1438,7 +1502,7 @@ impl<'a> Lexer<'a> {
         Ok(None)
     }
 
-    pub fn lex(&mut self) -> Result<Token, Token> {
+    pub fn lex(&mut self) -> Result<Token, TokenError> {
         if let Some(tok) = self.skip_whitespace()? {
             return Ok(tok);
         }
@@ -1525,9 +1589,9 @@ impl<'a> Lexer<'a> {
                                 self.advance();
                             }
                             _ => {
-                                return Err(Token::new(
+                                return Err(TokenError::new(
                                     self,
-                                    TokenKind::IncompleteUnicodeLiteral,
+                                    TokenKindError::IncompleteUnicodeLiteral,
                                     start_pos,
                                     start_line,
                                     start_column,
@@ -1559,9 +1623,9 @@ impl<'a> Lexer<'a> {
                             start_column,
                         ))
                     } else {
-                        Err(Token::new(
+                        Err(TokenError::new(
                             self,
-                            TokenKind::InvalidUnicodeLiteral(c.unwrap_err().to_string()),
+                            TokenKindError::InvalidUnicodeLiteral(c.unwrap_err().to_string()),
                             start_pos,
                             start_line,
                             start_column,
@@ -1575,9 +1639,9 @@ impl<'a> Lexer<'a> {
                         None
                     };
 
-                    Err(Token::new(
+                    Err(TokenError::new(
                         self,
-                        TokenKind::UnknownEscapeSequence(c),
+                        TokenKindError::UnknownEscapeSequence(c),
                         start_pos,
                         start_line,
                         start_column,
@@ -1960,9 +2024,9 @@ impl<'a> Lexer<'a> {
             Some(c) if c.is_alphanumeric() || c == '_' => {
                 self.identifier(start_pos, start_line, start_column)
             }
-            Some(_) => Err(Token::new(
+            Some(_) => Err(TokenError::new(
                 self,
-                TokenKind::Unknown,
+                TokenKindError::Unknown,
                 start_pos,
                 start_line,
                 start_column,

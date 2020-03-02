@@ -1,4 +1,4 @@
-use crate::lex::{Lexer, Token, TokenKind};
+use crate::lex::{Lexer, Token, TokenError, TokenKind, TokenKindError};
 
 #[derive(Debug)]
 pub enum AstNodeStmt {
@@ -20,13 +20,13 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    fn advance(&mut self) -> Result<(), Token> {
+    fn advance(&mut self) -> Result<(), TokenError> {
         self.previous = self.current.clone();
         self.current = Some(self.lexer.lex()?);
         Ok(())
     }
 
-    fn primary(&mut self) -> Result<AstNodeExpr, Token> {
+    fn primary(&mut self) -> Result<AstNodeExpr, TokenError> {
         dbg!(&self.previous);
         let previous = self.previous.clone().unwrap();
         match previous.kind {
@@ -41,11 +41,17 @@ impl<'a> Parser<'a> {
                 self.advance()?;
                 Ok(AstNodeExpr::Literal(previous))
             }
-            _ => Err(previous),
+            _ => Err(TokenError::new(
+                &self.lexer,
+                TokenKindError::ExpectedPrimary(previous.clone()),
+                previous.start_pos,
+                previous.start_line,
+                previous.start_column,
+            )),
         }
     }
 
-    fn unary(&mut self) -> Result<AstNodeExpr, Token> {
+    fn unary(&mut self) -> Result<AstNodeExpr, TokenError> {
         let previous = self.previous.clone().unwrap();
         dbg!(&self.previous);
         match previous.kind {
@@ -58,7 +64,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn multiplication(&mut self) -> Result<AstNodeExpr, Token> {
+    fn multiplication(&mut self) -> Result<AstNodeExpr, TokenError> {
         let left = self.unary()?;
         let previous = self.previous.clone().unwrap();
         dbg!(&self.previous);
@@ -76,7 +82,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn addition(&mut self) -> Result<AstNodeExpr, Token> {
+    fn addition(&mut self) -> Result<AstNodeExpr, TokenError> {
         let left = self.multiplication()?;
         let previous = self.previous.clone().unwrap();
         dbg!(&self.previous);
@@ -94,7 +100,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn comparison(&mut self) -> Result<AstNodeExpr, Token> {
+    fn comparison(&mut self) -> Result<AstNodeExpr, TokenError> {
         let left = self.addition()?;
         let previous = self.previous.clone().unwrap();
         dbg!(&self.previous);
@@ -115,7 +121,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn expression(&mut self) -> Result<AstNodeExpr, Token> {
+    fn expression(&mut self) -> Result<AstNodeExpr, TokenError> {
         self.comparison()
     }
 
@@ -127,7 +133,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(&mut self) -> Result<AstNodeExpr, Token> {
+    pub fn parse(&mut self) -> Result<AstNodeExpr, TokenError> {
         self.advance()?;
         self.advance()?;
         self.expression()
