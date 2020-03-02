@@ -164,6 +164,33 @@ pub enum TokenKindError {
     ExpectedPrimary(Token),
 }
 
+impl fmt::Display for TokenKindError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TokenKindError::UnknownChar => write!(f, "Unknown char"),
+            TokenKindError::UnexpectedChar(c) => write!(f, "Unexpected char: got {}", c),
+            TokenKindError::ShebangNotOnFirstLine => write!(f, "Shebang not on the first line"),
+            TokenKindError::NewlineInString => write!(f, "Newline in double quoted string"),
+            TokenKindError::TrailingUnderscoreInNumber => {
+                write!(f, "Trailing underscore in number")
+            }
+            TokenKindError::LeadingZeroInNumber => write!(f, "Leading zero in number"),
+            TokenKindError::MissingDigitsInBinaryNumber => {
+                write!(f, "Missing digits in binary number")
+            }
+            TokenKindError::MissingDigitsInHexNumber => write!(f, "Missing digits in hex number"),
+            TokenKindError::TrailingDotInNumber => write!(f, "Trailing dot in number"),
+            TokenKindError::MissingExponentInNumber => write!(f, "Missing exponent in number"),
+            TokenKindError::UnknownEscapeSequence(esc) => {
+                write!(f, "Unknown escape sequence: {:?}", esc)
+            }
+            TokenKindError::IncompleteUnicodeLiteral => write!(f, "Incomplete unicode literal"),
+            TokenKindError::InvalidUnicodeLiteral(_s) => write!(f, "Invalid uncide literal"),
+            TokenKindError::ExpectedPrimary(_tok) => write!(f, "Expected primary"),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub kind: TokenKind,
@@ -194,20 +221,6 @@ pub struct OwnedToken<'a> {
 
 impl<'a> fmt::Display for OwnedToken<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // let fmt = format!("{}:{}:", self.token.start_line, self.token.start_column);
-        // write!(
-        //     f,
-        //     "{}{}\n",
-        //     fmt,
-        //     &self.src[self.token.start_pos..self.token.end_pos]
-        // )?;
-        // for _ in 0..fmt.len() {
-        //     write!(f, " ")?;
-        // }
-        // for _ in self.token.start_pos..self.token.end_pos {
-        //     write!(f, "^")?;
-        // }
-        // Ok(())
         write!(f, "{}", &self.src[self.token.start_pos..self.token.end_pos])
     }
 }
@@ -220,8 +233,10 @@ pub struct OwnedTokenError<'a> {
 
 impl<'a> fmt::Display for OwnedTokenError<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        dbg!(&self);
-        let fmt = format!("{}:{}:", self.token.start_line, self.token.start_column);
+        let fmt = format!(
+            "{}:{}:{}",
+            self.token.start_line, self.token.start_column, self.token.kind
+        );
         write!(
             f,
             "{}{}\n",
