@@ -220,6 +220,7 @@ pub struct OwnedTokenError<'a> {
 
 impl<'a> fmt::Display for OwnedTokenError<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        dbg!(&self);
         let fmt = format!("{}:{}:", self.token.start_line, self.token.start_column);
         write!(
             f,
@@ -284,17 +285,19 @@ impl Token {
 
 impl TokenError {
     pub fn new(
-        lexer: &Lexer,
         kind: TokenKindError,
         start_pos: usize,
         start_line: usize,
         start_column: usize,
+        end_pos: usize,
+        end_line: usize,
+        end_column: usize,
     ) -> TokenError {
         TokenError {
             kind,
-            end_pos: lexer.pos as usize,
-            end_line: lexer.line,
-            end_column: lexer.column as usize,
+            end_pos,
+            end_line,
+            end_column,
             start_pos,
             start_line,
             start_column,
@@ -304,7 +307,6 @@ impl TokenError {
     pub fn to_owned<'a>(&'a self, src: &'a str) -> OwnedTokenError<'a> {
         OwnedTokenError { token: &self, src }
     }
-
 }
 
 #[derive(Debug)]
@@ -475,11 +477,13 @@ impl<'a> Lexer<'a> {
                     }
                     _ => {
                         return Err(TokenError::new(
-                            self,
                             TokenKindError::MissingExponentInNumber,
                             start_pos,
                             start_line,
                             start_column,
+                            self.pos as usize,
+                            self.line as usize,
+                            self.column as usize,
                         ))
                     }
                 }
@@ -505,11 +509,13 @@ impl<'a> Lexer<'a> {
         dbg!(&s);
         if s.len() == 0 {
             return Err(TokenError::new(
-                self,
                 TokenKindError::MissingDigitsInBinaryNumber,
                 start_pos,
                 start_line,
                 start_column,
+                self.pos as usize,
+                self.line as usize,
+                self.column as usize,
             ));
         }
 
@@ -517,11 +523,13 @@ impl<'a> Lexer<'a> {
         // Forbid trailing underscore.
         if last_digit == Some('_') {
             return Err(TokenError::new(
-                self,
                 TokenKindError::TrailingUnderscoreInNumber,
                 start_pos,
                 start_line,
                 start_column,
+                self.pos as usize,
+                self.line as usize,
+                self.column as usize,
             ));
         }
 
@@ -601,11 +609,13 @@ impl<'a> Lexer<'a> {
         dbg!(&s);
         if s.len() == 0 {
             return Err(TokenError::new(
-                self,
                 TokenKindError::MissingDigitsInHexNumber,
                 start_pos,
                 start_line,
                 start_column,
+                self.pos as usize,
+                self.line as usize,
+                self.column as usize,
             ));
         }
 
@@ -613,11 +623,13 @@ impl<'a> Lexer<'a> {
         // Forbid trailing underscore.
         if last_digit == Some('_') {
             return Err(TokenError::new(
-                self,
                 TokenKindError::TrailingUnderscoreInNumber,
                 start_pos,
                 start_line,
                 start_column,
+                self.pos as usize,
+                self.line as usize,
+                self.column as usize,
             ));
         }
 
@@ -698,19 +710,23 @@ impl<'a> Lexer<'a> {
         // Forbid trailing underscore.
         if last_digit == Some('_') {
             return Err(TokenError::new(
-                self,
                 TokenKindError::TrailingUnderscoreInNumber,
                 start_pos,
                 start_line,
                 start_column,
+                self.pos as usize,
+                self.line as usize,
+                self.column as usize,
             ));
         } else if last_digit == Some('.') {
             return Err(TokenError::new(
-                self,
                 TokenKindError::TrailingDotInNumber,
                 start_pos,
                 start_line,
                 start_column,
+                self.pos as usize,
+                self.line as usize,
+                self.column as usize,
             ));
         }
 
@@ -758,11 +774,13 @@ impl<'a> Lexer<'a> {
         // Forbid trailing underscore.
         if last_digit == Some('_') {
             return Err(TokenError::new(
-                self,
                 TokenKindError::TrailingUnderscoreInNumber,
                 start_pos,
                 start_line,
                 start_column,
+                self.pos as usize,
+                self.line as usize,
+                self.column as usize,
             ));
         }
 
@@ -822,11 +840,13 @@ impl<'a> Lexer<'a> {
             && s.len() > 1
         {
             Err(TokenError::new(
-                self,
                 TokenKindError::LeadingZeroInNumber,
                 start_pos,
                 start_line,
                 start_column,
+                self.pos as usize,
+                self.line as usize,
+                self.column as usize,
             ))
         } else {
             res
@@ -845,11 +865,13 @@ impl<'a> Lexer<'a> {
             Ok(())
         } else {
             Err(TokenError::new(
-                self,
                 TokenKindError::UnexpectedChar(c),
                 start_pos,
                 start_line,
                 start_column,
+                self.pos as usize,
+                self.line as usize,
+                self.column as usize,
             ))
         }
     }
@@ -869,11 +891,13 @@ impl<'a> Lexer<'a> {
                     self.advance();
                     self.newline(start_pos, start_line, start_column);
                     return Err(TokenError::new(
-                        self,
                         TokenKindError::NewlineInString,
                         start_pos,
                         start_line,
                         start_column,
+                        self.pos as usize,
+                        self.line as usize,
+                        self.column as usize,
                     ));
                 }
                 _ => {
@@ -1426,11 +1450,13 @@ impl<'a> Lexer<'a> {
                         if self.line != 1 {
                             self.skip_until('\n');
                             return Err(TokenError::new(
-                                self,
                                 TokenKindError::ShebangNotOnFirstLine,
                                 start_pos,
                                 start_line,
                                 start_column,
+                                self.pos as usize,
+                                self.line as usize,
+                                self.column as usize,
                             ));
                         }
                         self.skip_until('\n');
@@ -1590,11 +1616,13 @@ impl<'a> Lexer<'a> {
                             }
                             _ => {
                                 return Err(TokenError::new(
-                                    self,
                                     TokenKindError::IncompleteUnicodeLiteral,
                                     start_pos,
                                     start_line,
                                     start_column,
+                                    self.pos as usize,
+                                    self.line as usize,
+                                    self.column as usize,
                                 ))
                             }
                         }
@@ -1624,11 +1652,13 @@ impl<'a> Lexer<'a> {
                         ))
                     } else {
                         Err(TokenError::new(
-                            self,
                             TokenKindError::InvalidUnicodeLiteral(c.unwrap_err().to_string()),
                             start_pos,
                             start_line,
                             start_column,
+                            self.pos as usize,
+                            self.line as usize,
+                            self.column as usize,
                         ))
                     }
                 } else {
@@ -1640,11 +1670,13 @@ impl<'a> Lexer<'a> {
                     };
 
                     Err(TokenError::new(
-                        self,
                         TokenKindError::UnknownEscapeSequence(c),
                         start_pos,
                         start_line,
                         start_column,
+                        self.pos as usize,
+                        self.line as usize,
+                        self.column as usize,
                     ))
                 }
             }
@@ -2025,11 +2057,13 @@ impl<'a> Lexer<'a> {
                 self.identifier(start_pos, start_line, start_column)
             }
             Some(_) => Err(TokenError::new(
-                self,
                 TokenKindError::Unknown,
                 start_pos,
                 start_line,
                 start_column,
+                self.pos as usize,
+                self.line as usize,
+                self.column as usize,
             )),
             None => Ok(Token::new(
                 self,

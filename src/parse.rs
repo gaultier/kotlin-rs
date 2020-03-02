@@ -42,11 +42,13 @@ impl<'a> Parser<'a> {
                 Ok(AstNodeExpr::Literal(previous))
             }
             _ => Err(TokenError::new(
-                &self.lexer,
                 TokenKindError::ExpectedPrimary(previous.clone()),
                 previous.start_pos,
                 previous.start_line,
                 previous.start_column,
+                previous.end_pos,
+                previous.end_line,
+                previous.end_column,
             )),
         }
     }
