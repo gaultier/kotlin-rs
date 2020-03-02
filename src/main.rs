@@ -48,7 +48,7 @@ fn main() -> Result<(), String> {
                 println!("{:?}", ast);
                 let stdout = std::io::stdout();
                 let mut handle = stdout.lock();
-                gen_js(&ast, &mut handle)?;
+                gen_js(&ast, &contents, &mut handle)?;
                 Ok(())
             } else {
                 let err = ast.unwrap_err();

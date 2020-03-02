@@ -180,20 +180,21 @@ pub struct OwnedToken<'a> {
 
 impl<'a> fmt::Display for OwnedToken<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let fmt = format!("{}:{}:", self.token.start_line, self.token.start_column);
-        write!(
-            f,
-            "{}{}\n",
-            fmt,
-            &self.src[self.token.start_pos..self.token.end_pos]
-        )?;
-        for _ in 0..fmt.len() {
-            write!(f, " ")?;
-        }
-        for _ in self.token.start_pos..self.token.end_pos {
-            write!(f, "^")?;
-        }
-        Ok(())
+        // let fmt = format!("{}:{}:", self.token.start_line, self.token.start_column);
+        // write!(
+        //     f,
+        //     "{}{}\n",
+        //     fmt,
+        //     &self.src[self.token.start_pos..self.token.end_pos]
+        // )?;
+        // for _ in 0..fmt.len() {
+        //     write!(f, " ")?;
+        // }
+        // for _ in self.token.start_pos..self.token.end_pos {
+        //     write!(f, "^")?;
+        // }
+        // Ok(())
+        write!(f, "{}", &self.src[self.token.start_pos..self.token.end_pos])
     }
 }
 
