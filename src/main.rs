@@ -1,6 +1,7 @@
 use kotlin::gen_js::gen_js;
 use kotlin::lex::*;
 use kotlin::parse::*;
+use kotlin::type_check::*;
 use std::io::prelude::*;
 use std::result::Result;
 
@@ -46,6 +47,7 @@ fn main() -> Result<(), String> {
             let ast = parser.parse();
             if let Ok(ast) = ast {
                 println!("{:?}", ast);
+                type_check(&ast, &contents)?;
                 let stdout = std::io::stdout();
                 let mut handle = stdout.lock();
                 gen_js(&ast, &contents, &mut handle)?;
