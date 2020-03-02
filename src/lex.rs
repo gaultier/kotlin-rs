@@ -234,8 +234,11 @@ pub struct OwnedTokenError<'a> {
 impl<'a> fmt::Display for OwnedTokenError<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let fmt = format!(
-            "{}:{}:{}:",
-            self.token.start_line, self.token.start_column, self.token.kind
+            "{}:{}:{}:    {}",
+            self.token.start_line,
+            self.token.start_column,
+            self.token.kind,
+            &self.src[self.token.start_pos - 5..self.token.start_pos] // FIXME
         );
         write!(
             f,
