@@ -20,6 +20,18 @@ pub fn gen_js<W: io::Write>(ast: &AstNodeExpr, w: &mut W) -> Result<usize, Strin
             w.write("-".as_bytes()).map_err(|err| err.to_string())?;
             gen_js(right, w)
         }
+        AstNodeExpr::Binary(
+            left,
+            Token {
+                kind: TokenKind::Plus,
+                ..
+            },
+            right,
+        ) => {
+            gen_js(left, w)?;
+            w.write("+".as_bytes()).map_err(|err| err.to_string())?;
+            gen_js(right, w)
+        }
         _ => unimplemented!(),
     }
 }
