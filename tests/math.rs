@@ -6,7 +6,7 @@ fn add_int_int() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(&src, &mut out).is_ok());
-    assert_eq!(out, b"1+2");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"1+2");
 }
 
 #[test]
@@ -15,7 +15,7 @@ fn add_int_long() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(&src, &mut out).is_ok());
-    assert_eq!(out, b"1+2");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"1+2");
 }
 
 #[test]
@@ -24,7 +24,7 @@ fn add_long_long() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(&src, &mut out).is_ok());
-    assert_eq!(out, b"1+2");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"1+2");
 }
 
 #[test]
@@ -33,7 +33,7 @@ fn add_uint_uint() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(&src, &mut out).is_ok());
-    assert_eq!(out, b"1+2");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"1+2");
 }
 
 #[test]
@@ -42,7 +42,7 @@ fn add_uint_ulong() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(&src, &mut out).is_ok());
-    assert_eq!(out, b"1+2");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"1+2");
 }
 
 #[test]
@@ -51,7 +51,7 @@ fn add_ulong_uint() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(&src, &mut out).is_ok());
-    assert_eq!(out, b"1+2");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"1+2");
 }
 
 #[test]
@@ -60,7 +60,7 @@ fn add_ulong_ulong() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(&src, &mut out).is_ok());
-    assert_eq!(out, b"1+2");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"1+2");
 }
 
 #[test]
@@ -69,7 +69,7 @@ fn add_float_float() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(&src, &mut out).is_ok());
-    assert_eq!(out, b"1+2");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"1+2");
 }
 
 #[test]
@@ -78,7 +78,7 @@ fn add_float_double() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(&src, &mut out).is_ok());
-    assert_eq!(out, b"1+2e50");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"1+2e50");
 }
 
 #[test]
@@ -87,7 +87,7 @@ fn add_double_float() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(&src, &mut out).is_ok());
-    assert_eq!(out, b"1e50+2");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"1e50+2");
 }
 
 #[test]
@@ -96,5 +96,5 @@ fn add_double_double() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(&src, &mut out).is_ok());
-    assert_eq!(out, b"1.5+2.3");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"1.5+2.3");
 }
