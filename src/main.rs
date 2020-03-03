@@ -1,7 +1,7 @@
 use clap::{App, Arg};
+use kotlin::compile::compile;
 use std::io::prelude::*;
 use std::result::Result;
-use kotlin::compile::compile;
 
 fn run() -> Result<(), String> {
     let matches = App::new("Kotlin-rs")
