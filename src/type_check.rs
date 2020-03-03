@@ -42,6 +42,18 @@ impl Type {
             (Type::UInt, Type::ULong) | (Type::ULong, Type::UInt) | (Type::ULong, Type::ULong) => {
                 Ok(Type::ULong)
             }
+            (Type::Float, Type::Float)
+            | (Type::Int, Type::Float)
+            | (Type::Float, Type::Int)
+            | (Type::Float, Type::Long)
+            | (Type::Long, Type::Float) => Ok(Type::Float),
+            (Type::Double, Type::Double)
+            | (Type::Int, Type::Double)
+            | (Type::Double, Type::Int)
+            | (Type::Double, Type::Long)
+            | (Type::Long, Type::Double)
+            | (Type::Double, Type::Float)
+            | (Type::Float, Type::Double) => Ok(Type::Double),
             _ => Err(Error::new(
                 ErrorKind::IncompatibleTypes(self.clone(), other.clone()),
                 location.start_pos,
