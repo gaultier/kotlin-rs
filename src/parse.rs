@@ -144,7 +144,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn t() {
+    fn dummy() {
         let s = "1 + 2";
         let mut parser = Parser::new(&s);
         let ast = parser.parse();
