@@ -31,8 +31,8 @@ impl fmt::Display for Type {
 }
 
 impl Type {
-    fn coalesce(&self, other: &Type, location: &Location) -> Result<Type, Error> {
-        match (self, other) {
+    fn coalesce(left: Type, right: Type, location: &Location) -> Result<Type, Error> {
+        match (left, right) {
             (Type::Bool, Type::Bool) => Ok(Type::Bool),
             (Type::Int, Type::Int) => Ok(Type::Int),
             (Type::UInt, Type::UInt) => Ok(Type::UInt),
@@ -55,7 +55,7 @@ impl Type {
             | (Type::Double, Type::Float)
             | (Type::Float, Type::Double) => Ok(Type::Double),
             _ => Err(Error::new(
-                ErrorKind::IncompatibleTypes(self.clone(), other.clone()),
+                ErrorKind::IncompatibleTypes(left, right),
                 location.start_pos,
                 location.start_line,
                 location.start_column,
@@ -102,9 +102,11 @@ pub fn type_check(ast: &AstNodeExpr, src: &str) -> Result<Type, Error> {
             ..
         }) => Ok(Type::Bool),
         AstNodeExpr::Unary(_, right) => type_check(right, src),
-        AstNodeExpr::Binary(left, tok, right) => {
-            type_check(left, src)?.coalesce(&type_check(right, src)?, &tok.location)
-        }
+        AstNodeExpr::Binary(left, tok, right) => Type::coalesce(
+            type_check(left, src)?,
+            type_check(right, src)?,
+            &tok.location,
+        ),
         _ => unimplemented!(),
     }
 }
