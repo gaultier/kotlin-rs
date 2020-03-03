@@ -119,9 +119,72 @@ fn add_double_int() {
 
 #[test]
 fn complex_math() {
-    let src = "-1.5 + 2 * 3";
+    let src = "-1.5 / 2 + 5 * 3";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(&src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"-1.5+2*3");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"-1.5/2+5*3");
+}
+
+#[test]
+fn add_string_string() {
+    let src = r##""abc" + "def""##;
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(&src, &mut out).is_ok());
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &r##""abc"+"def""##);
+}
+
+#[test]
+fn add_string_int() {
+    let src = r##""abc" + 2"##;
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(&src, &mut out).is_ok());
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &r##""abc"+2"##);
+}
+
+#[test]
+fn add_string_long() {
+    let src = r##""abc" + 2L"##;
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(&src, &mut out).is_ok());
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &r##""abc"+2"##);
+}
+
+#[test]
+fn add_string_uint() {
+    let src = r##""abc" + 2U"##;
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(&src, &mut out).is_ok());
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &r##""abc"+2"##);
+}
+
+#[test]
+fn add_string_ulong() {
+    let src = r##""abc" + 2UL"##;
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(&src, &mut out).is_ok());
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &r##""abc"+2"##);
+}
+
+#[test]
+fn add_string_float() {
+    let src = r##""abc" + 2f"##;
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(&src, &mut out).is_ok());
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &r##""abc"+2"##);
+}
+
+#[test]
+fn add_string_double() {
+    let src = r##""abc" + 2.0"##;
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(&src, &mut out).is_ok());
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &r##""abc"+2"##);
 }
