@@ -184,12 +184,30 @@ fn add_string_uint() {
 }
 
 #[test]
+fn add_uint_string() {
+    let src = r##"2U + "abc""##;
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(&src, &mut out).is_ok());
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &r##"2+"abc""##);
+}
+
+#[test]
 fn add_string_ulong() {
     let src = r##""abc" + 2UL"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(&src, &mut out).is_ok());
     assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &r##""abc"+2"##);
+}
+
+#[test]
+fn add_ulong_string() {
+    let src = r##"2UL + "abc""##;
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(&src, &mut out).is_ok());
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &r##"2+"abc""##);
 }
 
 #[test]
