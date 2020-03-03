@@ -110,7 +110,7 @@ fn add_int_double() {
 
 #[test]
 fn add_double_int() {
-    let src = "1.5 + 2.3";
+    let src = "1.5 + 2";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(&src, &mut out).is_ok());
