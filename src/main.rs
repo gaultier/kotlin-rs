@@ -5,7 +5,7 @@ use kotlin::type_check::*;
 use std::io::prelude::*;
 use std::result::Result;
 
-fn main() -> Result<(), String> {
+fn run() -> Result<(), String> {
     let matches = App::new("Kotlin-rs")
         .version("0.1")
         .about("Kotlin compiler")
@@ -37,21 +37,19 @@ fn main() -> Result<(), String> {
     };
 
     let mut parser = Parser::new(&contents);
-    let ast = parser.parse();
-    if let Ok(ast) = ast {
-        println!("{:?}", ast);
-        if let Err(err) = type_check(&ast, &contents) {
-            eprintln!("{}", err.to_owned(&contents));
-            return Err("".to_string());
-        }
-        let stdout = std::io::stdout();
-        let mut handle = stdout.lock();
-        gen_js(&ast, &contents, &mut handle)?;
-        Ok(())
-    } else {
-        let err = ast.unwrap_err();
-        let err_s = format!("{}", err.to_owned(&contents));
-        eprintln!("{}", err_s);
-        Err(err_s)
+    let ast = parser
+        .parse()
+        .map_err(|err| format!("{}", err.to_owned(&contents)))?;
+    type_check(&ast, &contents).map_err(|err| format!("{}", err.to_owned(&contents)))?;
+    let stdout = std::io::stdout();
+    let mut handle = stdout.lock();
+    gen_js(&ast, &contents, &mut handle)?;
+    Ok(())
+}
+
+fn main() {
+    if let Err(err) = run() {
+        eprintln!("{}", err);
+        std::process::exit(1);
     }
 }
