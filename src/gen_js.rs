@@ -137,6 +137,23 @@ pub fn gen_js<W: std::io::Write>(ast: &AstNodeExpr, src: &str, w: &mut W) -> Res
                 )
             })
             .map(|_| ()),
+        AstNodeExpr::Literal(Token {
+            kind: TokenKind::Null,
+            location,
+            ..
+        }) => write!(w, "null")
+            .map_err(|err| {
+                Error::new(
+                    ErrorKind::EmitError(err.to_string()),
+                    location.start_pos,
+                    location.start_line,
+                    location.start_column,
+                    location.end_pos,
+                    location.end_line,
+                    location.end_column,
+                )
+            })
+            .map(|_| ()),
         AstNodeExpr::Unary(tok, right) => {
             write!(w, "{}", &src[tok.location.start_pos..tok.location.end_pos]).map_err(|err| {
                 Error::new(

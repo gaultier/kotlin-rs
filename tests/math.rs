@@ -262,3 +262,15 @@ fn add_bool_string() -> Result<(), String> {
         _ => Err("Should fail type checking".to_string()),
     }
 }
+
+#[test]
+fn add_string_null() {
+    let src = r##""abc" + null"##;
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(&src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_ref().unwrap(),
+        &r##""abc"+null"##
+    );
+}

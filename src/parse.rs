@@ -38,6 +38,7 @@ impl<'a> Parser<'a> {
             | TokenKind::Double(_)
             | TokenKind::Bool(_)
             | TokenKind::TString
+            | TokenKind::Null
             | TokenKind::UnicodeLiteral(_) => {
                 self.advance()?;
                 Ok(AstNodeExpr::Literal(previous))
