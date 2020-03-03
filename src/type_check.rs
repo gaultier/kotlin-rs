@@ -171,11 +171,19 @@ pub fn type_check(ast: &mut AstNode, src: &str) -> Result<Type, Error> {
         AstNode {
             kind: AstNodeExpr::Unary(_, right),
             ..
-        } => type_check(right, src),
+        } => {
+            let t = type_check(right, src)?;
+            ast.type_info = Some(t);
+            Ok(t)
+        }
         AstNode {
             kind: AstNodeExpr::Binary(left, tok, right),
             ..
-        } => Type::coalesce(type_check(left, src)?, type_check(right, src)?, &tok),
+        } => {
+            let t = Type::coalesce(type_check(left, src)?, type_check(right, src)?, &tok)?;
+            ast.type_info = Some(t);
+            Ok(t)
+        }
         _ => unimplemented!(),
     }
 }
