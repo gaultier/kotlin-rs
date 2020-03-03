@@ -61,7 +61,7 @@ impl fmt::Display for ErrorKind {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Error {
     pub kind: ErrorKind,
-    location: Location,
+    pub location: Location,
 }
 
 #[derive(Debug, PartialEq, Clone)]
