@@ -79,9 +79,9 @@ impl<'a> fmt::Display for OwnedError<'a> {
             self.error.kind,
             &self.src[self.error.location.start_pos..self.error.location.start_pos] // FIXME: show full source code line
         );
-        write!(
+        writeln!(
             f,
-            "{}{}\n",
+            "{}{}",
             fmt,
             &self.src[self.error.location.start_pos..self.error.location.end_pos]
         )?;
@@ -118,7 +118,7 @@ impl Error {
         }
     }
 
-    pub fn to_owned<'a>(self, src: &'a str) -> OwnedError<'a> {
+    pub fn to_owned(self, src: &str) -> OwnedError {
         OwnedError { error: self, src }
     }
 }

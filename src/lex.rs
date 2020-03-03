@@ -413,7 +413,7 @@ impl<'a> Lexer<'a> {
         let s = &self.src[start_pos + 2..self.pos as usize]
             .to_string()
             .replace("_", "");
-        if s.len() == 0 {
+        if s.is_empty() {
             return Err(Error::new(
                 ErrorKind::MissingDigitsInBinaryNumber,
                 start_pos,
@@ -512,7 +512,7 @@ impl<'a> Lexer<'a> {
         let s = &self.src[start_pos + 2..self.pos as usize]
             .to_string()
             .replace("_", "");
-        if s.len() == 0 {
+        if s.is_empty() {
             return Err(Error::new(
                 ErrorKind::MissingDigitsInHexNumber,
                 start_pos,
