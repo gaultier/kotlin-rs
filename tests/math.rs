@@ -250,7 +250,14 @@ fn add_bool_string() -> Result<(), String> {
     match compile(&src, &mut out) {
         Err(Error {
             kind: ErrorKind::IncompatibleTypes(Type::Bool, Type::TString),
-            ..
+            location:
+                Location {
+                    start_line: 1,
+                    start_column: 6,
+                    end_line: 1,
+                    end_column: 7,
+                    ..
+                },
         }) => Ok(()),
         _ => Err("Should fail type checking".to_string()),
     }
