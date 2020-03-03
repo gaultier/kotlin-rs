@@ -132,7 +132,10 @@ fn add_string_string() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(&src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &r##""abc"+"def""##);
+    assert_eq!(
+        std::str::from_utf8(&out).as_ref().unwrap(),
+        &r##""abc"+"def""##
+    );
 }
 
 #[test]
@@ -142,6 +145,15 @@ fn add_string_int() {
 
     assert!(compile(&src, &mut out).is_ok());
     assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &r##""abc"+2"##);
+}
+
+#[test]
+fn add_int_string() {
+    let src = r##"2 + "abc""##;
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(&src, &mut out).is_ok());
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &r##"2+"abc""##);
 }
 
 #[test]
