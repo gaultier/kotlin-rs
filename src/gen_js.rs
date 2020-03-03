@@ -138,17 +138,6 @@ pub fn gen_js<W: std::io::Write>(ast: &AstNodeExpr, src: &str, w: &mut W) -> Res
             })
             .map(|_| ()),
         AstNodeExpr::Unary(tok, right) => {
-            write!(w, "{}", tok.to_owned(src)).map_err(|err| {
-                Error::new(
-                    ErrorKind::EmitError(err.to_string()),
-                    tok.location.start_pos,
-                    tok.location.start_line,
-                    tok.location.start_column,
-                    tok.location.end_pos,
-                    tok.location.end_line,
-                    tok.location.end_column,
-                )
-            })?;
             write!(w, "{}", &src[tok.location.start_pos..tok.location.end_pos]).map_err(|err| {
                 Error::new(
                     ErrorKind::EmitError(err.to_string()),
