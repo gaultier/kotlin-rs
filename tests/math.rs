@@ -1,6 +1,6 @@
 use kotlin::compile::compile;
 use kotlin::error::*;
-use kotlin::type_check::Type;
+use kotlin::parse::Type;
 
 #[test]
 fn add_int_int() {

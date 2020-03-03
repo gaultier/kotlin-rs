@@ -1,5 +1,37 @@
-use crate::lex::*;
 use crate::error::*;
+use crate::lex::*;
+use std::fmt;
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum Type {
+    Bool,
+    Int,
+    UInt,
+    Long,
+    ULong,
+    Float,
+    Double,
+    Null,
+    TString,
+    Char,
+}
+
+impl fmt::Display for Type {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Type::Bool => write!(f, "Bool"),
+            Type::Int => write!(f, "Int"),
+            Type::UInt => write!(f, "UInt"),
+            Type::Long => write!(f, "Long"),
+            Type::ULong => write!(f, "ULong"),
+            Type::Float => write!(f, "Float"),
+            Type::Double => write!(f, "Double"),
+            Type::Null => write!(f, "Null"),
+            Type::Char => write!(f, "Char"),
+            Type::TString => write!(f, "String"),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum AstNodeStmt {

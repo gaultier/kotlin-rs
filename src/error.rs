@@ -1,4 +1,4 @@
-use crate::type_check::Type;
+use crate::parse::Type;
 use std::fmt;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
