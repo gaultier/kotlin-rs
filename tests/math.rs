@@ -1,4 +1,6 @@
 use kotlin::compile::compile;
+use kotlin::error::*;
+use kotlin::type_check::Type;
 
 #[test]
 fn add_int_int() {
@@ -226,4 +228,30 @@ fn add_string_double() {
 
     assert!(compile(&src, &mut out).is_ok());
     assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &r##""abc"+2"##);
+}
+
+#[test]
+fn add_string_bool() {
+    let src = r##""abc" + true"##;
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(&src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_ref().unwrap(),
+        &r##""abc"+true"##
+    );
+}
+
+#[test]
+fn add_bool_string() -> Result<(), String> {
+    let src = r##"true + "abc""##;
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(&src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::IncompatibleTypes(Type::Bool, Type::TString),
+            ..
+        }) => Ok(()),
+        _ => Err("Should fail type checking".to_string()),
+    }
 }
