@@ -274,3 +274,27 @@ fn add_string_null() {
         &r##""abc"+null"##
     );
 }
+
+#[test]
+fn add_null_string() {
+    let src = r##"null + "abc""##;
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(&src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_ref().unwrap(),
+        &r##"null+"abc""##
+    );
+}
+
+#[test]
+fn add_null_null() {
+    let src = r##"null + null"##;
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(&src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_ref().unwrap(),
+        &r##"""+null+null"##
+    );
+}
