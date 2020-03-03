@@ -39,9 +39,15 @@ pub enum AstNodeStmt {
 }
 
 #[derive(Debug)]
+pub struct AstNode {
+    pub kind: AstNodeExpr,
+    pub type_info: Option<Type>,
+}
+
+#[derive(Debug)]
 pub enum AstNodeExpr {
-    Binary(Box<AstNodeExpr>, Token, Box<AstNodeExpr>),
-    Unary(Token, Box<AstNodeExpr>),
+    Binary(Box<AstNode>, Token, Box<AstNode>),
+    Unary(Token, Box<AstNode>),
     Literal(Token),
 }
 
@@ -59,7 +65,7 @@ impl<'a> Parser<'a> {
         Ok(())
     }
 
-    fn primary(&mut self) -> Result<AstNodeExpr, Error> {
+    fn primary(&mut self) -> Result<AstNode, Error> {
         let previous = self.previous.clone().unwrap();
         match previous.kind {
             TokenKind::Int(_)
@@ -73,7 +79,11 @@ impl<'a> Parser<'a> {
             | TokenKind::Null
             | TokenKind::UnicodeLiteral(_) => {
                 self.advance()?;
-                Ok(AstNodeExpr::Literal(previous))
+                // TODO: fill type info here right away
+                Ok(AstNode {
+                    kind: AstNodeExpr::Literal(previous),
+                    type_info: None,
+                })
             }
             _ => Err(Error::new(
                 ErrorKind::ExpectedPrimary,
@@ -87,53 +97,54 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn unary(&mut self) -> Result<AstNodeExpr, Error> {
+    fn unary(&mut self) -> Result<AstNode, Error> {
         let previous = self.previous.clone().unwrap();
         match previous.kind {
             TokenKind::Bang | TokenKind::Minus => {
                 self.advance()?;
                 let right = self.unary()?;
-                Ok(AstNodeExpr::Unary(previous, Box::new(right)))
+                Ok(AstNode {
+                    kind: AstNodeExpr::Unary(previous, Box::new(right)),
+                    type_info: None,
+                })
             }
             _ => self.primary(),
         }
     }
 
-    fn multiplication(&mut self) -> Result<AstNodeExpr, Error> {
+    fn multiplication(&mut self) -> Result<AstNode, Error> {
         let left = self.unary()?;
         let previous = self.previous.clone().unwrap();
         match previous.kind {
             TokenKind::Star | TokenKind::Slash => {
                 self.advance()?;
                 let right = self.multiplication()?;
-                Ok(AstNodeExpr::Binary(
-                    Box::new(left),
-                    previous,
-                    Box::new(right),
-                ))
+                Ok(AstNode {
+                    kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
+                    type_info: None,
+                })
             }
             _ => Ok(left),
         }
     }
 
-    fn addition(&mut self) -> Result<AstNodeExpr, Error> {
+    fn addition(&mut self) -> Result<AstNode, Error> {
         let left = self.multiplication()?;
         let previous = self.previous.clone().unwrap();
         match previous.kind {
             TokenKind::Plus | TokenKind::Minus => {
                 self.advance()?;
                 let right = self.addition()?;
-                Ok(AstNodeExpr::Binary(
-                    Box::new(left),
-                    previous,
-                    Box::new(right),
-                ))
+                Ok(AstNode {
+                    kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
+                    type_info: None,
+                })
             }
             _ => Ok(left),
         }
     }
 
-    fn comparison(&mut self) -> Result<AstNodeExpr, Error> {
+    fn comparison(&mut self) -> Result<AstNode, Error> {
         let left = self.addition()?;
         let previous = self.previous.clone().unwrap();
         match previous.kind {
@@ -143,17 +154,16 @@ impl<'a> Parser<'a> {
             | TokenKind::LesserEqual => {
                 self.advance()?;
                 let right = self.comparison()?;
-                Ok(AstNodeExpr::Binary(
-                    Box::new(left),
-                    previous,
-                    Box::new(right),
-                ))
+                Ok(AstNode {
+                    kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
+                    type_info: None,
+                })
             }
             _ => Ok(left),
         }
     }
 
-    fn expression(&mut self) -> Result<AstNodeExpr, Error> {
+    fn expression(&mut self) -> Result<AstNode, Error> {
         self.comparison()
     }
 
@@ -165,29 +175,9 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(&mut self) -> Result<AstNodeExpr, Error> {
+    pub fn parse(&mut self) -> Result<AstNode, Error> {
         self.advance()?;
         self.advance()?;
         self.expression()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn dummy() {
-        let s = "1 + 2";
-        let mut parser = Parser::new(&s);
-        let ast = parser.parse();
-        assert!(ast.is_ok());
-        let ast = ast.as_ref().unwrap();
-        match ast {
-            AstNodeExpr::Binary(_, _, _) => {
-                assert!(true);
-            }
-            _ => assert!(false),
-        }
     }
 }

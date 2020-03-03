@@ -1,13 +1,17 @@
 use crate::error::*;
 use crate::lex::{Token, TokenKind};
-use crate::parse::AstNodeExpr;
+use crate::parse::*;
 
-pub fn gen_js<W: std::io::Write>(ast: &AstNodeExpr, src: &str, w: &mut W) -> Result<(), Error> {
+pub fn gen_js<W: std::io::Write>(ast: &AstNode, src: &str, w: &mut W) -> Result<(), Error> {
     match ast {
-        AstNodeExpr::Literal(Token {
-            kind: TokenKind::Int(n),
-            location,
-        }) => write!(w, "{}", n).map_err(|err| {
+        AstNode {
+            kind:
+                AstNodeExpr::Literal(Token {
+                    kind: TokenKind::Int(n),
+                    location,
+                }),
+            ..
+        } => write!(w, "{}", n).map_err(|err| {
             Error::new(
                 ErrorKind::EmitError(err.to_string()),
                 location.start_pos,
@@ -18,11 +22,15 @@ pub fn gen_js<W: std::io::Write>(ast: &AstNodeExpr, src: &str, w: &mut W) -> Res
                 location.end_column,
             )
         }),
-        AstNodeExpr::Literal(Token {
-            kind: TokenKind::UInt(n),
-            location,
+        AstNode {
+            kind:
+                AstNodeExpr::Literal(Token {
+                    kind: TokenKind::UInt(n),
+                    location,
+                    ..
+                }),
             ..
-        }) => write!(w, "{}", n)
+        } => write!(w, "{}", n)
             .map_err(|err| {
                 Error::new(
                     ErrorKind::EmitError(err.to_string()),
@@ -35,11 +43,15 @@ pub fn gen_js<W: std::io::Write>(ast: &AstNodeExpr, src: &str, w: &mut W) -> Res
                 )
             })
             .map(|_| ()),
-        AstNodeExpr::Literal(Token {
-            kind: TokenKind::Long(n),
-            location,
+        AstNode {
+            kind:
+                AstNodeExpr::Literal(Token {
+                    kind: TokenKind::Long(n),
+                    location,
+                    ..
+                }),
             ..
-        }) => write!(w, "{}", n)
+        } => write!(w, "{}", n)
             .map_err(|err| {
                 Error::new(
                     ErrorKind::EmitError(err.to_string()),
@@ -52,11 +64,15 @@ pub fn gen_js<W: std::io::Write>(ast: &AstNodeExpr, src: &str, w: &mut W) -> Res
                 )
             })
             .map(|_| ()),
-        AstNodeExpr::Literal(Token {
-            kind: TokenKind::ULong(n),
-            location,
+        AstNode {
+            kind:
+                AstNodeExpr::Literal(Token {
+                    kind: TokenKind::ULong(n),
+                    location,
+                    ..
+                }),
             ..
-        }) => write!(w, "{}", n)
+        } => write!(w, "{}", n)
             .map_err(|err| {
                 Error::new(
                     ErrorKind::EmitError(err.to_string()),
@@ -69,11 +85,15 @@ pub fn gen_js<W: std::io::Write>(ast: &AstNodeExpr, src: &str, w: &mut W) -> Res
                 )
             })
             .map(|_| ()),
-        AstNodeExpr::Literal(Token {
-            kind: TokenKind::Float(n),
-            location,
+        AstNode {
+            kind:
+                AstNodeExpr::Literal(Token {
+                    kind: TokenKind::Float(n),
+                    location,
+                    ..
+                }),
             ..
-        }) => write!(w, "{}", n)
+        } => write!(w, "{}", n)
             .map_err(|err| {
                 Error::new(
                     ErrorKind::EmitError(err.to_string()),
@@ -86,11 +106,15 @@ pub fn gen_js<W: std::io::Write>(ast: &AstNodeExpr, src: &str, w: &mut W) -> Res
                 )
             })
             .map(|_| ()),
-        AstNodeExpr::Literal(Token {
-            kind: TokenKind::Double(n),
-            location,
+        AstNode {
+            kind:
+                AstNodeExpr::Literal(Token {
+                    kind: TokenKind::Double(n),
+                    location,
+                    ..
+                }),
             ..
-        }) => write!(w, "{}", n)
+        } => write!(w, "{}", n)
             .map_err(|err| {
                 Error::new(
                     ErrorKind::EmitError(err.to_string()),
@@ -103,11 +127,15 @@ pub fn gen_js<W: std::io::Write>(ast: &AstNodeExpr, src: &str, w: &mut W) -> Res
                 )
             })
             .map(|_| ()),
-        AstNodeExpr::Literal(Token {
-            kind: TokenKind::Bool(n),
-            location,
+        AstNode {
+            kind:
+                AstNodeExpr::Literal(Token {
+                    kind: TokenKind::Bool(n),
+                    location,
+                    ..
+                }),
             ..
-        }) => write!(w, "{}", n)
+        } => write!(w, "{}", n)
             .map_err(|err| {
                 Error::new(
                     ErrorKind::EmitError(err.to_string()),
@@ -120,11 +148,15 @@ pub fn gen_js<W: std::io::Write>(ast: &AstNodeExpr, src: &str, w: &mut W) -> Res
                 )
             })
             .map(|_| ()),
-        AstNodeExpr::Literal(Token {
-            kind: TokenKind::TString,
-            location,
+        AstNode {
+            kind:
+                AstNodeExpr::Literal(Token {
+                    kind: TokenKind::TString,
+                    location,
+                    ..
+                }),
             ..
-        }) => write!(w, "{}", &src[location.start_pos..location.end_pos])
+        } => write!(w, "{}", &src[location.start_pos..location.end_pos])
             .map_err(|err| {
                 Error::new(
                     ErrorKind::EmitError(err.to_string()),
@@ -137,11 +169,15 @@ pub fn gen_js<W: std::io::Write>(ast: &AstNodeExpr, src: &str, w: &mut W) -> Res
                 )
             })
             .map(|_| ()),
-        AstNodeExpr::Literal(Token {
-            kind: TokenKind::Null,
-            location,
+        AstNode {
+            kind:
+                AstNodeExpr::Literal(Token {
+                    kind: TokenKind::Null,
+                    location,
+                    ..
+                }),
             ..
-        }) => write!(w, "null")
+        } => write!(w, "null")
             .map_err(|err| {
                 Error::new(
                     ErrorKind::EmitError(err.to_string()),
@@ -154,7 +190,10 @@ pub fn gen_js<W: std::io::Write>(ast: &AstNodeExpr, src: &str, w: &mut W) -> Res
                 )
             })
             .map(|_| ()),
-        AstNodeExpr::Unary(tok, right) => {
+        AstNode {
+            kind: AstNodeExpr::Unary(tok, right),
+            ..
+        } => {
             write!(w, "{}", &src[tok.location.start_pos..tok.location.end_pos]).map_err(|err| {
                 Error::new(
                     ErrorKind::EmitError(err.to_string()),
@@ -168,7 +207,10 @@ pub fn gen_js<W: std::io::Write>(ast: &AstNodeExpr, src: &str, w: &mut W) -> Res
             })?;
             gen_js(right, src, w)
         }
-        AstNodeExpr::Binary(left, tok, right) => {
+        AstNode {
+            kind: AstNodeExpr::Binary(left, tok, right),
+            ..
+        } => {
             gen_js(left, src, w)?;
             write!(w, "{}", tok.to_owned(src)).map_err(|err| {
                 Error::new(

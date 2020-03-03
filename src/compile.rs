@@ -6,7 +6,7 @@ use std::io;
 
 pub fn compile<W: io::Write>(src: &str, w: &mut W) -> Result<(), Error> {
     let mut parser = Parser::new(&src);
-    let ast = parser.parse()?;
-    type_check(&ast, &src)?;
+    let mut ast = parser.parse()?;
+    type_check(&mut ast, &src)?;
     gen_js(&ast, &src, w)
 }

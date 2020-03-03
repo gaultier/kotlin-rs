@@ -67,48 +67,115 @@ impl Type {
     }
 }
 
-pub fn type_check(ast: &AstNodeExpr, src: &str) -> Result<Type, Error> {
+pub fn type_check(ast: &mut AstNode, src: &str) -> Result<Type, Error> {
     match ast {
-        AstNodeExpr::Literal(Token {
-            kind: TokenKind::Int(_),
+        AstNode {
+            kind:
+                AstNodeExpr::Literal(Token {
+                    kind: TokenKind::Int(_),
+                    ..
+                }),
             ..
-        }) => Ok(Type::Int),
-        AstNodeExpr::Literal(Token {
-            kind: TokenKind::UInt(_),
-            ..
-        }) => Ok(Type::UInt),
-        AstNodeExpr::Literal(Token {
-            kind: TokenKind::Long(_),
-            ..
-        }) => Ok(Type::Long),
-        AstNodeExpr::Literal(Token {
-            kind: TokenKind::ULong(_),
-            ..
-        }) => Ok(Type::ULong),
-        AstNodeExpr::Literal(Token {
-            kind: TokenKind::Float(_),
-            ..
-        }) => Ok(Type::Float),
-        AstNodeExpr::Literal(Token {
-            kind: TokenKind::Double(_),
-            ..
-        }) => Ok(Type::Double),
-        AstNodeExpr::Literal(Token {
-            kind: TokenKind::Null,
-            ..
-        }) => Ok(Type::Null),
-        AstNodeExpr::Literal(Token {
-            kind: TokenKind::Bool(_),
-            ..
-        }) => Ok(Type::Bool),
-        AstNodeExpr::Literal(Token {
-            kind: TokenKind::TString,
-            ..
-        }) => Ok(Type::TString),
-        AstNodeExpr::Unary(_, right) => type_check(right, src),
-        AstNodeExpr::Binary(left, tok, right) => {
-            Type::coalesce(type_check(left, src)?, type_check(right, src)?, &tok)
+        } => {
+            ast.type_info = Some(Type::Int);
+            Ok(Type::Int)
         }
+        AstNode {
+            kind:
+                AstNodeExpr::Literal(Token {
+                    kind: TokenKind::UInt(_),
+                    ..
+                }),
+            ..
+        } => {
+            ast.type_info = Some(Type::UInt);
+            Ok(Type::UInt)
+        }
+        AstNode {
+            kind:
+                AstNodeExpr::Literal(Token {
+                    kind: TokenKind::Long(_),
+                    ..
+                }),
+            ..
+        } => {
+            ast.type_info = Some(Type::Long);
+            Ok(Type::Long)
+        }
+        AstNode {
+            kind:
+                AstNodeExpr::Literal(Token {
+                    kind: TokenKind::ULong(_),
+                    ..
+                }),
+            ..
+        } => {
+            ast.type_info = Some(Type::ULong);
+            Ok(Type::ULong)
+        }
+        AstNode {
+            kind:
+                AstNodeExpr::Literal(Token {
+                    kind: TokenKind::Float(_),
+                    ..
+                }),
+            ..
+        } => {
+            ast.type_info = Some(Type::Float);
+            Ok(Type::Float)
+        }
+        AstNode {
+            kind:
+                AstNodeExpr::Literal(Token {
+                    kind: TokenKind::Double(_),
+                    ..
+                }),
+            ..
+        } => {
+            ast.type_info = Some(Type::Double);
+            Ok(Type::Double)
+        }
+        AstNode {
+            kind:
+                AstNodeExpr::Literal(Token {
+                    kind: TokenKind::Null,
+                    ..
+                }),
+            ..
+        } => {
+            ast.type_info = Some(Type::Null);
+            Ok(Type::Null)
+        }
+        AstNode {
+            kind:
+                AstNodeExpr::Literal(Token {
+                    kind: TokenKind::Bool(_),
+                    ..
+                }),
+            ..
+        } => {
+            ast.type_info = Some(Type::Bool);
+            Ok(Type::Bool)
+        }
+        AstNode {
+            kind:
+                AstNodeExpr::Literal(Token {
+                    kind: TokenKind::TString,
+                    ..
+                }),
+            ..
+        } => {
+            ast.type_info = Some(Type::TString);
+            Ok(Type::TString)
+        }
+        AstNode {
+            kind: AstNodeExpr::Unary(_, right),
+            ..
+        } => type_check(right, src),
+        AstNode {
+            kind: AstNodeExpr::Binary(left, tok, right),
+            ..
+        } => Type::coalesce(type_check(left, src)?, type_check(right, src)?, &tok),
         _ => unimplemented!(),
     }
 }
