@@ -70,6 +70,40 @@ pub fn gen_js<W: std::io::Write>(ast: &AstNodeExpr, src: &str, w: &mut W) -> Res
             })
             .map(|_| ()),
         AstNodeExpr::Literal(Token {
+            kind: TokenKind::Float(n),
+            location,
+            ..
+        }) => write!(w, "{}", n)
+            .map_err(|err| {
+                Error::new(
+                    ErrorKind::EmitError(err.to_string()),
+                    location.start_pos,
+                    location.start_line,
+                    location.start_column,
+                    location.end_pos,
+                    location.end_line,
+                    location.end_column,
+                )
+            })
+            .map(|_| ()),
+        AstNodeExpr::Literal(Token {
+            kind: TokenKind::Double(n),
+            location,
+            ..
+        }) => write!(w, "{}", n)
+            .map_err(|err| {
+                Error::new(
+                    ErrorKind::EmitError(err.to_string()),
+                    location.start_pos,
+                    location.start_line,
+                    location.start_column,
+                    location.end_pos,
+                    location.end_line,
+                    location.end_column,
+                )
+            })
+            .map(|_| ()),
+        AstNodeExpr::Literal(Token {
             kind: TokenKind::Bool(n),
             location,
             ..
