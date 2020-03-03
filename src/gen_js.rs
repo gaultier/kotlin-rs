@@ -207,49 +207,28 @@ pub fn gen_js<W: std::io::Write>(ast: &AstNode, src: &str, w: &mut W) -> Result<
             })?;
             gen_js(right, src, w)
         }
-        // AstNode {
-        //     kind:
-        //         AstNodeExpr::Binary(
-        //             left,
-        //             tok
-        //             @
-        //             Token {
-        //                 kind: TokenKind::Plus,
-        //                 ..
-        //             },
-        //             right,
-        //         ),
-        //     type_info: Some(Type::TString),
-        // } => {
-        //     write!(w, "\"\"+").map_err(|err| {
-        //         Error::new(
-        //             ErrorKind::EmitError(err.to_string()),
-        //             tok.location.start_pos,
-        //             tok.location.start_line,
-        //             tok.location.start_column,
-        //             tok.location.end_pos,
-        //             tok.location.end_line,
-        //             tok.location.end_column,
-        //         )
-        //     })?;
-        //     gen_js(left, src, w)?;
-        //     write!(w, "{}", tok.to_owned(src)).map_err(|err| {
-        //         Error::new(
-        //             ErrorKind::EmitError(err.to_string()),
-        //             tok.location.start_pos,
-        //             tok.location.start_line,
-        //             tok.location.start_column,
-        //             tok.location.end_pos,
-        //             tok.location.end_line,
-        //             tok.location.end_column,
-        //         )
-        //     })?;
-        //     gen_js(right, src, w)
-        // }
         AstNode {
             kind: AstNodeExpr::Binary(left, tok, right),
             ..
         } => {
+            match (left.type_info, right.type_info) {
+                (Some(Type::Null), Some(Type::Null)) => {
+                    if ast.type_info == Some(Type::TString) {
+                        write!(w, "\"\"+").map_err(|err| {
+                            Error::new(
+                                ErrorKind::EmitError(err.to_string()),
+                                tok.location.start_pos,
+                                tok.location.start_line,
+                                tok.location.start_column,
+                                tok.location.end_pos,
+                                tok.location.end_line,
+                                tok.location.end_column,
+                            )
+                        })?;
+                    }
+                }
+                _ => {}
+            }
             gen_js(left, src, w)?;
             write!(w, "{}", tok.to_owned(src)).map_err(|err| {
                 Error::new(
