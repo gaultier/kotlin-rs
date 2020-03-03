@@ -98,3 +98,21 @@ fn add_double_double() {
     assert!(compile(&src, &mut out).is_ok());
     assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"1.5+2.3");
 }
+
+#[test]
+fn add_int_double() {
+    let src = "1 + 2.3";
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(&src, &mut out).is_ok());
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"1+2.3");
+}
+
+#[test]
+fn add_double_int() {
+    let src = "1.5 + 2.3";
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(&src, &mut out).is_ok());
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"1.5+2");
+}
