@@ -75,6 +75,7 @@ impl Type {
                 Ok(Type::TString)
             }
             (Type::Char, Type::Int) if token.kind == TokenKind::Plus => Ok(Type::Char),
+            (Type::Char, Type::Int) if token.kind == TokenKind::Minus => Ok(Type::Char),
             _ => Err(Error::new(
                 ErrorKind::IncompatibleTypes(left, right),
                 token.location.start_pos,
