@@ -42,7 +42,7 @@ impl Type {
             (Type::UInt, Type::ULong) | (Type::ULong, Type::UInt) | (Type::ULong, Type::ULong) => {
                 Ok(Type::ULong)
             }
-            | _ => Err(Error::new(
+            _ => Err(Error::new(
                 ErrorKind::IncompatibleTypes(self.clone(), other.clone()),
                 location.start_pos,
                 location.start_line,
@@ -65,6 +65,26 @@ pub fn type_check(ast: &AstNodeExpr, src: &str) -> Result<Type, Error> {
             kind: TokenKind::UInt(_),
             ..
         }) => Ok(Type::UInt),
+        AstNodeExpr::Literal(Token {
+            kind: TokenKind::Long(_),
+            ..
+        }) => Ok(Type::Long),
+        AstNodeExpr::Literal(Token {
+            kind: TokenKind::ULong(_),
+            ..
+        }) => Ok(Type::ULong),
+        AstNodeExpr::Literal(Token {
+            kind: TokenKind::Float(_),
+            ..
+        }) => Ok(Type::Float),
+        AstNodeExpr::Literal(Token {
+            kind: TokenKind::Double(_),
+            ..
+        }) => Ok(Type::Double),
+        AstNodeExpr::Literal(Token {
+            kind: TokenKind::Null,
+            ..
+        }) => Ok(Type::Object),
         AstNodeExpr::Literal(Token {
             kind: TokenKind::Bool(_),
             ..
