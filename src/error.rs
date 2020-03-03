@@ -28,6 +28,7 @@ pub enum ErrorKind {
     InvalidUnicodeLiteral(String),
     ExpectedPrimary,
     IncompatibleTypes(Type, Type),
+    EmitError(String),
 }
 
 impl fmt::Display for ErrorKind {
@@ -52,6 +53,7 @@ impl fmt::Display for ErrorKind {
             ErrorKind::IncompatibleTypes(left, right) => {
                 write!(f, "Incompatible types: {} and {}", left, right)
             }
+            ErrorKind::EmitError(err) => write!(f, "Emit error: {}", err),
         }
     }
 }

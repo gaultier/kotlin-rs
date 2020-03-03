@@ -1,9 +1,7 @@
 use clap::{App, Arg};
-use kotlin::gen_js::gen_js;
-use kotlin::parse::*;
-use kotlin::type_check::*;
 use std::io::prelude::*;
 use std::result::Result;
+use kotlin::compile::compile;
 
 fn run() -> Result<(), String> {
     let matches = App::new("Kotlin-rs")
@@ -36,15 +34,9 @@ fn run() -> Result<(), String> {
         contents
     };
 
-    let mut parser = Parser::new(&contents);
-    let ast = parser
-        .parse()
-        .map_err(|err| format!("{}", err.to_owned(&contents)))?;
-    type_check(&ast, &contents).map_err(|err| format!("{}", err.to_owned(&contents)))?;
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
-    gen_js(&ast, &contents, &mut handle)?;
-    Ok(())
+    compile(&contents, &mut handle).map_err(|err| format!("{}", err.to_owned(&contents)))
 }
 
 fn main() {
