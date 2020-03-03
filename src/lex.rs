@@ -161,7 +161,11 @@ pub struct OwnedToken<'a> {
 
 impl<'a> fmt::Display for OwnedToken<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", &self.src[self.token.location.start_pos..self.token.location.end_pos])
+        write!(
+            f,
+            "{}",
+            &self.src[self.token.location.start_pos..self.token.location.end_pos]
+        )
     }
 }
 
@@ -409,7 +413,6 @@ impl<'a> Lexer<'a> {
         let s = &self.src[start_pos + 2..self.pos as usize]
             .to_string()
             .replace("_", "");
-        dbg!(&s);
         if s.len() == 0 {
             return Err(Error::new(
                 ErrorKind::MissingDigitsInBinaryNumber,
@@ -509,7 +512,6 @@ impl<'a> Lexer<'a> {
         let s = &self.src[start_pos + 2..self.pos as usize]
             .to_string()
             .replace("_", "");
-        dbg!(&s);
         if s.len() == 0 {
             return Err(Error::new(
                 ErrorKind::MissingDigitsInHexNumber,
@@ -603,11 +605,9 @@ impl<'a> Lexer<'a> {
         start_column: usize,
     ) -> Result<Token, Error> {
         self.digits(start_pos, start_line, start_column)?;
-        dbg!(&self.src[start_pos..self.pos as usize]);
         let s = &self.src[start_pos..self.pos as usize]
             .to_string()
             .replace("_", "");
-        dbg!(&s);
 
         let last_digit = self.src[start_pos..self.pos as usize].chars().last();
         // Forbid trailing underscore.
@@ -667,11 +667,9 @@ impl<'a> Lexer<'a> {
         if self.digits(start_pos, start_line, start_column)? == NumberType::Real {
             return self.real(start_pos, start_line, start_column);
         }
-        dbg!(&self.src[start_pos..self.pos as usize]);
         let s = &self.src[start_pos..self.pos as usize]
             .to_string()
             .replace("_", "");
-        dbg!(&s);
 
         let last_digit = self.src[start_pos..self.pos as usize].chars().last();
         // Forbid trailing underscore.
@@ -1440,9 +1438,7 @@ impl<'a> Lexer<'a> {
         let start_line = self.line;
         let start_column = self.column as usize;
 
-        // dbg!(self.cur);
         let c = self.advance();
-        // dbg!(self.cur);
 
         match c {
             Some('\n') => Ok(self.newline(start_pos, start_line, start_column)),
@@ -1532,19 +1528,15 @@ impl<'a> Lexer<'a> {
                     }
 
                     let s = &self.src[start_pos + 2..self.pos as usize];
-                    dbg!(&s);
                     let bytes = s
                         .chars()
                         .map(|c| c.to_digit(16).unwrap() as u8)
                         .collect::<Vec<u8>>();
-                    dbg!(&bytes);
                     let n: u16 = bytes[0] as u16 * 16 * 16 * 16
                         + bytes[1] as u16 * 16 * 16
                         + bytes[2] as u16 * 16
                         + bytes[3] as u16;
-                    dbg!(&n);
                     let c = char::try_from(n as u32);
-                    dbg!(&c);
                     if let Ok(c) = c {
                         Ok(Token::new(
                             self,
@@ -2603,7 +2595,10 @@ mod tests {
         assert_eq!(tok.location.start_column, 13);
         assert_eq!(tok.location.end_line, 2);
         assert_eq!(tok.location.end_column, 25);
-        assert_eq!(&s[tok.location.start_pos..tok.location.end_pos], "\"abc123老虎老虎\"");
+        assert_eq!(
+            &s[tok.location.start_pos..tok.location.end_pos],
+            "\"abc123老虎老虎\""
+        );
     }
 
     #[test]

@@ -28,7 +28,6 @@ impl<'a> Parser<'a> {
     }
 
     fn primary(&mut self) -> Result<AstNodeExpr, Error> {
-        dbg!(&self.previous);
         let previous = self.previous.clone().unwrap();
         match previous.kind {
             TokenKind::Int(_)
@@ -57,7 +56,6 @@ impl<'a> Parser<'a> {
 
     fn unary(&mut self) -> Result<AstNodeExpr, Error> {
         let previous = self.previous.clone().unwrap();
-        dbg!(&self.previous);
         match previous.kind {
             TokenKind::Bang | TokenKind::Minus => {
                 self.advance()?;
@@ -71,7 +69,6 @@ impl<'a> Parser<'a> {
     fn multiplication(&mut self) -> Result<AstNodeExpr, Error> {
         let left = self.unary()?;
         let previous = self.previous.clone().unwrap();
-        dbg!(&self.previous);
         match previous.kind {
             TokenKind::Star | TokenKind::Slash => {
                 self.advance()?;
@@ -89,7 +86,6 @@ impl<'a> Parser<'a> {
     fn addition(&mut self) -> Result<AstNodeExpr, Error> {
         let left = self.multiplication()?;
         let previous = self.previous.clone().unwrap();
-        dbg!(&self.previous);
         match previous.kind {
             TokenKind::Plus | TokenKind::Minus => {
                 self.advance()?;
@@ -107,7 +103,6 @@ impl<'a> Parser<'a> {
     fn comparison(&mut self) -> Result<AstNodeExpr, Error> {
         let left = self.addition()?;
         let previous = self.previous.clone().unwrap();
-        dbg!(&self.previous);
         match previous.kind {
             TokenKind::Greater
             | TokenKind::GreaterEqual
