@@ -28,6 +28,8 @@ impl fmt::Display for Type {
             Type::Float => write!(f, "Float"),
             Type::Double => write!(f, "Double"),
             Type::Null => write!(f, "Null"),
+            Type::Char => write!(f, "Char"),
+            Type::TString => write!(f, "String"),
         }
     }
 }
@@ -127,6 +129,10 @@ pub fn type_check(ast: &AstNodeExpr, src: &str) -> Result<Type, Error> {
             kind: TokenKind::Bool(_),
             ..
         }) => Ok(Type::Bool),
+        AstNodeExpr::Literal(Token {
+            kind: TokenKind::TString,
+            ..
+        }) => Ok(Type::TString),
         AstNodeExpr::Unary(_, right) => type_check(right, src),
         AstNodeExpr::Binary(left, tok, right) => {
             Type::coalesce(type_check(left, src)?, type_check(right, src)?, &tok)
