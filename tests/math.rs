@@ -166,6 +166,15 @@ fn add_string_long() {
 }
 
 #[test]
+fn add_long_string() {
+    let src = r##"2L + "abc""##;
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(&src, &mut out).is_ok());
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &r##"2+"abc""##);
+}
+
+#[test]
 fn add_string_uint() {
     let src = r##""abc" + 2U"##;
     let mut out: Vec<u8> = Vec::new();
