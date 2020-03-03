@@ -12,7 +12,9 @@ pub enum Type {
     ULong,
     Float,
     Double,
-    Object,
+    Null,
+    TString,
+    Char,
 }
 
 impl fmt::Display for Type {
@@ -25,13 +27,13 @@ impl fmt::Display for Type {
             Type::ULong => write!(f, "ULong"),
             Type::Float => write!(f, "Float"),
             Type::Double => write!(f, "Double"),
-            Type::Object => write!(f, "Object"),
+            Type::Null => write!(f, "Null"),
         }
     }
 }
 
 impl Type {
-    fn coalesce(left: Type, right: Type, location: &Location) -> Result<Type, Error> {
+    fn coalesce(left: Type, right: Type, token: &Token) -> Result<Type, Error> {
         match (left, right) {
             (Type::Bool, Type::Bool) => Ok(Type::Bool),
             (Type::Int, Type::Int) => Ok(Type::Int),
@@ -54,14 +56,33 @@ impl Type {
             | (Type::Long, Type::Double)
             | (Type::Double, Type::Float)
             | (Type::Float, Type::Double) => Ok(Type::Double),
+            (Type::TString, Type::Null)
+            | (Type::Null, Type::TString)
+            | (Type::Null, Type::Null)
+            | (Type::TString, Type::TString)
+            | (Type::TString, Type::Int)
+            | (Type::Int, Type::TString)
+            | (Type::TString, Type::UInt)
+            | (Type::UInt, Type::TString)
+            | (Type::TString, Type::Long)
+            | (Type::Long, Type::TString)
+            | (Type::TString, Type::ULong)
+            | (Type::ULong, Type::TString)
+            | (Type::TString, Type::Char)
+            | (Type::Char, Type::TString)
+                if token.kind == TokenKind::Plus =>
+            {
+                Ok(Type::TString)
+            }
+            (Type::Char, Type::Int) if token.kind == TokenKind::Plus => Ok(Type::Char),
             _ => Err(Error::new(
                 ErrorKind::IncompatibleTypes(left, right),
-                location.start_pos,
-                location.start_line,
-                location.start_column,
-                location.end_pos,
-                location.end_line,
-                location.end_column,
+                token.location.start_pos,
+                token.location.start_line,
+                token.location.start_column,
+                token.location.end_pos,
+                token.location.end_line,
+                token.location.end_column,
             )),
         }
     }
@@ -96,17 +117,15 @@ pub fn type_check(ast: &AstNodeExpr, src: &str) -> Result<Type, Error> {
         AstNodeExpr::Literal(Token {
             kind: TokenKind::Null,
             ..
-        }) => Ok(Type::Object),
+        }) => Ok(Type::Null),
         AstNodeExpr::Literal(Token {
             kind: TokenKind::Bool(_),
             ..
         }) => Ok(Type::Bool),
         AstNodeExpr::Unary(_, right) => type_check(right, src),
-        AstNodeExpr::Binary(left, tok, right) => Type::coalesce(
-            type_check(left, src)?,
-            type_check(right, src)?,
-            &tok.location,
-        ),
+        AstNodeExpr::Binary(left, tok, right) => {
+            Type::coalesce(type_check(left, src)?, type_check(right, src)?, &tok)
+        }
         _ => unimplemented!(),
     }
 }
