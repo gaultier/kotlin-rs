@@ -70,11 +70,15 @@ impl Type {
             | (Type::ULong, Type::TString)
             | (Type::TString, Type::Char)
             | (Type::Char, Type::TString)
+            // Asymetrical
+            | (Type::TString, Type::Bool)
                 if token.kind == TokenKind::Plus =>
             {
                 Ok(Type::TString)
             }
+            // Asymetrical
             (Type::Char, Type::Int) if token.kind == TokenKind::Plus => Ok(Type::Char),
+            // Asymetrical
             (Type::Char, Type::Int) if token.kind == TokenKind::Minus => Ok(Type::Char),
             _ => Err(Error::new(
                 ErrorKind::IncompatibleTypes(left, right),
