@@ -126,6 +126,7 @@ impl OwnedError<'_> {
         for _ in self.error.location.start_pos..self.error.location.end_pos {
             eprint!("^");
         }
+        eprint!(" {}", self.error.kind);
 
         stderr
             .set_color(ColorSpec::new().set_fg(Some(Color::Blue)))
