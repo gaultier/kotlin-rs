@@ -191,6 +191,10 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn statement(&mut self) -> Result<AstNodeStmt, Error> {
+        self.expression_stmt()
+    }
+
     pub fn new(s: &str) -> Parser {
         Parser {
             previous: None,
@@ -202,6 +206,18 @@ impl<'a> Parser<'a> {
     pub fn parse(&mut self) -> Result<Statements, Error> {
         self.advance()?;
         self.advance()?;
-        Ok(vec![self.expression_stmt()?])
+
+        let mut stmts = Vec::new();
+        while let Some(tok) = &self.previous {
+            dbg!(tok);
+            match tok.kind {
+                TokenKind::Eof => {
+                    return Ok(stmts);
+                }
+                TokenKind::Semicolon | TokenKind::Newline => {self.advance()?; }
+                _ => stmts.push(self.statement()?),
+            }
+        }
+        unreachable!()
     }
 }
