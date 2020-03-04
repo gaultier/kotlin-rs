@@ -120,9 +120,10 @@ impl OwnedError<'_> {
             .set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))
             .unwrap();
 
+        let src_err = &self.src[self.error.location.start_pos..self.error.location.end_pos];
         eprint!(
             "{} {}",
-            "^".repeat(self.error.location.end_pos - self.error.location.start_pos),
+            "^".repeat(src_err.chars().count()),
             self.error.kind
         );
 
