@@ -117,7 +117,7 @@ impl OwnedError<'_> {
         );
 
         stderr
-            .set_color(ColorSpec::new().set_fg(Some(Color::Red)))
+            .set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))
             .unwrap();
 
         eprint!(
