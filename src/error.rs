@@ -76,19 +76,21 @@ pub struct OwnedError<'a> {
 
 impl OwnedError<'_> {
     pub fn eprint(&self) {
-        let fmt = format!(
-            "{}:{}:{}:    {}",
-            self.error.location.start_line,
-            self.error.location.start_column,
-            self.error.kind,
-            &self.src[self.error.location.start_pos..self.error.location.start_pos] // FIXME: show full source code line
-        );
         eprintln!(
-            "{}{}",
-            fmt,
-            &self.src[self.error.location.start_pos..self.error.location.end_pos]
+            "{}:{}:{}",
+            self.error.location.start_line, self.error.location.start_column, self.error.kind,
         );
-        for _ in 0..fmt.len() {
+
+        let last_newline_index = &self.src[0..self.error.location.start_pos]
+            .rfind('\n')
+            .unwrap_or(0);
+        let next_newline_index = &self.src[self.error.location.end_pos..]
+            .find('\n')
+            .unwrap_or(self.src.len())
+            + self.error.location.end_pos;
+        eprintln!("| {}", &self.src[*last_newline_index..next_newline_index]);
+
+        for _ in 0..=self.error.location.start_column {
             eprint!(" ");
         }
 
@@ -104,25 +106,6 @@ impl OwnedError<'_> {
             .set_color(ColorSpec::new().set_fg(Some(Color::White)))
             .unwrap();
         write!(&mut stderr, "").unwrap();
-    }
-}
-
-impl<'a> fmt::Display for OwnedError<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let fmt = format!(
-            "{}:{}:{}:{}",
-            self.error.location.start_line,
-            self.error.location.start_column,
-            self.error.kind,
-            &self.src[self.error.location.start_pos..self.error.location.start_pos] // FIXME: show full source code line
-        );
-        writeln!(
-            f,
-            "{}{}",
-            fmt,
-            &self.src[self.error.location.start_pos..self.error.location.end_pos]
-        )?;
-        Ok(())
     }
 }
 
