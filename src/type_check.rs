@@ -67,7 +67,17 @@ impl Type {
     }
 }
 
-pub fn type_check(ast: &mut AstNode, src: &str) -> Result<Type, Error> {
+pub fn type_check_stmts(statements: &mut Statements, src: &str) -> Result<(), Error> {
+    for mut stmt in statements {
+        let mut ast = match &mut stmt {
+            AstNodeStmt::Expr(expr, _) => expr,
+        };
+        type_check_expr(&mut ast, src).map(|_| ())?;
+    }
+    Ok(())
+}
+
+pub fn type_check_expr(ast: &mut AstNode, src: &str) -> Result<Type, Error> {
     match ast {
         AstNode {
             kind:
@@ -172,7 +182,7 @@ pub fn type_check(ast: &mut AstNode, src: &str) -> Result<Type, Error> {
             kind: AstNodeExpr::Unary(_, right),
             ..
         } => {
-            let t = type_check(right, src)?;
+            let t = type_check_expr(right, src)?;
             ast.type_info = Some(t);
             Ok(t)
         }
@@ -180,7 +190,11 @@ pub fn type_check(ast: &mut AstNode, src: &str) -> Result<Type, Error> {
             kind: AstNodeExpr::Binary(left, tok, right),
             ..
         } => {
-            let t = Type::coalesce(type_check(left, src)?, type_check(right, src)?, &tok)?;
+            let t = Type::coalesce(
+                type_check_expr(left, src)?,
+                type_check_expr(right, src)?,
+                &tok,
+            )?;
             ast.type_info = Some(t);
             Ok(t)
         }

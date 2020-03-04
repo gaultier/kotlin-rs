@@ -14,6 +14,7 @@ pub enum Type {
     Null,
     TString,
     Char,
+    Unit,
 }
 
 impl fmt::Display for Type {
@@ -29,14 +30,17 @@ impl fmt::Display for Type {
             Type::Null => write!(f, "Null"),
             Type::Char => write!(f, "Char"),
             Type::TString => write!(f, "String"),
+            Type::Unit => write!(f, "Unit"),
         }
     }
 }
 
 #[derive(Debug)]
 pub enum AstNodeStmt {
-    Expr(AstNodeExpr),
+    Expr(AstNode, Token),
 }
+
+pub type Statements = Vec<AstNodeStmt>;
 
 #[derive(Debug)]
 pub struct AstNode {
@@ -167,6 +171,26 @@ impl<'a> Parser<'a> {
         self.comparison()
     }
 
+    fn expression_stmt(&mut self) -> Result<AstNodeStmt, Error> {
+        let expr = self.expression()?;
+        let previous = self.previous.clone().unwrap();
+        match previous.kind {
+            TokenKind::Semicolon | TokenKind::Newline => {
+                self.advance()?;
+                Ok(AstNodeStmt::Expr(expr, previous))
+            }
+            _ => Err(Error::new(
+                ErrorKind::UnterminatedStatement,
+                previous.location.start_pos,
+                previous.location.start_line,
+                previous.location.start_column,
+                previous.location.end_pos,
+                previous.location.end_line,
+                previous.location.end_column,
+            )),
+        }
+    }
+
     pub fn new(s: &str) -> Parser {
         Parser {
             previous: None,
@@ -175,9 +199,9 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(&mut self) -> Result<AstNode, Error> {
+    pub fn parse(&mut self) -> Result<Statements, Error> {
         self.advance()?;
         self.advance()?;
-        self.expression()
+        Ok(vec![self.expression_stmt()?])
     }
 }

@@ -29,6 +29,7 @@ pub enum ErrorKind {
     ExpectedPrimary,
     IncompatibleTypes(Type, Type),
     EmitError(String),
+    UnterminatedStatement,
 }
 
 impl fmt::Display for ErrorKind {
@@ -54,6 +55,7 @@ impl fmt::Display for ErrorKind {
                 write!(f, "Incompatible types: {} and {}", left, right)
             }
             ErrorKind::EmitError(err) => write!(f, "Emit error: {}", err),
+            ErrorKind::UnterminatedStatement => write!(f, "Unterminated statement"),
         }
     }
 }

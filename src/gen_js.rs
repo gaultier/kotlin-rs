@@ -2,7 +2,21 @@ use crate::error::*;
 use crate::lex::{Token, TokenKind};
 use crate::parse::*;
 
-pub fn gen_js<W: std::io::Write>(ast: &AstNode, src: &str, w: &mut W) -> Result<(), Error> {
+pub fn gen_js_stmts<W: std::io::Write>(
+    statements: &Statements,
+    src: &str,
+    w: &mut W,
+) -> Result<(), Error> {
+    for stmt in statements {
+        let ast = match &stmt {
+            AstNodeStmt::Expr(expr, _) => expr,
+        };
+        gen_js_expr(&ast, src, w)?;
+    }
+    Ok(())
+}
+
+pub fn gen_js_expr<W: std::io::Write>(ast: &AstNode, src: &str, w: &mut W) -> Result<(), Error> {
     match ast {
         AstNode {
             kind:
@@ -205,7 +219,7 @@ pub fn gen_js<W: std::io::Write>(ast: &AstNode, src: &str, w: &mut W) -> Result<
                     tok.location.end_column,
                 )
             })?;
-            gen_js(right, src, w)
+            gen_js_expr(right, src, w)
         }
         AstNode {
             kind: AstNodeExpr::Binary(left, tok, right),
@@ -229,7 +243,7 @@ pub fn gen_js<W: std::io::Write>(ast: &AstNode, src: &str, w: &mut W) -> Result<
                 }
                 _ => {}
             }
-            gen_js(left, src, w)?;
+            gen_js_expr(left, src, w)?;
             write!(w, "{}", tok.to_owned(src)).map_err(|err| {
                 Error::new(
                     ErrorKind::EmitError(err.to_string()),
@@ -241,7 +255,7 @@ pub fn gen_js<W: std::io::Write>(ast: &AstNode, src: &str, w: &mut W) -> Result<
                     tok.location.end_column,
                 )
             })?;
-            gen_js(right, src, w)
+            gen_js_expr(right, src, w)
         }
         _ => unimplemented!(),
     }
