@@ -87,6 +87,11 @@ impl OwnedError<'_> {
         stderr
             .set_color(ColorSpec::new().set_fg(Some(Color::Blue)))
             .unwrap();
+
+        for _ in 0..=line.len() {
+            eprint!(" ");
+        }
+        eprintln!("|");
         eprint!("{} |", line);
         stderr
             .set_color(ColorSpec::new().set_fg(Some(Color::White)))
@@ -101,7 +106,14 @@ impl OwnedError<'_> {
             + self.error.location.end_pos;
         eprintln!(" {}", &self.src[*last_newline_index..next_newline_index]);
 
-        for _ in 0..=1 + line.len() + self.error.location.start_column {
+        stderr
+            .set_color(ColorSpec::new().set_fg(Some(Color::Blue)))
+            .unwrap();
+        for _ in 0..=line.len() {
+            eprint!(" ");
+        }
+        eprint!("|");
+        for _ in 0..self.error.location.start_column {
             eprint!(" ");
         }
 
@@ -112,6 +124,15 @@ impl OwnedError<'_> {
         for _ in self.error.location.start_pos..self.error.location.end_pos {
             write!(&mut stderr, "^").unwrap();
         }
+
+        stderr
+            .set_color(ColorSpec::new().set_fg(Some(Color::Blue)))
+            .unwrap();
+        eprintln!();
+        for _ in 0..=line.len() {
+            eprint!(" ");
+        }
+        eprintln!("|");
         stderr
             .set_color(ColorSpec::new().set_fg(Some(Color::White)))
             .unwrap();
