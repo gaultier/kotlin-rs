@@ -84,10 +84,7 @@ impl OwnedError<'_> {
         );
 
         let line = format!("{}", self.error.location.start_line);
-        let mut blank = String::new();
-        for _ in 0..line.len() {
-            blank.push(' ');
-        }
+        let blank = " ".repeat(line.len());
 
         stderr
             .set_color(ColorSpec::new().set_fg(Some(Color::Blue)))
