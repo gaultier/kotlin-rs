@@ -1,5 +1,7 @@
 use crate::parse::Type;
 use std::fmt;
+use std::io::Write;
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Location {
@@ -72,10 +74,43 @@ pub struct OwnedError<'a> {
     pub src: &'a str,
 }
 
+impl OwnedError<'_> {
+    pub fn eprint(&self) {
+        let fmt = format!(
+            "{}:{}:{}:    {}",
+            self.error.location.start_line,
+            self.error.location.start_column,
+            self.error.kind,
+            &self.src[self.error.location.start_pos..self.error.location.start_pos] // FIXME: show full source code line
+        );
+        eprintln!(
+            "{}{}",
+            fmt,
+            &self.src[self.error.location.start_pos..self.error.location.end_pos]
+        );
+        for _ in 0..fmt.len() {
+            eprint!(" ");
+        }
+
+        let mut stderr = StandardStream::stderr(ColorChoice::Always);
+        stderr
+            .set_color(ColorSpec::new().set_fg(Some(Color::Red)))
+            .unwrap();
+
+        for _ in self.error.location.start_pos..self.error.location.end_pos {
+            write!(&mut stderr, "^").unwrap();
+        }
+        stderr
+            .set_color(ColorSpec::new().set_fg(Some(Color::White)))
+            .unwrap();
+        write!(&mut stderr, "").unwrap();
+    }
+}
+
 impl<'a> fmt::Display for OwnedError<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let fmt = format!(
-            "{}:{}:{}:    {}",
+            "{}:{}:{}:{}",
             self.error.location.start_line,
             self.error.location.start_column,
             self.error.kind,
@@ -87,12 +122,6 @@ impl<'a> fmt::Display for OwnedError<'a> {
             fmt,
             &self.src[self.error.location.start_pos..self.error.location.end_pos]
         )?;
-        for _ in 0..fmt.len() {
-            write!(f, " ")?;
-        }
-        for _ in self.error.location.start_pos..self.error.location.end_pos {
-            write!(f, "^")?;
-        }
         Ok(())
     }
 }
