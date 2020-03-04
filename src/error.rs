@@ -84,35 +84,37 @@ impl OwnedError<'_> {
         );
 
         let line = format!("{}", self.error.location.start_line);
+        let mut blank = String::new();
+        for _ in 0..line.len() {
+            blank.push(' ');
+        }
+
         stderr
             .set_color(ColorSpec::new().set_fg(Some(Color::Blue)))
             .unwrap();
 
-        for _ in 0..=line.len() {
-            eprint!(" ");
-        }
-        eprintln!("|");
-        eprint!("{} |", line);
+        eprintln!("{} |", blank);
+        eprint!("{} |", self.error.location.start_line);
         stderr
             .set_color(ColorSpec::new().set_fg(Some(Color::White)))
             .unwrap();
 
-        let last_newline_index = &self.src[0..self.error.location.start_pos]
+        let last_newline_index = self.src[0..self.error.location.start_pos]
             .rfind('\n')
+            .map(|i| i + 1)
             .unwrap_or(0);
+
         let next_newline_index = &self.src[self.error.location.end_pos..]
             .find('\n')
             .unwrap_or(self.src.len())
             + self.error.location.end_pos;
-        eprintln!(" {}", &self.src[*last_newline_index..next_newline_index]);
+        eprintln!(" {}", &self.src[last_newline_index..next_newline_index]);
 
         stderr
             .set_color(ColorSpec::new().set_fg(Some(Color::Blue)))
             .unwrap();
-        for _ in 0..=line.len() {
-            eprint!(" ");
-        }
-        eprint!("|");
+
+        eprint!("{} |", blank);
         for _ in 0..self.error.location.start_column {
             eprint!(" ");
         }
@@ -129,10 +131,8 @@ impl OwnedError<'_> {
             .set_color(ColorSpec::new().set_fg(Some(Color::Blue)))
             .unwrap();
         eprintln!();
-        for _ in 0..=line.len() {
-            eprint!(" ");
-        }
-        eprintln!("|");
+
+        eprintln!("{} |", blank);
         stderr
             .set_color(ColorSpec::new().set_fg(Some(Color::White)))
             .unwrap();
