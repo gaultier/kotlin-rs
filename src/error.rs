@@ -36,8 +36,8 @@ pub enum ErrorKind {
 impl fmt::Display for ErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ErrorKind::UnknownChar => write!(f, "Unknown char"),
-            ErrorKind::UnexpectedChar(c) => write!(f, "Unexpected char: got {}", c),
+            ErrorKind::UnknownChar => write!(f, "Unknown character"),
+            ErrorKind::UnexpectedChar(c) => write!(f, "Unexpected character: got {}", c),
             ErrorKind::ShebangNotOnFirstLine => write!(f, "Shebang not on the first line"),
             ErrorKind::NewlineInString => write!(f, "Newline in double quoted string"),
             ErrorKind::TrailingUnderscoreInNumber => write!(f, "Trailing underscore in number"),
