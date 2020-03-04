@@ -50,7 +50,7 @@ impl fmt::Display for ErrorKind {
                 write!(f, "Unknown escape sequence: {:?}", esc)
             }
             ErrorKind::IncompleteUnicodeLiteral => write!(f, "Incomplete unicode literal"),
-            ErrorKind::InvalidUnicodeLiteral(_s) => write!(f, "Invalid uncide literal"),
+            ErrorKind::InvalidUnicodeLiteral(_s) => write!(f, "Invalid unicode literal"),
             ErrorKind::ExpectedPrimary => write!(f, "Expected primary"),
             ErrorKind::IncompatibleTypes(left, right) => {
                 write!(f, "Incompatible types: {} and {}", left, right)
