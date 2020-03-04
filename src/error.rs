@@ -124,7 +124,7 @@ impl OwnedError<'_> {
             .unwrap();
 
         for _ in self.error.location.start_pos..self.error.location.end_pos {
-            write!(&mut stderr, "^").unwrap();
+            eprint!("^");
         }
 
         stderr
