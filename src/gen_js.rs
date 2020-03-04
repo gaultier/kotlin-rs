@@ -12,6 +12,7 @@ pub fn gen_js_stmts<W: std::io::Write>(
             AstNodeStmt::Expr(expr, _) => expr,
         };
         gen_js_expr(&ast, src, w)?;
+        writeln!(w, ";").unwrap();
     }
     Ok(())
 }
