@@ -76,10 +76,21 @@ pub struct OwnedError<'a> {
 
 impl OwnedError<'_> {
     pub fn eprint(&self) {
+        let mut stderr = StandardStream::stderr(ColorChoice::Always);
+
         eprintln!(
             "{}:{}:{}",
             self.error.location.start_line, self.error.location.start_column, self.error.kind,
         );
+
+        let line = format!("{}", self.error.location.start_line);
+        stderr
+            .set_color(ColorSpec::new().set_fg(Some(Color::Blue)))
+            .unwrap();
+        eprint!("{} |", line);
+        stderr
+            .set_color(ColorSpec::new().set_fg(Some(Color::White)))
+            .unwrap();
 
         let last_newline_index = &self.src[0..self.error.location.start_pos]
             .rfind('\n')
@@ -88,13 +99,12 @@ impl OwnedError<'_> {
             .find('\n')
             .unwrap_or(self.src.len())
             + self.error.location.end_pos;
-        eprintln!("| {}", &self.src[*last_newline_index..next_newline_index]);
+        eprintln!(" {}", &self.src[*last_newline_index..next_newline_index]);
 
-        for _ in 0..=self.error.location.start_column {
+        for _ in 0..=1 + line.len() + self.error.location.start_column {
             eprint!(" ");
         }
 
-        let mut stderr = StandardStream::stderr(ColorChoice::Always);
         stderr
             .set_color(ColorSpec::new().set_fg(Some(Color::Red)))
             .unwrap();

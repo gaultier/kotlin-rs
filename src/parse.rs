@@ -209,7 +209,6 @@ impl<'a> Parser<'a> {
 
         let mut stmts = Vec::new();
         while let Some(tok) = &self.previous {
-            dbg!(tok);
             match tok.kind {
                 TokenKind::Eof => {
                     return Ok(stmts);
