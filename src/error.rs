@@ -1,6 +1,5 @@
 use crate::parse::Type;
 use std::fmt;
-use std::io::Write;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -111,19 +110,21 @@ impl OwnedError<'_> {
             .set_color(ColorSpec::new().set_fg(Some(Color::Blue)))
             .unwrap();
 
-        eprint!("{} |", blank);
-        for _ in 0..self.error.location.start_column {
-            eprint!(" ");
-        }
+        eprint!(
+            "{} |{}",
+            blank,
+            " ".repeat(self.error.location.start_column)
+        );
 
         stderr
             .set_color(ColorSpec::new().set_fg(Some(Color::Red)))
             .unwrap();
 
-        for _ in self.error.location.start_pos..self.error.location.end_pos {
-            eprint!("^");
-        }
-        eprint!(" {}", self.error.kind);
+        eprint!(
+            "{} {}",
+            "^".repeat(self.error.location.end_pos - self.error.location.start_pos),
+            self.error.kind
+        );
 
         stderr
             .set_color(ColorSpec::new().set_fg(Some(Color::Blue)))
@@ -134,7 +135,6 @@ impl OwnedError<'_> {
         stderr
             .set_color(ColorSpec::new().set_fg(Some(Color::White)))
             .unwrap();
-        write!(&mut stderr, "").unwrap();
     }
 }
 
