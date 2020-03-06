@@ -2626,6 +2626,38 @@ mod tests {
         assert_eq!(location.end_column, 2);
     }
 
+    #[test]
+    fn unknown() {
+        let s = String::from("§");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert!(tok.is_err());
+        let err = tok.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::UnknownChar);
+        assert_eq!(err.location.start_pos, 0);
+        assert_eq!(err.location.start_line, 1);
+        assert_eq!(err.location.start_column, 1);
+        assert_eq!(err.location.end_pos, 2);
+        assert_eq!(err.location.end_line, 1);
+        assert_eq!(err.location.end_column, 2);
+
+        let tok = lexer.next_token();
+        assert!(tok.is_ok());
+        let tok = tok.unwrap();
+        assert_eq!(tok.kind, TokenKind::Eof);
+        assert_eq!(tok.span.start, 2);
+        assert_eq!(tok.span.end, 2);
+
+        let location = lexer.span_location(&tok.span);
+        assert_eq!(location.start_pos, 2);
+        assert_eq!(location.start_line, 1);
+        assert_eq!(location.start_column, 2);
+        assert_eq!(location.end_pos, 2);
+        assert_eq!(location.end_line, 1);
+        assert_eq!(location.end_column, 2);
+    }
+
     //     #[test]
     //     fn int() {
     //         let s = " 123  ";
