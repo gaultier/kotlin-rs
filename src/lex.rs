@@ -272,7 +272,7 @@ impl Cursor<'_> {
             //     '*' => self.block_comment(),
             //     _ => TokenKind::Slash,
             // },
-
+            '\n' => TokenKind::Newline,
             // Whitespace sequence.
             c if is_whitespace(c) => self.whitespace(),
 
@@ -769,11 +769,20 @@ impl Lexer {
         let start = self.pos;
         self.pos += cursor_token.len;
         println!(
-            "next_token: {:?}({:?})",
+            "next_token: kind={:?} c={:?} start={} pos={}",
             cursor_token.kind,
-            &self.src[start..self.pos]
+            &self.src[start..self.pos],
+            start,
+            self.pos
         );
         self.src = self.src[self.pos..].to_owned();
+        println!("new_src=`{}`", &self.src);
+
+        if cursor_token.kind == TokenKind::Newline {
+            println!("newline: pos={}", self.pos);
+            self.lines.push(self.pos);
+        }
+
         Token::new(cursor_token.kind, Span::new(start, self.pos))
     }
 
@@ -2530,6 +2539,44 @@ mod tests {
 
         let location = lexer.span_location(&tok.span);
         assert_eq!(location, (1, 2, 1, 2));
+    }
+
+    #[test]
+    fn token_with_newline() {
+        let s = String::from("@\n$");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.kind, TokenKind::At);
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 1);
+
+        let location = lexer.span_location(&tok.span);
+        assert_eq!(location, (1, 1, 1, 2));
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.kind, TokenKind::Newline);
+        assert_eq!(tok.span.start, 1);
+        assert_eq!(tok.span.end, 2);
+
+        let location = lexer.span_location(&tok.span);
+        assert_eq!(location, (1, 2, 2, 1));
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.kind, TokenKind::Dollar);
+        assert_eq!(tok.span.start, 2);
+        assert_eq!(tok.span.end, 3);
+
+        let location = lexer.span_location(&tok.span);
+        assert_eq!(location, (2, 1, 2, 2));
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.kind, TokenKind::Eof);
+        assert_eq!(tok.span.start, 2);
+        assert_eq!(tok.span.end, 2);
+
+        let location = lexer.span_location(&tok.span);
+        assert_eq!(location, (2, 2, 2, 2));
     }
 
     //     #[test]
