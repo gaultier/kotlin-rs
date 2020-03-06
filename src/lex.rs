@@ -773,6 +773,7 @@ impl Lexer {
             cursor_token.kind,
             &self.src[start..self.pos]
         );
+        self.src = self.src[self.pos..].to_owned();
         Token::new(cursor_token.kind, Span::new(start, self.pos))
     }
 
