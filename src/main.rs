@@ -42,8 +42,10 @@ fn main() {
         contents
     };
 
-    let stdout = std::io::stdout();
-    let mut handle = stdout.lock();
+    let mut lexer = Lexer::new(contents);
+    println!("{:?}", lexer.next_token());
+    // let stdout = std::io::stdout();
+    // let mut handle = stdout.lock();
     // if let Err(err) = compile(&contents, &mut handle) {
     //     err.to_owned(&contents).eprint();
     //     std::process::exit(1);
