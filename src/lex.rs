@@ -201,7 +201,6 @@ impl CursorToken {
         CursorToken { kind, len }
     }
 }
-const EOF_CHAR: char = '\0';
 
 /// Parses the first token from the provided input string.
 fn first_token(input: &str) -> CursorToken {
@@ -758,7 +757,7 @@ impl Lexer {
         Lexer {
             src,
             pos: 0,
-            lines: Vec::new(),
+            lines: vec![0],
         }
     }
 
@@ -775,6 +774,25 @@ impl Lexer {
             &self.src[start..self.pos]
         );
         Token::new(cursor_token.kind, Span::new(start, self.pos))
+    }
+
+    pub fn span_location(&self, span: &Span) -> (usize, usize, usize, usize) {
+        let start_line_i = match self.lines.binary_search(&span.start) {
+            Ok(l) => l,
+            Err(l) => l - 1,
+        };
+        let end_line_i = match self.lines.binary_search(&span.end) {
+            Ok(l) => l,
+            Err(l) => l - 1,
+        };
+        dbg!(start_line_i, end_line_i);
+        let start_line_pos = self.lines[start_line_i];
+        let end_line_pos = self.lines[end_line_i];
+
+        let start_col = span.start - start_line_pos;
+        let end_col = span.end - end_line_pos;
+
+        (start_line_i + 1, start_col + 1, end_line_i + 1, end_col + 1)
     }
 }
 
@@ -2492,7 +2510,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn int() {
+    fn single_token() {
         let s = String::from("@");
         let mut lexer = Lexer::new(s);
         let tok = lexer.next_token();
@@ -2500,6 +2518,9 @@ mod tests {
         assert_eq!(tok.kind, TokenKind::At);
         assert_eq!(tok.span.start, 0);
         assert_eq!(tok.span.end, 1);
+
+        let location = lexer.span_location(&tok.span);
+        assert_eq!(location, (1, 1, 1, 2));
         // let tok = tok.as_ref().unwrap();
         // assert_eq!(tok.kind, TokenKind::Int(123));
         // assert_eq!(tok.location.start_line, 1);
