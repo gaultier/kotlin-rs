@@ -204,6 +204,7 @@ impl CursorToken {
 
 /// Parses the first token from the provided input string.
 fn first_token(input: &str) -> CursorToken {
+    dbg!(&input);
     debug_assert!(!input.is_empty());
     Cursor::new(input).advance_token()
 }
@@ -220,22 +221,11 @@ pub fn is_whitespace(c: char) -> bool {
     match c {
         // Usual ASCII suspects
         | '\u{0009}' // \t
-        | '\u{000A}' // \n
         | '\u{000B}' // vertical tab
         | '\u{000C}' // form feed
         | '\u{000D}' // \r
         | '\u{0020}' // space
 
-        // NEXT LINE from latin1
-        | '\u{0085}'
-
-        // Bidi markers
-        | '\u{200E}' // LEFT-TO-RIGHT MARK
-        | '\u{200F}' // RIGHT-TO-LEFT MARK
-
-        // Dedicated whitespace characters from Unicode
-        | '\u{2028}' // LINE SEPARATOR
-        | '\u{2029}' // PARAGRAPH SEPARATOR
             => true,
         _ => false,
     }
@@ -765,7 +755,7 @@ impl Lexer {
         if self.pos >= self.src.len() {
             return Token::new(TokenKind::Eof, Span::new(self.pos, self.pos));
         }
-        let cursor_token = first_token(&self.src);
+        let cursor_token = first_token(&self.src[self.pos..]);
         let start = self.pos;
         self.pos += cursor_token.len;
         println!(
@@ -775,8 +765,6 @@ impl Lexer {
             start,
             self.pos
         );
-        self.src = self.src[self.pos..].to_owned();
-        println!("new_src=`{}`", &self.src);
 
         if cursor_token.kind == TokenKind::Newline {
             println!("newline: pos={}", self.pos);
