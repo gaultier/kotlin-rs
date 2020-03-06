@@ -205,22 +205,22 @@ impl CursorToken {
 const EOF_CHAR: char = '\0';
 
 /// Parses the first token from the provided input string.
-pub fn first_token(input: &str) -> CursorToken {
+fn first_token(input: &str) -> CursorToken {
     debug_assert!(!input.is_empty());
     Cursor::new(input).advance_token()
 }
 
 /// Creates an iterator that produces tokens from the input string.
-pub fn tokenize(mut input: &str) -> impl Iterator<Item = CursorToken> + '_ {
-    std::iter::from_fn(move || {
-        if input.is_empty() {
-            return None;
-        }
-        let token = first_token(input);
-        input = &input[token.len..];
-        Some(token)
-    })
-}
+// pub fn tokenize(mut input: &str) -> impl Iterator<Item = CursorToken> + '_ {
+//     std::iter::from_fn(move || {
+//         if input.is_empty() {
+//             return None;
+//         }
+//         let token = first_token(input);
+//         input = &input[token.len..];
+//         Some(token)
+//     })
+// }
 
 /// True if `c` is considered a whitespace according to Rust language definition.
 /// See [Rust language reference](https://doc.rust-lang.org/reference/whitespace.html)
@@ -776,7 +776,11 @@ impl Lexer {
         let cursor_token = first_token(&self.src);
         let start = self.pos;
         self.pos += cursor_token.len;
-        println!("next_token: {:?}({:?})", cursor_token.kind, &self.src[start..self.pos]);
+        println!(
+            "next_token: {:?}({:?})",
+            cursor_token.kind,
+            &self.src[start..self.pos]
+        );
         Token::new(cursor_token.kind, Span::new(start, self.pos))
     }
 }
