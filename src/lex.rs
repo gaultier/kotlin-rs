@@ -1,5 +1,5 @@
-use crate::error::*;
 use crate::cursor::*;
+use crate::error::*;
 // use std::convert::TryFrom;
 // use std::fmt;
 // use std::option::Option;
@@ -751,9 +751,9 @@ impl Lexer {
         }
     }
 
-    pub fn next_token(&mut self) -> Token {
+    pub fn next_token(&mut self) -> Result<Token, Error> {
         if self.pos >= self.src.len() {
-            return Token::new(TokenKind::Eof, Span::new(self.pos, self.pos));
+            return Ok(Token::new(TokenKind::Eof, Span::new(self.pos, self.pos)));
         }
         let cursor_token = first_token(&self.src[self.pos..]);
         let start = self.pos;
@@ -771,7 +771,7 @@ impl Lexer {
             self.lines.push(self.pos);
         }
 
-        Token::new(cursor_token.kind, Span::new(start, self.pos))
+        Ok(Token::new(cursor_token.kind, Span::new(start, self.pos)))
     }
 
     pub fn span_location(&self, span: &Span) -> Location {
@@ -794,9 +794,10 @@ impl Lexer {
             start_pos: span.start,
             start_line: start_line_i + 1,
             start_column: start_col + 1,
-end_pos: span.end,
+            end_pos: span.end,
             end_line: end_line_i + 1,
-            end_column: end_col + 1}
+            end_column: end_col + 1,
+        }
     }
 }
 
@@ -2519,6 +2520,8 @@ mod tests {
         let mut lexer = Lexer::new(s);
 
         let tok = lexer.next_token();
+        assert!(tok.is_ok());
+        let tok = tok.unwrap();
         assert_eq!(tok.kind, TokenKind::At);
         assert_eq!(tok.span.start, 0);
         assert_eq!(tok.span.end, 1);
@@ -2532,6 +2535,8 @@ mod tests {
         assert_eq!(location.end_column, 2);
 
         let tok = lexer.next_token();
+        assert!(tok.is_ok());
+        let tok = tok.unwrap();
         assert_eq!(tok.kind, TokenKind::Eof);
         assert_eq!(tok.span.start, 1);
         assert_eq!(tok.span.end, 1);
@@ -2551,6 +2556,8 @@ mod tests {
         let mut lexer = Lexer::new(s);
 
         let tok = lexer.next_token();
+        assert!(tok.is_ok());
+        let tok = tok.unwrap();
         assert_eq!(tok.kind, TokenKind::At);
         assert_eq!(tok.span.start, 0);
         assert_eq!(tok.span.end, 1);
@@ -2564,6 +2571,8 @@ mod tests {
         assert_eq!(location.end_column, 2);
 
         let tok = lexer.next_token();
+        assert!(tok.is_ok());
+        let tok = tok.unwrap();
         assert_eq!(tok.kind, TokenKind::Newline);
         assert_eq!(tok.span.start, 1);
         assert_eq!(tok.span.end, 2);
@@ -2577,6 +2586,8 @@ mod tests {
         assert_eq!(location.end_column, 1);
 
         let tok = lexer.next_token();
+        assert!(tok.is_ok());
+        let tok = tok.unwrap();
         assert_eq!(tok.kind, TokenKind::Dollar);
         assert_eq!(tok.span.start, 2);
         assert_eq!(tok.span.end, 3);
@@ -2590,6 +2601,8 @@ mod tests {
         assert_eq!(location.end_column, 2);
 
         let tok = lexer.next_token();
+        assert!(tok.is_ok());
+        let tok = tok.unwrap();
         assert_eq!(tok.kind, TokenKind::Eof);
         assert_eq!(tok.span.start, 3);
         assert_eq!(tok.span.end, 3);
