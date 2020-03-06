@@ -4,7 +4,6 @@ use crate::cursor::*;
 use std::fmt;
 use std::option::Option;
 use std::result::Result;
-use std::str::Chars;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum NumberType {
@@ -209,18 +208,6 @@ fn first_token(input: &str) -> CursorToken {
     debug_assert!(!input.is_empty());
     Cursor::new(input).advance_token()
 }
-
-/// Creates an iterator that produces tokens from the input string.
-// pub fn tokenize(mut input: &str) -> impl Iterator<Item = CursorToken> + '_ {
-//     std::iter::from_fn(move || {
-//         if input.is_empty() {
-//             return None;
-//         }
-//         let token = first_token(input);
-//         input = &input[token.len..];
-//         Some(token)
-//     })
-// }
 
 /// True if `c` is considered a whitespace according to Rust language definition.
 /// See [Rust language reference](https://doc.rust-lang.org/reference/whitespace.html)
@@ -738,6 +725,8 @@ impl Cursor<'_> {
 pub struct Lexer {
     src: String,
     pos: usize,
+    // Index of each line, 0 based
+    lines: Vec<usize>,
 }
 
 #[derive(Debug)]
@@ -766,7 +755,11 @@ impl Token {
 
 impl Lexer {
     pub fn new(src: String) -> Lexer {
-        Lexer { src, pos: 0 }
+        Lexer {
+            src,
+            pos: 0,
+            lines: Vec::new(),
+        }
     }
 
     pub fn next_token(&mut self) -> Token {
@@ -2505,6 +2498,8 @@ mod tests {
         let tok = lexer.next_token();
 
         assert_eq!(tok.kind, TokenKind::At);
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 1);
         // let tok = tok.as_ref().unwrap();
         // assert_eq!(tok.kind, TokenKind::Int(123));
         // assert_eq!(tok.location.start_line, 1);
