@@ -146,11 +146,12 @@ pub enum TokenKind {
     KeywordWhere,
     Identifier,
     Whitespace,
+    Eof,
     Unknown,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Token {
+struct CursorToken {
     pub kind: TokenKind,
     pub len: usize,
 }
@@ -171,7 +172,7 @@ pub struct Token {
 //     }
 // }
 
-impl Token {
+impl CursorToken {
     // pub fn is_eof(&self) -> bool {
     //     match self.kind {
     //         TokenKind::Eof => true,
@@ -197,27 +198,20 @@ impl Token {
     //     OwnedToken { token: &self, src }
     // }
 
-    pub fn new(kind: TokenKind, len: usize) -> Token {
-        Token { kind, len }
+    pub fn new(kind: TokenKind, len: usize) -> CursorToken {
+        CursorToken { kind, len }
     }
 }
-
-// #[derive(Debug)]
-// pub struct Lexer<'a> {
-//     src: &'a str,
-//     chars: Chars<'a>,
-// }
-
 const EOF_CHAR: char = '\0';
 
 /// Parses the first token from the provided input string.
-pub fn first_token(input: &str) -> Token {
+pub fn first_token(input: &str) -> CursorToken {
     debug_assert!(!input.is_empty());
     Cursor::new(input).advance_token()
 }
 
 /// Creates an iterator that produces tokens from the input string.
-pub fn tokenize(mut input: &str) -> impl Iterator<Item = Token> + '_ {
+pub fn tokenize(mut input: &str) -> impl Iterator<Item = CursorToken> + '_ {
     std::iter::from_fn(move || {
         if input.is_empty() {
             return None;
@@ -280,9 +274,10 @@ pub fn is_id_continue(c: char) -> bool {
     ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || c == '_'
     // || (c > '\x7f' && unicode_xid::UnicodeXID::is_xid_continue(c))
 }
+
 impl Cursor<'_> {
     /// Parses a token from the input string.
-    fn advance_token(&mut self) -> Token {
+    fn advance_token(&mut self) -> CursorToken {
         let first_char = self.bump().unwrap();
         let token_kind = match first_char {
             // Slash, comment or block comment.
@@ -339,7 +334,7 @@ impl Cursor<'_> {
             '%' => TokenKind::Percent,
 
             // Lifetime or character literal.
-            '\'' => self.lifetime_or_char(),
+            // '\'' => self.lifetime_or_char(),
 
             // String literal.
             // '"' => {
@@ -353,7 +348,7 @@ impl Cursor<'_> {
             // }
             _ => TokenKind::Unknown,
         };
-        Token::new(token_kind, self.len_consumed())
+        CursorToken::new(token_kind, self.len_consumed())
     }
 
     // fn line_comment(&mut self) -> TokenKind {
@@ -737,6 +732,53 @@ impl Cursor<'_> {
     //         _ => false,
     //     }
     // }
+}
+
+#[derive(Debug)]
+pub struct Lexer {
+    src: String,
+    pos: usize,
+}
+
+#[derive(Debug)]
+pub struct Span {
+    start: usize,
+    end: usize,
+}
+
+impl Span {
+    pub fn new(start: usize, end: usize) -> Span {
+        Span { start, end }
+    }
+}
+
+#[derive(Debug)]
+pub struct Token {
+    kind: TokenKind,
+    span: Span,
+}
+
+impl Token {
+    pub fn new(kind: TokenKind, span: Span) -> Token {
+        Token { kind, span }
+    }
+}
+
+impl Lexer {
+    pub fn new(src: String) -> Lexer {
+        Lexer { src, pos: 0 }
+    }
+
+    pub fn next_token(&mut self) -> Token {
+        if self.src.is_empty() {
+            return Token::new(TokenKind::Eof, Span::new(self.pos, self.pos));
+        }
+        let cursor_token = first_token(&self.src);
+        let start = self.pos;
+        self.pos += cursor_token.len;
+        println!("next_token: {:?}({:?})", cursor_token.kind, &self.src[start..self.pos]);
+        Token::new(cursor_token.kind, Span::new(start, self.pos))
+    }
 }
 
 // impl<'a> Lexer<'a> {
@@ -2451,6 +2493,21 @@ impl Cursor<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn int() {
+        let s = String::from("@");
+        let mut lexer = Lexer::new(s);
+        let tok = lexer.next_token();
+
+        assert_eq!(tok.kind, TokenKind::At);
+        // let tok = tok.as_ref().unwrap();
+        // assert_eq!(tok.kind, TokenKind::Int(123));
+        // assert_eq!(tok.location.start_line, 1);
+        // assert_eq!(tok.location.start_column, 2);
+        // assert_eq!(tok.location.end_line, 1);
+        // assert_eq!(tok.location.end_column, 5);
+    }
 
     //     #[test]
     //     fn int() {
