@@ -1,9 +1,9 @@
-// use crate::error::*;
+use crate::error::*;
 use crate::cursor::*;
 // use std::convert::TryFrom;
-use std::fmt;
-use std::option::Option;
-use std::result::Result;
+// use std::fmt;
+// use std::option::Option;
+// use std::result::Result;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum NumberType {
@@ -774,7 +774,7 @@ impl Lexer {
         Token::new(cursor_token.kind, Span::new(start, self.pos))
     }
 
-    pub fn span_location(&self, span: &Span) -> (usize, usize, usize, usize) {
+    pub fn span_location(&self, span: &Span) -> Location {
         let start_line_i = match self.lines.binary_search(&span.start) {
             Ok(l) => l,
             Err(l) => l - 1,
@@ -790,7 +790,13 @@ impl Lexer {
         let start_col = span.start - start_line_pos;
         let end_col = span.end - end_line_pos;
 
-        (start_line_i + 1, start_col + 1, end_line_i + 1, end_col + 1)
+        Location {
+            start_pos: span.start,
+            start_line: start_line_i + 1,
+            start_column: start_col + 1,
+end_pos: span.end,
+            end_line: end_line_i + 1,
+            end_column: end_col + 1}
     }
 }
 
@@ -2518,7 +2524,12 @@ mod tests {
         assert_eq!(tok.span.end, 1);
 
         let location = lexer.span_location(&tok.span);
-        assert_eq!(location, (1, 1, 1, 2));
+        assert_eq!(location.start_pos, 0);
+        assert_eq!(location.start_line, 1);
+        assert_eq!(location.start_column, 1);
+        assert_eq!(location.end_pos, 1);
+        assert_eq!(location.end_line, 1);
+        assert_eq!(location.end_column, 2);
 
         let tok = lexer.next_token();
         assert_eq!(tok.kind, TokenKind::Eof);
@@ -2526,7 +2537,12 @@ mod tests {
         assert_eq!(tok.span.end, 1);
 
         let location = lexer.span_location(&tok.span);
-        assert_eq!(location, (1, 2, 1, 2));
+        assert_eq!(location.start_pos, 1);
+        assert_eq!(location.start_line, 1);
+        assert_eq!(location.start_column, 2);
+        assert_eq!(location.end_pos, 1);
+        assert_eq!(location.end_line, 1);
+        assert_eq!(location.end_column, 2);
     }
 
     #[test]
@@ -2540,7 +2556,12 @@ mod tests {
         assert_eq!(tok.span.end, 1);
 
         let location = lexer.span_location(&tok.span);
-        assert_eq!(location, (1, 1, 1, 2));
+        assert_eq!(location.start_pos, 0);
+        assert_eq!(location.start_line, 1);
+        assert_eq!(location.start_column, 1);
+        assert_eq!(location.end_pos, 1);
+        assert_eq!(location.end_line, 1);
+        assert_eq!(location.end_column, 2);
 
         let tok = lexer.next_token();
         assert_eq!(tok.kind, TokenKind::Newline);
@@ -2548,7 +2569,12 @@ mod tests {
         assert_eq!(tok.span.end, 2);
 
         let location = lexer.span_location(&tok.span);
-        assert_eq!(location, (1, 2, 2, 1));
+        assert_eq!(location.start_pos, 1);
+        assert_eq!(location.start_line, 1);
+        assert_eq!(location.start_column, 2);
+        assert_eq!(location.end_pos, 2);
+        assert_eq!(location.end_line, 2);
+        assert_eq!(location.end_column, 1);
 
         let tok = lexer.next_token();
         assert_eq!(tok.kind, TokenKind::Dollar);
@@ -2556,7 +2582,12 @@ mod tests {
         assert_eq!(tok.span.end, 3);
 
         let location = lexer.span_location(&tok.span);
-        assert_eq!(location, (2, 1, 2, 2));
+        assert_eq!(location.start_pos, 2);
+        assert_eq!(location.start_line, 2);
+        assert_eq!(location.start_column, 1);
+        assert_eq!(location.end_pos, 3);
+        assert_eq!(location.end_line, 2);
+        assert_eq!(location.end_column, 2);
 
         let tok = lexer.next_token();
         assert_eq!(tok.kind, TokenKind::Eof);
@@ -2564,7 +2595,12 @@ mod tests {
         assert_eq!(tok.span.end, 3);
 
         let location = lexer.span_location(&tok.span);
-        assert_eq!(location, (2, 2, 2, 2));
+        assert_eq!(location.start_pos, 3);
+        assert_eq!(location.start_line, 2);
+        assert_eq!(location.start_column, 2);
+        assert_eq!(location.end_pos, 3);
+        assert_eq!(location.end_line, 2);
+        assert_eq!(location.end_column, 2);
     }
 
     //     #[test]
