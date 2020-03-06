@@ -2560,8 +2560,8 @@ mod tests {
 
         let tok = lexer.next_token();
         assert_eq!(tok.kind, TokenKind::Eof);
-        assert_eq!(tok.span.start, 2);
-        assert_eq!(tok.span.end, 2);
+        assert_eq!(tok.span.start, 3);
+        assert_eq!(tok.span.end, 3);
 
         let location = lexer.span_location(&tok.span);
         assert_eq!(location, (2, 2, 2, 2));
