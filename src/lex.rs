@@ -762,7 +762,7 @@ impl Lexer {
     }
 
     pub fn next_token(&mut self) -> Token {
-        if self.src.is_empty() {
+        if self.pos >= self.src.len() {
             return Token::new(TokenKind::Eof, Span::new(self.pos, self.pos));
         }
         let cursor_token = first_token(&self.src);
@@ -2513,20 +2513,22 @@ mod tests {
     fn single_token() {
         let s = String::from("@");
         let mut lexer = Lexer::new(s);
-        let tok = lexer.next_token();
 
+        let tok = lexer.next_token();
         assert_eq!(tok.kind, TokenKind::At);
         assert_eq!(tok.span.start, 0);
         assert_eq!(tok.span.end, 1);
 
         let location = lexer.span_location(&tok.span);
         assert_eq!(location, (1, 1, 1, 2));
-        // let tok = tok.as_ref().unwrap();
-        // assert_eq!(tok.kind, TokenKind::Int(123));
-        // assert_eq!(tok.location.start_line, 1);
-        // assert_eq!(tok.location.start_column, 2);
-        // assert_eq!(tok.location.end_line, 1);
-        // assert_eq!(tok.location.end_column, 5);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.kind, TokenKind::Eof);
+        assert_eq!(tok.span.start, 1);
+        assert_eq!(tok.span.end, 1);
+
+        let location = lexer.span_location(&tok.span);
+        assert_eq!(location, (1, 2, 1, 2));
     }
 
     //     #[test]
