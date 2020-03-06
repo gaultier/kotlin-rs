@@ -145,6 +145,7 @@ pub enum TokenKind {
     KeywordWhen,
     KeywordWhere,
     Identifier,
+    Unknown,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -200,11 +201,13 @@ impl Token {
     }
 }
 
-#[derive(Debug)]
-pub struct Lexer<'a> {
-    src: &'a str,
-    chars: Chars<'a>,
-}
+// #[derive(Debug)]
+// pub struct Lexer<'a> {
+//     src: &'a str,
+//     chars: Chars<'a>,
+// }
+
+const EOF_CHAR: char = '\0';
 
 /// Parses the first token from the provided input string.
 pub fn first_token(input: &str) -> Token {
@@ -223,9 +226,513 @@ pub fn tokenize(mut input: &str) -> impl Iterator<Item = Token> + '_ {
         Some(token)
     })
 }
-const EOF_CHAR: char = '\0';
 
+/// True if `c` is considered a whitespace according to Rust language definition.
+/// See [Rust language reference](https://doc.rust-lang.org/reference/whitespace.html)
+/// for definitions of these classes.
+pub fn is_whitespace(c: char) -> bool {
+    // This is Pattern_White_Space.
+    //
+    // Note that this set is stable (ie, it doesn't change with different
+    // Unicode versions), so it's ok to just hard-code the values.
+
+    match c {
+        // Usual ASCII suspects
+        | '\u{0009}' // \t
+        | '\u{000A}' // \n
+        | '\u{000B}' // vertical tab
+        | '\u{000C}' // form feed
+        | '\u{000D}' // \r
+        | '\u{0020}' // space
+
+        // NEXT LINE from latin1
+        | '\u{0085}'
+
+        // Bidi markers
+        | '\u{200E}' // LEFT-TO-RIGHT MARK
+        | '\u{200F}' // RIGHT-TO-LEFT MARK
+
+        // Dedicated whitespace characters from Unicode
+        | '\u{2028}' // LINE SEPARATOR
+        | '\u{2029}' // PARAGRAPH SEPARATOR
+            => true,
+        _ => false,
+    }
+}
+
+/// True if `c` is valid as a first character of an identifier.
+/// See [Rust language reference](https://doc.rust-lang.org/reference/identifiers.html) for
+/// a formal definition of valid identifier name.
+pub fn is_id_start(c: char) -> bool {
+    // This is XID_Start OR '_' (which formally is not a XID_Start).
+    // We also add fast-path for ascii idents
+    ('a' <= c && c <= 'z')
+        || ('A' <= c && c <= 'Z')
+        || c == '_'
+        // || (c > '\x7f' && unicode_xid::UnicodeXID::is_xid_start(c))
+}
+
+/// True if `c` is valid as a non-first character of an identifier.
+/// See [Rust language reference](https://doc.rust-lang.org/reference/identifiers.html) for
+/// a formal definition of valid identifier name.
+pub fn is_id_continue(c: char) -> bool {
+    // This is exactly XID_Continue.
+    // We also add fast-path for ascii idents
+    ('a' <= c && c <= 'z')
+        || ('A' <= c && c <= 'Z')
+        || ('0' <= c && c <= '9')
+        || c == '_'
+        // || (c > '\x7f' && unicode_xid::UnicodeXID::is_xid_continue(c))
+}
 impl Cursor<'_> {
+    /// Parses a token from the input string.
+    fn advance_token(&mut self) -> Token {
+        let first_char = self.bump().unwrap();
+        let token_kind = match first_char {
+            // Slash, comment or block comment.
+            '/' => match self.first() {
+                '/' => self.line_comment(),
+                '*' => self.block_comment(),
+                _ => TokenKind::Slash,
+            },
+
+            // Whitespace sequence.
+            c if is_whitespace(c) => self.whitespace(),
+
+
+            // Identifier (this should be checked after other variant that can
+            // start as identifier).
+            c if is_id_start(c) => self.ident(),
+
+            // Numeric literal.
+            // c @ '0'..='9' => {
+            //     let literal_kind = self.number(c);
+            //     let suffix_start = self.len_consumed();
+            //     self.eat_literal_suffix();
+            //     TokenKind::Literal {
+            //         kind: literal_kind,
+            //         suffix_start,
+            //     }
+            // }
+
+            // One-symbol tokens.
+            ';' => TokenKind::Semicolon,
+            ',' => TokenKind::Comma,
+            '.' => TokenKind::Dot,
+            // '(' => TokenKind::OpenParen,
+            // ')' => TokenKind::CloseParen,
+            // '{' => TokenKind::OpenBrace,
+            // '}' => TokenKind::CloseBrace,
+            // '[' => TokenKind::OpenBracket,
+            // ']' => TokenKind::CloseBracket,
+            '@' => TokenKind::At,
+            // '#' => TokenKind::Pound,
+            // '~' => TokenKind::Tilde,
+            // '?' => TokenKind::Question,
+            ':' => TokenKind::Colon,
+            '$' => TokenKind::Dollar,
+            '=' => TokenKind::Equal,
+            '!' => TokenKind::Bang,
+            '<' => TokenKind::Lesser,
+            '>' => TokenKind::Greater,
+            '-' => TokenKind::Minus,
+            '&' => TokenKind::Ampersand,
+            '|' => TokenKind::Pipe,
+            '+' => TokenKind::Plus,
+            '*' => TokenKind::Star,
+            // '^' => TokenKind::Caret,
+            '%' => TokenKind::Percent,
+
+            // Lifetime or character literal.
+            '\'' => self.lifetime_or_char(),
+
+            // String literal.
+            // '"' => {
+            //     let terminated = self.double_quoted_string();
+            //     let suffix_start = self.len_consumed();
+            //     if terminated {
+            //         self.eat_literal_suffix();
+            //     }
+            //     let kind = Str { terminated };
+            //     Literal { kind, suffix_start }
+            // }
+            _ => TokenKind::Unknown,
+        };
+        Token::new(token_kind, self.len_consumed())
+    }
+
+    fn line_comment(&mut self) -> TokenKind {
+        debug_assert!(self.prev() == '/' && self.first() == '/');
+        self.bump();
+        self.eat_while(|c| c != '\n');
+        LineComment
+    }
+
+    fn block_comment(&mut self) -> TokenKind {
+        debug_assert!(self.prev() == '/' && self.first() == '*');
+        self.bump();
+        let mut depth = 1usize;
+        while let Some(c) = self.bump() {
+            match c {
+                '/' if self.first() == '*' => {
+                    self.bump();
+                    depth += 1;
+                }
+                '*' if self.first() == '/' => {
+                    self.bump();
+                    depth -= 1;
+                    if depth == 0 {
+                        // This block comment is closed, so for a construction like "/* */ */"
+                        // there will be a successfully parsed block comment "/* */"
+                        // and " */" will be processed separately.
+                        break;
+                    }
+                }
+                _ => (),
+            }
+        }
+
+        BlockComment {
+            terminated: depth == 0,
+        }
+    }
+
+    fn whitespace(&mut self) -> TokenKind {
+        debug_assert!(is_whitespace(self.prev()));
+        self.eat_while(is_whitespace);
+        Whitespace
+    }
+
+    fn raw_ident(&mut self) -> TokenKind {
+        debug_assert!(self.prev() == 'r' && self.first() == '#' && is_id_start(self.second()));
+        // Eat "#" symbol.
+        self.bump();
+        // Eat the identifier part of RawIdent.
+        self.eat_identifier();
+        RawIdent
+    }
+
+    fn ident(&mut self) -> TokenKind {
+        debug_assert!(is_id_start(self.prev()));
+        // Start is already eaten, eat the rest of identifier.
+        self.eat_while(is_id_continue);
+        Ident
+    }
+
+    fn number(&mut self, first_digit: char) -> LiteralKind {
+        debug_assert!('0' <= self.prev() && self.prev() <= '9');
+        let mut base = Base::Decimal;
+        if first_digit == '0' {
+            // Attempt to parse encoding base.
+            let has_digits = match self.first() {
+                'b' => {
+                    base = Base::Binary;
+                    self.bump();
+                    self.eat_decimal_digits()
+                }
+                'o' => {
+                    base = Base::Octal;
+                    self.bump();
+                    self.eat_decimal_digits()
+                }
+                'x' => {
+                    base = Base::Hexadecimal;
+                    self.bump();
+                    self.eat_hexadecimal_digits()
+                }
+                // Not a base prefix.
+                '0'..='9' | '_' | '.' | 'e' | 'E' => {
+                    self.eat_decimal_digits();
+                    true
+                }
+                // Just a 0.
+                _ => {
+                    return Int {
+                        base,
+                        empty_int: false,
+                    }
+                }
+            };
+            // Base prefix was provided, but there were no digits
+            // after it, e.g. "0x".
+            if !has_digits {
+                return Int {
+                    base,
+                    empty_int: true,
+                };
+            }
+        } else {
+            // No base prefix, parse number in the usual way.
+            self.eat_decimal_digits();
+        };
+
+        match self.first() {
+            // Don't be greedy if this is actually an
+            // integer literal followed by field/method access or a range pattern
+            // (`0..2` and `12.foo()`)
+            '.' if self.second() != '.' && !is_id_start(self.second()) => {
+                // might have stuff after the ., and if it does, it needs to start
+                // with a number
+                self.bump();
+                let mut empty_exponent = false;
+                if self.first().is_digit(10) {
+                    self.eat_decimal_digits();
+                    match self.first() {
+                        'e' | 'E' => {
+                            self.bump();
+                            empty_exponent = !self.eat_float_exponent();
+                        }
+                        _ => (),
+                    }
+                }
+                Float {
+                    base,
+                    empty_exponent,
+                }
+            }
+            'e' | 'E' => {
+                self.bump();
+                let empty_exponent = !self.eat_float_exponent();
+                Float {
+                    base,
+                    empty_exponent,
+                }
+            }
+            _ => Int {
+                base,
+                empty_int: false,
+            },
+        }
+    }
+
+    fn lifetime_or_char(&mut self) -> TokenKind {
+        debug_assert!(self.prev() == '\'');
+
+        let can_be_a_lifetime = if self.second() == '\'' {
+            // It's surely not a lifetime.
+            false
+        } else {
+            // If the first symbol is valid for identifier, it can be a lifetime.
+            // Also check if it's a number for a better error reporting (so '0 will
+            // be reported as invalid lifetime and not as unterminated char literal).
+            is_id_start(self.first()) || self.first().is_digit(10)
+        };
+
+        if !can_be_a_lifetime {
+            let terminated = self.single_quoted_string();
+            let suffix_start = self.len_consumed();
+            if terminated {
+                self.eat_literal_suffix();
+            }
+            let kind = Char { terminated };
+            return Literal { kind, suffix_start };
+        }
+
+        // Either a lifetime or a character literal with
+        // length greater than 1.
+
+        let starts_with_number = self.first().is_digit(10);
+
+        // Skip the literal contents.
+        // First symbol can be a number (which isn't a valid identifier start),
+        // so skip it without any checks.
+        self.bump();
+        self.eat_while(is_id_continue);
+
+        // Check if after skipping literal contents we've met a closing
+        // single quote (which means that user attempted to create a
+        // string with single quotes).
+        if self.first() == '\'' {
+            self.bump();
+            let kind = Char { terminated: true };
+            return Literal {
+                kind,
+                suffix_start: self.len_consumed(),
+            };
+        }
+
+        return Lifetime { starts_with_number };
+    }
+
+    fn single_quoted_string(&mut self) -> bool {
+        debug_assert!(self.prev() == '\'');
+        // Check if it's a one-symbol literal.
+        if self.second() == '\'' && self.first() != '\\' {
+            self.bump();
+            self.bump();
+            return true;
+        }
+
+        // Literal has more than one symbol.
+
+        // Parse until either quotes are terminated or error is detected.
+        loop {
+            match self.first() {
+                // Quotes are terminated, finish parsing.
+                '\'' => {
+                    self.bump();
+                    return true;
+                }
+                // Probably beginning of the comment, which we don't want to include
+                // to the error report.
+                '/' => break,
+                // Newline without following '\'' means unclosed quote, stop parsing.
+                '\n' if self.second() != '\'' => break,
+                // End of file, stop parsing.
+                EOF_CHAR if self.is_eof() => break,
+                // Escaped slash is considered one character, so bump twice.
+                '\\' => {
+                    self.bump();
+                    self.bump();
+                }
+                // Skip the character.
+                _ => {
+                    self.bump();
+                }
+            }
+        }
+        // String was not terminated.
+        false
+    }
+
+    /// Eats double-quoted string and returns true
+    /// if string is terminated.
+    fn double_quoted_string(&mut self) -> bool {
+        debug_assert!(self.prev() == '"');
+        while let Some(c) = self.bump() {
+            match c {
+                '"' => {
+                    return true;
+                }
+                '\\' if self.first() == '\\' || self.first() == '"' => {
+                    // Bump again to skip escaped character.
+                    self.bump();
+                }
+                _ => (),
+            }
+        }
+        // End of file reached.
+        false
+    }
+
+    /// Eats the double-quoted string and returns a tuple of
+    /// (amount of the '#' symbols, raw string started, raw string terminated)
+    fn raw_double_quoted_string(&mut self) -> (usize, bool, bool) {
+        debug_assert!(self.prev() == 'r');
+        let mut started: bool = false;
+        let mut finished: bool = false;
+
+        // Count opening '#' symbols.
+        let n_hashes = self.eat_while(|c| c == '#');
+
+        // Check that string is started.
+        match self.bump() {
+            Some('"') => started = true,
+            _ => return (n_hashes, started, finished),
+        }
+
+        // Skip the string contents and on each '#' character met, check if this is
+        // a raw string termination.
+        while !finished {
+            self.eat_while(|c| c != '"');
+
+            if self.is_eof() {
+                return (n_hashes, started, finished);
+            }
+
+            // Eat closing double quote.
+            self.bump();
+
+            // Check that amount of closing '#' symbols
+            // is equal to the amount of opening ones.
+            let mut hashes_left = n_hashes;
+            let is_closing_hash = |c| {
+                if c == '#' && hashes_left != 0 {
+                    hashes_left -= 1;
+                    true
+                } else {
+                    false
+                }
+            };
+            finished = self.eat_while(is_closing_hash) == n_hashes;
+        }
+
+        (n_hashes, started, finished)
+    }
+
+    fn eat_decimal_digits(&mut self) -> bool {
+        let mut has_digits = false;
+        loop {
+            match self.first() {
+                '_' => {
+                    self.bump();
+                }
+                '0'..='9' => {
+                    has_digits = true;
+                    self.bump();
+                }
+                _ => break,
+            }
+        }
+        has_digits
+    }
+
+    fn eat_hexadecimal_digits(&mut self) -> bool {
+        let mut has_digits = false;
+        loop {
+            match self.first() {
+                '_' => {
+                    self.bump();
+                }
+                '0'..='9' | 'a'..='f' | 'A'..='F' => {
+                    has_digits = true;
+                    self.bump();
+                }
+                _ => break,
+            }
+        }
+        has_digits
+    }
+
+    /// Eats the float exponent. Returns true if at least one digit was met,
+    /// and returns false otherwise.
+    fn eat_float_exponent(&mut self) -> bool {
+        debug_assert!(self.prev() == 'e' || self.prev() == 'E');
+        if self.first() == '-' || self.first() == '+' {
+            self.bump();
+        }
+        self.eat_decimal_digits()
+    }
+
+    // Eats the suffix of the literal, e.g. "_u8".
+    fn eat_literal_suffix(&mut self) {
+        self.eat_identifier();
+    }
+
+    // Eats the identifier.
+    fn eat_identifier(&mut self) {
+        if !is_id_start(self.first()) {
+            return;
+        }
+        self.bump();
+
+        self.eat_while(is_id_continue);
+    }
+
+    /// Eats symbols while predicate returns true or until the end of file is reached.
+    /// Returns amount of eaten symbols.
+    fn eat_while<F>(&mut self, mut predicate: F) -> usize
+    where
+        F: FnMut(char) -> bool,
+    {
+        let mut eaten: usize = 0;
+        while predicate(self.first()) && !self.is_eof() {
+            eaten += 1;
+            self.bump();
+        }
+
+        eaten
+    }
     // fn match_char(&mut self, c: char) -> bool {
     //     match self.peek() {
     //         Some(ch) if c == ch => {
@@ -248,7 +755,6 @@ impl Cursor<'_> {
 //             chars: src.chars(),
 //         }
 //     }
-
 
 //     fn skip_until(&mut self, c: char) {
 //         while !self.is_at_end() {
@@ -1951,1416 +2457,1416 @@ impl Cursor<'_> {
 mod tests {
     use super::*;
 
-//     #[test]
-//     fn int() {
-//         let s = " 123  ";
-//         let mut lexer = Lexer::new(&s);
-//         let tok = lexer.lex();
-
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Int(123));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 5);
-//     }
-
-//     #[test]
-//     fn int_with_underscores() {
-//         let s = " 123_000_000  ";
-//         let mut lexer = Lexer::new(&s);
-//         let tok = lexer.lex();
-
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Int(123_000_000));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 13);
-//     }
-
-//     #[test]
-//     fn int_with_trailing_underscore() {
-//         let s = " 123_000_000_  ";
-//         let mut lexer = Lexer::new(&s);
-//         let tok = lexer.lex();
-
-//         assert_eq!(tok.as_ref().is_err(), true);
-//         let tok = tok.as_ref().unwrap_err();
-//         assert_eq!(tok.kind, ErrorKind::TrailingUnderscoreInNumber);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 14);
-//     }
-
-//     #[test]
-//     fn int_with_leading_zero() {
-//         let s = " 0 0123 0456L 0u  ";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Int(0i32));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 3);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_err(), true);
-//         let tok = tok.as_ref().unwrap_err();
-//         assert_eq!(tok.kind, ErrorKind::LeadingZeroInNumber);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 4);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 8);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_err(), true);
-//         let tok = tok.as_ref().unwrap_err();
-//         assert_eq!(tok.kind, ErrorKind::LeadingZeroInNumber);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 9);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 14);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::UInt(0u32));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 15);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 17);
-//     }
-
-//     #[test]
-//     fn uint() {
-//         let s = " 123U  456u";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::UInt(123u32));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 6);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::UInt(456u32));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 8);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 12);
-//     }
-
-//     #[test]
-//     fn ulong() {
-//         let s = " 123UL  456uL";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::ULong(123u64));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 7);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::ULong(456u64));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 9);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 14);
-//     }
-
-//     #[test]
-//     fn long() {
-//         let s = " 123L  ";
-//         let mut lexer = Lexer::new(&s);
-//         let tok = lexer.lex();
-
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Long(123i64));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 6);
-//     }
-
-//     #[test]
-//     fn bin_number() {
-//         let s = " 0b101 0B1_00000000_00000000_00000000_00000000";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Int(5));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 7);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Long(std::u32::MAX as i64 + 1));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 8);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 47);
-//     }
-
-//     #[test]
-//     fn bin_number_with_suffixes() {
-//         let s = " 0b101uL 0B1L 0b11U";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::ULong(5));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 9);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Long(0b1));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 10);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 14);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::UInt(0b11));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 15);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 20);
-//     }
-
-//     #[test]
-//     fn bin_number_missing_digits() {
-//         let s = " 0b ";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_err(), true);
-//         let tok = tok.as_ref().unwrap_err();
-//         assert_eq!(tok.kind, ErrorKind::MissingDigitsInBinaryNumber);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 4);
-//     }
-
-//     #[test]
-//     fn hex_number_missing_digits() {
-//         let s = " 0x ";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_err(), true);
-//         let tok = tok.as_ref().unwrap_err();
-//         assert_eq!(tok.kind, ErrorKind::MissingDigitsInHexNumber);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 4);
-//     }
-
-//     #[test]
-//     fn hex_number() {
-//         let s = " 0x1a1 0XdeadBEEF";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Int(0x1a1));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 7);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Long(0xdeadbeef));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 8);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 18);
-//     }
-
-//     #[test]
-//     fn hex_number_with_suffixes() {
-//         let s = " 0x101uL 0X1L 0x11U";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::ULong(0x101));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 9);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Long(0x1));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 10);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 14);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::UInt(0x11));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 15);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 20);
-//     }
-
-//     #[test]
-//     fn float() {
-//         let s = " 123f 456F 0f 0.0f .1f 2. ";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Float(123f32));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 6);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Float(456f32));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 7);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 11);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Float(0f32));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 12);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 14);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Float(0f32));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 15);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 19);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Float(0.1f32));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 20);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 23);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_err(), true);
-//         let tok = tok.as_ref().unwrap_err();
-//         assert_eq!(tok.kind, ErrorKind::TrailingDotInNumber);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 24);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 26);
-//     }
-
-//     #[test]
-//     fn double() {
-//         let s = " 123.0 456.0 0.0 .1 2.";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Double(123f64));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 7);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Double(456f64));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 8);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 13);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Double(0f64));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 14);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 17);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Double(0.1f64));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 18);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 20);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_err(), true);
-//         let tok = tok.as_ref().unwrap_err();
-//         assert_eq!(tok.kind, ErrorKind::TrailingDotInNumber);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 21);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 23);
-//     }
-
-//     #[test]
-//     fn double_with_exp() {
-//         let s = " 123e2 123E+2 123E-2 123e ";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Double(123e2));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 7);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Double(123e2));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 8);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 14);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Double(123e-2));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 15);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 21);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_err(), true);
-//         let tok = tok.as_ref().unwrap_err();
-//         assert_eq!(tok.kind, ErrorKind::MissingExponentInNumber);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 22);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 26);
-//     }
-
-//     #[test]
-//     fn shebang() {
-//         let s = "#!/bin/cat\n+";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Shebang);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 11);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Newline);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 11);
-//         assert_eq!(tok.location.end_line, 2);
-//         assert_eq!(tok.location.end_column, 1);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Plus);
-//         assert_eq!(tok.location.start_line, 2);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 2);
-//         assert_eq!(tok.location.end_column, 2);
-//     }
-
-//     #[test]
-//     fn comment() {
-//         let s = "//bin/cat\n+";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Comment);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 10);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Newline);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 10);
-//         assert_eq!(tok.location.end_line, 2);
-//         assert_eq!(tok.location.end_column, 1);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Plus);
-//         assert_eq!(tok.location.start_line, 2);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 2);
-//         assert_eq!(tok.location.end_column, 2);
-//     }
-
-//     #[test]
-//     fn unknown() {
-//         let s = "§+~";
-//         let mut lexer = Lexer::new(&s);
-//         let tok = lexer.lex();
-
-//         assert_eq!(tok.as_ref().is_err(), true);
-//         let tok = tok.as_ref().unwrap_err();
-//         assert_eq!(tok.kind, ErrorKind::UnknownChar);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 2);
-//     }
-
-//     #[test]
-//     fn shebang_not_on_first_line() {
-//         let s = "\n#!/bin/cat\n+";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Newline);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 2);
-//         assert_eq!(tok.location.end_column, 1);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_err(), true);
-//         let tok = tok.as_ref().unwrap_err();
-//         assert_eq!(tok.kind, ErrorKind::ShebangNotOnFirstLine);
-//         assert_eq!(tok.location.start_line, 2);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 2);
-//         assert_eq!(tok.location.end_column, 11);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Newline);
-//         assert_eq!(tok.location.start_line, 2);
-//         assert_eq!(tok.location.start_column, 11);
-//         assert_eq!(tok.location.end_line, 3);
-//         assert_eq!(tok.location.end_column, 1);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Plus);
-//         assert_eq!(tok.location.start_line, 3);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 3);
-//         assert_eq!(tok.location.end_column, 2);
-//     }
-
-//     #[test]
-//     fn empty_string() {
-//         let s = r##"
-//             ""
-//             "##;
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Newline);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 2);
-//         assert_eq!(tok.location.end_column, 1);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::TString);
-//         assert_eq!(tok.location.start_line, 2);
-//         assert_eq!(tok.location.start_column, 13);
-//         assert_eq!(tok.location.end_line, 2);
-//         assert_eq!(tok.location.end_column, 15);
-//     }
-
-//     #[test]
-//     fn string() {
-//         let s = r##"
-//             "abc123老虎老虎"
-//             "##;
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Newline);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 2);
-//         assert_eq!(tok.location.end_column, 1);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::TString);
-//         assert_eq!(tok.location.start_line, 2);
-//         assert_eq!(tok.location.start_column, 13);
-//         assert_eq!(tok.location.end_line, 2);
-//         assert_eq!(tok.location.end_column, 25);
-//         assert_eq!(
-//             &s[tok.location.start_pos..tok.location.end_pos],
-//             "\"abc123老虎老虎\""
-//         );
-//     }
-
-//     #[test]
-//     fn unterminated_string() {
-//         let s = "\"";
-//         let mut lexer = Lexer::new(&s);
-//         let tok = lexer.lex();
-
-//         assert_eq!(tok.as_ref().is_err(), true);
-//         let tok = tok.as_ref().unwrap_err();
-//         assert_eq!(tok.kind, ErrorKind::UnexpectedChar('"'));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 2);
-//     }
-
-//     #[test]
-//     fn newline_in_string() {
-//         let s = "\"\n";
-//         let mut lexer = Lexer::new(&s);
-//         let tok = lexer.lex();
-
-//         assert_eq!(tok.as_ref().is_err(), true);
-//         let tok = tok.as_ref().unwrap_err();
-//         assert_eq!(tok.kind, ErrorKind::NewlineInString);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 2);
-//         assert_eq!(tok.location.end_column, 1);
-//     }
-
-//     #[test]
-//     fn bool() {
-//         let s = " true false";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Bool(true));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 6);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Bool(false));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 7);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 12);
-//     }
-
-//     #[test]
-//     fn null() {
-//         let s = " null ";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Null);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 6);
-//     }
-
-//     #[test]
-//     fn keyword() {
-//         // TODO: many more keywords
-//         let s = " abstract as as?";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::KeywordAbstract);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 10);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::KeywordAs);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 11);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 13);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::KeywordAsSafe);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 14);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 17);
-//     }
-
-//     #[test]
-//     fn identifier() {
-//         // `ƍ` is of category Ll (letter lowercase)
-//         // `ᴽ` is of category Lm (letter modifier)
-//         // `א` is of categoy Lo (other letter)
-//         // `ᾯ` is of category Lt (letter titlecase)
-//         // `Ʊ` is of category Lu (letter uppercase)
-//         // `ᛮ` is of category Nl (letter number)
-//         let s = " _ _a B_ ᛮƍᴽאᾯƱ";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Identifier);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 3);
-//         assert_eq!(&s[tok.location.start_pos..tok.location.end_pos], "_");
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Identifier);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 4);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 6);
-//         assert_eq!(&s[tok.location.start_pos..tok.location.end_pos], "_a");
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Identifier);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 7);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 9);
-//         assert_eq!(&s[tok.location.start_pos..tok.location.end_pos], "B_");
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Identifier);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 10);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 16);
-//         assert_eq!(&s[tok.location.start_pos..tok.location.end_pos], "ᛮƍᴽאᾯƱ");
-//     }
-
-//     #[test]
-//     fn comment_multiline() {
-//         let s = "/* foo \n bar */ + ";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Comment);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 2);
-//         assert_eq!(tok.location.end_column, 8);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Plus);
-//         assert_eq!(tok.location.start_line, 2);
-//         assert_eq!(tok.location.start_column, 9);
-//         assert_eq!(tok.location.end_line, 2);
-//         assert_eq!(tok.location.end_column, 10);
-//     }
-
-//     #[test]
-//     fn empty_comment_multiline() {
-//         let s = "/**/+";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Comment);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 5);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Plus);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 5);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 6);
-//     }
-
-//     #[test]
-//     fn dot() {
-//         let s = " . .";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Dot);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 3);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Dot);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 4);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 5);
-//     }
-
-//     #[test]
-//     fn single_char_tokens() {
-//         let s = "-*/:;@$";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Minus);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 2);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Star);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 3);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Slash);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 3);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 4);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Colon);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 4);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 5);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Semicolon);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 5);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 6);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::At);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 6);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 7);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Dollar);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 7);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 8);
-//     }
-
-//     #[test]
-//     fn plus() {
-//         let s = "+++ +=";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::PlusPlus);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 3);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Plus);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 3);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 4);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::PlusEqual);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 5);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 7);
-//     }
-
-//     #[test]
-//     fn minus() {
-//         let s = "--- ->";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::MinusMinus);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 3);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Minus);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 3);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 4);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Arrow);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 5);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 7);
-//     }
-
-//     #[test]
-//     fn ampersand() {
-//         let s = "&&&";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::AmpersandAmpersand);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 3);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Ampersand);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 3);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 4);
-//     }
-
-//     #[test]
-//     fn pipe() {
-//         let s = "|||";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::PipePipe);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 3);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Pipe);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 3);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 4);
-//     }
-
-//     #[test]
-//     fn colon() {
-//         let s = ":::";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::ColonColon);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 3);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Colon);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 3);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 4);
-//     }
-
-//     #[test]
-//     fn semicolon() {
-//         let s = ";;;";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::SemicolonSemicolon);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 3);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Semicolon);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 3);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 4);
-//     }
-
-//     #[test]
-//     fn star() {
-//         let s = "**=";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Star);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 2);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::StarEqual);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 4);
-//     }
-
-//     #[test]
-//     fn slash() {
-//         let s = "/ /=";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Slash);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 2);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::SlashEqual);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 3);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 5);
-//     }
-
-//     #[test]
-//     fn percent() {
-//         let s = "%%=";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Percent);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 2);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::PercentEqual);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 4);
-//     }
-
-//     #[test]
-//     fn equal() {
-//         let s = "== = === =>";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::EqualEqual);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 3);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Equal);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 4);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 5);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::EqualEqualEqual);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 6);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 9);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::FatArrow);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 10);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 12);
-//     }
-
-//     #[test]
-//     fn bang() {
-//         let s = "!!=!==";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Bang);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 2);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::BangEqual);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 4);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::BangEqualEqual);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 4);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 7);
-//     }
-
-//     #[test]
-//     fn smaller() {
-//         let s = "<<=";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Lesser);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 2);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::LesserEqual);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 4);
-//     }
-
-//     #[test]
-//     fn greater() {
-//         let s = ">>=";
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::Greater);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 2);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::GreaterEqual);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 2);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 4);
-//     }
-
-//     #[test]
-//     fn escape_sequence_literals() {
-//         let s = r##"\n\r\b\t\'\"\$\\\+\"##;
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::EscapeSequenceNewline);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 3);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::EscapeSequenceCarriageReturn);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 3);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 5);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::EscapeSequenceBackspace);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 5);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 7);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::EscapeSequenceTab);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 7);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 9);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::EscapedQuote);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 9);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 11);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::EscapedDoubleQuote);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 11);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 13);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::EscapedDollar);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 13);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 15);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::EscapedBackSlash);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 15);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 17);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_err(), true);
-//         let tok = tok.as_ref().unwrap_err();
-//         assert_eq!(tok.kind, ErrorKind::UnknownEscapeSequence(Some('+')));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 17);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 19);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_err(), true);
-//         let tok = tok.as_ref().unwrap_err();
-//         assert_eq!(tok.kind, ErrorKind::UnknownEscapeSequence(None));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 19);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 20);
-//     }
-
-//     #[test]
-//     fn unicode_literal() {
-//         let s = r##"\uabcd \u123 \ud800"##;
-//         let mut lexer = Lexer::new(&s);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_ok(), true);
-//         let tok = tok.as_ref().unwrap();
-//         assert_eq!(tok.kind, TokenKind::UnicodeLiteral('ꯍ'));
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 1);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 7);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_err(), true);
-//         let tok = tok.as_ref().unwrap_err();
-//         assert_eq!(tok.kind, ErrorKind::IncompleteUnicodeLiteral);
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 8);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 13);
-
-//         let tok = lexer.lex();
-//         assert_eq!(tok.as_ref().is_err(), true);
-//         let tok = tok.as_ref().unwrap_err();
-//         assert_eq!(
-//             tok.kind,
-//             ErrorKind::InvalidUnicodeLiteral(
-//                 "converted integer out of range for `char`".to_string()
-//             )
-//         );
-//         assert_eq!(tok.location.start_line, 1);
-//         assert_eq!(tok.location.start_column, 14);
-//         assert_eq!(tok.location.end_line, 1);
-//         assert_eq!(tok.location.end_column, 20);
-//     }
+    //     #[test]
+    //     fn int() {
+    //         let s = " 123  ";
+    //         let mut lexer = Lexer::new(&s);
+    //         let tok = lexer.lex();
+
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Int(123));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 5);
+    //     }
+
+    //     #[test]
+    //     fn int_with_underscores() {
+    //         let s = " 123_000_000  ";
+    //         let mut lexer = Lexer::new(&s);
+    //         let tok = lexer.lex();
+
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Int(123_000_000));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 13);
+    //     }
+
+    //     #[test]
+    //     fn int_with_trailing_underscore() {
+    //         let s = " 123_000_000_  ";
+    //         let mut lexer = Lexer::new(&s);
+    //         let tok = lexer.lex();
+
+    //         assert_eq!(tok.as_ref().is_err(), true);
+    //         let tok = tok.as_ref().unwrap_err();
+    //         assert_eq!(tok.kind, ErrorKind::TrailingUnderscoreInNumber);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 14);
+    //     }
+
+    //     #[test]
+    //     fn int_with_leading_zero() {
+    //         let s = " 0 0123 0456L 0u  ";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Int(0i32));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 3);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_err(), true);
+    //         let tok = tok.as_ref().unwrap_err();
+    //         assert_eq!(tok.kind, ErrorKind::LeadingZeroInNumber);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 4);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 8);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_err(), true);
+    //         let tok = tok.as_ref().unwrap_err();
+    //         assert_eq!(tok.kind, ErrorKind::LeadingZeroInNumber);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 9);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 14);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::UInt(0u32));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 15);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 17);
+    //     }
+
+    //     #[test]
+    //     fn uint() {
+    //         let s = " 123U  456u";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::UInt(123u32));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 6);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::UInt(456u32));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 8);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 12);
+    //     }
+
+    //     #[test]
+    //     fn ulong() {
+    //         let s = " 123UL  456uL";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::ULong(123u64));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 7);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::ULong(456u64));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 9);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 14);
+    //     }
+
+    //     #[test]
+    //     fn long() {
+    //         let s = " 123L  ";
+    //         let mut lexer = Lexer::new(&s);
+    //         let tok = lexer.lex();
+
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Long(123i64));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 6);
+    //     }
+
+    //     #[test]
+    //     fn bin_number() {
+    //         let s = " 0b101 0B1_00000000_00000000_00000000_00000000";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Int(5));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 7);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Long(std::u32::MAX as i64 + 1));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 8);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 47);
+    //     }
+
+    //     #[test]
+    //     fn bin_number_with_suffixes() {
+    //         let s = " 0b101uL 0B1L 0b11U";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::ULong(5));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 9);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Long(0b1));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 10);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 14);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::UInt(0b11));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 15);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 20);
+    //     }
+
+    //     #[test]
+    //     fn bin_number_missing_digits() {
+    //         let s = " 0b ";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_err(), true);
+    //         let tok = tok.as_ref().unwrap_err();
+    //         assert_eq!(tok.kind, ErrorKind::MissingDigitsInBinaryNumber);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 4);
+    //     }
+
+    //     #[test]
+    //     fn hex_number_missing_digits() {
+    //         let s = " 0x ";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_err(), true);
+    //         let tok = tok.as_ref().unwrap_err();
+    //         assert_eq!(tok.kind, ErrorKind::MissingDigitsInHexNumber);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 4);
+    //     }
+
+    //     #[test]
+    //     fn hex_number() {
+    //         let s = " 0x1a1 0XdeadBEEF";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Int(0x1a1));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 7);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Long(0xdeadbeef));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 8);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 18);
+    //     }
+
+    //     #[test]
+    //     fn hex_number_with_suffixes() {
+    //         let s = " 0x101uL 0X1L 0x11U";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::ULong(0x101));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 9);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Long(0x1));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 10);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 14);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::UInt(0x11));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 15);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 20);
+    //     }
+
+    //     #[test]
+    //     fn float() {
+    //         let s = " 123f 456F 0f 0.0f .1f 2. ";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Float(123f32));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 6);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Float(456f32));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 7);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 11);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Float(0f32));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 12);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 14);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Float(0f32));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 15);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 19);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Float(0.1f32));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 20);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 23);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_err(), true);
+    //         let tok = tok.as_ref().unwrap_err();
+    //         assert_eq!(tok.kind, ErrorKind::TrailingDotInNumber);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 24);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 26);
+    //     }
+
+    //     #[test]
+    //     fn double() {
+    //         let s = " 123.0 456.0 0.0 .1 2.";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Double(123f64));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 7);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Double(456f64));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 8);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 13);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Double(0f64));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 14);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 17);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Double(0.1f64));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 18);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 20);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_err(), true);
+    //         let tok = tok.as_ref().unwrap_err();
+    //         assert_eq!(tok.kind, ErrorKind::TrailingDotInNumber);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 21);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 23);
+    //     }
+
+    //     #[test]
+    //     fn double_with_exp() {
+    //         let s = " 123e2 123E+2 123E-2 123e ";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Double(123e2));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 7);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Double(123e2));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 8);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 14);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Double(123e-2));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 15);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 21);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_err(), true);
+    //         let tok = tok.as_ref().unwrap_err();
+    //         assert_eq!(tok.kind, ErrorKind::MissingExponentInNumber);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 22);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 26);
+    //     }
+
+    //     #[test]
+    //     fn shebang() {
+    //         let s = "#!/bin/cat\n+";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Shebang);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 11);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Newline);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 11);
+    //         assert_eq!(tok.location.end_line, 2);
+    //         assert_eq!(tok.location.end_column, 1);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Plus);
+    //         assert_eq!(tok.location.start_line, 2);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 2);
+    //         assert_eq!(tok.location.end_column, 2);
+    //     }
+
+    //     #[test]
+    //     fn comment() {
+    //         let s = "//bin/cat\n+";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Comment);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 10);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Newline);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 10);
+    //         assert_eq!(tok.location.end_line, 2);
+    //         assert_eq!(tok.location.end_column, 1);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Plus);
+    //         assert_eq!(tok.location.start_line, 2);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 2);
+    //         assert_eq!(tok.location.end_column, 2);
+    //     }
+
+    //     #[test]
+    //     fn unknown() {
+    //         let s = "§+~";
+    //         let mut lexer = Lexer::new(&s);
+    //         let tok = lexer.lex();
+
+    //         assert_eq!(tok.as_ref().is_err(), true);
+    //         let tok = tok.as_ref().unwrap_err();
+    //         assert_eq!(tok.kind, ErrorKind::UnknownChar);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 2);
+    //     }
+
+    //     #[test]
+    //     fn shebang_not_on_first_line() {
+    //         let s = "\n#!/bin/cat\n+";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Newline);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 2);
+    //         assert_eq!(tok.location.end_column, 1);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_err(), true);
+    //         let tok = tok.as_ref().unwrap_err();
+    //         assert_eq!(tok.kind, ErrorKind::ShebangNotOnFirstLine);
+    //         assert_eq!(tok.location.start_line, 2);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 2);
+    //         assert_eq!(tok.location.end_column, 11);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Newline);
+    //         assert_eq!(tok.location.start_line, 2);
+    //         assert_eq!(tok.location.start_column, 11);
+    //         assert_eq!(tok.location.end_line, 3);
+    //         assert_eq!(tok.location.end_column, 1);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Plus);
+    //         assert_eq!(tok.location.start_line, 3);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 3);
+    //         assert_eq!(tok.location.end_column, 2);
+    //     }
+
+    //     #[test]
+    //     fn empty_string() {
+    //         let s = r##"
+    //             ""
+    //             "##;
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Newline);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 2);
+    //         assert_eq!(tok.location.end_column, 1);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::TString);
+    //         assert_eq!(tok.location.start_line, 2);
+    //         assert_eq!(tok.location.start_column, 13);
+    //         assert_eq!(tok.location.end_line, 2);
+    //         assert_eq!(tok.location.end_column, 15);
+    //     }
+
+    //     #[test]
+    //     fn string() {
+    //         let s = r##"
+    //             "abc123老虎老虎"
+    //             "##;
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Newline);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 2);
+    //         assert_eq!(tok.location.end_column, 1);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::TString);
+    //         assert_eq!(tok.location.start_line, 2);
+    //         assert_eq!(tok.location.start_column, 13);
+    //         assert_eq!(tok.location.end_line, 2);
+    //         assert_eq!(tok.location.end_column, 25);
+    //         assert_eq!(
+    //             &s[tok.location.start_pos..tok.location.end_pos],
+    //             "\"abc123老虎老虎\""
+    //         );
+    //     }
+
+    //     #[test]
+    //     fn unterminated_string() {
+    //         let s = "\"";
+    //         let mut lexer = Lexer::new(&s);
+    //         let tok = lexer.lex();
+
+    //         assert_eq!(tok.as_ref().is_err(), true);
+    //         let tok = tok.as_ref().unwrap_err();
+    //         assert_eq!(tok.kind, ErrorKind::UnexpectedChar('"'));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 2);
+    //     }
+
+    //     #[test]
+    //     fn newline_in_string() {
+    //         let s = "\"\n";
+    //         let mut lexer = Lexer::new(&s);
+    //         let tok = lexer.lex();
+
+    //         assert_eq!(tok.as_ref().is_err(), true);
+    //         let tok = tok.as_ref().unwrap_err();
+    //         assert_eq!(tok.kind, ErrorKind::NewlineInString);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 2);
+    //         assert_eq!(tok.location.end_column, 1);
+    //     }
+
+    //     #[test]
+    //     fn bool() {
+    //         let s = " true false";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Bool(true));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 6);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Bool(false));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 7);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 12);
+    //     }
+
+    //     #[test]
+    //     fn null() {
+    //         let s = " null ";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Null);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 6);
+    //     }
+
+    //     #[test]
+    //     fn keyword() {
+    //         // TODO: many more keywords
+    //         let s = " abstract as as?";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::KeywordAbstract);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 10);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::KeywordAs);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 11);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 13);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::KeywordAsSafe);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 14);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 17);
+    //     }
+
+    //     #[test]
+    //     fn identifier() {
+    //         // `ƍ` is of category Ll (letter lowercase)
+    //         // `ᴽ` is of category Lm (letter modifier)
+    //         // `א` is of categoy Lo (other letter)
+    //         // `ᾯ` is of category Lt (letter titlecase)
+    //         // `Ʊ` is of category Lu (letter uppercase)
+    //         // `ᛮ` is of category Nl (letter number)
+    //         let s = " _ _a B_ ᛮƍᴽאᾯƱ";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Identifier);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 3);
+    //         assert_eq!(&s[tok.location.start_pos..tok.location.end_pos], "_");
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Identifier);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 4);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 6);
+    //         assert_eq!(&s[tok.location.start_pos..tok.location.end_pos], "_a");
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Identifier);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 7);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 9);
+    //         assert_eq!(&s[tok.location.start_pos..tok.location.end_pos], "B_");
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Identifier);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 10);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 16);
+    //         assert_eq!(&s[tok.location.start_pos..tok.location.end_pos], "ᛮƍᴽאᾯƱ");
+    //     }
+
+    //     #[test]
+    //     fn comment_multiline() {
+    //         let s = "/* foo \n bar */ + ";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Comment);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 2);
+    //         assert_eq!(tok.location.end_column, 8);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Plus);
+    //         assert_eq!(tok.location.start_line, 2);
+    //         assert_eq!(tok.location.start_column, 9);
+    //         assert_eq!(tok.location.end_line, 2);
+    //         assert_eq!(tok.location.end_column, 10);
+    //     }
+
+    //     #[test]
+    //     fn empty_comment_multiline() {
+    //         let s = "/**/+";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Comment);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 5);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Plus);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 5);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 6);
+    //     }
+
+    //     #[test]
+    //     fn dot() {
+    //         let s = " . .";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Dot);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 3);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Dot);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 4);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 5);
+    //     }
+
+    //     #[test]
+    //     fn single_char_tokens() {
+    //         let s = "-*/:;@$";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Minus);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 2);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Star);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 3);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Slash);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 3);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 4);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Colon);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 4);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 5);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Semicolon);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 5);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 6);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::At);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 6);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 7);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Dollar);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 7);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 8);
+    //     }
+
+    //     #[test]
+    //     fn plus() {
+    //         let s = "+++ +=";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::PlusPlus);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 3);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Plus);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 3);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 4);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::PlusEqual);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 5);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 7);
+    //     }
+
+    //     #[test]
+    //     fn minus() {
+    //         let s = "--- ->";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::MinusMinus);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 3);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Minus);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 3);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 4);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Arrow);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 5);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 7);
+    //     }
+
+    //     #[test]
+    //     fn ampersand() {
+    //         let s = "&&&";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::AmpersandAmpersand);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 3);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Ampersand);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 3);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 4);
+    //     }
+
+    //     #[test]
+    //     fn pipe() {
+    //         let s = "|||";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::PipePipe);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 3);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Pipe);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 3);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 4);
+    //     }
+
+    //     #[test]
+    //     fn colon() {
+    //         let s = ":::";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::ColonColon);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 3);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Colon);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 3);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 4);
+    //     }
+
+    //     #[test]
+    //     fn semicolon() {
+    //         let s = ";;;";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::SemicolonSemicolon);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 3);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Semicolon);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 3);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 4);
+    //     }
+
+    //     #[test]
+    //     fn star() {
+    //         let s = "**=";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Star);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 2);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::StarEqual);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 4);
+    //     }
+
+    //     #[test]
+    //     fn slash() {
+    //         let s = "/ /=";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Slash);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 2);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::SlashEqual);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 3);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 5);
+    //     }
+
+    //     #[test]
+    //     fn percent() {
+    //         let s = "%%=";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Percent);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 2);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::PercentEqual);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 4);
+    //     }
+
+    //     #[test]
+    //     fn equal() {
+    //         let s = "== = === =>";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::EqualEqual);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 3);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Equal);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 4);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 5);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::EqualEqualEqual);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 6);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 9);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::FatArrow);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 10);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 12);
+    //     }
+
+    //     #[test]
+    //     fn bang() {
+    //         let s = "!!=!==";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Bang);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 2);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::BangEqual);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 4);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::BangEqualEqual);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 4);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 7);
+    //     }
+
+    //     #[test]
+    //     fn smaller() {
+    //         let s = "<<=";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Lesser);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 2);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::LesserEqual);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 4);
+    //     }
+
+    //     #[test]
+    //     fn greater() {
+    //         let s = ">>=";
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::Greater);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 2);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::GreaterEqual);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 2);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 4);
+    //     }
+
+    //     #[test]
+    //     fn escape_sequence_literals() {
+    //         let s = r##"\n\r\b\t\'\"\$\\\+\"##;
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::EscapeSequenceNewline);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 3);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::EscapeSequenceCarriageReturn);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 3);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 5);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::EscapeSequenceBackspace);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 5);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 7);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::EscapeSequenceTab);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 7);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 9);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::EscapedQuote);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 9);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 11);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::EscapedDoubleQuote);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 11);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 13);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::EscapedDollar);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 13);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 15);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::EscapedBackSlash);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 15);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 17);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_err(), true);
+    //         let tok = tok.as_ref().unwrap_err();
+    //         assert_eq!(tok.kind, ErrorKind::UnknownEscapeSequence(Some('+')));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 17);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 19);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_err(), true);
+    //         let tok = tok.as_ref().unwrap_err();
+    //         assert_eq!(tok.kind, ErrorKind::UnknownEscapeSequence(None));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 19);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 20);
+    //     }
+
+    //     #[test]
+    //     fn unicode_literal() {
+    //         let s = r##"\uabcd \u123 \ud800"##;
+    //         let mut lexer = Lexer::new(&s);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_ok(), true);
+    //         let tok = tok.as_ref().unwrap();
+    //         assert_eq!(tok.kind, TokenKind::UnicodeLiteral('ꯍ'));
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 1);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 7);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_err(), true);
+    //         let tok = tok.as_ref().unwrap_err();
+    //         assert_eq!(tok.kind, ErrorKind::IncompleteUnicodeLiteral);
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 8);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 13);
+
+    //         let tok = lexer.lex();
+    //         assert_eq!(tok.as_ref().is_err(), true);
+    //         let tok = tok.as_ref().unwrap_err();
+    //         assert_eq!(
+    //             tok.kind,
+    //             ErrorKind::InvalidUnicodeLiteral(
+    //                 "converted integer out of range for `char`".to_string()
+    //             )
+    //         );
+    //         assert_eq!(tok.location.start_line, 1);
+    //         assert_eq!(tok.location.start_column, 14);
+    //         assert_eq!(tok.location.end_line, 1);
+    //         assert_eq!(tok.location.end_column, 20);
+    //     }
 }
