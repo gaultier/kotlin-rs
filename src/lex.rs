@@ -1,6 +1,6 @@
-use crate::error::*;
-use crate::Cursor;
-use std::convert::TryFrom;
+// use crate::error::*;
+use crate::cursor::*;
+// use std::convert::TryFrom;
 use std::fmt;
 use std::option::Option;
 use std::result::Result;
@@ -145,6 +145,7 @@ pub enum TokenKind {
     KeywordWhen,
     KeywordWhere,
     Identifier,
+    Whitespace,
     Unknown,
 }
 
@@ -266,10 +267,8 @@ pub fn is_whitespace(c: char) -> bool {
 pub fn is_id_start(c: char) -> bool {
     // This is XID_Start OR '_' (which formally is not a XID_Start).
     // We also add fast-path for ascii idents
-    ('a' <= c && c <= 'z')
-        || ('A' <= c && c <= 'Z')
-        || c == '_'
-        // || (c > '\x7f' && unicode_xid::UnicodeXID::is_xid_start(c))
+    ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_'
+    // || (c > '\x7f' && unicode_xid::UnicodeXID::is_xid_start(c))
 }
 
 /// True if `c` is valid as a non-first character of an identifier.
@@ -278,11 +277,8 @@ pub fn is_id_start(c: char) -> bool {
 pub fn is_id_continue(c: char) -> bool {
     // This is exactly XID_Continue.
     // We also add fast-path for ascii idents
-    ('a' <= c && c <= 'z')
-        || ('A' <= c && c <= 'Z')
-        || ('0' <= c && c <= '9')
-        || c == '_'
-        // || (c > '\x7f' && unicode_xid::UnicodeXID::is_xid_continue(c))
+    ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || c == '_'
+    // || (c > '\x7f' && unicode_xid::UnicodeXID::is_xid_continue(c))
 }
 impl Cursor<'_> {
     /// Parses a token from the input string.
@@ -290,19 +286,18 @@ impl Cursor<'_> {
         let first_char = self.bump().unwrap();
         let token_kind = match first_char {
             // Slash, comment or block comment.
-            '/' => match self.first() {
-                '/' => self.line_comment(),
-                '*' => self.block_comment(),
-                _ => TokenKind::Slash,
-            },
+            // '/' => match self.first() {
+            //     '/' => self.line_comment(),
+            //     '*' => self.block_comment(),
+            //     _ => TokenKind::Slash,
+            // },
 
             // Whitespace sequence.
             c if is_whitespace(c) => self.whitespace(),
 
-
             // Identifier (this should be checked after other variant that can
             // start as identifier).
-            c if is_id_start(c) => self.ident(),
+            // c if is_id_start(c) => self.ident(),
 
             // Numeric literal.
             // c @ '0'..='9' => {
@@ -361,198 +356,198 @@ impl Cursor<'_> {
         Token::new(token_kind, self.len_consumed())
     }
 
-    fn line_comment(&mut self) -> TokenKind {
-        debug_assert!(self.prev() == '/' && self.first() == '/');
-        self.bump();
-        self.eat_while(|c| c != '\n');
-        LineComment
-    }
+    // fn line_comment(&mut self) -> TokenKind {
+    //     debug_assert!(self.prev() == '/' && self.first() == '/');
+    //     self.bump();
+    //     self.eat_while(|c| c != '\n');
+    //     LineComment
+    // }
 
-    fn block_comment(&mut self) -> TokenKind {
-        debug_assert!(self.prev() == '/' && self.first() == '*');
-        self.bump();
-        let mut depth = 1usize;
-        while let Some(c) = self.bump() {
-            match c {
-                '/' if self.first() == '*' => {
-                    self.bump();
-                    depth += 1;
-                }
-                '*' if self.first() == '/' => {
-                    self.bump();
-                    depth -= 1;
-                    if depth == 0 {
-                        // This block comment is closed, so for a construction like "/* */ */"
-                        // there will be a successfully parsed block comment "/* */"
-                        // and " */" will be processed separately.
-                        break;
-                    }
-                }
-                _ => (),
-            }
-        }
+    // fn block_comment(&mut self) -> TokenKind {
+    //     debug_assert!(self.prev() == '/' && self.first() == '*');
+    //     self.bump();
+    //     let mut depth = 1usize;
+    //     while let Some(c) = self.bump() {
+    //         match c {
+    //             '/' if self.first() == '*' => {
+    //                 self.bump();
+    //                 depth += 1;
+    //             }
+    //             '*' if self.first() == '/' => {
+    //                 self.bump();
+    //                 depth -= 1;
+    //                 if depth == 0 {
+    //                     // This block comment is closed, so for a construction like "/* */ */"
+    //                     // there will be a successfully parsed block comment "/* */"
+    //                     // and " */" will be processed separately.
+    //                     break;
+    //                 }
+    //             }
+    //             _ => (),
+    //         }
+    //     }
 
-        BlockComment {
-            terminated: depth == 0,
-        }
-    }
+    //     BlockComment {
+    //         terminated: depth == 0,
+    //     }
+    // }
 
     fn whitespace(&mut self) -> TokenKind {
         debug_assert!(is_whitespace(self.prev()));
         self.eat_while(is_whitespace);
-        Whitespace
+        TokenKind::Whitespace
     }
 
-    fn raw_ident(&mut self) -> TokenKind {
-        debug_assert!(self.prev() == 'r' && self.first() == '#' && is_id_start(self.second()));
-        // Eat "#" symbol.
-        self.bump();
-        // Eat the identifier part of RawIdent.
-        self.eat_identifier();
-        RawIdent
-    }
+    // fn raw_ident(&mut self) -> TokenKind {
+    //     debug_assert!(self.prev() == 'r' && self.first() == '#' && is_id_start(self.second()));
+    //     // Eat "#" symbol.
+    //     self.bump();
+    //     // Eat the identifier part of RawIdent.
+    //     self.eat_identifier();
+    //     RawIdent
+    // }
 
-    fn ident(&mut self) -> TokenKind {
-        debug_assert!(is_id_start(self.prev()));
-        // Start is already eaten, eat the rest of identifier.
-        self.eat_while(is_id_continue);
-        Ident
-    }
+    // fn ident(&mut self) -> TokenKind {
+    //     debug_assert!(is_id_start(self.prev()));
+    //     // Start is already eaten, eat the rest of identifier.
+    //     self.eat_while(is_id_continue);
+    //     Ident
+    // }
 
-    fn number(&mut self, first_digit: char) -> LiteralKind {
-        debug_assert!('0' <= self.prev() && self.prev() <= '9');
-        let mut base = Base::Decimal;
-        if first_digit == '0' {
-            // Attempt to parse encoding base.
-            let has_digits = match self.first() {
-                'b' => {
-                    base = Base::Binary;
-                    self.bump();
-                    self.eat_decimal_digits()
-                }
-                'o' => {
-                    base = Base::Octal;
-                    self.bump();
-                    self.eat_decimal_digits()
-                }
-                'x' => {
-                    base = Base::Hexadecimal;
-                    self.bump();
-                    self.eat_hexadecimal_digits()
-                }
-                // Not a base prefix.
-                '0'..='9' | '_' | '.' | 'e' | 'E' => {
-                    self.eat_decimal_digits();
-                    true
-                }
-                // Just a 0.
-                _ => {
-                    return Int {
-                        base,
-                        empty_int: false,
-                    }
-                }
-            };
-            // Base prefix was provided, but there were no digits
-            // after it, e.g. "0x".
-            if !has_digits {
-                return Int {
-                    base,
-                    empty_int: true,
-                };
-            }
-        } else {
-            // No base prefix, parse number in the usual way.
-            self.eat_decimal_digits();
-        };
+    // fn number(&mut self, first_digit: char) -> LiteralKind {
+    //     debug_assert!('0' <= self.prev() && self.prev() <= '9');
+    //     let mut base = Base::Decimal;
+    //     if first_digit == '0' {
+    //         // Attempt to parse encoding base.
+    //         let has_digits = match self.first() {
+    //             'b' => {
+    //                 base = Base::Binary;
+    //                 self.bump();
+    //                 self.eat_decimal_digits()
+    //             }
+    //             'o' => {
+    //                 base = Base::Octal;
+    //                 self.bump();
+    //                 self.eat_decimal_digits()
+    //             }
+    //             'x' => {
+    //                 base = Base::Hexadecimal;
+    //                 self.bump();
+    //                 self.eat_hexadecimal_digits()
+    //             }
+    //             // Not a base prefix.
+    //             '0'..='9' | '_' | '.' | 'e' | 'E' => {
+    //                 self.eat_decimal_digits();
+    //                 true
+    //             }
+    //             // Just a 0.
+    //             _ => {
+    //                 return Int {
+    //                     base,
+    //                     empty_int: false,
+    //                 }
+    //             }
+    //         };
+    //         // Base prefix was provided, but there were no digits
+    //         // after it, e.g. "0x".
+    //         if !has_digits {
+    //             return Int {
+    //                 base,
+    //                 empty_int: true,
+    //             };
+    //         }
+    //     } else {
+    //         // No base prefix, parse number in the usual way.
+    //         self.eat_decimal_digits();
+    //     };
 
-        match self.first() {
-            // Don't be greedy if this is actually an
-            // integer literal followed by field/method access or a range pattern
-            // (`0..2` and `12.foo()`)
-            '.' if self.second() != '.' && !is_id_start(self.second()) => {
-                // might have stuff after the ., and if it does, it needs to start
-                // with a number
-                self.bump();
-                let mut empty_exponent = false;
-                if self.first().is_digit(10) {
-                    self.eat_decimal_digits();
-                    match self.first() {
-                        'e' | 'E' => {
-                            self.bump();
-                            empty_exponent = !self.eat_float_exponent();
-                        }
-                        _ => (),
-                    }
-                }
-                Float {
-                    base,
-                    empty_exponent,
-                }
-            }
-            'e' | 'E' => {
-                self.bump();
-                let empty_exponent = !self.eat_float_exponent();
-                Float {
-                    base,
-                    empty_exponent,
-                }
-            }
-            _ => Int {
-                base,
-                empty_int: false,
-            },
-        }
-    }
+    //     match self.first() {
+    //         // Don't be greedy if this is actually an
+    //         // integer literal followed by field/method access or a range pattern
+    //         // (`0..2` and `12.foo()`)
+    //         '.' if self.second() != '.' && !is_id_start(self.second()) => {
+    //             // might have stuff after the ., and if it does, it needs to start
+    //             // with a number
+    //             self.bump();
+    //             let mut empty_exponent = false;
+    //             if self.first().is_digit(10) {
+    //                 self.eat_decimal_digits();
+    //                 match self.first() {
+    //                     'e' | 'E' => {
+    //                         self.bump();
+    //                         empty_exponent = !self.eat_float_exponent();
+    //                     }
+    //                     _ => (),
+    //                 }
+    //             }
+    //             Float {
+    //                 base,
+    //                 empty_exponent,
+    //             }
+    //         }
+    //         'e' | 'E' => {
+    //             self.bump();
+    //             let empty_exponent = !self.eat_float_exponent();
+    //             Float {
+    //                 base,
+    //                 empty_exponent,
+    //             }
+    //         }
+    //         _ => Int {
+    //             base,
+    //             empty_int: false,
+    //         },
+    //     }
+    // }
 
-    fn lifetime_or_char(&mut self) -> TokenKind {
-        debug_assert!(self.prev() == '\'');
+    // fn lifetime_or_char(&mut self) -> TokenKind {
+    //     debug_assert!(self.prev() == '\'');
 
-        let can_be_a_lifetime = if self.second() == '\'' {
-            // It's surely not a lifetime.
-            false
-        } else {
-            // If the first symbol is valid for identifier, it can be a lifetime.
-            // Also check if it's a number for a better error reporting (so '0 will
-            // be reported as invalid lifetime and not as unterminated char literal).
-            is_id_start(self.first()) || self.first().is_digit(10)
-        };
+    //     let can_be_a_lifetime = if self.second() == '\'' {
+    //         // It's surely not a lifetime.
+    //         false
+    //     } else {
+    //         // If the first symbol is valid for identifier, it can be a lifetime.
+    //         // Also check if it's a number for a better error reporting (so '0 will
+    //         // be reported as invalid lifetime and not as unterminated char literal).
+    //         is_id_start(self.first()) || self.first().is_digit(10)
+    //     };
 
-        if !can_be_a_lifetime {
-            let terminated = self.single_quoted_string();
-            let suffix_start = self.len_consumed();
-            if terminated {
-                self.eat_literal_suffix();
-            }
-            let kind = Char { terminated };
-            return Literal { kind, suffix_start };
-        }
+    //     if !can_be_a_lifetime {
+    //         let terminated = self.single_quoted_string();
+    //         let suffix_start = self.len_consumed();
+    //         if terminated {
+    //             self.eat_literal_suffix();
+    //         }
+    //         let kind = Char { terminated };
+    //         return Literal { kind, suffix_start };
+    //     }
 
-        // Either a lifetime or a character literal with
-        // length greater than 1.
+    //     // Either a lifetime or a character literal with
+    //     // length greater than 1.
 
-        let starts_with_number = self.first().is_digit(10);
+    //     let starts_with_number = self.first().is_digit(10);
 
-        // Skip the literal contents.
-        // First symbol can be a number (which isn't a valid identifier start),
-        // so skip it without any checks.
-        self.bump();
-        self.eat_while(is_id_continue);
+    //     // Skip the literal contents.
+    //     // First symbol can be a number (which isn't a valid identifier start),
+    //     // so skip it without any checks.
+    //     self.bump();
+    //     self.eat_while(is_id_continue);
 
-        // Check if after skipping literal contents we've met a closing
-        // single quote (which means that user attempted to create a
-        // string with single quotes).
-        if self.first() == '\'' {
-            self.bump();
-            let kind = Char { terminated: true };
-            return Literal {
-                kind,
-                suffix_start: self.len_consumed(),
-            };
-        }
+    //     // Check if after skipping literal contents we've met a closing
+    //     // single quote (which means that user attempted to create a
+    //     // string with single quotes).
+    //     if self.first() == '\'' {
+    //         self.bump();
+    //         let kind = Char { terminated: true };
+    //         return Literal {
+    //             kind,
+    //             suffix_start: self.len_consumed(),
+    //         };
+    //     }
 
-        return Lifetime { starts_with_number };
-    }
+    //     return Lifetime { starts_with_number };
+    // }
 
     fn single_quoted_string(&mut self) -> bool {
         debug_assert!(self.prev() == '\'');
