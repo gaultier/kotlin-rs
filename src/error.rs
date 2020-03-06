@@ -140,26 +140,8 @@ pub struct Error {
 // }
 
 impl Error {
-    pub fn new(
-        kind: ErrorKind,
-        start_pos: usize,
-        start_line: usize,
-        start_column: usize,
-        end_pos: usize,
-        end_line: usize,
-        end_column: usize,
-    ) -> Error {
-        Error {
-            kind,
-            location: Location {
-                end_pos,
-                end_line,
-                end_column,
-                start_pos,
-                start_line,
-                start_column,
-            },
-        }
+    pub fn new(kind: ErrorKind, location: Location) -> Error {
+        Error { kind, location }
     }
 
     //     pub fn to_owned(self, src: &str) -> OwnedError {

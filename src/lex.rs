@@ -766,12 +766,22 @@ impl Lexer {
             self.pos
         );
 
-        if cursor_token.kind == TokenKind::Newline {
-            println!("newline: pos={}", self.pos);
-            self.lines.push(self.pos);
+        let span = Span::new(start, self.pos);
+        match cursor_token.kind {
+            TokenKind::Newline => {
+                println!("newline: pos={}", self.pos);
+                self.lines.push(self.pos);
+            }
+            TokenKind::Unknown => {
+                return Err(Error::new(
+                    ErrorKind::UnknownChar,
+                    self.span_location(&span),
+                ))
+            }
+            _ => {}
         }
 
-        Ok(Token::new(cursor_token.kind, Span::new(start, self.pos)))
+        Ok(Token::new(cursor_token.kind, span))
     }
 
     pub fn span_location(&self, span: &Span) -> Location {
