@@ -793,12 +793,35 @@ impl Lexer {
             Ok(l) => l,
             Err(l) => l - 1,
         };
-        dbg!(start_line_i, end_line_i);
         let start_line_pos = self.lines[start_line_i];
         let end_line_pos = self.lines[end_line_i];
 
-        let start_col = span.start - start_line_pos;
-        let end_col = span.end - end_line_pos;
+        let start_line_s = &self.src[start_line_pos..span.start];
+        let mut start_line_chars = start_line_s.chars();
+        let mut start_col = 0;
+        while let Some(_) = start_line_chars.next() {
+            if start_col == span.start {
+                break;
+            }
+
+            start_col += 1;
+        }
+
+        let end_line_s = &self.src[end_line_pos..span.end];
+        let mut end_line_chars = end_line_s.chars();
+        let mut end_col = 0;
+        while let Some(_) = end_line_chars.next() {
+            if end_col == span.end {
+                break;
+            }
+
+            end_col += 1;
+        }
+
+        println!(
+            "start_col={} end_col={} start={} start_line={} end={} end_line={}",
+            start_col, end_col, span.start, start_line_pos, span.end, end_line_pos
+        );
 
         Location {
             start_pos: span.start,
