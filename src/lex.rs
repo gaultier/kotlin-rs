@@ -304,6 +304,10 @@ impl Cursor<'_> {
             '-' => TokenKind::Minus,
             '&' => TokenKind::Ampersand,
             '|' => TokenKind::Pipe,
+            '+' if self.first() == '+' => {
+                self.bump();
+                TokenKind::PlusPlus
+            }
             '+' => TokenKind::Plus,
             '*' => TokenKind::Star,
             // '^' => TokenKind::Caret,
@@ -2581,6 +2585,42 @@ mod tests {
         assert_eq!(location.end_pos, 1);
         assert_eq!(location.end_line, 1);
         assert_eq!(location.end_column, 2);
+    }
+
+    #[test]
+    fn single_token_2_chars() {
+        let s = String::from("++");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert!(tok.is_ok());
+        let tok = tok.unwrap();
+        assert_eq!(tok.kind, TokenKind::PlusPlus);
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 2);
+
+        let location = lexer.span_location(&tok.span);
+        assert_eq!(location.start_pos, 0);
+        assert_eq!(location.start_line, 1);
+        assert_eq!(location.start_column, 1);
+        assert_eq!(location.end_pos, 2);
+        assert_eq!(location.end_line, 1);
+        assert_eq!(location.end_column, 3);
+
+        let tok = lexer.next_token();
+        assert!(tok.is_ok());
+        let tok = tok.unwrap();
+        assert_eq!(tok.kind, TokenKind::Eof);
+        assert_eq!(tok.span.start, 2);
+        assert_eq!(tok.span.end, 2);
+
+        let location = lexer.span_location(&tok.span);
+        assert_eq!(location.start_pos, 2);
+        assert_eq!(location.start_line, 1);
+        assert_eq!(location.start_column, 3);
+        assert_eq!(location.end_pos, 2);
+        assert_eq!(location.end_line, 1);
+        assert_eq!(location.end_column, 3);
     }
 
     #[test]
