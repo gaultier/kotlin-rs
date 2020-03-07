@@ -172,13 +172,6 @@ struct CursorToken {
 // }
 
 impl CursorToken {
-    // pub fn is_eof(&self) -> bool {
-    //     match self.kind {
-    //         TokenKind::Eof => true,
-    //         _ => false,
-    //     }
-    // }
-
     // pub fn num_type(&self) -> NumberType {
     //     match self {
     //         Token {
@@ -743,6 +736,13 @@ pub struct Token {
 impl Token {
     pub fn new(kind: TokenKind, span: Span) -> Token {
         Token { kind, span }
+    }
+
+    pub fn is_eof(&self) -> bool {
+        match self.kind {
+            TokenKind::Eof => true,
+            _ => false,
+        }
     }
 }
 

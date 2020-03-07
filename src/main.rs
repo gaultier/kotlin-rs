@@ -43,7 +43,13 @@ fn main() {
     };
 
     let mut lexer = Lexer::new(contents);
-    println!("{:?}", lexer.next_token());
+    loop {
+        match lexer.next_token() {
+            Ok(tok) if tok.is_eof() => break,
+            Ok(tok) => println!("{:?}", tok),
+            Err(tok) => eprintln!("{:?}", tok),
+        }
+    }
     // let stdout = std::io::stdout();
     // let mut handle = stdout.lock();
     // if let Err(err) = compile(&contents, &mut handle) {
