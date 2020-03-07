@@ -1,5 +1,6 @@
 use crate::cursor::*;
 use crate::error::*;
+use log::debug;
 // use std::convert::TryFrom;
 // use std::fmt;
 // use std::option::Option;
@@ -762,8 +763,8 @@ impl Lexer {
         let cursor_token = first_token(&self.src[self.pos..]);
         let start = self.pos;
         self.pos += cursor_token.len;
-        println!(
-            "next_token: kind={:?} c={:?} start={} pos={}",
+        debug!(
+            "lexer_next_token: kind={:?} c={:?} start={} pos={}",
             cursor_token.kind,
             &self.src[start..self.pos],
             start,
@@ -773,7 +774,7 @@ impl Lexer {
         let span = Span::new(start, self.pos);
         match cursor_token.kind {
             TokenKind::Newline => {
-                println!("newline: pos={}", self.pos);
+                debug!("lexer newline: pos={}", self.pos);
                 self.lines.push(self.pos);
             }
             TokenKind::Unknown => {
@@ -822,8 +823,8 @@ impl Lexer {
             end_col += 1;
         }
 
-        println!(
-            "start_col={} end_col={} start={} start_line={} end={} end_line={}",
+        debug!(
+            "lexer token: start_col={} end_col={} start={} start_line={} end={} end_line={}",
             start_col, end_col, span.start, start_line_pos, span.end, end_line_pos
         );
 
