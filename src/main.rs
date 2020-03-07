@@ -1,8 +1,10 @@
 use clap::{App, Arg};
 use kotlin::lex::*;
+use pretty_env_logger::*;
 use std::io::prelude::*;
 
 fn main() {
+    pretty_env_logger::init();
     let matches = App::new("Kotlin-rs")
         .version("0.1")
         .about("Kotlin compiler")

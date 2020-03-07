@@ -764,7 +764,7 @@ impl Lexer {
         let start = self.pos;
         self.pos += cursor_token.len;
         debug!(
-            "lexer_next_token: kind={:?} c={:?} start={} pos={}",
+            "next_token: kind={:?} c={:?} start={} pos={}",
             cursor_token.kind,
             &self.src[start..self.pos],
             start,
@@ -774,7 +774,7 @@ impl Lexer {
         let span = Span::new(start, self.pos);
         match cursor_token.kind {
             TokenKind::Newline => {
-                debug!("lexer newline: pos={}", self.pos);
+                debug!("newline: pos={}", self.pos);
                 self.lines.push(self.pos);
             }
             TokenKind::Unknown => {
@@ -824,7 +824,7 @@ impl Lexer {
         }
 
         debug!(
-            "lexer token: start_col={} end_col={} start={} start_line={} end={} end_line={}",
+            "token: start_col={} end_col={} start={} start_line={} end={} end_line={}",
             start_col, end_col, span.start, start_line_pos, span.end, end_line_pos
         );
 
