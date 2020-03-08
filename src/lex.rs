@@ -149,16 +149,10 @@ pub enum TokenKind {
     Identifier,
     Whitespace,
     Eof,
-    Unknown,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-struct CursorToken {
-    pub kind: TokenKind,
-    pub len: usize,
-}
-
-enum CursorTokenKindNumber {
+enum CursorNumberKind {
     Int {
         base: NumberBase,
         empty_int: bool,
@@ -167,6 +161,40 @@ enum CursorTokenKindNumber {
         base: NumberBase,
         empty_exponent: bool,
     },
+}
+
+#[derive(Debug, PartialEq, Clone)]
+enum CursorTokenKind {
+    Number {
+        kind: CursorNumberKind,
+        suffix_start: usize,
+    },
+    Plus,
+    Minus,
+    Star,
+    Slash,
+    Ampersand,
+    Pipe,
+    At,
+    Dollar,
+    Semicolon,
+    Bang,
+    Lesser,
+    Greater,
+    Percent,
+    Equal,
+    Newline,
+    Whitespace,
+    Colon,
+    Comma,
+    Dot,
+    Unknown,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+struct CursorToken {
+    pub kind: CursorTokenKind,
+    pub len: usize,
 }
 
 // #[derive(Debug, PartialEq, Clone)]
@@ -204,7 +232,7 @@ impl CursorToken {
     //     OwnedToken { token: &self, src }
     // }
 
-    pub fn new(kind: TokenKind, len: usize) -> CursorToken {
+    pub fn new(kind: CursorTokenKind, len: usize) -> CursorToken {
         CursorToken { kind, len }
     }
 }
@@ -267,9 +295,9 @@ impl Cursor<'_> {
             // '/' => match self.first() {
             //     '/' => self.line_comment(),
             //     '*' => self.block_comment(),
-            //     _ => TokenKind::Slash,
+            //     _ => CursorTokenKind::Slash,
             // },
-            '\n' => TokenKind::Newline,
+            '\n' => CursorTokenKind::Newline,
             // Whitespace sequence.
             c if is_whitespace(c) => self.whitespace(),
 
@@ -279,44 +307,42 @@ impl Cursor<'_> {
 
             // Numeric literal.
             c @ '0'..='9' => {
-                let literal_kind = self.number(c);
+                let kind = self.number(c);
                 let suffix_start = self.len_consumed();
+                debug!("num kind={:?} suffix_start={}", kind, suffix_start);
                 self.eat_literal_suffix();
+                // let suffix = &
                 let num = 0;
-                TokenKind::Int(num)
+                CursorTokenKind::Number { kind, suffix_start }
             }
 
             // One-symbol tokens.
-            ';' => TokenKind::Semicolon,
-            ',' => TokenKind::Comma,
-            '.' => TokenKind::Dot,
-            // '(' => TokenKind::OpenParen,
-            // ')' => TokenKind::CloseParen,
-            // '{' => TokenKind::OpenBrace,
-            // '}' => TokenKind::CloseBrace,
-            // '[' => TokenKind::OpenBracket,
-            // ']' => TokenKind::CloseBracket,
-            '@' => TokenKind::At,
-            // '#' => TokenKind::Pound,
-            // '~' => TokenKind::Tilde,
-            // '?' => TokenKind::Question,
-            ':' => TokenKind::Colon,
-            '$' => TokenKind::Dollar,
-            '=' => TokenKind::Equal,
-            '!' => TokenKind::Bang,
-            '<' => TokenKind::Lesser,
-            '>' => TokenKind::Greater,
-            '-' => TokenKind::Minus,
-            '&' => TokenKind::Ampersand,
-            '|' => TokenKind::Pipe,
-            '+' if self.first() == '+' => {
-                self.bump();
-                TokenKind::PlusPlus
-            }
-            '+' => TokenKind::Plus,
-            '*' => TokenKind::Star,
-            // '^' => TokenKind::Caret,
-            '%' => TokenKind::Percent,
+            ';' => CursorTokenKind::Semicolon,
+            ',' => CursorTokenKind::Comma,
+            '.' => CursorTokenKind::Dot,
+            // '(' => CursorTokenKind::OpenParen,
+            // ')' => CursorTokenKind::CloseParen,
+            // '{' => CursorTokenKind::OpenBrace,
+            // '}' => CursorTokenKind::CloseBrace,
+            // '[' => CursorTokenKind::OpenBracket,
+            // ']' => CursorTokenKind::CloseBracket,
+            '@' => CursorTokenKind::At,
+            // '#' => CursorTokenKind::Pound,
+            // '~' => CursorTokenKind::Tilde,
+            // '?' => CursorTokenKind::Question,
+            ':' => CursorTokenKind::Colon,
+            '$' => CursorTokenKind::Dollar,
+            '=' => CursorTokenKind::Equal,
+            '!' => CursorTokenKind::Bang,
+            '<' => CursorTokenKind::Lesser,
+            '>' => CursorTokenKind::Greater,
+            '-' => CursorTokenKind::Minus,
+            '&' => CursorTokenKind::Ampersand,
+            '|' => CursorTokenKind::Pipe,
+            '+' => CursorTokenKind::Plus,
+            '*' => CursorTokenKind::Star,
+            // '^' => CursorTokenKind::Caret,
+            '%' => CursorTokenKind::Percent,
 
             // Lifetime or character literal.
             // '\'' => self.lifetime_or_char(),
@@ -331,7 +357,7 @@ impl Cursor<'_> {
             //     let kind = Str { terminated };
             //     Literal { kind, suffix_start }
             // }
-            _ => TokenKind::Unknown,
+            _ => CursorTokenKind::Unknown,
         };
         CursorToken::new(token_kind, self.len_consumed())
     }
@@ -372,10 +398,10 @@ impl Cursor<'_> {
     //     }
     // }
 
-    fn whitespace(&mut self) -> TokenKind {
+    fn whitespace(&mut self) -> CursorTokenKind {
         debug_assert!(is_whitespace(self.prev()));
         self.eat_while(is_whitespace);
-        TokenKind::Whitespace
+        CursorTokenKind::Whitespace
     }
 
     // fn raw_ident(&mut self) -> TokenKind {
@@ -394,7 +420,7 @@ impl Cursor<'_> {
     //     Ident
     // }
 
-    fn number(&mut self, first_digit: char) -> CursorTokenKindNumber {
+    fn number(&mut self, first_digit: char) -> CursorNumberKind {
         debug_assert!('0' <= self.prev() && self.prev() <= '9');
         let mut base = NumberBase::Decimal;
         if first_digit == '0' {
@@ -422,7 +448,7 @@ impl Cursor<'_> {
                 }
                 // Just a 0.
                 _ => {
-                    return CursorTokenKindNumber::Int {
+                    return CursorNumberKind::Int {
                         base,
                         empty_int: false,
                     }
@@ -431,7 +457,7 @@ impl Cursor<'_> {
             // NumberBase prefix was provided, but there were no digits
             // after it, e.g. "0x".
             if !has_digits {
-                return CursorTokenKindNumber::Int {
+                return CursorNumberKind::Int {
                     base,
                     empty_int: true,
                 };
@@ -460,7 +486,7 @@ impl Cursor<'_> {
                         _ => (),
                     }
                 }
-                CursorTokenKindNumber::Float {
+                CursorNumberKind::Float {
                     base,
                     empty_exponent,
                 }
@@ -468,12 +494,12 @@ impl Cursor<'_> {
             'e' | 'E' => {
                 self.bump();
                 let empty_exponent = !self.eat_float_exponent();
-                CursorTokenKindNumber::Float {
+                CursorNumberKind::Float {
                     base,
                     empty_exponent,
                 }
             }
-            _ => CursorTokenKindNumber::Int {
+            _ => CursorNumberKind::Int {
                 base,
                 empty_int: false,
             },
@@ -759,6 +785,43 @@ impl Token {
 }
 
 impl Lexer {
+    fn cursor_to_lex_token_kind(
+        &mut self,
+        kind: CursorTokenKind,
+        span: &Span,
+    ) -> Result<TokenKind, Error> {
+        match kind {
+            CursorTokenKind::Newline => {
+                debug!("newline: pos={}", self.pos);
+                self.lines.push(self.pos);
+                Ok(TokenKind::Newline)
+            }
+            CursorTokenKind::Unknown => Err(Error::new(
+                ErrorKind::UnknownChar,
+                self.span_location(&span),
+            )),
+            CursorTokenKind::Plus => Ok(TokenKind::Plus),
+            CursorTokenKind::Minus => Ok(TokenKind::Minus),
+            CursorTokenKind::Star => Ok(TokenKind::Star),
+            CursorTokenKind::Slash => Ok(TokenKind::Slash),
+            CursorTokenKind::Comma => Ok(TokenKind::Comma),
+            CursorTokenKind::Semicolon => Ok(TokenKind::Semicolon),
+            CursorTokenKind::Pipe => Ok(TokenKind::Pipe),
+            CursorTokenKind::Ampersand => Ok(TokenKind::Ampersand),
+            CursorTokenKind::Dollar => Ok(TokenKind::Dollar),
+            CursorTokenKind::At => Ok(TokenKind::At),
+            CursorTokenKind::Lesser => Ok(TokenKind::Lesser),
+            CursorTokenKind::Greater => Ok(TokenKind::Greater),
+            CursorTokenKind::Equal => Ok(TokenKind::Equal),
+            CursorTokenKind::Whitespace => Ok(TokenKind::Whitespace),
+            CursorTokenKind::Bang => Ok(TokenKind::Bang),
+            CursorTokenKind::Percent => Ok(TokenKind::Percent),
+            CursorTokenKind::Colon => Ok(TokenKind::Colon),
+            CursorTokenKind::Dot => Ok(TokenKind::Dot),
+            CursorTokenKind::Number { .. } => Ok(TokenKind::Int(0)),
+        }
+    }
+
     pub fn new(src: String) -> Lexer {
         Lexer {
             src,
@@ -783,21 +846,9 @@ impl Lexer {
         );
 
         let span = Span::new(start, self.pos);
-        match cursor_token.kind {
-            TokenKind::Newline => {
-                debug!("newline: pos={}", self.pos);
-                self.lines.push(self.pos);
-            }
-            TokenKind::Unknown => {
-                return Err(Error::new(
-                    ErrorKind::UnknownChar,
-                    self.span_location(&span),
-                ))
-            }
-            _ => {}
-        }
+        let kind = self.cursor_to_lex_token_kind(cursor_token.kind, &span)?;
 
-        Ok(Token::new(cursor_token.kind, span))
+        Ok(Token::new(kind, span))
     }
 
     pub fn span_location(&self, span: &Span) -> Location {
