@@ -910,7 +910,13 @@ impl Lexer {
                     Ok(TokenKind::Double(num))
                 }
             }
-            _ => unimplemented!(),
+            CursorTokenKind::Number {
+                kind: CursorNumberKind::Float { .. },
+                ..
+            } => Err(Error::new(
+                ErrorKind::TrailingDotInNumber,
+                self.span_location(&span),
+            )),
         }
     }
 
