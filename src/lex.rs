@@ -824,7 +824,18 @@ impl Lexer {
             CursorTokenKind::Colon => Ok(TokenKind::Colon),
             CursorTokenKind::Dot => Ok(TokenKind::Dot),
             CursorTokenKind::Number { kind, .. } => {
-                let num_str = &self.src[span.start..span.end];
+                let num_str = match kind {
+                    CursorNumberKind::Int {
+                        base: NumberBase::Decimal,
+                        ..
+                    }
+                    | CursorNumberKind::Float {
+                        base: NumberBase::Decimal,
+                        ..
+                    } => &self.src[span.start..span.end],
+                    _ => &self.src[span.start + 2..span.end],
+                };
+
                 if num_str.ends_with(&"_") {
                     return Err(Error::new(
                         ErrorKind::TrailingUnderscoreInNumber,
@@ -851,7 +862,7 @@ impl Lexer {
                     } => {
                         debug!("num str={}", num_str);
                         // TODO: report error on number too big
-                        let num = i64::from_str_radix(&s[2..], 16).expect("Could not parse number");
+                        let num = i64::from_str_radix(&s, 16).expect("Could not parse number");
                         if num <= std::i32::MAX as i64 {
                             Ok(TokenKind::Int(num as i32))
                         } else {
@@ -864,7 +875,7 @@ impl Lexer {
                     } => {
                         debug!("num str={}", num_str);
                         // TODO: report error on number too big
-                        let num = i64::from_str_radix(&s[2..], 2).expect("Could not parse number");
+                        let num = i64::from_str_radix(&s, 2).expect("Could not parse number");
                         if num <= std::i32::MAX as i64 {
                             Ok(TokenKind::Int(num as i32))
                         } else {
@@ -2615,20 +2626,20 @@ mod tests {
     //         assert_eq!(tok.location.end_column, 20);
     //     }
 
-    //     #[test]
-    //     fn bin_number_missing_digits() {
-    //         let s = " 0b ";
-    //         let mut lexer = Lexer::new(&s);
+    #[test]
+    fn bin_number_missing_digits() {
+        let s = String::from("0b");
+        let mut lexer = Lexer::new(s);
 
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_err(), true);
-    //         let tok = tok.as_ref().unwrap_err();
-    //         assert_eq!(tok.kind, ErrorKind::MissingDigitsInBinaryNumber);
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 2);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 4);
-    //     }
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, ErrorKind::MissingDigitsInBinaryNumber);
+        assert_eq!(tok.location.start_line, 0);
+        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 3);
+    }
 
     //     #[test]
     //     fn hex_number_missing_digits() {
