@@ -430,7 +430,7 @@ impl Cursor<'_> {
         if first_digit == '0' {
             // Attempt to parse encoding base.
             let has_digits = match self.first() {
-                'b' => {
+                'b' | 'B' => {
                     base = NumberBase::Binary;
                     self.bump();
                     self.eat_decimal_digits()
@@ -440,7 +440,7 @@ impl Cursor<'_> {
                     self.bump();
                     self.eat_decimal_digits()
                 }
-                'x' => {
+                'x' | 'X' => {
                     base = NumberBase::Hexadecimal;
                     self.bump();
                     self.eat_hexadecimal_digits()
@@ -876,7 +876,7 @@ impl Lexer {
                         ..
                     } => {
                         debug!("num str={}", num_str);
-                        if num_str.len() > 1 && num_str.starts_with("0") {
+                        if s.len() > 1 && s.starts_with("0") {
                             return Err(Error::new(
                                 ErrorKind::LeadingZeroInNumber,
                                 self.span_location(&span),
@@ -2553,29 +2553,34 @@ mod tests {
     //         assert_eq!(tok.location.end_column, 6);
     //     }
 
-    //     #[test]
-    //     fn bin_number() {
-    //         let s = " 0b101 0B1_00000000_00000000_00000000_00000000";
-    //         let mut lexer = Lexer::new(&s);
+    #[test]
+    fn bin_number() {
+        let s = String::from("0b101");
+        let mut lexer = Lexer::new(s);
 
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::Int(5));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 2);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 7);
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Int(0b101));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 5);
+    }
 
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::Long(std::u32::MAX as i64 + 1));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 8);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 47);
-    //     }
+    #[test]
+    fn bin_number_2() {
+        let s = String::from("0B1_00000000_00000000_00000000_00000000");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(
+            tok.kind,
+            TokenKind::Long(0b1_00000000_00000000_00000000_00000000)
+        );
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 39);
+    }
 
     //     #[test]
     //     fn bin_number_with_suffixes() {
