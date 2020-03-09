@@ -2406,34 +2406,31 @@ mod tests {
         assert_eq!(tok.span.end, 11);
     }
 
-    //     #[test]
-    //     fn int_with_trailing_underscore() {
-    //         let s = " 123_000_000_  ";
-    //         let mut lexer = Lexer::new(&s);
-    //         let tok = lexer.lex();
+    #[test]
+    fn int_with_trailing_underscore() {
+        let s = String::from("123_000_000_  ");
+        let mut lexer = Lexer::new(s);
+        let tok = lexer.next_token();
 
-    //         assert_eq!(tok.as_ref().is_err(), true);
-    //         let tok = tok.as_ref().unwrap_err();
-    //         assert_eq!(tok.kind, ErrorKind::TrailingUnderscoreInNumber);
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 2);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 14);
-    //     }
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, ErrorKind::TrailingUnderscoreInNumber);
+        assert_eq!(tok.location.start_pos, 0);
+        assert_eq!(tok.location.end_pos, 12);
+    }
 
-    //     #[test]
-    //     fn int_with_leading_zero() {
-    //         let s = " 0 0123 0456L 0u  ";
-    //         let mut lexer = Lexer::new(&s);
+    #[test]
+    fn int_zero() {
+        let s = String::from("0");
+        let mut lexer = Lexer::new(s);
 
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::Int(0i32));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 2);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 3);
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Int(0i32));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 1);
+    }
 
     //         let tok = lexer.lex();
     //         assert_eq!(tok.as_ref().is_err(), true);
