@@ -170,6 +170,7 @@ enum CursorTokenKind {
         suffix_start: usize,
     },
     Plus,
+    PlusPlus,
     Minus,
     Star,
     Slash,
@@ -337,6 +338,7 @@ impl Cursor<'_> {
             '-' => CursorTokenKind::Minus,
             '&' => CursorTokenKind::Ampersand,
             '|' => CursorTokenKind::Pipe,
+            '+' if self.match_char('+') => CursorTokenKind::PlusPlus,
             '+' => CursorTokenKind::Plus,
             '*' => CursorTokenKind::Star,
             // '^' => CursorTokenKind::Caret,
@@ -732,15 +734,15 @@ impl Cursor<'_> {
 
         eaten
     }
-    // fn match_char(&mut self, c: char) -> bool {
-    //     match self.peek() {
-    //         Some(ch) if c == ch => {
-    //             self.advance();
-    //             true
-    //         }
-    //         _ => false,
-    //     }
-    // }
+
+    fn match_char(&mut self, c: char) -> bool {
+        if self.first() == c {
+            self.bump();
+            true
+        } else {
+            false
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -798,10 +800,8 @@ impl Lexer {
                 ErrorKind::UnknownChar,
                 self.span_location(&span),
             )),
-            CursorTokenKind::Plus => {
-                if self.cursor.first_token
-                Ok(TokenKind::Plus)
-            },
+            CursorTokenKind::Plus => Ok(TokenKind::Plus),
+            CursorTokenKind::PlusPlus => Ok(TokenKind::PlusPlus),
             CursorTokenKind::Minus => Ok(TokenKind::Minus),
             CursorTokenKind::Star => Ok(TokenKind::Star),
             CursorTokenKind::Slash => Ok(TokenKind::Slash),

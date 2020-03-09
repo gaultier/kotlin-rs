@@ -1,6 +1,6 @@
 // use crate::parse::Type;
 use std::fmt;
-use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+// use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Location {
