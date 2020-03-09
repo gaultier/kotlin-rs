@@ -1,4 +1,4 @@
-// use crate::parse::Type;
+use crate::parse::Type;
 use std::fmt;
 // use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
@@ -28,7 +28,7 @@ pub enum ErrorKind {
     IncompleteUnicodeLiteral,
     InvalidUnicodeLiteral(String),
     ExpectedPrimary,
-    // IncompatibleTypes(Type, Type),
+    IncompatibleTypes(Type, Type),
     EmitError(String),
     UnterminatedStatement,
 }
@@ -52,9 +52,9 @@ impl fmt::Display for ErrorKind {
             ErrorKind::IncompleteUnicodeLiteral => write!(f, "Incomplete unicode literal"),
             ErrorKind::InvalidUnicodeLiteral(_s) => write!(f, "Invalid unicode literal"),
             ErrorKind::ExpectedPrimary => write!(f, "Expected primary"),
-            // ErrorKind::IncompatibleTypes(left, right) => {
-            //     write!(f, "Incompatible types: {} and {}", left, right)
-            // }
+            ErrorKind::IncompatibleTypes(left, right) => {
+                write!(f, "Incompatible types: {} and {}", left, right)
+            }
             ErrorKind::EmitError(err) => write!(f, "Emit error: {}", err),
             ErrorKind::UnterminatedStatement => write!(f, "Unterminated statement"),
         }
