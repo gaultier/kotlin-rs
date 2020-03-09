@@ -14,7 +14,7 @@ enum NumberBase {
     Decimal,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenKind {
     Plus,
     PlusPlus,
@@ -757,7 +757,7 @@ pub struct Lexer {
     lines: Vec<usize>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Span {
     start: usize,
     end: usize,
@@ -769,10 +769,10 @@ impl Span {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Token {
-    kind: TokenKind,
-    span: Span,
+    pub kind: TokenKind,
+    pub span: Span,
 }
 
 impl Token {
