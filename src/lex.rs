@@ -831,6 +831,7 @@ impl Lexer {
                         self.span_location(span),
                     ));
                 }
+                let s = prepare_num_str_for_parsing(&num_str);
 
                 match kind {
                     CursorNumberKind::Int {
@@ -850,8 +851,7 @@ impl Lexer {
                     } => {
                         debug!("num str={}", num_str);
                         // TODO: report error on number too big
-                        let s = prepare_num_str_for_parsing(&num_str[2..]);
-                        let num = i64::from_str_radix(&s, 16).expect("Could not parse number");
+                        let num = i64::from_str_radix(&s[2..], 16).expect("Could not parse number");
                         if num <= std::i32::MAX as i64 {
                             Ok(TokenKind::Int(num as i32))
                         } else {
@@ -864,8 +864,7 @@ impl Lexer {
                     } => {
                         debug!("num str={}", num_str);
                         // TODO: report error on number too big
-                        let s = prepare_num_str_for_parsing(&num_str[2..]);
-                        let num = i64::from_str_radix(&s, 2).expect("Could not parse number");
+                        let num = i64::from_str_radix(&s[2..], 2).expect("Could not parse number");
                         if num <= std::i32::MAX as i64 {
                             Ok(TokenKind::Int(num as i32))
                         } else {
@@ -877,9 +876,15 @@ impl Lexer {
                         ..
                     } => {
                         debug!("num str={}", num_str);
+                        if num_str.len() > 1 && num_str.starts_with("0") {
+                            return Err(Error::new(
+                                ErrorKind::LeadingZeroInNumber,
+                                self.span_location(&span),
+                            ));
+                        }
+
                         // TODO: report error on number too big
 
-                        let s = prepare_num_str_for_parsing(&num_str);
                         let num = i64::from_str_radix(&s, 10).expect("Could not parse number");
                         if num <= std::i32::MAX as i64 {
                             Ok(TokenKind::Int(num as i32))
@@ -893,7 +898,6 @@ impl Lexer {
                     } => {
                         debug!("num str={}", num_str);
                         // TODO: report error on number too big
-                        let s = prepare_num_str_for_parsing(&num_str);
                         let num: f64 = s.parse().expect("Could not parse number");
                         if num <= std::f32::MAX as f64 {
                             Ok(TokenKind::Float(num as f32))
@@ -2430,6 +2434,19 @@ mod tests {
         assert_eq!(tok.kind, TokenKind::Int(0i32));
         assert_eq!(tok.span.start, 0);
         assert_eq!(tok.span.end, 1);
+    }
+
+    #[test]
+    fn int_with_leading_zero() {
+        let s = String::from("0123");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, ErrorKind::LeadingZeroInNumber);
+        assert_eq!(tok.location.start_pos, 0);
+        assert_eq!(tok.location.end_pos, 4);
     }
 
     //         let tok = lexer.lex();
