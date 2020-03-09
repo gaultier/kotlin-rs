@@ -846,8 +846,12 @@ impl Lexer {
                 ..
             } => {
                 debug!("num str={}", &self.src[span.start..span.end]);
-                let num = i32::from_str_radix(&self.src[span.start + 2..span.end], 16).unwrap();
-                Ok(TokenKind::Int(num))
+                let num = i64::from_str_radix(&self.src[span.start + 2..span.end], 16).unwrap();
+                if num <= std::i32::MAX as i64 {
+                    Ok(TokenKind::Int(num as i32))
+                } else {
+                    Ok(TokenKind::Long(num))
+                }
             }
             _ => unimplemented!(),
         }
