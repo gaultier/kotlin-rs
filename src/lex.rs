@@ -837,6 +837,18 @@ impl Lexer {
                 ErrorKind::OctalNumber,
                 self.span_location(&span),
             )),
+            CursorTokenKind::Number {
+                kind:
+                    CursorNumberKind::Int {
+                        base: NumberBase::Hexadecimal,
+                        ..
+                    },
+                ..
+            } => {
+                debug!("num str={}", &self.src[span.start..span.end]);
+                let num = i32::from_str_radix(&self.src[span.start + 2..span.end], 16).unwrap();
+                Ok(TokenKind::Int(num))
+            }
             _ => unimplemented!(),
         }
     }
