@@ -2449,6 +2449,19 @@ mod tests {
         assert_eq!(tok.location.end_pos, 4);
     }
 
+    #[test]
+    fn uint_with_leading_zero() {
+        let s = String::from("01u");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, ErrorKind::LeadingZeroInNumber);
+        assert_eq!(tok.location.start_pos, 0);
+        assert_eq!(tok.location.end_pos, 3);
+    }
+
     //         let tok = lexer.lex();
     //         assert_eq!(tok.as_ref().is_err(), true);
     //         let tok = tok.as_ref().unwrap_err();
