@@ -818,7 +818,18 @@ impl Lexer {
             CursorTokenKind::Percent => Ok(TokenKind::Percent),
             CursorTokenKind::Colon => Ok(TokenKind::Colon),
             CursorTokenKind::Dot => Ok(TokenKind::Dot),
-            CursorTokenKind::Number { .. } => Ok(TokenKind::Int(0)),
+            CursorTokenKind::Number {
+                kind:
+                    CursorNumberKind::Int {
+                        base: NumberBase::Octal,
+                        ..
+                    },
+                ..
+            } => Err(Error::new(
+                ErrorKind::OctalNumber,
+                self.span_location(&span),
+            )),
+            _ => unimplemented!(),
         }
     }
 
