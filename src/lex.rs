@@ -843,6 +843,12 @@ impl Lexer {
                     ));
                 }
                 let s = prepare_num_str_for_parsing(&num_str);
+                if s.is_empty() {
+                    return Err(Error::new(
+                        ErrorKind::MissingDigitsInNumber,
+                        self.span_location(&span),
+                    ));
+                }
 
                 match kind {
                     CursorNumberKind::Int {
@@ -2634,9 +2640,9 @@ mod tests {
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, ErrorKind::MissingDigitsInBinaryNumber);
-        assert_eq!(tok.location.start_line, 0);
-        assert_eq!(tok.location.start_column, 2);
+        assert_eq!(tok.kind, ErrorKind::MissingDigitsInNumber);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
         assert_eq!(tok.location.end_line, 1);
         assert_eq!(tok.location.end_column, 3);
     }
