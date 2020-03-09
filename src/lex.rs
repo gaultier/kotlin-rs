@@ -819,6 +819,7 @@ impl Lexer {
             CursorTokenKind::Colon => Ok(TokenKind::Colon),
             CursorTokenKind::Dot => Ok(TokenKind::Dot),
             CursorTokenKind::Number { kind, .. } => {
+                let num_str = &self.src[span.start..span.end];
                 match kind {
                     CursorNumberKind::Int {
                         base: NumberBase::Octal,
@@ -835,7 +836,7 @@ impl Lexer {
                         base: NumberBase::Hexadecimal,
                         ..
                     } => {
-                        debug!("num str={}", &self.src[span.start..span.end]);
+                        debug!("num str={}", num_str);
                         // TODO: report error on number too big
                         let num = i64::from_str_radix(&self.src[span.start + 2..span.end], 16)
                             .expect("Could not parse number");
@@ -849,7 +850,7 @@ impl Lexer {
                         base: NumberBase::Binary,
                         ..
                     } => {
-                        debug!("num str={}", &self.src[span.start..span.end]);
+                        debug!("num str={}", num_str);
                         // TODO: report error on number too big
                         let num = i64::from_str_radix(&self.src[span.start + 2..span.end], 2)
                             .expect("Could not parse number");
@@ -863,10 +864,9 @@ impl Lexer {
                         base: NumberBase::Decimal,
                         ..
                     } => {
-                        debug!("num str={}", &self.src[span.start..span.end]);
+                        debug!("num str={}", num_str);
                         // TODO: report error on number too big
-                        let num = i64::from_str_radix(&self.src[span.start..span.end], 10)
-                            .expect("Could not parse number");
+                        let num = i64::from_str_radix(num_str, 10).expect("Could not parse number");
                         if num <= std::i32::MAX as i64 {
                             Ok(TokenKind::Int(num as i32))
                         } else {
@@ -877,11 +877,9 @@ impl Lexer {
                         base: NumberBase::Decimal,
                         ..
                     } => {
-                        debug!("num str={}", &self.src[span.start..span.end]);
+                        debug!("num str={}", num_str);
                         // TODO: report error on number too big
-                        let num: f64 = self.src[span.start..span.end]
-                            .parse()
-                            .expect("Could not parse number");
+                        let num: f64 = num_str.parse().expect("Could not parse number");
                         if num <= std::f32::MAX as f64 {
                             Ok(TokenKind::Float(num as f32))
                         } else {
