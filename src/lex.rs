@@ -818,105 +818,82 @@ impl Lexer {
             CursorTokenKind::Percent => Ok(TokenKind::Percent),
             CursorTokenKind::Colon => Ok(TokenKind::Colon),
             CursorTokenKind::Dot => Ok(TokenKind::Dot),
-            CursorTokenKind::Number {
-                kind:
+            CursorTokenKind::Number { kind, .. } => {
+                match kind {
                     CursorNumberKind::Int {
                         base: NumberBase::Octal,
                         ..
-                    },
-                ..
-            }
-            | CursorTokenKind::Number {
-                kind:
-                    CursorNumberKind::Float {
+                    }
+                    | CursorNumberKind::Float {
                         base: NumberBase::Octal,
                         ..
-                    },
-                ..
-            } => Err(Error::new(
-                ErrorKind::OctalNumber,
-                self.span_location(&span),
-            )),
-            CursorTokenKind::Number {
-                kind:
+                    } => Err(Error::new(
+                        ErrorKind::OctalNumber,
+                        self.span_location(&span),
+                    )),
                     CursorNumberKind::Int {
                         base: NumberBase::Hexadecimal,
                         ..
-                    },
-                ..
-            } => {
-                debug!("num str={}", &self.src[span.start..span.end]);
-                // TODO: report error on number too big
-                let num = i64::from_str_radix(&self.src[span.start + 2..span.end], 16)
-                    .expect("Could not parse number");
-                if num <= std::i32::MAX as i64 {
-                    Ok(TokenKind::Int(num as i32))
-                } else {
-                    Ok(TokenKind::Long(num))
-                }
-            }
-            CursorTokenKind::Number {
-                kind:
+                    } => {
+                        debug!("num str={}", &self.src[span.start..span.end]);
+                        // TODO: report error on number too big
+                        let num = i64::from_str_radix(&self.src[span.start + 2..span.end], 16)
+                            .expect("Could not parse number");
+                        if num <= std::i32::MAX as i64 {
+                            Ok(TokenKind::Int(num as i32))
+                        } else {
+                            Ok(TokenKind::Long(num))
+                        }
+                    }
                     CursorNumberKind::Int {
                         base: NumberBase::Binary,
                         ..
-                    },
-                ..
-            } => {
-                debug!("num str={}", &self.src[span.start..span.end]);
-                // TODO: report error on number too big
-                let num = i64::from_str_radix(&self.src[span.start + 2..span.end], 2)
-                    .expect("Could not parse number");
-                if num <= std::i32::MAX as i64 {
-                    Ok(TokenKind::Int(num as i32))
-                } else {
-                    Ok(TokenKind::Long(num))
-                }
-            }
-            CursorTokenKind::Number {
-                kind:
+                    } => {
+                        debug!("num str={}", &self.src[span.start..span.end]);
+                        // TODO: report error on number too big
+                        let num = i64::from_str_radix(&self.src[span.start + 2..span.end], 2)
+                            .expect("Could not parse number");
+                        if num <= std::i32::MAX as i64 {
+                            Ok(TokenKind::Int(num as i32))
+                        } else {
+                            Ok(TokenKind::Long(num))
+                        }
+                    }
                     CursorNumberKind::Int {
                         base: NumberBase::Decimal,
                         ..
-                    },
-                ..
-            } => {
-                debug!("num str={}", &self.src[span.start..span.end]);
-                // TODO: report error on number too big
-                let num = i64::from_str_radix(&self.src[span.start..span.end], 10)
-                    .expect("Could not parse number");
-                if num <= std::i32::MAX as i64 {
-                    Ok(TokenKind::Int(num as i32))
-                } else {
-                    Ok(TokenKind::Long(num))
-                }
-            }
-            CursorTokenKind::Number {
-                kind:
+                    } => {
+                        debug!("num str={}", &self.src[span.start..span.end]);
+                        // TODO: report error on number too big
+                        let num = i64::from_str_radix(&self.src[span.start..span.end], 10)
+                            .expect("Could not parse number");
+                        if num <= std::i32::MAX as i64 {
+                            Ok(TokenKind::Int(num as i32))
+                        } else {
+                            Ok(TokenKind::Long(num))
+                        }
+                    }
                     CursorNumberKind::Float {
                         base: NumberBase::Decimal,
                         ..
-                    },
-                ..
-            } => {
-                debug!("num str={}", &self.src[span.start..span.end]);
-                // TODO: report error on number too big
-                let num: f64 = self.src[span.start..span.end]
-                    .parse()
-                    .expect("Could not parse number");
-                if num <= std::f32::MAX as f64 {
-                    Ok(TokenKind::Float(num as f32))
-                } else {
-                    Ok(TokenKind::Double(num))
+                    } => {
+                        debug!("num str={}", &self.src[span.start..span.end]);
+                        // TODO: report error on number too big
+                        let num: f64 = self.src[span.start..span.end]
+                            .parse()
+                            .expect("Could not parse number");
+                        if num <= std::f32::MAX as f64 {
+                            Ok(TokenKind::Float(num as f32))
+                        } else {
+                            Ok(TokenKind::Double(num))
+                        }
+                    }
+                    CursorNumberKind::Float { .. } => Err(Error::new(
+                        ErrorKind::TrailingDotInNumber,
+                        self.span_location(&span),
+                    )),
                 }
             }
-            CursorTokenKind::Number {
-                kind: CursorNumberKind::Float { .. },
-                ..
-            } => Err(Error::new(
-                ErrorKind::TrailingDotInNumber,
-                self.span_location(&span),
-            )),
         }
     }
 
