@@ -56,7 +56,7 @@ impl Type {
             (Type::Char, Type::Int) if token.kind == TokenKind::Minus => Ok(Type::Char),
             _ => Err(Error::new(
                 ErrorKind::IncompatibleTypes(left, right),
-                Location{start_pos:0, start_line:0, start_column:0,end_pos:0,end_line:0,end_column:0})),
+                Location{start_pos:0, start_line:0, start_column:0,end_pos:0,end_line:0,end_column:0})), // FIXME
         }
     }
 }

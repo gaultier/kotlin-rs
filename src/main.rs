@@ -1,6 +1,5 @@
 use clap::{App, Arg};
-use kotlin::lex::*;
-use pretty_env_logger::*;
+use kotlin::compile::*;
 use std::io::prelude::*;
 
 fn main() {
@@ -44,18 +43,7 @@ fn main() {
         contents
     };
 
-    let mut lexer = Lexer::new(contents);
-    loop {
-        match lexer.next_token() {
-            Ok(tok) if tok.is_eof() => break,
-            Ok(tok) => println!("{:?}", tok),
-            Err(tok) => eprintln!("{:?}", tok),
-        }
-    }
-    // let stdout = std::io::stdout();
-    // let mut handle = stdout.lock();
-    // if let Err(err) = compile(&contents, &mut handle) {
-    //     err.to_owned(&contents).eprint();
-    //     std::process::exit(1);
-    // }
+    let stdout = std::io::stdout();
+    let mut handle = stdout.lock();
+    compile(contents, &mut handle).unwrap();
 }
