@@ -855,6 +855,24 @@ impl Lexer {
                     Ok(TokenKind::Long(num))
                 }
             }
+            CursorTokenKind::Number {
+                kind:
+                    CursorNumberKind::Int {
+                        base: NumberBase::Binary,
+                        ..
+                    },
+                ..
+            } => {
+                debug!("num str={}", &self.src[span.start..span.end]);
+                // TODO: report error on number too big
+                let num = i64::from_str_radix(&self.src[span.start + 2..span.end], 2)
+                    .expect("Could not parse number");
+                if num <= std::i32::MAX as i64 {
+                    Ok(TokenKind::Int(num as i32))
+                } else {
+                    Ok(TokenKind::Long(num))
+                }
+            }
             _ => unimplemented!(),
         }
     }
