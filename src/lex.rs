@@ -311,8 +311,6 @@ impl Cursor<'_> {
                 let suffix_start = self.len_consumed();
                 debug!("num kind={:?} suffix_start={}", kind, suffix_start);
                 self.eat_literal_suffix();
-                // let suffix = &
-                let num = 0;
                 CursorTokenKind::Number { kind, suffix_start }
             }
 
@@ -800,7 +798,10 @@ impl Lexer {
                 ErrorKind::UnknownChar,
                 self.span_location(&span),
             )),
-            CursorTokenKind::Plus => Ok(TokenKind::Plus),
+            CursorTokenKind::Plus => {
+                if self.cursor.first_token
+                Ok(TokenKind::Plus)
+            },
             CursorTokenKind::Minus => Ok(TokenKind::Minus),
             CursorTokenKind::Star => Ok(TokenKind::Star),
             CursorTokenKind::Slash => Ok(TokenKind::Slash),
