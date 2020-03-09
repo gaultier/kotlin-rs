@@ -838,8 +838,8 @@ impl Lexer {
                     } => {
                         debug!("num str={}", num_str);
                         // TODO: report error on number too big
-                        let num = i64::from_str_radix(&self.src[span.start + 2..span.end], 16)
-                            .expect("Could not parse number");
+                        let num =
+                            i64::from_str_radix(&num_str[2..], 16).expect("Could not parse number");
                         if num <= std::i32::MAX as i64 {
                             Ok(TokenKind::Int(num as i32))
                         } else {
@@ -852,8 +852,8 @@ impl Lexer {
                     } => {
                         debug!("num str={}", num_str);
                         // TODO: report error on number too big
-                        let num = i64::from_str_radix(&self.src[span.start + 2..span.end], 2)
-                            .expect("Could not parse number");
+                        let num =
+                            i64::from_str_radix(&num_str[2..], 2).expect("Could not parse number");
                         if num <= std::i32::MAX as i64 {
                             Ok(TokenKind::Int(num as i32))
                         } else {
