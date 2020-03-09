@@ -2647,20 +2647,20 @@ mod tests {
         assert_eq!(tok.location.end_column, 3);
     }
 
-    //     #[test]
-    //     fn hex_number_missing_digits() {
-    //         let s = " 0x ";
-    //         let mut lexer = Lexer::new(&s);
+    #[test]
+    fn hex_number_missing_digits() {
+        let s = String::from("0x");
+        let mut lexer = Lexer::new(s);
 
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_err(), true);
-    //         let tok = tok.as_ref().unwrap_err();
-    //         assert_eq!(tok.kind, ErrorKind::MissingDigitsInHexNumber);
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 2);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 4);
-    //     }
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, ErrorKind::MissingDigitsInNumber);
+        assert_eq!(tok.location.start_line, 1);
+        assert_eq!(tok.location.start_column, 1);
+        assert_eq!(tok.location.end_line, 1);
+        assert_eq!(tok.location.end_column, 3);
+    }
 
     //     #[test]
     //     fn hex_number() {
