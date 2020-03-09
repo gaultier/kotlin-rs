@@ -820,6 +820,12 @@ impl Lexer {
             CursorTokenKind::Dot => Ok(TokenKind::Dot),
             CursorTokenKind::Number { kind, .. } => {
                 let num_str = &self.src[span.start..span.end];
+                if num_str.ends_with(&"_") {
+                    return Err(Error::new(
+                        ErrorKind::TrailingUnderscoreInNumber,
+                        self.span_location(span),
+                    ));
+                }
                 match kind {
                     CursorNumberKind::Int {
                         base: NumberBase::Octal,
