@@ -2662,29 +2662,18 @@ mod tests {
         assert_eq!(tok.location.end_column, 3);
     }
 
-    //     #[test]
-    //     fn hex_number() {
-    //         let s = " 0x1a1 0XdeadBEEF";
-    //         let mut lexer = Lexer::new(&s);
+    #[test]
+    fn hex_number() {
+        let s = String::from("0XdeadBEEF");
+        let mut lexer = Lexer::new(s);
 
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::Int(0x1a1));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 2);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 7);
-
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::Long(0xdeadbeef));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 8);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 18);
-    //     }
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Long(0xdeadbeef));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 10);
+    }
 
     //     #[test]
     //     fn hex_number_with_suffixes() {
