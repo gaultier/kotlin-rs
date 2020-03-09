@@ -825,6 +825,14 @@ impl Lexer {
                         ..
                     },
                 ..
+            }
+            | CursorTokenKind::Number {
+                kind:
+                    CursorNumberKind::Float {
+                        base: NumberBase::Octal,
+                        ..
+                    },
+                ..
             } => Err(Error::new(
                 ErrorKind::OctalNumber,
                 self.span_location(&span),
