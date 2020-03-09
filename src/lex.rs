@@ -287,6 +287,10 @@ pub fn is_id_continue(c: char) -> bool {
     // || (c > '\x7f' && unicode_xid::UnicodeXID::is_xid_continue(c))
 }
 
+fn prepare_num_str_for_parsing(s: &str) -> String {
+    s.to_string().replace("_", "")
+}
+
 impl Cursor<'_> {
     /// Parses a token from the input string.
     fn advance_token(&mut self) -> CursorToken {
@@ -846,8 +850,8 @@ impl Lexer {
                     } => {
                         debug!("num str={}", num_str);
                         // TODO: report error on number too big
-                        let num =
-                            i64::from_str_radix(&num_str[2..], 16).expect("Could not parse number");
+                        let s = prepare_num_str_for_parsing(&num_str[2..]);
+                        let num = i64::from_str_radix(&s, 16).expect("Could not parse number");
                         if num <= std::i32::MAX as i64 {
                             Ok(TokenKind::Int(num as i32))
                         } else {
@@ -860,8 +864,8 @@ impl Lexer {
                     } => {
                         debug!("num str={}", num_str);
                         // TODO: report error on number too big
-                        let num =
-                            i64::from_str_radix(&num_str[2..], 2).expect("Could not parse number");
+                        let s = prepare_num_str_for_parsing(&num_str[2..]);
+                        let num = i64::from_str_radix(&s, 2).expect("Could not parse number");
                         if num <= std::i32::MAX as i64 {
                             Ok(TokenKind::Int(num as i32))
                         } else {
@@ -874,7 +878,9 @@ impl Lexer {
                     } => {
                         debug!("num str={}", num_str);
                         // TODO: report error on number too big
-                        let num = i64::from_str_radix(num_str, 10).expect("Could not parse number");
+
+                        let s = prepare_num_str_for_parsing(&num_str);
+                        let num = i64::from_str_radix(&s, 10).expect("Could not parse number");
                         if num <= std::i32::MAX as i64 {
                             Ok(TokenKind::Int(num as i32))
                         } else {
@@ -887,7 +893,8 @@ impl Lexer {
                     } => {
                         debug!("num str={}", num_str);
                         // TODO: report error on number too big
-                        let num: f64 = num_str.parse().expect("Could not parse number");
+                        let s = prepare_num_str_for_parsing(&num_str);
+                        let num: f64 = s.parse().expect("Could not parse number");
                         if num <= std::f32::MAX as f64 {
                             Ok(TokenKind::Float(num as f32))
                         } else {
@@ -2386,20 +2393,18 @@ mod tests {
         assert_eq!(tok.span.end, 3);
     }
 
-    //     #[test]
-    //     fn int_with_underscores() {
-    //         let s = " 123_000_000  ";
-    //         let mut lexer = Lexer::new(&s);
-    //         let tok = lexer.lex();
+    #[test]
+    fn int_with_underscores() {
+        let s = String::from("123_000_000");
+        let mut lexer = Lexer::new(s);
+        let tok = lexer.next_token();
 
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::Int(123_000_000));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 2);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 13);
-    //     }
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Int(123_000_000));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 11);
+    }
 
     //     #[test]
     //     fn int_with_trailing_underscore() {
