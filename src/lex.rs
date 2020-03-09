@@ -916,11 +916,7 @@ impl Lexer {
                         debug!("num str={}", num_str);
                         // TODO: report error on number too big
                         let num: f64 = s.parse().expect("Could not parse number");
-                        if num <= std::f32::MAX as f64 {
-                            Ok(TokenKind::Float(num as f32))
-                        } else {
-                            Ok(TokenKind::Double(num))
-                        }
+                        Ok(TokenKind::Double(num))
                     }
                     CursorNumberKind::Float { .. } => Err(Error::new(
                         ErrorKind::TrailingDotInNumber,
@@ -2673,6 +2669,19 @@ mod tests {
         assert_eq!(tok.kind, TokenKind::Long(0xdeadbeef));
         assert_eq!(tok.span.start, 0);
         assert_eq!(tok.span.end, 10);
+    }
+
+    #[test]
+    fn double_number() {
+        let s = String::from("123.456");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Double(123.456));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 7);
     }
 
     //     #[test]
