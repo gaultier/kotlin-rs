@@ -31,7 +31,7 @@ pub enum ErrorKind {
     ExpectedPrimary,
     IncompatibleTypes(Type, Type),
     EmitError(String),
-    InvalidNumberSuffix,
+    InvalidNumberSuffix(char),
     UnterminatedStatement,
 }
 
@@ -59,7 +59,7 @@ impl fmt::Display for ErrorKind {
             }
             ErrorKind::EmitError(err) => write!(f, "Emit error: {}", err),
             ErrorKind::UnterminatedStatement => write!(f, "Unterminated statement"),
-            ErrorKind::InvalidNumberSuffix => write!(f, "Invalid number suffix"),
+            ErrorKind::InvalidNumberSuffix(c) => write!(f, "Invalid number suffix `{}`", c),
         }
     }
 }

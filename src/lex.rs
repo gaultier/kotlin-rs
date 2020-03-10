@@ -863,6 +863,14 @@ impl Lexer {
                 ErrorKind::OctalNumber,
                 self.span_location(&span),
             )),
+            // Forbid invalid suffixes
+            CursorNumberKind::Int {
+                suffix: Some(NumberSuffix::Invalid(c)),
+                ..
+            } => Err(Error::new(
+                ErrorKind::InvalidNumberSuffix(c),
+                self.span_location(&span),
+            )),
             CursorNumberKind::Int {
                 base: NumberBase::Hexadecimal,
                 ..
