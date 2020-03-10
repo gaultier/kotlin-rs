@@ -32,41 +32,27 @@ impl JsEmitter<'_> {
                 kind:
                     AstNodeExpr::Literal(Token {
                         kind: TokenKind::Int(n),
-                        ..
+                        span,
                     }),
                 ..
             } => write!(w, "{}", n).map_err(|err| {
                 Error::new(
                     ErrorKind::EmitError(err.to_string()),
-                    Location {
-                        start_pos: 0,
-                        start_line: 0,
-                        start_column: 0,
-                        end_pos: 0,
-                        end_line: 0,
-                        end_column: 0,
-                    },
+                    self.lexer.span_location(&span),
                 )
             }),
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
                         kind: TokenKind::UInt(n),
-                        ..
+                        span,
                     }),
                 ..
             } => write!(w, "{}", n)
                 .map_err(|err| {
                     Error::new(
                         ErrorKind::EmitError(err.to_string()),
-                        Location {
-                            start_pos: 0,
-                            start_line: 0,
-                            start_column: 0,
-                            end_pos: 0,
-                            end_line: 0,
-                            end_column: 0,
-                        },
+                        self.lexer.span_location(&span),
                     )
                 })
                 .map(|_| ()),
@@ -74,21 +60,14 @@ impl JsEmitter<'_> {
                 kind:
                     AstNodeExpr::Literal(Token {
                         kind: TokenKind::Long(n),
-                        ..
+                        span,
                     }),
                 ..
             } => write!(w, "{}", n)
                 .map_err(|err| {
                     Error::new(
                         ErrorKind::EmitError(err.to_string()),
-                        Location {
-                            start_pos: 0,
-                            start_line: 0,
-                            start_column: 0,
-                            end_pos: 0,
-                            end_line: 0,
-                            end_column: 0,
-                        },
+                        self.lexer.span_location(&span),
                     )
                 })
                 .map(|_| ()),
@@ -96,21 +75,14 @@ impl JsEmitter<'_> {
                 kind:
                     AstNodeExpr::Literal(Token {
                         kind: TokenKind::ULong(n),
-                        ..
+                        span,
                     }),
                 ..
             } => write!(w, "{}", n)
                 .map_err(|err| {
                     Error::new(
                         ErrorKind::EmitError(err.to_string()),
-                        Location {
-                            start_pos: 0,
-                            start_line: 0,
-                            start_column: 0,
-                            end_pos: 0,
-                            end_line: 0,
-                            end_column: 0,
-                        },
+                        self.lexer.span_location(&span),
                     )
                 })
                 .map(|_| ()),
@@ -118,21 +90,14 @@ impl JsEmitter<'_> {
                 kind:
                     AstNodeExpr::Literal(Token {
                         kind: TokenKind::Float(n),
-                        ..
+                        span,
                     }),
                 ..
             } => write!(w, "{}", n)
                 .map_err(|err| {
                     Error::new(
                         ErrorKind::EmitError(err.to_string()),
-                        Location {
-                            start_pos: 0,
-                            start_line: 0,
-                            start_column: 0,
-                            end_pos: 0,
-                            end_line: 0,
-                            end_column: 0,
-                        },
+                        self.lexer.span_location(&span),
                     )
                 })
                 .map(|_| ()),
@@ -140,21 +105,14 @@ impl JsEmitter<'_> {
                 kind:
                     AstNodeExpr::Literal(Token {
                         kind: TokenKind::Double(n),
-                        ..
+                        span,
                     }),
                 ..
             } => write!(w, "{}", n)
                 .map_err(|err| {
                     Error::new(
                         ErrorKind::EmitError(err.to_string()),
-                        Location {
-                            start_pos: 0,
-                            start_line: 0,
-                            start_column: 0,
-                            end_pos: 0,
-                            end_line: 0,
-                            end_column: 0,
-                        },
+                        self.lexer.span_location(&span),
                     )
                 })
                 .map(|_| ()),
@@ -162,21 +120,14 @@ impl JsEmitter<'_> {
                 kind:
                     AstNodeExpr::Literal(Token {
                         kind: TokenKind::Bool(n),
-                        ..
+                        span,
                     }),
                 ..
             } => write!(w, "{}", n)
                 .map_err(|err| {
                     Error::new(
                         ErrorKind::EmitError(err.to_string()),
-                        Location {
-                            start_pos: 0,
-                            start_line: 0,
-                            start_column: 0,
-                            end_pos: 0,
-                            end_line: 0,
-                            end_column: 0,
-                        },
+                        self.lexer.span_location(&span),
                     )
                 })
                 .map(|_| ()),
@@ -191,14 +142,7 @@ impl JsEmitter<'_> {
                 .map_err(|err| {
                     Error::new(
                         ErrorKind::EmitError(err.to_string()),
-                        Location {
-                            start_pos: 0,
-                            start_line: 0,
-                            start_column: 0,
-                            end_pos: 0,
-                            end_line: 0,
-                            end_column: 0,
-                        },
+                        self.lexer.span_location(&span),
                     )
                 })
                 .map(|_| ()),
@@ -206,21 +150,14 @@ impl JsEmitter<'_> {
                 kind:
                     AstNodeExpr::Literal(Token {
                         kind: TokenKind::Null,
-                        ..
+                        span,
                     }),
                 ..
             } => write!(w, "null")
                 .map_err(|err| {
                     Error::new(
                         ErrorKind::EmitError(err.to_string()),
-                        Location {
-                            start_pos: 0,
-                            start_line: 0,
-                            start_column: 0,
-                            end_pos: 0,
-                            end_line: 0,
-                            end_column: 0,
-                        },
+                        self.lexer.span_location(&span),
                     )
                 })
                 .map(|_| ()),
@@ -231,14 +168,7 @@ impl JsEmitter<'_> {
                 write!(w, "{}", &self.lexer.src[tok.span.start..tok.span.end]).map_err(|err| {
                     Error::new(
                         ErrorKind::EmitError(err.to_string()),
-                        Location {
-                            start_pos: 0,
-                            start_line: 0,
-                            start_column: 0,
-                            end_pos: 0,
-                            end_line: 0,
-                            end_column: 0,
-                        },
+                        self.lexer.span_location(&tok.span),
                     )
                 })?;
                 self.expr(right, w)
@@ -253,14 +183,7 @@ impl JsEmitter<'_> {
                             write!(w, "\"\"+").map_err(|err| {
                                 Error::new(
                                     ErrorKind::EmitError(err.to_string()),
-                                    Location {
-                                        start_pos: 0,
-                                        start_line: 0,
-                                        start_column: 0,
-                                        end_pos: 0,
-                                        end_line: 0,
-                                        end_column: 0,
-                                    },
+                                    self.lexer.span_location(&tok.span),
                                 )
                             })?;
                         }
@@ -271,14 +194,7 @@ impl JsEmitter<'_> {
                 write!(w, "{}", &self.lexer.src[tok.span.start..tok.span.end]).map_err(|err| {
                     Error::new(
                         ErrorKind::EmitError(err.to_string()),
-                        Location {
-                            start_pos: 0,
-                            start_line: 0,
-                            start_column: 0,
-                            end_pos: 0,
-                            end_line: 0,
-                            end_column: 0,
-                        },
+                        self.lexer.span_location(&tok.span),
                     )
                 })?;
                 self.expr(right, w)
