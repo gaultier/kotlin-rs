@@ -16,3 +16,20 @@ pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
     let js_emitter = JsEmitter::new(&lexer);
     js_emitter.stmts(&stmts, w)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+
+    #[test]
+    fn addition() {
+        let contents = String::from("// hello\n 0xab + 24; ");
+        let buf = Vec::new();
+        let mut writer = io::BufWriter::new(buf);
+
+        assert!(compile(contents, writer.by_ref()).is_ok());
+        let s = String::from_utf8(writer.into_inner().unwrap()).unwrap();
+        assert_eq!(&s, "171+24;\n");
+    }
+}
