@@ -56,13 +56,13 @@ pub enum AstNodeExpr {
 }
 
 #[derive(Debug)]
-pub struct Parser {
+pub struct Parser<'a> {
     previous: Option<Token>,
     current: Option<Token>,
-    lexer: Lexer,
+    lexer: &'a mut Lexer,
 }
 
-impl Parser {
+impl Parser<'_> {
     fn advance(&mut self) -> Result<(), Error> {
         self.previous = self.current.clone();
         self.current = Some(self.lexer.next_token()?);
@@ -185,11 +185,11 @@ impl Parser {
         self.expression_stmt()
     }
 
-    pub fn new(s: String) -> Parser {
+    pub fn new(lexer: &mut Lexer) -> Parser {
         Parser {
             previous: None,
             current: None,
-            lexer: Lexer::new(s),
+            lexer,
         }
     }
 
