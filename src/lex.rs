@@ -178,6 +178,7 @@ enum CursorTokenKind {
     Number {
         kind: CursorNumberKind,
         suffix: Option<NumberSuffix>,
+        suffix_start: usize,
     },
     Plus,
     PlusPlus,
@@ -292,9 +293,14 @@ impl Cursor<'_> {
             // Numeric literal.
             c @ '0'..='9' => {
                 let kind = self.number(c);
+                let suffix_start = self.len_consumed();
                 let suffix = self.eat_number_suffix();
                 debug!("num kind={:?} suffix={:?}", kind, suffix);
-                CursorTokenKind::Number { kind, suffix }
+                CursorTokenKind::Number {
+                    kind,
+                    suffix,
+                    suffix_start,
+                }
             }
 
             // One-symbol tokens.
@@ -793,6 +799,7 @@ impl Lexer {
         &self,
         kind: CursorNumberKind,
         suffix: Option<NumberSuffix>,
+        suffix_start: usize,
         span: &Span,
     ) -> Result<TokenKind, Error> {
         // Forbid invalid suffixes
@@ -807,7 +814,7 @@ impl Lexer {
         }
         debug!("num suffix: {:?}", suffix);
 
-        // Remove prefix `0x`
+        // Remove prefix e.g `0x` and suffix e.g `UL`
         let num_str = match kind {
             CursorNumberKind::Int {
                 base: NumberBase::Decimal,
@@ -816,8 +823,8 @@ impl Lexer {
             | CursorNumberKind::Float {
                 base: NumberBase::Decimal,
                 ..
-            } => &self.src[span.start..span.end],
-            _ => &self.src[span.start + 2..span.end],
+            } => &self.src[span.start..suffix_start],
+            _ => &self.src[span.start + 2..suffix_start],
         };
 
         // Remove underscores
@@ -958,9 +965,11 @@ impl Lexer {
             CursorTokenKind::Percent => Ok(TokenKind::Percent),
             CursorTokenKind::Colon => Ok(TokenKind::Colon),
             CursorTokenKind::Dot => Ok(TokenKind::Dot),
-            CursorTokenKind::Number { kind, suffix } => {
-                self.cursor_number_to_token_number(kind, suffix, &span)
-            }
+            CursorTokenKind::Number {
+                kind,
+                suffix,
+                suffix_start,
+            } => self.cursor_number_to_token_number(kind, suffix, suffix_start, &span),
         }
     }
 
