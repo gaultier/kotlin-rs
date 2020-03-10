@@ -15,6 +15,20 @@ enum NumberBase {
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
+enum NumberSuffix {
+    L,
+    U,
+    UL,
+    Invalid(char),
+}
+
+impl NumberSuffix {
+    fn from_str(s: &str) -> Result<Option<NumberSuffix>, Error> {
+        Ok(None)
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenKind {
     Plus,
     PlusPlus,
@@ -169,7 +183,7 @@ enum CursorNumberKind {
 enum CursorTokenKind {
     Number {
         kind: CursorNumberKind,
-        suffix_start: usize,
+        suffix: Option<NumberSuffix>,
     },
     Plus,
     PlusPlus,
@@ -284,10 +298,9 @@ impl Cursor<'_> {
             // Numeric literal.
             c @ '0'..='9' => {
                 let kind = self.number(c);
-                let suffix_start = self.len_consumed();
-                debug!("num kind={:?} suffix_start={}", kind, suffix_start);
-                self.eat_literal_suffix();
-                CursorTokenKind::Number { kind, suffix_start }
+                let suffix = self.eat_number_suffix();
+                debug!("num kind={:?} suffix={:?}", kind, suffix);
+                CursorTokenKind::Number { kind, suffix }
             }
 
             // One-symbol tokens.
@@ -442,6 +455,8 @@ impl Cursor<'_> {
             self.eat_decimal_digits();
         };
 
+        debug!("first={}", self.first());
+
         match self.first() {
             // Don't be greedy if this is actually an
             // integer literal followed by field/method access or a range pattern
@@ -472,6 +487,31 @@ impl Cursor<'_> {
                 CursorNumberKind::Float {
                     base,
                     empty_exponent,
+                }
+            }
+            'u' | 'U' if self.second() == 'L' => {
+                self.bump();
+                self.bump();
+                debug!("seen UL");
+                CursorNumberKind::Int {
+                    base,
+                    empty_int: false,
+                }
+            }
+            'u' | 'U' => {
+                self.bump();
+                debug!("seen U");
+                CursorNumberKind::Int {
+                    base,
+                    empty_int: false,
+                }
+            }
+            'L' => {
+                self.bump();
+                debug!("seen L");
+                CursorNumberKind::Int {
+                    base,
+                    empty_int: false,
                 }
             }
             _ => CursorNumberKind::Int {
@@ -680,9 +720,28 @@ impl Cursor<'_> {
         self.eat_decimal_digits()
     }
 
-    // Eats the suffix of the literal, e.g. "_UL".
-    fn eat_literal_suffix(&mut self) {
-        self.eat_identifier();
+    // Eats the suffix of the literal, e.g. "UL".
+    fn eat_number_suffix(&mut self) -> Option<NumberSuffix> {
+        match self.first() {
+            'u' | 'U' if self.second() == 'L' => {
+                self.bump();
+                self.bump();
+                Some(NumberSuffix::UL)
+            }
+            'u' | 'U' => {
+                self.bump();
+                Some(NumberSuffix::U)
+            }
+            'L' => {
+                self.bump();
+                Some(NumberSuffix::L)
+            }
+            '_' | 'l' => {
+                self.bump();
+                Some(NumberSuffix::Invalid(self.first()))
+            }
+            _ => None,
+        }
     }
 
     // Eats the identifier.
@@ -760,6 +819,113 @@ impl Token {
 }
 
 impl Lexer {
+    fn cursor_number_to_token_number(
+        &self,
+        kind: CursorNumberKind,
+        span: &Span,
+    ) -> Result<TokenKind, Error> {
+        let num_str = match kind {
+            CursorNumberKind::Int {
+                base: NumberBase::Decimal,
+                ..
+            }
+            | CursorNumberKind::Float {
+                base: NumberBase::Decimal,
+                ..
+            } => &self.src[span.start..span.end],
+            _ => &self.src[span.start + 2..span.end],
+        };
+
+        if num_str.ends_with(&"_") {
+            return Err(Error::new(
+                ErrorKind::TrailingUnderscoreInNumber,
+                self.span_location(span),
+            ));
+        }
+        let s = prepare_num_str_for_parsing(&num_str);
+        if s.is_empty() {
+            return Err(Error::new(
+                ErrorKind::MissingDigitsInNumber,
+                self.span_location(&span),
+            ));
+        }
+
+        match kind {
+            // Forbid octal numbers
+            CursorNumberKind::Int {
+                base: NumberBase::Octal,
+                ..
+            }
+            | CursorNumberKind::Float {
+                base: NumberBase::Octal,
+                ..
+            } => Err(Error::new(
+                ErrorKind::OctalNumber,
+                self.span_location(&span),
+            )),
+            CursorNumberKind::Int {
+                base: NumberBase::Hexadecimal,
+                ..
+            } => {
+                debug!("num str={}", num_str);
+                // TODO: report error on number too big
+                let num = i64::from_str_radix(&s, 16).expect("Could not parse number");
+                if num <= std::i32::MAX as i64 {
+                    Ok(TokenKind::Int(num as i32))
+                } else {
+                    Ok(TokenKind::Long(num))
+                }
+            }
+            CursorNumberKind::Int {
+                base: NumberBase::Binary,
+                ..
+            } => {
+                debug!("num str={}", num_str);
+                // TODO: report error on number too big
+                let num = i64::from_str_radix(&s, 2).expect("Could not parse number");
+                if num <= std::i32::MAX as i64 {
+                    Ok(TokenKind::Int(num as i32))
+                } else {
+                    Ok(TokenKind::Long(num))
+                }
+            }
+            CursorNumberKind::Int {
+                base: NumberBase::Decimal,
+                ..
+            } => {
+                debug!("num str={}", num_str);
+                if s.len() > 1 && s.starts_with("0") {
+                    return Err(Error::new(
+                        ErrorKind::LeadingZeroInNumber,
+                        self.span_location(&span),
+                    ));
+                }
+
+                // TODO: report error on number too big
+
+                let num = i64::from_str_radix(&s, 10).expect("Could not parse number");
+                if num <= std::i32::MAX as i64 {
+                    Ok(TokenKind::Int(num as i32))
+                } else {
+                    Ok(TokenKind::Long(num))
+                }
+            }
+            CursorNumberKind::Float {
+                base: NumberBase::Decimal,
+                ..
+            } => {
+                debug!("num str={}", num_str);
+                // TODO: report error on number too big
+                let num: f64 = s.parse().expect("Could not parse number");
+                Ok(TokenKind::Double(num))
+            }
+            CursorNumberKind::Float { .. } => Err(Error::new(
+                ErrorKind::TrailingDotInNumber,
+                self.span_location(&span),
+            )),
+        }
+    }
+
     fn cursor_to_lex_token_kind(
         &mut self,
         kind: CursorTokenKind,
@@ -798,107 +964,7 @@ impl Lexer {
             CursorTokenKind::Percent => Ok(TokenKind::Percent),
             CursorTokenKind::Colon => Ok(TokenKind::Colon),
             CursorTokenKind::Dot => Ok(TokenKind::Dot),
-            CursorTokenKind::Number { kind, .. } => {
-                let num_str = match kind {
-                    CursorNumberKind::Int {
-                        base: NumberBase::Decimal,
-                        ..
-                    }
-                    | CursorNumberKind::Float {
-                        base: NumberBase::Decimal,
-                        ..
-                    } => &self.src[span.start..span.end],
-                    _ => &self.src[span.start + 2..span.end],
-                };
-
-                if num_str.ends_with(&"_") {
-                    return Err(Error::new(
-                        ErrorKind::TrailingUnderscoreInNumber,
-                        self.span_location(span),
-                    ));
-                }
-                let s = prepare_num_str_for_parsing(&num_str);
-                if s.is_empty() {
-                    return Err(Error::new(
-                        ErrorKind::MissingDigitsInNumber,
-                        self.span_location(&span),
-                    ));
-                }
-
-                match kind {
-                    CursorNumberKind::Int {
-                        base: NumberBase::Octal,
-                        ..
-                    }
-                    | CursorNumberKind::Float {
-                        base: NumberBase::Octal,
-                        ..
-                    } => Err(Error::new(
-                        ErrorKind::OctalNumber,
-                        self.span_location(&span),
-                    )),
-                    CursorNumberKind::Int {
-                        base: NumberBase::Hexadecimal,
-                        ..
-                    } => {
-                        debug!("num str={}", num_str);
-                        // TODO: report error on number too big
-                        let num = i64::from_str_radix(&s, 16).expect("Could not parse number");
-                        if num <= std::i32::MAX as i64 {
-                            Ok(TokenKind::Int(num as i32))
-                        } else {
-                            Ok(TokenKind::Long(num))
-                        }
-                    }
-                    CursorNumberKind::Int {
-                        base: NumberBase::Binary,
-                        ..
-                    } => {
-                        debug!("num str={}", num_str);
-                        // TODO: report error on number too big
-                        let num = i64::from_str_radix(&s, 2).expect("Could not parse number");
-                        if num <= std::i32::MAX as i64 {
-                            Ok(TokenKind::Int(num as i32))
-                        } else {
-                            Ok(TokenKind::Long(num))
-                        }
-                    }
-                    CursorNumberKind::Int {
-                        base: NumberBase::Decimal,
-                        ..
-                    } => {
-                        debug!("num str={}", num_str);
-                        if s.len() > 1 && s.starts_with("0") {
-                            return Err(Error::new(
-                                ErrorKind::LeadingZeroInNumber,
-                                self.span_location(&span),
-                            ));
-                        }
-
-                        // TODO: report error on number too big
-
-                        let num = i64::from_str_radix(&s, 10).expect("Could not parse number");
-                        if num <= std::i32::MAX as i64 {
-                            Ok(TokenKind::Int(num as i32))
-                        } else {
-                            Ok(TokenKind::Long(num))
-                        }
-                    }
-                    CursorNumberKind::Float {
-                        base: NumberBase::Decimal,
-                        ..
-                    } => {
-                        debug!("num str={}", num_str);
-                        // TODO: report error on number too big
-                        let num: f64 = s.parse().expect("Could not parse number");
-                        Ok(TokenKind::Double(num))
-                    }
-                    CursorNumberKind::Float { .. } => Err(Error::new(
-                        ErrorKind::TrailingDotInNumber,
-                        self.span_location(&span),
-                    )),
-                }
-            }
+            CursorTokenKind::Number { kind, .. } => self.cursor_number_to_token_number(kind, &span),
         }
     }
 
