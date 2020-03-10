@@ -867,6 +867,12 @@ impl Lexer {
                     Some(NumberSuffix::U) => {
                         Ok(TokenKind::UInt(u32::from_str_radix(&s, 16).unwrap()))
                     }
+                    Some(NumberSuffix::UL) => {
+                        Ok(TokenKind::ULong(u64::from_str_radix(&s, 16).unwrap()))
+                    }
+                    Some(NumberSuffix::L) => {
+                        Ok(TokenKind::Long(i64::from_str_radix(&s, 16).unwrap()))
+                    }
                     _ => {
                         let num = i64::from_str_radix(&s, 16).expect("Could not parse number");
                         if num <= std::i32::MAX as i64 {
@@ -880,16 +886,19 @@ impl Lexer {
             CursorNumberKind::Int {
                 base: NumberBase::Binary,
                 ..
-            } => {
-                debug!("num str={}", num_str);
-                // TODO: report error on number too big
-                let num = i64::from_str_radix(&s, 2).expect("Could not parse number");
-                if num <= std::i32::MAX as i64 {
-                    Ok(TokenKind::Int(num as i32))
-                } else {
-                    Ok(TokenKind::Long(num))
+            } => match suffix {
+                Some(NumberSuffix::U) => Ok(TokenKind::UInt(u32::from_str_radix(&s, 2).unwrap())),
+                Some(NumberSuffix::UL) => Ok(TokenKind::ULong(u64::from_str_radix(&s, 2).unwrap())),
+                Some(NumberSuffix::L) => Ok(TokenKind::Long(i64::from_str_radix(&s, 2).unwrap())),
+                _ => {
+                    let num = i64::from_str_radix(&s, 2).expect("Could not parse number");
+                    if num <= std::i32::MAX as i64 {
+                        Ok(TokenKind::Int(num as i32))
+                    } else {
+                        Ok(TokenKind::Long(num))
+                    }
                 }
-            }
+            },
             CursorNumberKind::Int {
                 base: NumberBase::Decimal,
                 ..
@@ -904,11 +913,24 @@ impl Lexer {
 
                 // TODO: report error on number too big
 
-                let num = i64::from_str_radix(&s, 10).expect("Could not parse number");
-                if num <= std::i32::MAX as i64 {
-                    Ok(TokenKind::Int(num as i32))
-                } else {
-                    Ok(TokenKind::Long(num))
+                match suffix {
+                    Some(NumberSuffix::U) => {
+                        Ok(TokenKind::UInt(u32::from_str_radix(&s, 10).unwrap()))
+                    }
+                    Some(NumberSuffix::UL) => {
+                        Ok(TokenKind::ULong(u64::from_str_radix(&s, 10).unwrap()))
+                    }
+                    Some(NumberSuffix::L) => {
+                        Ok(TokenKind::Long(i64::from_str_radix(&s, 10).unwrap()))
+                    }
+                    _ => {
+                        let num = i64::from_str_radix(&s, 10).expect("Could not parse number");
+                        if num <= std::i32::MAX as i64 {
+                            Ok(TokenKind::Int(num as i32))
+                        } else {
+                            Ok(TokenKind::Long(num))
+                        }
+                    }
                 }
             }
             CursorNumberKind::Float {
