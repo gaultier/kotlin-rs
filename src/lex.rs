@@ -19,6 +19,7 @@ enum NumberSuffix {
     L,
     U,
     UL,
+    F,
     Invalid(char),
 }
 
@@ -711,6 +712,10 @@ impl Cursor<'_> {
             'L' => {
                 self.bump();
                 Some(NumberSuffix::L)
+            }
+            'f' | 'F' => {
+                self.bump();
+                Some(NumberSuffix::F)
             }
             '_' | 'l' => {
                 self.bump();
