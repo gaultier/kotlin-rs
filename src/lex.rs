@@ -812,7 +812,7 @@ impl Lexer {
             }
             _ => {}
         }
-        debug!("num suffix: {:?}", suffix);
+        debug!("num suffix={:?} suffix_start={}", suffix, suffix_start);
 
         // Remove prefix e.g `0x` and suffix e.g `UL`
         let num_str = match kind {
@@ -823,8 +823,8 @@ impl Lexer {
             | CursorNumberKind::Float {
                 base: NumberBase::Decimal,
                 ..
-            } => &self.src[span.start..suffix_start],
-            _ => &self.src[span.start + 2..suffix_start],
+            } => &self.src[span.start..span.start + suffix_start],
+            _ => &self.src[span.start + 2..span.start + suffix_start],
         };
 
         // Remove underscores
