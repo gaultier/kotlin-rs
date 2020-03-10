@@ -818,6 +818,7 @@ impl Lexer {
             _ => {}
         }
         debug!("num suffix={:?} suffix_start={}", suffix, suffix_start);
+        let original_str = &self.src[span.start..span.end];
 
         // Remove prefix e.g `0x` and suffix e.g `UL`
         let num_str = match kind {
@@ -897,7 +898,7 @@ impl Lexer {
                 Some(NumberSuffix::L) => Ok(TokenKind::Long(i64::from_str_radix(&s, 2).unwrap())),
                 Some(NumberSuffix::F) => {
                     return Err(Error::new(
-                        ErrorKind::InvalidNumberSuffix('f'),
+                        ErrorKind::InvalidNumberSuffix(original_str.chars().last().unwrap()),
                         self.span_location(&span),
                     ));
                 }
@@ -934,6 +935,7 @@ impl Lexer {
                     Some(NumberSuffix::L) => {
                         Ok(TokenKind::Long(i64::from_str_radix(&s, 10).unwrap()))
                     }
+                    Some(NumberSuffix::F) => Ok(TokenKind::Float(s.parse().unwrap())),
                     _ => {
                         let num = i64::from_str_radix(&s, 10).expect("Could not parse number");
                         if num <= std::i32::MAX as i64 {
@@ -947,12 +949,19 @@ impl Lexer {
             CursorNumberKind::Float {
                 base: NumberBase::Decimal,
                 ..
-            } => {
-                debug!("num str={}", num_str);
-                // TODO: report error on number too big
-                let num: f64 = s.parse().expect("Could not parse number");
-                Ok(TokenKind::Double(num))
-            }
+            } => match suffix {
+                Some(NumberSuffix::U) | Some(NumberSuffix::UL) | Some(NumberSuffix::L) => {
+                    return Err(Error::new(
+                        ErrorKind::InvalidNumberSuffix(original_str.chars().last().unwrap()),
+                        self.span_location(&span),
+                    ));
+                }
+                Some(NumberSuffix::F) => Ok(TokenKind::Float(s.parse().unwrap())),
+                _ => {
+                    let num: f64 = s.parse().unwrap();
+                    Ok(TokenKind::Double(num))
+                }
+            },
             CursorNumberKind::Float { .. } => Err(Error::new(
                 ErrorKind::TrailingDotInNumber,
                 self.span_location(&span),
