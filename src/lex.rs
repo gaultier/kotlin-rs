@@ -822,8 +822,20 @@ impl Lexer {
     fn cursor_number_to_token_number(
         &self,
         kind: CursorNumberKind,
+        suffix: Option<NumberSuffix>,
         span: &Span,
     ) -> Result<TokenKind, Error> {
+        // Forbid invalid suffixes
+        match suffix {
+            Some(NumberSuffix::Invalid(c)) => {
+                return Err(Error::new(
+                    ErrorKind::InvalidNumberSuffix(c),
+                    self.span_location(&span),
+                ));
+            }
+            _ => {}
+        }
+
         let num_str = match kind {
             CursorNumberKind::Int {
                 base: NumberBase::Decimal,
@@ -861,14 +873,6 @@ impl Lexer {
                 ..
             } => Err(Error::new(
                 ErrorKind::OctalNumber,
-                self.span_location(&span),
-            )),
-            // Forbid invalid suffixes
-            CursorNumberKind::Int {
-                suffix: Some(NumberSuffix::Invalid(c)),
-                ..
-            } => Err(Error::new(
-                ErrorKind::InvalidNumberSuffix(c),
                 self.span_location(&span),
             )),
             CursorNumberKind::Int {
@@ -972,7 +976,9 @@ impl Lexer {
             CursorTokenKind::Percent => Ok(TokenKind::Percent),
             CursorTokenKind::Colon => Ok(TokenKind::Colon),
             CursorTokenKind::Dot => Ok(TokenKind::Dot),
-            CursorTokenKind::Number { kind, .. } => self.cursor_number_to_token_number(kind, &span),
+            CursorTokenKind::Number { kind, suffix } => {
+                self.cursor_number_to_token_number(kind, suffix, &span)
+            }
         }
     }
 
