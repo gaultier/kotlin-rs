@@ -836,6 +836,7 @@ impl Lexer {
             _ => {}
         }
 
+        // Remove prefix `0x`
         let num_str = match kind {
             CursorNumberKind::Int {
                 base: NumberBase::Decimal,
@@ -848,6 +849,7 @@ impl Lexer {
             _ => &self.src[span.start + 2..span.end],
         };
 
+        // Remove underscores
         if num_str.ends_with(&"_") {
             return Err(Error::new(
                 ErrorKind::TrailingUnderscoreInNumber,
@@ -855,6 +857,8 @@ impl Lexer {
             ));
         }
         let s = prepare_num_str_for_parsing(&num_str);
+
+        // Forbid empty string
         if s.is_empty() {
             return Err(Error::new(
                 ErrorKind::MissingDigitsInNumber,
