@@ -856,11 +856,18 @@ impl Lexer {
             } => {
                 debug!("num str={}", num_str);
                 // TODO: report error on number too big
-                let num = i64::from_str_radix(&s, 16).expect("Could not parse number");
-                if num <= std::i32::MAX as i64 {
-                    Ok(TokenKind::Int(num as i32))
-                } else {
-                    Ok(TokenKind::Long(num))
+                match suffix {
+                    Some(NumberSuffix::U) => {
+                        Ok(TokenKind::UInt(u32::from_str_radix(&s, 16).unwrap()))
+                    }
+                    _ => {
+                        let num = i64::from_str_radix(&s, 16).expect("Could not parse number");
+                        if num <= std::i32::MAX as i64 {
+                            Ok(TokenKind::Int(num as i32))
+                        } else {
+                            Ok(TokenKind::Long(num))
+                        }
+                    }
                 }
             }
             CursorNumberKind::Int {
