@@ -22,12 +22,6 @@ enum NumberSuffix {
     Invalid(char),
 }
 
-impl NumberSuffix {
-    fn from_str(s: &str) -> Result<Option<NumberSuffix>, Error> {
-        Ok(None)
-    }
-}
-
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenKind {
     Plus,
@@ -489,31 +483,6 @@ impl Cursor<'_> {
                     empty_exponent,
                 }
             }
-            'u' | 'U' if self.second() == 'L' => {
-                self.bump();
-                self.bump();
-                debug!("seen UL");
-                CursorNumberKind::Int {
-                    base,
-                    empty_int: false,
-                }
-            }
-            'u' | 'U' => {
-                self.bump();
-                debug!("seen U");
-                CursorNumberKind::Int {
-                    base,
-                    empty_int: false,
-                }
-            }
-            'L' => {
-                self.bump();
-                debug!("seen L");
-                CursorNumberKind::Int {
-                    base,
-                    empty_int: false,
-                }
-            }
             _ => CursorNumberKind::Int {
                 base,
                 empty_int: false,
@@ -722,6 +691,7 @@ impl Cursor<'_> {
 
     // Eats the suffix of the literal, e.g. "UL".
     fn eat_number_suffix(&mut self) -> Option<NumberSuffix> {
+        debug!("first=`{}`", self.first());
         match self.first() {
             'u' | 'U' if self.second() == 'L' => {
                 self.bump();
@@ -835,6 +805,7 @@ impl Lexer {
             }
             _ => {}
         }
+        debug!("num suffix: {:?}", suffix);
 
         // Remove prefix `0x`
         let num_str = match kind {
