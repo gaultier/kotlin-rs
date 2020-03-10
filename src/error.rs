@@ -1,4 +1,5 @@
 use crate::parse::Type;
+use log::debug;
 use std::fmt;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
@@ -73,6 +74,15 @@ impl Error {
     }
 
     pub fn eprint(&self, src: &str) {
+        debug!(
+            "error start_pos={} start_line={} start_col={} end_pos={} end_line={} end_col={}",
+            self.location.start_pos,
+            self.location.start_line,
+            self.location.start_column,
+            self.location.end_pos,
+            self.location.end_line,
+            self.location.end_column
+        );
         let mut stderr = StandardStream::stderr(ColorChoice::Always);
 
         eprintln!(
@@ -98,8 +108,14 @@ impl Error {
             .map(|i| i + 1)
             .unwrap_or(0);
 
-        let next_newline_index =
-            &src[self.location.end_pos..].find('\n').unwrap_or(src.len()) + self.location.end_pos;
+        let next_newline_index = &src[self.location.end_pos..]
+            .find('\n')
+            .unwrap_or(src.len() - self.location.end_pos)
+            + self.location.end_pos;
+        debug!(
+            "last_newline_index={} next_newline_index={}",
+            last_newline_index, next_newline_index
+        );
         eprintln!(" {}", &src[last_newline_index..next_newline_index]);
 
         stderr
