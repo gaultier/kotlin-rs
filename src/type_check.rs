@@ -2,65 +2,6 @@ use crate::error::*;
 use crate::lex::{Lexer, Token, TokenKind};
 use crate::parse::*;
 
-impl Type {
-    fn coalesce(left: Type, right: Type, token: &Token) -> Result<Type, Error> {
-        match (left, right) {
-            (Type::Bool, Type::Bool) => Ok(Type::Bool),
-            (Type::Int, Type::Int) => Ok(Type::Int),
-            (Type::UInt, Type::UInt) => Ok(Type::UInt),
-            (Type::Long, Type::Long) | (Type::Long, Type::Int) | (Type::Int, Type::Long) => {
-                Ok(Type::Long)
-            }
-            (Type::UInt, Type::ULong) | (Type::ULong, Type::UInt) | (Type::ULong, Type::ULong) => {
-                Ok(Type::ULong)
-            }
-            (Type::Float, Type::Float)
-            | (Type::Int, Type::Float)
-            | (Type::Float, Type::Int)
-            | (Type::Float, Type::Long)
-            | (Type::Long, Type::Float) => Ok(Type::Float),
-            (Type::Double, Type::Double)
-            | (Type::Int, Type::Double)
-            | (Type::Double, Type::Int)
-            | (Type::Double, Type::Long)
-            | (Type::Long, Type::Double)
-            | (Type::Double, Type::Float)
-            | (Type::Float, Type::Double) => Ok(Type::Double),
-            (Type::TString, Type::Null)
-            | (Type::Null, Type::TString)
-            | (Type::Null, Type::Null)
-            | (Type::TString, Type::TString)
-            | (Type::TString, Type::Int)
-            | (Type::Int, Type::TString)
-            | (Type::TString, Type::UInt)
-            | (Type::UInt, Type::TString)
-            | (Type::TString, Type::Long)
-            | (Type::Long, Type::TString)
-            | (Type::TString, Type::ULong)
-            | (Type::TString, Type::Float)
-            | (Type::Float, Type::TString)
-            | (Type::TString, Type::Double)
-            | (Type::Double, Type::TString)
-            | (Type::ULong, Type::TString)
-            | (Type::TString, Type::Char)
-            | (Type::Char, Type::TString)
-            // Asymetrical
-            | (Type::TString, Type::Bool)
-                if token.kind == TokenKind::Plus =>
-            {
-                Ok(Type::TString)
-            }
-            // Asymetrical
-            (Type::Char, Type::Int) if token.kind == TokenKind::Plus => Ok(Type::Char),
-            // Asymetrical
-            (Type::Char, Type::Int) if token.kind == TokenKind::Minus => Ok(Type::Char),
-            _ => Err(Error::new(
-                ErrorKind::IncompatibleTypes(left, right),
-                Location{start_pos:0, start_line:0, start_column:0,end_pos:0,end_line:0,end_column:0})), // FIXME
-        }
-    }
-}
-
 pub(crate) struct TypeChecker<'a> {
     lexer: &'a Lexer,
 }
@@ -193,7 +134,7 @@ impl TypeChecker<'_> {
                 kind: AstNodeExpr::Binary(left, tok, right),
                 ..
             } => {
-                let t = Type::coalesce(
+                let t = self.coalesce_types(
                     self.type_check_expr(left)?,
                     self.type_check_expr(right)?,
                     &tok,
@@ -202,6 +143,63 @@ impl TypeChecker<'_> {
                 Ok(t)
             }
             _ => unimplemented!(),
+        }
+    }
+
+    fn coalesce_types(&self, left: Type, right: Type, token: &Token) -> Result<Type, Error> {
+        match (left, right) {
+            (Type::Bool, Type::Bool) => Ok(Type::Bool),
+            (Type::Int, Type::Int) => Ok(Type::Int),
+            (Type::UInt, Type::UInt) => Ok(Type::UInt),
+            (Type::Long, Type::Long) | (Type::Long, Type::Int) | (Type::Int, Type::Long) => {
+                Ok(Type::Long)
+            }
+            (Type::UInt, Type::ULong) | (Type::ULong, Type::UInt) | (Type::ULong, Type::ULong) => {
+                Ok(Type::ULong)
+            }
+            (Type::Float, Type::Float)
+            | (Type::Int, Type::Float)
+            | (Type::Float, Type::Int)
+            | (Type::Float, Type::Long)
+            | (Type::Long, Type::Float) => Ok(Type::Float),
+            (Type::Double, Type::Double)
+            | (Type::Int, Type::Double)
+            | (Type::Double, Type::Int)
+            | (Type::Double, Type::Long)
+            | (Type::Long, Type::Double)
+            | (Type::Double, Type::Float)
+            | (Type::Float, Type::Double) => Ok(Type::Double),
+            (Type::TString, Type::Null)
+            | (Type::Null, Type::TString)
+            | (Type::Null, Type::Null)
+            | (Type::TString, Type::TString)
+            | (Type::TString, Type::Int)
+            | (Type::Int, Type::TString)
+            | (Type::TString, Type::UInt)
+            | (Type::UInt, Type::TString)
+            | (Type::TString, Type::Long)
+            | (Type::Long, Type::TString)
+            | (Type::TString, Type::ULong)
+            | (Type::TString, Type::Float)
+            | (Type::Float, Type::TString)
+            | (Type::TString, Type::Double)
+            | (Type::Double, Type::TString)
+            | (Type::ULong, Type::TString)
+            | (Type::TString, Type::Char)
+            | (Type::Char, Type::TString)
+            // Asymetrical
+            | (Type::TString, Type::Bool)
+                if token.kind == TokenKind::Plus =>
+            {
+                Ok(Type::TString)
+            }
+            // Asymetrical
+            (Type::Char, Type::Int) if token.kind == TokenKind::Plus => Ok(Type::Char),
+            // Asymetrical
+            (Type::Char, Type::Int) if token.kind == TokenKind::Minus => Ok(Type::Char),
+            _ => Err(Error::new(
+                ErrorKind::IncompatibleTypes(left, right),
+                self.lexer.span_location(&token.span))), // FIXME
         }
     }
 }
