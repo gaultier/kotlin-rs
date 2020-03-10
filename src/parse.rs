@@ -64,6 +64,7 @@ pub struct Parser<'a> {
 }
 
 impl Parser<'_> {
+    /// Skip over unsignificant tokens
     fn next_parse_token(&mut self) -> Result<Token, Error> {
         loop {
             let token = self.lexer.next_token()?;
