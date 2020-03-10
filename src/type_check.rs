@@ -1,5 +1,5 @@
 use crate::error::*;
-use crate::lex::{Token, TokenKind};
+use crate::lex::{Lexer, Token, TokenKind};
 use crate::parse::*;
 
 impl Type {
@@ -61,137 +61,147 @@ impl Type {
     }
 }
 
-pub fn type_check_stmts(statements: &mut Statements, src: &str) -> Result<(), Error> {
-    for mut stmt in statements {
-        let mut ast = match &mut stmt {
-            AstNodeStmt::Expr(expr, _) => expr,
-        };
-        type_check_expr(&mut ast, src).map(|_| ())?;
-    }
-    Ok(())
+pub(crate) struct TypeChecker<'a> {
+    lexer: &'a Lexer,
 }
 
-pub fn type_check_expr(ast: &mut AstNode, src: &str) -> Result<Type, Error> {
-    match ast {
-        AstNode {
-            kind:
-                AstNodeExpr::Literal(Token {
-                    kind: TokenKind::Int(_),
-                    ..
-                }),
-            ..
-        } => {
-            ast.type_info = Some(Type::Int);
-            Ok(Type::Int)
+impl TypeChecker<'_> {
+    pub fn new(lexer: &Lexer) -> TypeChecker {
+        TypeChecker { lexer }
+    }
+
+    pub fn type_check_stmts(&self, statements: &mut Statements) -> Result<(), Error> {
+        for mut stmt in statements {
+            let mut ast = match &mut stmt {
+                AstNodeStmt::Expr(expr, _) => expr,
+            };
+            self.type_check_expr(&mut ast).map(|_| ())?;
         }
-        AstNode {
-            kind:
-                AstNodeExpr::Literal(Token {
-                    kind: TokenKind::UInt(_),
-                    ..
-                }),
-            ..
-        } => {
-            ast.type_info = Some(Type::UInt);
-            Ok(Type::UInt)
+        Ok(())
+    }
+
+    pub fn type_check_expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
+        match ast {
+            AstNode {
+                kind:
+                    AstNodeExpr::Literal(Token {
+                        kind: TokenKind::Int(_),
+                        ..
+                    }),
+                ..
+            } => {
+                ast.type_info = Some(Type::Int);
+                Ok(Type::Int)
+            }
+            AstNode {
+                kind:
+                    AstNodeExpr::Literal(Token {
+                        kind: TokenKind::UInt(_),
+                        ..
+                    }),
+                ..
+            } => {
+                ast.type_info = Some(Type::UInt);
+                Ok(Type::UInt)
+            }
+            AstNode {
+                kind:
+                    AstNodeExpr::Literal(Token {
+                        kind: TokenKind::Long(_),
+                        ..
+                    }),
+                ..
+            } => {
+                ast.type_info = Some(Type::Long);
+                Ok(Type::Long)
+            }
+            AstNode {
+                kind:
+                    AstNodeExpr::Literal(Token {
+                        kind: TokenKind::ULong(_),
+                        ..
+                    }),
+                ..
+            } => {
+                ast.type_info = Some(Type::ULong);
+                Ok(Type::ULong)
+            }
+            AstNode {
+                kind:
+                    AstNodeExpr::Literal(Token {
+                        kind: TokenKind::Float(_),
+                        ..
+                    }),
+                ..
+            } => {
+                ast.type_info = Some(Type::Float);
+                Ok(Type::Float)
+            }
+            AstNode {
+                kind:
+                    AstNodeExpr::Literal(Token {
+                        kind: TokenKind::Double(_),
+                        ..
+                    }),
+                ..
+            } => {
+                ast.type_info = Some(Type::Double);
+                Ok(Type::Double)
+            }
+            AstNode {
+                kind:
+                    AstNodeExpr::Literal(Token {
+                        kind: TokenKind::Null,
+                        ..
+                    }),
+                ..
+            } => {
+                ast.type_info = Some(Type::Null);
+                Ok(Type::Null)
+            }
+            AstNode {
+                kind:
+                    AstNodeExpr::Literal(Token {
+                        kind: TokenKind::Bool(_),
+                        ..
+                    }),
+                ..
+            } => {
+                ast.type_info = Some(Type::Bool);
+                Ok(Type::Bool)
+            }
+            AstNode {
+                kind:
+                    AstNodeExpr::Literal(Token {
+                        kind: TokenKind::TString,
+                        ..
+                    }),
+                ..
+            } => {
+                ast.type_info = Some(Type::TString);
+                Ok(Type::TString)
+            }
+            AstNode {
+                kind: AstNodeExpr::Unary(_, right),
+                ..
+            } => {
+                let t = self.type_check_expr(right)?;
+                ast.type_info = Some(t);
+                Ok(t)
+            }
+            AstNode {
+                kind: AstNodeExpr::Binary(left, tok, right),
+                ..
+            } => {
+                let t = Type::coalesce(
+                    self.type_check_expr(left)?,
+                    self.type_check_expr(right)?,
+                    &tok,
+                )?;
+                ast.type_info = Some(t);
+                Ok(t)
+            }
+            _ => unimplemented!(),
         }
-        AstNode {
-            kind:
-                AstNodeExpr::Literal(Token {
-                    kind: TokenKind::Long(_),
-                    ..
-                }),
-            ..
-        } => {
-            ast.type_info = Some(Type::Long);
-            Ok(Type::Long)
-        }
-        AstNode {
-            kind:
-                AstNodeExpr::Literal(Token {
-                    kind: TokenKind::ULong(_),
-                    ..
-                }),
-            ..
-        } => {
-            ast.type_info = Some(Type::ULong);
-            Ok(Type::ULong)
-        }
-        AstNode {
-            kind:
-                AstNodeExpr::Literal(Token {
-                    kind: TokenKind::Float(_),
-                    ..
-                }),
-            ..
-        } => {
-            ast.type_info = Some(Type::Float);
-            Ok(Type::Float)
-        }
-        AstNode {
-            kind:
-                AstNodeExpr::Literal(Token {
-                    kind: TokenKind::Double(_),
-                    ..
-                }),
-            ..
-        } => {
-            ast.type_info = Some(Type::Double);
-            Ok(Type::Double)
-        }
-        AstNode {
-            kind:
-                AstNodeExpr::Literal(Token {
-                    kind: TokenKind::Null,
-                    ..
-                }),
-            ..
-        } => {
-            ast.type_info = Some(Type::Null);
-            Ok(Type::Null)
-        }
-        AstNode {
-            kind:
-                AstNodeExpr::Literal(Token {
-                    kind: TokenKind::Bool(_),
-                    ..
-                }),
-            ..
-        } => {
-            ast.type_info = Some(Type::Bool);
-            Ok(Type::Bool)
-        }
-        AstNode {
-            kind:
-                AstNodeExpr::Literal(Token {
-                    kind: TokenKind::TString,
-                    ..
-                }),
-            ..
-        } => {
-            ast.type_info = Some(Type::TString);
-            Ok(Type::TString)
-        }
-        AstNode {
-            kind: AstNodeExpr::Unary(_, right),
-            ..
-        } => {
-            let t = type_check_expr(right, src)?;
-            ast.type_info = Some(t);
-            Ok(t)
-        }
-        AstNode {
-            kind: AstNodeExpr::Binary(left, tok, right),
-            ..
-        } => {
-            let t = Type::coalesce(
-                type_check_expr(left, src)?,
-                type_check_expr(right, src)?,
-                &tok,
-            )?;
-            ast.type_info = Some(t);
-            Ok(t)
-        }
-        _ => unimplemented!(),
     }
 }

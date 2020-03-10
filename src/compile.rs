@@ -2,7 +2,7 @@ use crate::error::*;
 use crate::gen_js::gen_js_stmts;
 use crate::lex::Lexer;
 use crate::parse::Parser;
-use crate::type_check::type_check_stmts;
+use crate::type_check::TypeChecker;
 use std::io;
 
 pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
@@ -11,6 +11,7 @@ pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
     let mut parser = Parser::new(&mut lexer);
     let mut stmts = parser.parse()?;
 
-    type_check_stmts(&mut stmts, &cpy)?;
+    let type_checker = TypeChecker::new(&lexer);
+    type_checker.type_check_stmts(&mut stmts)?;
     gen_js_stmts(&stmts, &cpy, w)
 }
