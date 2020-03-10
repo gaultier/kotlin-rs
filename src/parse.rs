@@ -64,9 +64,22 @@ pub struct Parser<'a> {
 }
 
 impl Parser<'_> {
+    fn next_parse_token(&mut self) -> Result<Token, Error> {
+        loop {
+            let token = self.lexer.next_token()?;
+            match token.kind {
+                TokenKind::Whitespace | TokenKind::LineComment | TokenKind::BlockComment { .. } => {
+                }
+                _ => {
+                    return Ok(token);
+                }
+            }
+        }
+    }
+
     fn advance(&mut self) -> Result<(), Error> {
         self.previous = self.current.clone();
-        self.current = Some(self.lexer.next_token()?);
+        self.current = Some(self.next_parse_token()?);
         Ok(())
     }
 

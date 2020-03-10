@@ -914,14 +914,9 @@ impl Lexer {
         if self.pos >= self.src.len() {
             return Ok(Token::new(TokenKind::Eof, Span::new(self.pos, self.pos)));
         }
-        let (cursor_token, start) = loop {
-            let cursor_token = first_token(&self.src[self.pos..]);
-            let start = self.pos;
-            self.pos += cursor_token.len;
-            if cursor_token.kind != CursorTokenKind::Whitespace {
-                break (cursor_token, start);
-            }
-        };
+        let cursor_token = first_token(&self.src[self.pos..]);
+        let start = self.pos;
+        self.pos += cursor_token.len;
 
         debug!(
             "next_token: kind={:?} c={:?} start={} pos={}",
