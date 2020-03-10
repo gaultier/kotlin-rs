@@ -125,7 +125,11 @@ impl Error {
             .unwrap();
 
         let src_err = &src[self.location.start_pos..self.location.end_pos];
-        eprint!("{} {}", "^".repeat(src_err.chars().count()), self.kind);
+        eprint!(
+            "{} {}",
+            "^".repeat(std::cmp::max(1, src_err.chars().count())),
+            self.kind
+        );
 
         stderr
             .set_color(ColorSpec::new().set_fg(Some(Color::Blue)))
