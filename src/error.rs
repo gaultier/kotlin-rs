@@ -1,6 +1,6 @@
 use crate::parse::Type;
 use std::fmt;
-// use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Location {
@@ -67,84 +67,62 @@ pub struct Error {
     pub location: Location,
 }
 
-// #[derive(Debug, PartialEq, Clone)]
-// pub struct OwnedError<'a> {
-//     error: Error,
-//     pub src: &'a str,
-// }
-
-// impl OwnedError<'_> {
-//     pub fn eprint(&self) {
-//         let mut stderr = StandardStream::stderr(ColorChoice::Always);
-
-//         eprintln!(
-//             "{}:{}:{}",
-//             self.error.location.start_line, self.error.location.start_column, self.error.kind,
-//         );
-
-//         let line = format!("{}", self.error.location.start_line);
-//         let blank = " ".repeat(line.len());
-
-//         stderr
-//             .set_color(ColorSpec::new().set_fg(Some(Color::Blue)))
-//             .unwrap();
-
-//         eprintln!("{} |", blank);
-//         eprint!("{} |", self.error.location.start_line);
-//         stderr
-//             .set_color(ColorSpec::new().set_fg(Some(Color::White)))
-//             .unwrap();
-
-//         let last_newline_index = self.src[0..self.error.location.start_pos]
-//             .rfind('\n')
-//             .map(|i| i + 1)
-//             .unwrap_or(0);
-
-//         let next_newline_index = &self.src[self.error.location.end_pos..]
-//             .find('\n')
-//             .unwrap_or(self.src.len())
-//             + self.error.location.end_pos;
-//         eprintln!(" {}", &self.src[last_newline_index..next_newline_index]);
-
-//         stderr
-//             .set_color(ColorSpec::new().set_fg(Some(Color::Blue)))
-//             .unwrap();
-
-//         eprint!(
-//             "{} |{}",
-//             blank,
-//             " ".repeat(self.error.location.start_column)
-//         );
-
-//         stderr
-//             .set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))
-//             .unwrap();
-
-//         let src_err = &self.src[self.error.location.start_pos..self.error.location.end_pos];
-//         eprint!(
-//             "{} {}",
-//             "^".repeat(src_err.chars().count()),
-//             self.error.kind
-//         );
-
-//         stderr
-//             .set_color(ColorSpec::new().set_fg(Some(Color::Blue)))
-//             .unwrap();
-//         eprintln!();
-
-//         eprintln!("{} |", blank);
-//         stderr
-//             .set_color(ColorSpec::new().set_fg(Some(Color::White)))
-//             .unwrap();
-//     }
-// }
-
 impl Error {
     pub fn new(kind: ErrorKind, location: Location) -> Error {
         Error { kind, location }
     }
 
-    //     pub fn to_owned(self, src: &str) -> OwnedError {
-    //         OwnedError { error: self, src }
-    //     }
+    pub fn eprint(&self, src: &str) {
+        let mut stderr = StandardStream::stderr(ColorChoice::Always);
+
+        eprintln!(
+            "{}:{}:{}",
+            self.location.start_line, self.location.start_column, self.kind,
+        );
+
+        let line = format!("{}", self.location.start_line);
+        let blank = " ".repeat(line.len());
+
+        stderr
+            .set_color(ColorSpec::new().set_fg(Some(Color::Blue)))
+            .unwrap();
+
+        eprintln!("{} |", blank);
+        eprint!("{} |", self.location.start_line);
+        stderr
+            .set_color(ColorSpec::new().set_fg(Some(Color::White)))
+            .unwrap();
+
+        let last_newline_index = src[0..self.location.start_pos]
+            .rfind('\n')
+            .map(|i| i + 1)
+            .unwrap_or(0);
+
+        let next_newline_index =
+            &src[self.location.end_pos..].find('\n').unwrap_or(src.len()) + self.location.end_pos;
+        eprintln!(" {}", &src[last_newline_index..next_newline_index]);
+
+        stderr
+            .set_color(ColorSpec::new().set_fg(Some(Color::Blue)))
+            .unwrap();
+
+        eprint!("{} |{}", blank, " ".repeat(self.location.start_column));
+
+        stderr
+            .set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))
+            .unwrap();
+
+        let src_err = &src[self.location.start_pos..self.location.end_pos];
+        eprint!("{} {}", "^".repeat(src_err.chars().count()), self.kind);
+
+        stderr
+            .set_color(ColorSpec::new().set_fg(Some(Color::Blue)))
+            .unwrap();
+        eprintln!();
+
+        eprintln!("{} |", blank);
+        stderr
+            .set_color(ColorSpec::new().set_fg(Some(Color::White)))
+            .unwrap();
+    }
 }
