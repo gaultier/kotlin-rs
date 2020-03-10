@@ -1,5 +1,5 @@
 use crate::error::*;
-use crate::gen_js::gen_js_stmts;
+use crate::gen_js::JsEmitter;
 use crate::lex::Lexer;
 use crate::parse::Parser;
 use crate::type_check::TypeChecker;
@@ -13,5 +13,7 @@ pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
 
     let type_checker = TypeChecker::new(&lexer);
     type_checker.type_check_stmts(&mut stmts)?;
-    gen_js_stmts(&stmts, &cpy, w)
+
+    let js_emitter = JsEmitter::new(&lexer);
+    js_emitter.stmts(&stmts, w)
 }

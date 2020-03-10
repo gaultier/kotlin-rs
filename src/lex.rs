@@ -751,7 +751,7 @@ impl Cursor<'_> {
 
 #[derive(Debug)]
 pub struct Lexer {
-    src: String,
+    pub(crate) src: String,
     pos: usize,
     // Index of each line, 0 based
     lines: Vec<usize>,
