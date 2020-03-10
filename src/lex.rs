@@ -148,6 +148,8 @@ pub enum TokenKind {
     KeywordWhere,
     Identifier,
     Whitespace,
+    LineComment,
+    BlockComment { terminated: bool },
     Eof,
 }
 
@@ -189,6 +191,10 @@ enum CursorTokenKind {
     Colon,
     Comma,
     Dot,
+    LineComment,
+    BlockComment {
+        terminated: bool,
+    },
     Unknown,
 }
 
@@ -198,41 +204,7 @@ struct CursorToken {
     pub len: usize,
 }
 
-// #[derive(Debug, PartialEq, Clone)]
-// pub struct OwnedToken<'a> {
-//     pub token: &'a Token,
-//     pub src: &'a str,
-// }
-
-// impl<'a> fmt::Display for OwnedToken<'a> {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(
-//             f,
-//             "{:?}",
-//             self.token.kind,
-//         )
-//     }
-// }
-
 impl CursorToken {
-    // pub fn num_type(&self) -> NumberType {
-    //     match self {
-    //         Token {
-    //             kind: TokenKind::Float(_),
-    //             ..
-    //         }
-    //         | Token {
-    //             kind: TokenKind::Double(_),
-    //             ..
-    //         } => NumberType::Real,
-    //         _ => NumberType::Integer,
-    //     }
-    // }
-
-    // pub fn to_owned<'a>(&'a self, src: &'a str) -> OwnedToken<'a> {
-    //     OwnedToken { token: &self, src }
-    // }
-
     pub fn new(kind: CursorTokenKind, len: usize) -> CursorToken {
         CursorToken { kind, len }
     }
@@ -296,11 +268,11 @@ impl Cursor<'_> {
         let first_char = self.bump().unwrap();
         let token_kind = match first_char {
             // Slash, comment or block comment.
-            // '/' => match self.first() {
-            //     '/' => self.line_comment(),
-            //     '*' => self.block_comment(),
-            //     _ => CursorTokenKind::Slash,
-            // },
+            '/' => match self.first() {
+                '/' => self.line_comment(),
+                '*' => self.block_comment(),
+                _ => CursorTokenKind::Slash,
+            },
             '\n' => CursorTokenKind::Newline,
             // Whitespace sequence.
             c if is_whitespace(c) => self.whitespace(),
@@ -365,41 +337,41 @@ impl Cursor<'_> {
         CursorToken::new(token_kind, self.len_consumed())
     }
 
-    // fn line_comment(&mut self) -> TokenKind {
-    //     debug_assert!(self.prev() == '/' && self.first() == '/');
-    //     self.bump();
-    //     self.eat_while(|c| c != '\n');
-    //     LineComment
-    // }
+    fn line_comment(&mut self) -> CursorTokenKind {
+        debug_assert!(self.prev() == '/' && self.first() == '/');
+        self.bump();
+        self.eat_while(|c| c != '\n');
+        CursorTokenKind::LineComment
+    }
 
-    // fn block_comment(&mut self) -> TokenKind {
-    //     debug_assert!(self.prev() == '/' && self.first() == '*');
-    //     self.bump();
-    //     let mut depth = 1usize;
-    //     while let Some(c) = self.bump() {
-    //         match c {
-    //             '/' if self.first() == '*' => {
-    //                 self.bump();
-    //                 depth += 1;
-    //             }
-    //             '*' if self.first() == '/' => {
-    //                 self.bump();
-    //                 depth -= 1;
-    //                 if depth == 0 {
-    //                     // This block comment is closed, so for a construction like "/* */ */"
-    //                     // there will be a successfully parsed block comment "/* */"
-    //                     // and " */" will be processed separately.
-    //                     break;
-    //                 }
-    //             }
-    //             _ => (),
-    //         }
-    //     }
+    fn block_comment(&mut self) -> CursorTokenKind {
+        debug_assert!(self.prev() == '/' && self.first() == '*');
+        self.bump();
+        let mut depth = 1usize;
+        while let Some(c) = self.bump() {
+            match c {
+                '/' if self.first() == '*' => {
+                    self.bump();
+                    depth += 1;
+                }
+                '*' if self.first() == '/' => {
+                    self.bump();
+                    depth -= 1;
+                    if depth == 0 {
+                        // This block comment is closed, so for a construction like "/* */ */"
+                        // there will be a successfully parsed block comment "/* */"
+                        // and " */" will be processed separately.
+                        break;
+                    }
+                }
+                _ => (),
+            }
+        }
 
-    //     BlockComment {
-    //         terminated: depth == 0,
-    //     }
-    // }
+        CursorTokenKind::BlockComment {
+            terminated: depth == 0,
+        }
+    }
 
     fn whitespace(&mut self) -> CursorTokenKind {
         debug_assert!(is_whitespace(self.prev()));
@@ -803,6 +775,10 @@ impl Lexer {
                 ErrorKind::UnknownChar,
                 self.span_location(&span),
             )),
+            CursorTokenKind::LineComment => Ok(TokenKind::LineComment),
+            CursorTokenKind::BlockComment { terminated } => {
+                Ok(TokenKind::BlockComment { terminated })
+            }
             CursorTokenKind::Plus => Ok(TokenKind::Plus),
             CursorTokenKind::PlusPlus => Ok(TokenKind::PlusPlus),
             CursorTokenKind::Minus => Ok(TokenKind::Minus),
