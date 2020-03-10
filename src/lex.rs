@@ -240,7 +240,6 @@ impl CursorToken {
 
 /// Parses the first token from the provided input string.
 fn first_token(input: &str) -> CursorToken {
-    dbg!(&input);
     debug_assert!(!input.is_empty());
     Cursor::new(input).advance_token()
 }

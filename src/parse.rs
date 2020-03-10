@@ -1,5 +1,6 @@
 use crate::error::*;
 use crate::lex::*;
+use log::debug;
 use std::fmt;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -174,10 +175,13 @@ impl Parser<'_> {
                 self.advance()?;
                 Ok(AstNodeStmt::Expr(expr, previous))
             }
-            _ => Err(Error::new(
-                ErrorKind::UnterminatedStatement,
-                self.lexer.span_location(&previous.span),
-            )),
+            _ => {
+                debug!("got: {:?}", previous.kind);
+                Err(Error::new(
+                    ErrorKind::UnterminatedStatement,
+                    self.lexer.span_location(&previous.span),
+                ))
+            }
         }
     }
 

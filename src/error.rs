@@ -112,10 +112,6 @@ impl Error {
             .find('\n')
             .unwrap_or(src.len() - self.location.end_pos)
             + self.location.end_pos;
-        debug!(
-            "last_newline_index={} next_newline_index={}",
-            last_newline_index, next_newline_index
-        );
         eprintln!(" {}", &src[last_newline_index..next_newline_index]);
 
         stderr
