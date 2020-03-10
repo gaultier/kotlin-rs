@@ -895,6 +895,12 @@ impl Lexer {
                 Some(NumberSuffix::U) => Ok(TokenKind::UInt(u32::from_str_radix(&s, 2).unwrap())),
                 Some(NumberSuffix::UL) => Ok(TokenKind::ULong(u64::from_str_radix(&s, 2).unwrap())),
                 Some(NumberSuffix::L) => Ok(TokenKind::Long(i64::from_str_radix(&s, 2).unwrap())),
+                Some(NumberSuffix::F) => {
+                    return Err(Error::new(
+                        ErrorKind::InvalidNumberSuffix('f'),
+                        self.span_location(&span),
+                    ));
+                }
                 _ => {
                     let num = i64::from_str_radix(&s, 2).expect("Could not parse number");
                     if num <= std::i32::MAX as i64 {
