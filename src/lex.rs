@@ -806,9 +806,9 @@ impl Lexer {
     ) -> Result<TokenKind, Error> {
         // Forbid invalid suffixes
         match suffix {
-            Some(NumberSuffix::Invalid(c)) => {
+            Some(NumberSuffix::Invalid(suffix)) => {
                 return Err(Error::new(
-                    ErrorKind::InvalidNumberSuffix(c),
+                    ErrorKind::InvalidNumberSuffix(suffix.to_string()),
                     self.span_location(&span),
                 ));
             }
@@ -828,9 +828,11 @@ impl Lexer {
             } => &self.src[span.start..span.start + suffix_start],
             _ => &self.src[span.start + 2..span.start + suffix_start],
         };
+
+        let suffix_str = &original_str[suffix_start..];
         debug!(
-            "num_str=`{}` suffix={:?} suffix_start={}",
-            num_str, suffix, suffix_start
+            "original_str=`{}` num_str=`{}` suffix={:?} suffix_start={} suffix_str=`{}`",
+            original_str, num_str, suffix, suffix_start, suffix_str
         );
 
         // Remove underscores
@@ -897,7 +899,7 @@ impl Lexer {
                 Some(NumberSuffix::L) => Ok(TokenKind::Long(i64::from_str_radix(&s, 2).unwrap())),
                 Some(NumberSuffix::F) => {
                     return Err(Error::new(
-                        ErrorKind::InvalidNumberSuffix(original_str.chars().last().unwrap()),
+                        ErrorKind::InvalidNumberSuffix(suffix_str.to_string()),
                         self.span_location(&span),
                     ));
                 }
@@ -950,7 +952,7 @@ impl Lexer {
             } => match suffix {
                 Some(NumberSuffix::U) | Some(NumberSuffix::UL) | Some(NumberSuffix::L) => {
                     return Err(Error::new(
-                        ErrorKind::InvalidNumberSuffix(original_str.chars().last().unwrap()),
+                        ErrorKind::InvalidNumberSuffix(suffix_str.to_string()),
                         self.span_location(&span),
                     ));
                 }
@@ -2622,7 +2624,7 @@ mod tests {
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, ErrorKind::InvalidNumberSuffix('L'));
+        assert_eq!(tok.kind, ErrorKind::InvalidNumberSuffix("L".to_string()));
         assert_eq!(tok.location.start_pos, 0);
         assert_eq!(tok.location.end_pos, 5);
     }
@@ -2635,9 +2637,22 @@ mod tests {
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, ErrorKind::InvalidNumberSuffix('u'));
+        assert_eq!(tok.kind, ErrorKind::InvalidNumberSuffix("u".to_string()));
         assert_eq!(tok.location.start_pos, 0);
         assert_eq!(tok.location.end_pos, 5);
+    }
+
+    #[test]
+    fn real_number_with_suffix_ul() {
+        let s = String::from("1.23uL");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, ErrorKind::InvalidNumberSuffix("uL".to_string()));
+        assert_eq!(tok.location.start_pos, 0);
+        assert_eq!(tok.location.end_pos, 6);
     }
 
     #[test]
@@ -2648,7 +2663,7 @@ mod tests {
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, ErrorKind::InvalidNumberSuffix('F'));
+        assert_eq!(tok.kind, ErrorKind::InvalidNumberSuffix("F".to_string()));
         assert_eq!(tok.location.start_pos, 0);
         assert_eq!(tok.location.end_pos, 6);
     }
