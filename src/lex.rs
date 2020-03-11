@@ -2601,96 +2601,57 @@ mod tests {
         assert_eq!(tok.span.end, 3);
     }
 
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_err(), true);
-    //         let tok = tok.as_ref().unwrap_err();
-    //         assert_eq!(tok.kind, ErrorKind::LeadingZeroInNumber);
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 4);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 8);
+    #[test]
+    fn float() {
+        let s = String::from("10F");
+        let mut lexer = Lexer::new(s);
 
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_err(), true);
-    //         let tok = tok.as_ref().unwrap_err();
-    //         assert_eq!(tok.kind, ErrorKind::LeadingZeroInNumber);
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 9);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 14);
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Float(10f32));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 3);
+    }
 
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::UInt(0u32));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 15);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 17);
-    //     }
+    #[test]
+    fn real_number_with_suffix_l() {
+        let s = String::from("1.23L");
+        let mut lexer = Lexer::new(s);
 
-    //     #[test]
-    //     fn uint() {
-    //         let s = " 123U  456u";
-    //         let mut lexer = Lexer::new(&s);
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, ErrorKind::InvalidNumberSuffix('L'));
+        assert_eq!(tok.location.start_pos, 0);
+        assert_eq!(tok.location.end_pos, 5);
+    }
 
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::UInt(123u32));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 2);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 6);
+    #[test]
+    fn real_number_with_suffix_u() {
+        let s = String::from("1.23u");
+        let mut lexer = Lexer::new(s);
 
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::UInt(456u32));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 8);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 12);
-    //     }
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, ErrorKind::InvalidNumberSuffix('u'));
+        assert_eq!(tok.location.start_pos, 0);
+        assert_eq!(tok.location.end_pos, 5);
+    }
 
-    //     #[test]
-    //     fn ulong() {
-    //         let s = " 123UL  456uL";
-    //         let mut lexer = Lexer::new(&s);
+    #[test]
+    fn bin_number_with_suffix_f() {
+        let s = String::from("0b101F");
+        let mut lexer = Lexer::new(s);
 
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::ULong(123u64));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 2);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 7);
-
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::ULong(456u64));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 9);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 14);
-    //     }
-
-    //     #[test]
-    //     fn long() {
-    //         let s = " 123L  ";
-    //         let mut lexer = Lexer::new(&s);
-    //         let tok = lexer.lex();
-
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::Long(123i64));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 2);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 6);
-    //     }
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, ErrorKind::InvalidNumberSuffix('F'));
+        assert_eq!(tok.location.start_pos, 0);
+        assert_eq!(tok.location.end_pos, 6);
+    }
 
     #[test]
     fn bin_number() {
