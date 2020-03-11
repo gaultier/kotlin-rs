@@ -2951,6 +2951,12 @@ mod tests {
         assert_eq!(tok.kind, TokenKind::Int(1));
         assert_eq!(tok.span.start, 9);
         assert_eq!(tok.span.end, 10);
+
+        let location = lexer.span_location(&tok.span);
+        assert_eq!(location.start_line, 2);
+        assert_eq!(location.start_column, 1);
+        assert_eq!(location.end_line, 2);
+        assert_eq!(location.end_column, 2);
     }
     //     #[test]
     //     fn float() {
