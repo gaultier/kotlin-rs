@@ -908,12 +908,10 @@ impl Lexer {
                 Some(NumberSuffix::U) => Ok(TokenKind::UInt(u32::from_str_radix(&s, 2).unwrap())),
                 Some(NumberSuffix::UL) => Ok(TokenKind::ULong(u64::from_str_radix(&s, 2).unwrap())),
                 Some(NumberSuffix::L) => Ok(TokenKind::Long(i64::from_str_radix(&s, 2).unwrap())),
-                Some(NumberSuffix::F) => {
-                    return Err(Error::new(
-                        ErrorKind::InvalidNumberSuffix(suffix_str.to_string()),
-                        self.span_location(&span),
-                    ));
-                }
+                Some(NumberSuffix::F) => Err(Error::new(
+                    ErrorKind::InvalidNumberSuffix(suffix_str.to_string()),
+                    self.span_location(&span),
+                )),
                 _ => {
                     let num = i64::from_str_radix(&s, 2).expect("Could not parse number");
                     if num <= std::i32::MAX as i64 {
@@ -962,10 +960,10 @@ impl Lexer {
                 ..
             } => match suffix {
                 Some(NumberSuffix::U) | Some(NumberSuffix::UL) | Some(NumberSuffix::L) => {
-                    return Err(Error::new(
+                    Err(Error::new(
                         ErrorKind::InvalidNumberSuffix(suffix_str.to_string()),
                         self.span_location(&span),
-                    ));
+                    ))
                 }
                 Some(NumberSuffix::F) => Ok(TokenKind::Float(s.parse().unwrap())),
                 _ => {
