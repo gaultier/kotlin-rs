@@ -2896,6 +2896,26 @@ mod tests {
         assert_eq!(tok.span.start, 0);
         assert_eq!(tok.span.end, 2);
     }
+
+    #[test]
+    fn dot_not_followed_by_digit() {
+        let s = String::from(".@");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Dot);
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 1);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::At);
+        assert_eq!(tok.span.start, 1);
+        assert_eq!(tok.span.end, 2);
+    }
     //     #[test]
     //     fn float() {
     //         let s = " 123f 456F 0f 0.0f .1f 2. ";
