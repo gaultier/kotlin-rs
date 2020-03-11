@@ -296,7 +296,6 @@ impl Cursor<'_> {
                 let kind = self.number(first_char);
                 let suffix_start = self.len_consumed();
                 let suffix = self.eat_number_suffix();
-                debug!("num kind={:?} suffix={:?}", kind, suffix);
                 CursorTokenKind::Number {
                     kind,
                     suffix,
