@@ -2925,6 +2925,33 @@ mod tests {
         assert_eq!(tok.span.start, 1);
         assert_eq!(tok.span.end, 2);
     }
+
+    #[test]
+    fn line_comment() {
+        let s = String::from("// hello\n1");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::LineComment);
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 8);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Newline);
+        assert_eq!(tok.span.start, 8);
+        assert_eq!(tok.span.end, 9);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Int(1));
+        assert_eq!(tok.span.start, 9);
+        assert_eq!(tok.span.end, 10);
+    }
     //     #[test]
     //     fn float() {
     //         let s = " 123f 456F 0f 0.0f .1f 2. ";
