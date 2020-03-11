@@ -79,7 +79,7 @@ impl Parser<'_> {
     }
 
     fn advance(&mut self) -> Result<(), Error> {
-        self.previous = self.current.clone();
+        self.previous = self.current;
         self.current = Some(self.next_parse_token()?);
         Ok(())
     }

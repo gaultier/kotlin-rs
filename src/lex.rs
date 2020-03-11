@@ -927,7 +927,7 @@ impl Lexer {
                 base: NumberBase::Decimal,
                 ..
             } => {
-                if s.len() > 1 && s.starts_with("0") {
+                if s.len() > 1 && s.starts_with('0') {
                     return Err(Error::new(
                         ErrorKind::LeadingZeroInNumber,
                         self.span_location(&span),

@@ -112,7 +112,7 @@ impl Error {
             .map(|i| i + 1)
             .unwrap_or(0);
 
-        let next_newline_index = &src[self.location.end_pos..]
+        let next_newline_index = src[self.location.end_pos..]
             .find('\n')
             .unwrap_or(src.len() - self.location.end_pos)
             + self.location.end_pos;
