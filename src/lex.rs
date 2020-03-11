@@ -290,10 +290,10 @@ impl Cursor<'_> {
             // Identifier (this should be checked after other variant that can
             // start as identifier).
             // c if is_id_start(c) => self.ident(),
-
+            '.' if !self.first().is_ascii_digit() => CursorTokenKind::Dot,
             // Numeric literal.
-            c @ '0'..='9' => {
-                let kind = self.number(c);
+            '0'..='9' | '.' => {
+                let kind = self.number(first_char);
                 let suffix_start = self.len_consumed();
                 let suffix = self.eat_number_suffix();
                 debug!("num kind={:?} suffix={:?}", kind, suffix);
@@ -307,7 +307,6 @@ impl Cursor<'_> {
             // One-symbol tokens.
             ';' => CursorTokenKind::Semicolon,
             ',' => CursorTokenKind::Comma,
-            '.' => CursorTokenKind::Dot,
             // '(' => CursorTokenKind::OpenParen,
             // ')' => CursorTokenKind::CloseParen,
             // '{' => CursorTokenKind::OpenBrace,
@@ -410,7 +409,7 @@ impl Cursor<'_> {
     // }
 
     fn number(&mut self, first_digit: char) -> CursorNumberKind {
-        debug_assert!('0' <= self.prev() && self.prev() <= '9');
+        debug_assert!(self.prev() == '.' || ('0' <= self.prev() && self.prev() <= '9'));
         let mut base = NumberBase::Decimal;
         if first_digit == '0' {
             // Attempt to parse encoding base.
@@ -451,6 +450,22 @@ impl Cursor<'_> {
                     empty_int: true,
                 };
             }
+        } else if first_digit == '.' {
+            let mut empty_exponent = false;
+            if self.first().is_digit(10) {
+                self.eat_decimal_digits();
+                match self.first() {
+                    'e' | 'E' => {
+                        self.bump();
+                        empty_exponent = !self.eat_float_exponent();
+                    }
+                    _ => (),
+                }
+            }
+            return CursorNumberKind::Float {
+                base,
+                empty_exponent,
+            };
         } else {
             // No base prefix, parse number in the usual way.
             self.eat_decimal_digits();
@@ -2870,6 +2885,18 @@ mod tests {
         assert_eq!(tok.span.end, 10);
     }
 
+    #[test]
+    fn double_starting_with_dot() {
+        let s = String::from(".1");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Double(0.1));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 2);
+    }
     //     #[test]
     //     fn float() {
     //         let s = " 123f 456F 0f 0.0f .1f 2. ";
