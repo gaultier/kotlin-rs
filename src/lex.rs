@@ -2844,6 +2844,32 @@ mod tests {
         assert_eq!(tok.span.end, 9);
     }
 
+    #[test]
+    fn double_exp_2() {
+        let s = String::from("123.456e+2");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Double(12345.6));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 10);
+    }
+
+    #[test]
+    fn double_exp_3() {
+        let s = String::from("123.456e-2");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Double(1.23456));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 10);
+    }
+
     //     #[test]
     //     fn float() {
     //         let s = " 123f 456F 0f 0.0f .1f 2. ";
@@ -2902,57 +2928,6 @@ mod tests {
     //         assert_eq!(tok.location.start_column, 24);
     //         assert_eq!(tok.location.end_line, 1);
     //         assert_eq!(tok.location.end_column, 26);
-    //     }
-
-    //     #[test]
-    //     fn double() {
-    //         let s = " 123.0 456.0 0.0 .1 2.";
-    //         let mut lexer = Lexer::new(&s);
-
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::Double(123f64));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 2);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 7);
-
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::Double(456f64));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 8);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 13);
-
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::Double(0f64));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 14);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 17);
-
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::Double(0.1f64));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 18);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 20);
-
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_err(), true);
-    //         let tok = tok.as_ref().unwrap_err();
-    //         assert_eq!(tok.kind, ErrorKind::TrailingDotInNumber);
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 21);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 23);
     //     }
 
     //     #[test]
