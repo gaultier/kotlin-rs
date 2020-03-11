@@ -177,19 +177,17 @@ impl JsEmitter<'_> {
                 kind: AstNodeExpr::Binary(left, tok, right),
                 ..
             } => {
-                match (left.type_info, right.type_info) {
-                    (Some(Type::Null), Some(Type::Null)) => {
-                        if ast.type_info == Some(Type::TString) {
-                            write!(w, "\"\"+").map_err(|err| {
-                                Error::new(
-                                    ErrorKind::EmitError(err.to_string()),
-                                    self.lexer.span_location(&tok.span),
-                                )
-                            })?;
-                        }
+                if let (Some(Type::Null), Some(Type::Null)) = (left.type_info, right.type_info) {
+                    if ast.type_info == Some(Type::TString) {
+                        write!(w, "\"\"+").map_err(|err| {
+                            Error::new(
+                                ErrorKind::EmitError(err.to_string()),
+                                self.lexer.span_location(&tok.span),
+                            )
+                        })?;
                     }
-                    _ => {}
                 }
+
                 self.expr(left, w)?;
                 write!(w, "{}", &self.lexer.src[tok.span.start..tok.span.end]).map_err(|err| {
                     Error::new(
