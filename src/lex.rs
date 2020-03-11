@@ -2736,39 +2736,6 @@ mod tests {
         assert_eq!(tok.span.end, 6);
     }
 
-    //     #[test]
-    //     fn bin_number_with_suffixes() {
-    //         let s = " 0b101uL 0B1L 0b11U";
-    //         let mut lexer = Lexer::new(&s);
-
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::ULong(5));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 2);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 9);
-
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::Long(0b1));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 10);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 14);
-
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::UInt(0b11));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 15);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 20);
-    //     }
-
     #[test]
     fn bin_number_missing_digits() {
         let s = String::from("0b");
@@ -2810,6 +2777,45 @@ mod tests {
         assert_eq!(tok.kind, TokenKind::Long(0xdeadbeef));
         assert_eq!(tok.span.start, 0);
         assert_eq!(tok.span.end, 10);
+    }
+
+    #[test]
+    fn hex_number_with_suffix_l() {
+        let s = String::from("0XdeadL");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Long(0xdead));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 7);
+    }
+
+    #[test]
+    fn hex_number_with_suffix_u() {
+        let s = String::from("0Xdeadu");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::UInt(0xdead));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 7);
+    }
+
+    #[test]
+    fn hex_number_with_suffix_ul() {
+        let s = String::from("0XdeaduL");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::ULong(0xdead));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 8);
     }
 
     #[test]
