@@ -166,7 +166,6 @@ pub enum TokenKind {
 enum CursorNumberKind {
     Int {
         base: NumberBase,
-        empty_int: bool,
     },
     Float {
         base: NumberBase,
@@ -434,20 +433,12 @@ impl Cursor<'_> {
                     true
                 }
                 // Just a 0.
-                _ => {
-                    return CursorNumberKind::Int {
-                        base,
-                        empty_int: false,
-                    }
-                }
+                _ => return CursorNumberKind::Int { base },
             };
             // NumberBase prefix was provided, but there were no digits
             // after it, e.g. "0x".
             if !has_digits {
-                return CursorNumberKind::Int {
-                    base,
-                    empty_int: true,
-                };
+                return CursorNumberKind::Int { base };
             }
         } else if first_digit == '.' {
             let mut empty_exponent = false;
@@ -502,10 +493,7 @@ impl Cursor<'_> {
                     empty_exponent,
                 }
             }
-            _ => CursorNumberKind::Int {
-                base,
-                empty_int: false,
-            },
+            _ => CursorNumberKind::Int { base },
         }
     }
 
