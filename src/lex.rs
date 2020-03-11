@@ -220,9 +220,9 @@ impl CursorToken {
 }
 
 /// Parses the first token from the provided input string.
-fn first_token(input: &str) -> CursorToken {
+fn first_token(input: &str, lines: &mut Vec<usize>, start_pos: usize) -> CursorToken {
     debug_assert!(!input.is_empty());
-    Cursor::new(input).advance_token()
+    Cursor::new(input).advance_token(lines, start_pos)
 }
 
 /// True if `c` is considered a whitespace according to Rust language definition.
@@ -273,13 +273,13 @@ fn prepare_num_str_for_parsing(s: &str) -> String {
 
 impl Cursor<'_> {
     /// Parses a token from the input string.
-    fn advance_token(&mut self) -> CursorToken {
+    fn advance_token(&mut self, lines: &mut Vec<usize>, start_pos: usize) -> CursorToken {
         let first_char = self.bump().unwrap();
         let token_kind = match first_char {
             // Slash, comment or block comment.
             '/' => match self.first() {
                 '/' => self.line_comment(),
-                '*' => self.block_comment(),
+                '*' => self.block_comment(lines, start_pos),
                 _ => CursorTokenKind::Slash,
             },
             '\n' => CursorTokenKind::Newline,
@@ -355,17 +355,22 @@ impl Cursor<'_> {
         CursorTokenKind::LineComment
     }
 
-    fn block_comment(&mut self) -> CursorTokenKind {
+    fn block_comment(&mut self, lines: &mut Vec<usize>, start_pos: usize) -> CursorTokenKind {
         debug_assert!(self.prev() == '/' && self.first() == '*');
+        let mut eaten: usize = 1;
         self.bump();
+        eaten += 1;
         let mut depth = 1usize;
         while let Some(c) = self.bump() {
+            eaten += 1;
             match c {
                 '/' if self.first() == '*' => {
+                    eaten += 1;
                     self.bump();
                     depth += 1;
                 }
                 '*' if self.first() == '/' => {
+                    eaten += 1;
                     self.bump();
                     depth -= 1;
                     if depth == 0 {
@@ -375,7 +380,15 @@ impl Cursor<'_> {
                         break;
                     }
                 }
-                '\n' => {}
+                '\n' => {
+                    debug!(
+                        "new line inside block comment at start_pos={} eaten={} pos={}",
+                        start_pos,
+                        eaten,
+                        start_pos + eaten
+                    );
+                    lines.push(start_pos + eaten);
+                }
                 _ => (),
             }
         }
@@ -1026,7 +1039,7 @@ impl Lexer {
         if self.pos >= self.src.len() {
             return Ok(Token::new(TokenKind::Eof, Span::new(self.pos, self.pos)));
         }
-        let cursor_token = first_token(&self.src[self.pos..]);
+        let cursor_token = first_token(&self.src[self.pos..], &mut self.lines, self.pos);
         let start = self.pos;
         self.pos += cursor_token.len;
 
@@ -1083,29 +1096,6 @@ impl Lexer {
         }
     }
 }
-
-//     fn expect(
-//         &mut self,
-//         c: char,
-//         start_pos: usize,
-//         start_line: usize,
-//         start_column: usize,
-//     ) -> Result<(), Error> {
-//         if self.peek() == Some(c) {
-//             self.advance();
-//             Ok(())
-//         } else {
-//             Err(Error::new(
-//                 ErrorKind::UnexpectedChar(c),
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//                 self.pos as usize,
-//                 self.line as usize,
-//                 self.column as usize,
-//             ))
-//         }
-//     }
 
 //     fn string(
 //         &mut self,
@@ -2958,10 +2948,10 @@ mod tests {
         assert_eq!(tok.span.end, 15);
 
         let location = lexer.span_location(&tok.span);
-        // assert_eq!(location.start_line, 2);
-        // assert_eq!(location.start_column, 5);
-        // assert_eq!(location.end_line, 2);
-        // assert_eq!(location.end_column, 6);
+        assert_eq!(location.start_line, 2);
+        assert_eq!(location.start_column, 6);
+        assert_eq!(location.end_line, 2);
+        assert_eq!(location.end_column, 7);
     }
 
     //     #[test]
