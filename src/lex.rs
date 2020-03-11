@@ -456,8 +456,6 @@ impl Cursor<'_> {
             self.eat_decimal_digits();
         };
 
-        debug!("first={}", self.first());
-
         match self.first() {
             // Don't be greedy if this is actually an
             // integer literal followed by field/method access or a range pattern
@@ -698,7 +696,6 @@ impl Cursor<'_> {
 
     // Eats the suffix of the literal, e.g. "UL".
     fn eat_number_suffix(&mut self) -> Option<NumberSuffix> {
-        debug!("first=`{}`", self.first());
         match self.first() {
             'u' | 'U' if self.second() == 'L' => {
                 self.bump();
@@ -817,7 +814,6 @@ impl Lexer {
             }
             _ => {}
         }
-        debug!("num suffix={:?} suffix_start={}", suffix, suffix_start);
         let original_str = &self.src[span.start..span.end];
 
         // Remove prefix e.g `0x` and suffix e.g `UL`
@@ -832,6 +828,10 @@ impl Lexer {
             } => &self.src[span.start..span.start + suffix_start],
             _ => &self.src[span.start + 2..span.start + suffix_start],
         };
+        debug!(
+            "num_str=`{}` suffix={:?} suffix_start={}",
+            num_str, suffix, suffix_start
+        );
 
         // Remove underscores
         if num_str.ends_with(&"_") {
@@ -867,7 +867,6 @@ impl Lexer {
                 base: NumberBase::Hexadecimal,
                 ..
             } => {
-                debug!("num str={}", num_str);
                 // TODO: report error on number too big
                 match suffix {
                     Some(NumberSuffix::U) => {
@@ -915,7 +914,6 @@ impl Lexer {
                 base: NumberBase::Decimal,
                 ..
             } => {
-                debug!("num str={}", num_str);
                 if s.len() > 1 && s.starts_with("0") {
                     return Err(Error::new(
                         ErrorKind::LeadingZeroInNumber,
