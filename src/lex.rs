@@ -2697,6 +2697,45 @@ mod tests {
         assert_eq!(tok.span.end, 39);
     }
 
+    #[test]
+    fn bin_number_with_suffix_l() {
+        let s = String::from("0b101L");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Long(0b101));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 6);
+    }
+
+    #[test]
+    fn bin_number_with_suffix_ul() {
+        let s = String::from("0b101uL");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::ULong(0b101));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 7);
+    }
+
+    #[test]
+    fn bin_number_with_suffix_u() {
+        let s = String::from("0b101U");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::UInt(0b101));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 6);
+    }
+
     //     #[test]
     //     fn bin_number_with_suffixes() {
     //         let s = " 0b101uL 0B1L 0b11U";
