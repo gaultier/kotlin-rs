@@ -808,14 +808,11 @@ impl Lexer {
         span: &Span,
     ) -> Result<TokenKind, Error> {
         // Forbid invalid suffixes
-        match suffix {
-            Some(NumberSuffix::Invalid(suffix)) => {
-                return Err(Error::new(
-                    ErrorKind::InvalidNumberSuffix(suffix.to_string()),
-                    self.span_location(&span),
-                ));
-            }
-            _ => {}
+        if let Some(NumberSuffix::Invalid(suffix)) = suffix {
+            return Err(Error::new(
+                ErrorKind::InvalidNumberSuffix(suffix.to_string()),
+                self.span_location(&span),
+            ));
         }
         let original_str = &self.src[span.start..span.end];
 
