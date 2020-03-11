@@ -1067,26 +1067,16 @@ impl Lexer {
         let end_line_pos = self.lines[end_line_i];
 
         let start_line_s = &self.src[start_line_pos..span.start];
-        let mut start_line_chars = start_line_s.chars();
-        let mut start_col = 0;
-        while let Some(_) = start_line_chars.next() {
-            if start_col == span.start {
-                break;
-            }
-
-            start_col += 1;
-        }
+        let start_col = start_line_s
+            .char_indices()
+            .take_while(|(i, _)| *i != span.start)
+            .count();
 
         let end_line_s = &self.src[end_line_pos..span.end];
-        let mut end_line_chars = end_line_s.chars();
-        let mut end_col = 0;
-        while let Some(_) = end_line_chars.next() {
-            if end_col == span.end {
-                break;
-            }
-
-            end_col += 1;
-        }
+        let end_col = end_line_s
+            .char_indices()
+            .take_while(|(i, _)| *i != span.end)
+            .count();
 
         debug!(
             "token: start_col={} end_col={} start={} start_line={} end={} end_line={}",

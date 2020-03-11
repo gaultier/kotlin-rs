@@ -13,7 +13,7 @@ impl JsEmitter<'_> {
 
     pub fn stmts<W: std::io::Write>(
         &self,
-        statements: &Statements,
+        statements: &[AstNodeStmt],
         w: &mut W,
     ) -> Result<(), Error> {
         for stmt in statements {
