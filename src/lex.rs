@@ -375,6 +375,7 @@ impl Cursor<'_> {
                         break;
                     }
                 }
+                '\n' => {}
                 _ => (),
             }
         }
@@ -2957,6 +2958,32 @@ mod tests {
         assert_eq!(location.start_column, 1);
         assert_eq!(location.end_line, 2);
         assert_eq!(location.end_column, 2);
+    }
+
+    #[test]
+    fn block_comment() {
+        let s = String::from("/* hello\n 1 */2");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::BlockComment { terminated: true });
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 14);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Int(2));
+        assert_eq!(tok.span.start, 14);
+        assert_eq!(tok.span.end, 15);
+
+        let location = lexer.span_location(&tok.span);
+        assert_eq!(location.start_line, 2);
+        assert_eq!(location.start_column, 5);
+        assert_eq!(location.end_line, 2);
+        assert_eq!(location.end_column, 6);
     }
     //     #[test]
     //     fn float() {
