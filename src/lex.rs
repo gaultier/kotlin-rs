@@ -790,13 +790,6 @@ impl Token {
     pub fn new(kind: TokenKind, span: Span) -> Token {
         Token { kind, span }
     }
-
-    pub fn is_eof(&self) -> bool {
-        match self.kind {
-            TokenKind::Eof => true,
-            _ => false,
-        }
-    }
 }
 
 impl Lexer {
