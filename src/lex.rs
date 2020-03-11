@@ -879,6 +879,14 @@ impl Lexer {
                 ErrorKind::OctalNumber,
                 self.span_location(&span),
             )),
+            // Forbid empty exponent
+            CursorNumberKind::Float {
+                empty_exponent: true,
+                ..
+            } => Err(Error::new(
+                ErrorKind::MissingExponentInNumber,
+                self.span_location(&span),
+            )),
             CursorNumberKind::Int {
                 base: NumberBase::Hexadecimal,
                 ..
@@ -2895,6 +2903,19 @@ mod tests {
         assert_eq!(tok.kind, TokenKind::Double(0.1));
         assert_eq!(tok.span.start, 0);
         assert_eq!(tok.span.end, 2);
+    }
+
+    #[test]
+    fn double_with_empty_exp() {
+        let s = String::from(".1e");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, ErrorKind::MissingExponentInNumber);
+        assert_eq!(tok.location.start_pos, 0);
+        assert_eq!(tok.location.end_pos, 3);
     }
 
     #[test]
