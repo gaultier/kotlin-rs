@@ -2831,38 +2831,18 @@ mod tests {
         assert_eq!(tok.span.end, 7);
     }
 
-    //     #[test]
-    //     fn hex_number_with_suffixes() {
-    //         let s = " 0x101uL 0X1L 0x11U";
-    //         let mut lexer = Lexer::new(&s);
+    #[test]
+    fn double_exp() {
+        let s = String::from("123.456e2");
+        let mut lexer = Lexer::new(s);
 
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::ULong(0x101));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 2);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 9);
-
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::Long(0x1));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 10);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 14);
-
-    //         let tok = lexer.lex();
-    //         assert_eq!(tok.as_ref().is_ok(), true);
-    //         let tok = tok.as_ref().unwrap();
-    //         assert_eq!(tok.kind, TokenKind::UInt(0x11));
-    //         assert_eq!(tok.location.start_line, 1);
-    //         assert_eq!(tok.location.start_column, 15);
-    //         assert_eq!(tok.location.end_line, 1);
-    //         assert_eq!(tok.location.end_column, 20);
-    //     }
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Double(12345.6));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 9);
+    }
 
     //     #[test]
     //     fn float() {
