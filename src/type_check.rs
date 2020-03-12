@@ -21,6 +21,44 @@ impl TypeChecker<'_> {
         Ok(())
     }
 
+    pub fn type_check_unary(&self, ast: &mut AstNode) -> Result<Type, Error> {
+        match ast {
+            AstNode {
+                kind:
+                    AstNodeExpr::Unary(
+                        Token {
+                            kind: TokenKind::Minus,
+                            ..
+                        },
+                        right,
+                    ),
+                ..
+            } => {
+                let t = self.type_check_expr(right)?;
+                ast.type_info = Some(t);
+                Ok(t)
+            }
+            AstNode {
+                kind:
+                    AstNodeExpr::Unary(
+                        tok
+                        @
+                        Token {
+                            kind: TokenKind::Bang,
+                            ..
+                        },
+                        right,
+                    ),
+                ..
+            } => {
+                let t = self.type_check_expr(right)?;
+                ast.type_info = Some(self.coalesce_types(Type::Bool, t, tok)?);
+                Ok(Type::Bool)
+            }
+            _ => unreachable!(),
+        }
+    }
+
     pub fn type_check_expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
         match ast {
             AstNode {
@@ -123,37 +161,9 @@ impl TypeChecker<'_> {
                 Ok(Type::TString)
             }
             AstNode {
-                kind:
-                    AstNodeExpr::Unary(
-                        Token {
-                            kind: TokenKind::Minus,
-                            ..
-                        },
-                        right,
-                    ),
+                kind: AstNodeExpr::Unary(..),
                 ..
-            } => {
-                let t = self.type_check_expr(right)?;
-                ast.type_info = Some(t);
-                Ok(t)
-            }
-            AstNode {
-                kind:
-                    AstNodeExpr::Unary(
-                        tok
-                        @
-                        Token {
-                            kind: TokenKind::Bang,
-                            ..
-                        },
-                        right,
-                    ),
-                ..
-            } => {
-                let t = self.type_check_expr(right)?;
-                ast.type_info = Some(self.coalesce_types(Type::Bool, t, tok)?);
-                Ok(Type::Bool)
-            }
+            } => self.type_check_unary(ast),
             AstNode {
                 kind:
                     AstNodeExpr::Binary(
