@@ -123,11 +123,35 @@ impl TypeChecker<'_> {
                 Ok(Type::TString)
             }
             AstNode {
-                kind: AstNodeExpr::Unary(_, right),
+                kind:
+                    AstNodeExpr::Unary(
+                        Token {
+                            kind: TokenKind::Minus,
+                            ..
+                        },
+                        right,
+                    ),
                 ..
             } => {
                 let t = self.type_check_expr(right)?;
                 ast.type_info = Some(t);
+                Ok(t)
+            }
+            AstNode {
+                kind:
+                    AstNodeExpr::Unary(
+                        tok
+                        @
+                        Token {
+                            kind: TokenKind::Bang,
+                            ..
+                        },
+                        right,
+                    ),
+                ..
+            } => {
+                let t = self.type_check_expr(right)?;
+                ast.type_info = Some(self.coalesce_types(Type::Bool, t, tok)?);
                 Ok(t)
             }
             AstNode {

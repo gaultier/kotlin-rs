@@ -177,8 +177,24 @@ impl Parser<'_> {
         }
     }
 
+    fn equality(&mut self) -> Result<AstNode, Error> {
+        let left = self.comparison()?;
+        let previous = self.previous.clone().unwrap();
+        match previous.kind {
+            TokenKind::BangEqual | TokenKind::EqualEqual => {
+                self.advance()?;
+                let right = self.equality()?;
+                Ok(AstNode {
+                    kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
+                    type_info: None,
+                })
+            }
+            _ => Ok(left),
+        }
+    }
+
     fn expression(&mut self) -> Result<AstNode, Error> {
-        self.comparison()
+        self.equality()
     }
 
     fn expression_stmt(&mut self) -> Result<AstNodeStmt, Error> {
