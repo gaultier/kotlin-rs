@@ -152,7 +152,7 @@ impl TypeChecker<'_> {
             } => {
                 let t = self.type_check_expr(right)?;
                 ast.type_info = Some(self.coalesce_types(Type::Bool, t, tok)?);
-                Ok(t)
+                Ok(Type::Bool)
             }
             AstNode {
                 kind:
