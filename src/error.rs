@@ -33,6 +33,7 @@ pub enum ErrorKind {
     EmitError(String),
     InvalidNumberSuffix(String),
     UnterminatedStatement,
+    ExpectedToken,
 }
 
 impl fmt::Display for ErrorKind {
@@ -62,6 +63,7 @@ impl fmt::Display for ErrorKind {
             ErrorKind::InvalidNumberSuffix(suffix) => {
                 write!(f, "Invalid number suffix `{}`", suffix)
             }
+            ErrorKind::ExpectedToken => write!(f, "Expected token"),
         }
     }
 }

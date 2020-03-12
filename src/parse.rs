@@ -87,14 +87,14 @@ impl Parser<'_> {
 
     fn expect(&mut self, kind: TokenKind) -> Result<(), Error> {
         let previous = self.previous;
-        match previous.kind {
-            Some(k) if k == kind => {
+        match previous {
+            Some(Token { kind: k, .. }) if k == kind => {
                 self.advance();
                 Ok(())
             }
             _ => Err(Error::new(
                 ErrorKind::ExpectedToken,
-                self.lexer.span_location(&previous.span),
+                self.lexer.span_location(&previous.unwrap().span),
             )),
         }
     }
@@ -121,10 +121,10 @@ impl Parser<'_> {
             }
             TokenKind::LeftParen => {
                 self.advance();
-                let prim = self.expression();
-                self.expect(TokenKind::RightParen);
+                let prim = self.expression()?;
+                self.expect(TokenKind::RightParen)?;
                 Ok(AstNode {
-                    kind: AstNodeExpr::Grouping,
+                    kind: AstNodeExpr::Grouping(Box::new(prim)),
                     type_info: None,
                 })
             }
