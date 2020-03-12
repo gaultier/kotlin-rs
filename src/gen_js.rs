@@ -197,6 +197,15 @@ impl JsEmitter<'_> {
                 })?;
                 self.expr(right, w)
             }
+            AstNode {
+                kind: AstNodeExpr::Grouping(expr),
+                ..
+            } => {
+                write!(w, "(").unwrap();
+                self.expr(expr, w)?;
+                write!(w, ")").unwrap();
+                Ok(())
+            }
             _ => unimplemented!(),
         }
     }

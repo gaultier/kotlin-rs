@@ -54,7 +54,7 @@ pub enum AstNodeExpr {
     Binary(Box<AstNode>, Token, Box<AstNode>),
     Unary(Token, Box<AstNode>),
     Literal(Token),
-    Grouping(Box<AstNodeExpr>),
+    Grouping(Box<AstNode>),
 }
 
 #[derive(Debug)]
@@ -121,10 +121,10 @@ impl Parser<'_> {
             }
             TokenKind::LeftParen => {
                 self.advance()?;
-                let prim = self.expression()?;
+                let expr = self.expression()?;
                 self.expect(TokenKind::RightParen)?;
                 Ok(AstNode {
-                    kind: AstNodeExpr::Grouping(Box::new(prim.kind)),
+                    kind: AstNodeExpr::Grouping(Box::new(expr)),
                     type_info: None,
                 })
             }

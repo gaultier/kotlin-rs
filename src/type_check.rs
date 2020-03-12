@@ -166,6 +166,10 @@ impl TypeChecker<'_> {
                 ast.type_info = Some(t);
                 Ok(t)
             }
+            AstNode {
+                kind: AstNodeExpr::Grouping(expr),
+                ..
+            } => self.type_check_expr(&mut (**expr)),
             _ => unimplemented!(),
         }
     }
