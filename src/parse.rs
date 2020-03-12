@@ -89,7 +89,7 @@ impl Parser<'_> {
         let previous = self.previous;
         match previous {
             Some(Token { kind: k, .. }) if k == kind => {
-                self.advance();
+                self.advance()?;
                 Ok(())
             }
             _ => Err(Error::new(
@@ -120,11 +120,11 @@ impl Parser<'_> {
                 })
             }
             TokenKind::LeftParen => {
-                self.advance();
+                self.advance()?;
                 let prim = self.expression()?;
                 self.expect(TokenKind::RightParen)?;
                 Ok(AstNode {
-                    kind: AstNodeExpr::Grouping(Box::new(prim)),
+                    kind: AstNodeExpr::Grouping(Box::new(prim.kind)),
                     type_info: None,
                 })
             }
