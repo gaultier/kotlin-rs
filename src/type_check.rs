@@ -155,6 +155,28 @@ impl TypeChecker<'_> {
                 Ok(t)
             }
             AstNode {
+                kind:
+                    AstNodeExpr::Binary(
+                        left,
+                        tok
+                        @
+                        Token {
+                            kind: TokenKind::EqualEqual,
+                            ..
+                        },
+                        right,
+                    ),
+                ..
+            } => {
+                self.coalesce_types(
+                    self.type_check_expr(left)?,
+                    self.type_check_expr(right)?,
+                    &tok,
+                )?;
+                ast.type_info = Some(Type::Bool);
+                Ok(Type::Bool)
+            }
+            AstNode {
                 kind: AstNodeExpr::Binary(left, tok, right),
                 ..
             } => {
