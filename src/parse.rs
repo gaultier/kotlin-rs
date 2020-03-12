@@ -54,6 +54,7 @@ pub enum AstNodeExpr {
     Binary(Box<AstNode>, Token, Box<AstNode>),
     Unary(Token, Box<AstNode>),
     Literal(Token),
+    Grouping(Box<AstNodeExpr>),
 }
 
 #[derive(Debug)]
@@ -84,6 +85,20 @@ impl Parser<'_> {
         Ok(())
     }
 
+    fn expect(&mut self, kind: TokenKind) -> Result<(), Error> {
+        let previous = self.previous;
+        match previous.kind {
+            Some(k) if k == kind => {
+                self.advance();
+                Ok(())
+            }
+            _ => Err(Error::new(
+                ErrorKind::ExpectedToken,
+                self.lexer.span_location(&previous.span),
+            )),
+        }
+    }
+
     fn primary(&mut self) -> Result<AstNode, Error> {
         let previous = self.previous.clone().unwrap();
         match previous.kind {
@@ -101,6 +116,15 @@ impl Parser<'_> {
                 // TODO: fill type info here right away
                 Ok(AstNode {
                     kind: AstNodeExpr::Literal(previous),
+                    type_info: None,
+                })
+            }
+            TokenKind::LeftParen => {
+                self.advance();
+                let prim = self.expression();
+                self.expect(TokenKind::RightParen);
+                Ok(AstNode {
+                    kind: AstNodeExpr::Grouping,
                     type_info: None,
                 })
             }
