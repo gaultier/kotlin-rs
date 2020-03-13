@@ -59,7 +59,7 @@ impl TypeChecker<'_> {
         }
     }
 
-    pub fn type_check_expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
+    pub fn type_check_literal(&self, ast: &mut AstNode) -> Result<Type, Error> {
         match ast {
             AstNode {
                 kind:
@@ -160,6 +160,16 @@ impl TypeChecker<'_> {
                 ast.type_info = Some(Type::TString);
                 Ok(Type::TString)
             }
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn type_check_expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
+        match ast {
+            AstNode {
+                kind: AstNodeExpr::Literal(..),
+                ..
+            } => self.type_check_literal(ast),
             AstNode {
                 kind: AstNodeExpr::Unary(..),
                 ..
