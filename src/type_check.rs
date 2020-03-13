@@ -173,6 +173,20 @@ impl TypeChecker<'_> {
                         tok
                         @
                         Token {
+                            kind: TokenKind::BangEqual,
+                            ..
+                        },
+                        right,
+                    ),
+                ..
+            }
+            | AstNode {
+                kind:
+                    AstNodeExpr::Binary(
+                        left,
+                        tok
+                        @
+                        Token {
                             kind: TokenKind::EqualEqual,
                             ..
                         },
