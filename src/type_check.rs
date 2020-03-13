@@ -21,7 +21,7 @@ impl TypeChecker<'_> {
         Ok(())
     }
 
-    pub fn type_check_unary(&self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn type_check_unary(&self, ast: &mut AstNode) -> Result<Type, Error> {
         match ast {
             AstNode {
                 kind:
@@ -59,7 +59,7 @@ impl TypeChecker<'_> {
         }
     }
 
-    pub fn type_check_literal(&self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn type_check_literal(&self, ast: &mut AstNode) -> Result<Type, Error> {
         match ast {
             AstNode {
                 kind:
@@ -164,16 +164,8 @@ impl TypeChecker<'_> {
         }
     }
 
-    pub fn type_check_expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn type_check_binary(&self, ast: &mut AstNode) -> Result<Type, Error> {
         match ast {
-            AstNode {
-                kind: AstNodeExpr::Literal(..),
-                ..
-            } => self.type_check_literal(ast),
-            AstNode {
-                kind: AstNodeExpr::Unary(..),
-                ..
-            } => self.type_check_unary(ast),
             AstNode {
                 kind:
                     AstNodeExpr::Binary(
@@ -208,11 +200,28 @@ impl TypeChecker<'_> {
                 ast.type_info = Some(t);
                 Ok(t)
             }
+            _ => unreachable!(),
+        }
+    }
+
+    fn type_check_expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
+        match ast {
+            AstNode {
+                kind: AstNodeExpr::Literal(..),
+                ..
+            } => self.type_check_literal(ast),
+            AstNode {
+                kind: AstNodeExpr::Unary(..),
+                ..
+            } => self.type_check_unary(ast),
+            AstNode {
+                kind: AstNodeExpr::Binary(..),
+                ..
+            } => self.type_check_binary(ast),
             AstNode {
                 kind: AstNodeExpr::Grouping(expr),
                 ..
             } => self.type_check_expr(&mut (**expr)),
-            _ => unimplemented!(),
         }
     }
 
