@@ -190,7 +190,7 @@ impl JsEmitter<'_> {
                     AstNodeExpr::Binary(
                         left,
                         Token {
-                            kind: TokenKind::BangEqual,
+                            kind: TokenKind::BangEqualEqual,
                             span,
                         },
                         right,
@@ -202,7 +202,19 @@ impl JsEmitter<'_> {
                     AstNodeExpr::Binary(
                         left,
                         Token {
-                            kind: TokenKind::BangEqualEqual,
+                            kind: TokenKind::EqualEqualEqual,
+                            span,
+                        },
+                        right,
+                    ),
+                ..
+            } => unimplemented!(),
+            AstNode {
+                kind:
+                    AstNodeExpr::Binary(
+                        left,
+                        Token {
+                            kind: TokenKind::BangEqual,
                             span,
                         },
                         right,
@@ -219,18 +231,6 @@ impl JsEmitter<'_> {
                 self.expr(right, w)
             }
             AstNode {
-                kind:
-                    AstNodeExpr::Binary(
-                        left,
-                        Token {
-                            kind: TokenKind::EqualEqualEqual,
-                            span,
-                        },
-                        right,
-                    ),
-                ..
-            }
-            | AstNode {
                 kind:
                     AstNodeExpr::Binary(
                         left,
