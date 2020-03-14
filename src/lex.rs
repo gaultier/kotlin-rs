@@ -361,8 +361,8 @@ impl Cursor<'_> {
             // '^' => CursorTokenKind::Caret,
             '%' => CursorTokenKind::Percent,
 
-            // Lifetime or character literal.
-            // '\'' => self.lifetime_or_char(),
+            // Character literal.
+            '\'' => self.char_literal(),
 
             // String literal.
             // '"' => {
@@ -542,95 +542,74 @@ impl Cursor<'_> {
         }
     }
 
-    // fn lifetime_or_char(&mut self) -> TokenKind {
-    //     debug_assert!(self.prev() == '\'');
+    fn char_literal(&mut self) -> TokenKind {
+        debug_assert!(self.prev() == '\'');
 
-    //     let can_be_a_lifetime = if self.second() == '\'' {
-    //         // It's surely not a lifetime.
-    //         false
-    //     } else {
-    //         // If the first symbol is valid for identifier, it can be a lifetime.
-    //         // Also check if it's a number for a better error reporting (so '0 will
-    //         // be reported as invalid lifetime and not as unterminated char literal).
-    //         is_id_start(self.first()) || self.first().is_digit(10)
-    //     };
+        if self.second() == '\'' {
+            let terminated = self.single_quoted_string();
+            let suffix_start = self.len_consumed();
+            if terminated {
+                self.eat_literal_suffix();
+            }
+            let kind = Char { terminated };
+            return Literal { kind, suffix_start };
+        }
 
-    //     if !can_be_a_lifetime {
-    //         let terminated = self.single_quoted_string();
-    //         let suffix_start = self.len_consumed();
-    //         if terminated {
-    //             self.eat_literal_suffix();
-    //         }
-    //         let kind = Char { terminated };
-    //         return Literal { kind, suffix_start };
-    //     }
+        self.eat_while(is_id_continue);
 
-    //     // Either a lifetime or a character literal with
-    //     // length greater than 1.
+        // Check if after skipping literal contents we've met a closing
+        // single quote (which means that user attempted to create a
+        // string with single quotes).
+        if self.first() == '\'' {
+            self.bump();
+            let kind = Char { terminated: true };
+            return Literal {
+                kind,
+                suffix_start: self.len_consumed(),
+            };
+        }
+    }
 
-    //     let starts_with_number = self.first().is_digit(10);
+    fn single_quoted_string(&mut self) -> bool {
+        debug_assert!(self.prev() == '\'');
+        // Check if it's a one-symbol literal.
+        if self.second() == '\'' && self.first() != '\\' {
+            self.bump();
+            self.bump();
+            return true;
+        }
 
-    //     // Skip the literal contents.
-    //     // First symbol can be a number (which isn't a valid identifier start),
-    //     // so skip it without any checks.
-    //     self.bump();
-    //     self.eat_while(is_id_continue);
+        // Literal has more than one symbol.
 
-    //     // Check if after skipping literal contents we've met a closing
-    //     // single quote (which means that user attempted to create a
-    //     // string with single quotes).
-    //     if self.first() == '\'' {
-    //         self.bump();
-    //         let kind = Char { terminated: true };
-    //         return Literal {
-    //             kind,
-    //             suffix_start: self.len_consumed(),
-    //         };
-    //     }
-
-    //     return Lifetime { starts_with_number };
-    // }
-
-    // fn single_quoted_string(&mut self) -> bool {
-    //     debug_assert!(self.prev() == '\'');
-    //     // Check if it's a one-symbol literal.
-    //     if self.second() == '\'' && self.first() != '\\' {
-    //         self.bump();
-    //         self.bump();
-    //         return true;
-    //     }
-
-    //     // Literal has more than one symbol.
-
-    //     // Parse until either quotes are terminated or error is detected.
-    //     loop {
-    //         match self.first() {
-    //             // Quotes are terminated, finish parsing.
-    //             '\'' => {
-    //                 self.bump();
-    //                 return true;
-    //             }
-    //             // Probably beginning of the comment, which we don't want to include
-    //             // to the error report.
-    //             '/' => break,
-    //             // Newline without following '\'' means unclosed quote, stop parsing.
-    //             '\n' if self.second() != '\'' => break,
-    //             // End of file, stop parsing.
-    //             EOF_CHAR if self.is_eof() => break,
-    //             // Escaped slash is considered one character, so bump twice.
-    //             '\\' => {
-    //                 self.bump();
-    //                 self.bump();
-    //             }
-    //             // Skip the character.
-    //             _ => {
-    //                 self.bump();
-    //             }
-    //         }
-    //     }
-    //     // String was not terminated.
-    //     false
-    // }
+        // Parse until either quotes are terminated or error is detected.
+        loop {
+            match self.first() {
+                // Quotes are terminated, finish parsing.
+                '\'' => {
+                    self.bump();
+                    return true;
+                }
+                // Probably beginning of the comment, which we don't want to include
+                // to the error report.
+                '/' => break,
+                // Newline without following '\'' means unclosed quote, stop parsing.
+                '\n' if self.second() != '\'' => break,
+                // End of file, stop parsing.
+                EOF_CHAR if self.is_eof() => break,
+                // Escaped slash is considered one character, so bump twice.
+                '\\' => {
+                    self.bump();
+                    self.bump();
+                }
+                // Skip the character.
+                _ => {
+                    self.bump();
+                }
+            }
+        }
+        // String was not terminated.
+        false
+    }
 
     /// Eats double-quoted string and returns true
     /// if string is terminated.
