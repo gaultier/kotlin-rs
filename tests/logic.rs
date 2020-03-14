@@ -7,7 +7,7 @@ fn int_equality() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"171==171;\n");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"171===171;\n");
 }
 
 #[test]
@@ -16,7 +16,7 @@ fn uint_equality() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"171==171;\n");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"171===171;\n");
 }
 
 #[test]
@@ -25,7 +25,7 @@ fn uint_long_equality() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"171==171;\n");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"171===171;\n");
 }
 
 #[test]
@@ -36,7 +36,7 @@ fn float_equality() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"0.3==0.2+0.1;\n"
+        &"0.3===0.2+0.1;\n"
     );
 }
 
@@ -46,7 +46,7 @@ fn double_equality() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"100==100;\n");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"100===100;\n");
 }
 
 #[test]
@@ -55,7 +55,7 @@ fn long_equality() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"171==171;\n");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"171===171;\n");
 }
 
 #[test]
