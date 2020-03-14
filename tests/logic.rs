@@ -150,3 +150,24 @@ fn comparison_gte() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"171>=171;\n");
 }
+
+#[test]
+fn comparison_gte_err() -> Result<(), String> {
+    let src = String::from("1f <= 3e1 < 33;");
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::IncompatibleTypes(..),
+            location:
+                Location {
+                    start_line: 1,
+                    start_column: 4,
+                    end_line: 1,
+                    end_column: 6,
+                    ..
+                },
+        }) => Ok(()),
+        other => Err(format!("Should be a type error: {:?}", other)),
+    }
+}
