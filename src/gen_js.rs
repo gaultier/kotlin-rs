@@ -183,16 +183,8 @@ impl JsEmitter<'_> {
         }
     }
 
-    pub fn expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
+    fn binary<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNode {
-                kind: AstNodeExpr::Literal(..),
-                ..
-            } => self.literal(ast, w),
-            AstNode {
-                kind: AstNodeExpr::Unary(..),
-                ..
-            } => self.unary(ast, w),
             AstNode {
                 kind: AstNodeExpr::Binary(left, tok, right),
                 ..
@@ -217,6 +209,24 @@ impl JsEmitter<'_> {
                 })?;
                 self.expr(right, w)
             }
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
+        match ast {
+            AstNode {
+                kind: AstNodeExpr::Literal(..),
+                ..
+            } => self.literal(ast, w),
+            AstNode {
+                kind: AstNodeExpr::Unary(..),
+                ..
+            } => self.unary(ast, w),
+            AstNode {
+                kind: AstNodeExpr::Binary(..),
+                ..
+            } => self.binary(ast, w),
             AstNode {
                 kind: AstNodeExpr::Grouping(expr),
                 ..
@@ -226,7 +236,6 @@ impl JsEmitter<'_> {
                 write!(w, ")").unwrap();
                 Ok(())
             }
-            _ => unimplemented!(),
         }
     }
 }
