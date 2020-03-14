@@ -194,11 +194,14 @@ impl TypeChecker<'_> {
                     ),
                 ..
             } => {
-                self.coalesce_types(
-                    self.type_check_expr(left)?,
-                    self.type_check_expr(right)?,
-                    &tok,
-                )?;
+                let left_t = self.type_check_expr(left)?;
+                let right_t = self.type_check_expr(right)?;
+                if left_t != right_t {
+                    return Err(Error::new(
+                        ErrorKind::IncompatibleTypes(left_t, right_t),
+                        self.lexer.span_location(&tok.span),
+                    ));
+                }
                 ast.type_info = Some(Type::Bool);
                 Ok(Type::Bool)
             }
@@ -292,7 +295,7 @@ impl TypeChecker<'_> {
             (Type::Char, Type::Int) if token.kind == TokenKind::Minus => Ok(Type::Char),
             _ => Err(Error::new(
                 ErrorKind::IncompatibleTypes(left, right),
-                self.lexer.span_location(&token.span))), // FIXME
+                self.lexer.span_location(&token.span))),
         }
     }
 }
