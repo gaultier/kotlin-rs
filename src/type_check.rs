@@ -193,6 +193,34 @@ impl TypeChecker<'_> {
                         right,
                     ),
                 ..
+            }
+            | AstNode {
+                kind:
+                    AstNodeExpr::Binary(
+                        left,
+                        tok
+                        @
+                        Token {
+                            kind: TokenKind::BangEqualEqual,
+                            ..
+                        },
+                        right,
+                    ),
+                ..
+            }
+            | AstNode {
+                kind:
+                    AstNodeExpr::Binary(
+                        left,
+                        tok
+                        @
+                        Token {
+                            kind: TokenKind::EqualEqualEqual,
+                            ..
+                        },
+                        right,
+                    ),
+                ..
             } => {
                 let left_t = self.type_check_expr(left)?;
                 let right_t = self.type_check_expr(right)?;

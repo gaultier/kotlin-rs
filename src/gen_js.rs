@@ -26,7 +26,7 @@ impl JsEmitter<'_> {
         Ok(())
     }
 
-    pub fn expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
+    fn literal<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNode {
                 kind:
@@ -161,6 +161,15 @@ impl JsEmitter<'_> {
                     )
                 })
                 .map(|_| ()),
+        }
+    }
+
+    pub fn expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
+        match ast {
+            AstNode {
+                kind: AstNodeExpr::Literal(..),
+                ..
+            } => self.literal(ast, w),
             AstNode {
                 kind: AstNodeExpr::Unary(tok, right),
                 ..
