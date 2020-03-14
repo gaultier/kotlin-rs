@@ -165,6 +165,10 @@ impl TypeChecker<'_> {
     }
 
     fn type_check_binary(&self, ast: &mut AstNode) -> Result<Type, Error> {
+        if let Some(t) = ast.type_info {
+            return Ok(t);
+        }
+
         match ast {
             AstNode {
                 kind:
