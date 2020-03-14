@@ -591,111 +591,111 @@ impl Cursor<'_> {
     //     return Lifetime { starts_with_number };
     // }
 
-    fn single_quoted_string(&mut self) -> bool {
-        debug_assert!(self.prev() == '\'');
-        // Check if it's a one-symbol literal.
-        if self.second() == '\'' && self.first() != '\\' {
-            self.bump();
-            self.bump();
-            return true;
-        }
+    // fn single_quoted_string(&mut self) -> bool {
+    //     debug_assert!(self.prev() == '\'');
+    //     // Check if it's a one-symbol literal.
+    //     if self.second() == '\'' && self.first() != '\\' {
+    //         self.bump();
+    //         self.bump();
+    //         return true;
+    //     }
 
-        // Literal has more than one symbol.
+    //     // Literal has more than one symbol.
 
-        // Parse until either quotes are terminated or error is detected.
-        loop {
-            match self.first() {
-                // Quotes are terminated, finish parsing.
-                '\'' => {
-                    self.bump();
-                    return true;
-                }
-                // Probably beginning of the comment, which we don't want to include
-                // to the error report.
-                '/' => break,
-                // Newline without following '\'' means unclosed quote, stop parsing.
-                '\n' if self.second() != '\'' => break,
-                // End of file, stop parsing.
-                EOF_CHAR if self.is_eof() => break,
-                // Escaped slash is considered one character, so bump twice.
-                '\\' => {
-                    self.bump();
-                    self.bump();
-                }
-                // Skip the character.
-                _ => {
-                    self.bump();
-                }
-            }
-        }
-        // String was not terminated.
-        false
-    }
+    //     // Parse until either quotes are terminated or error is detected.
+    //     loop {
+    //         match self.first() {
+    //             // Quotes are terminated, finish parsing.
+    //             '\'' => {
+    //                 self.bump();
+    //                 return true;
+    //             }
+    //             // Probably beginning of the comment, which we don't want to include
+    //             // to the error report.
+    //             '/' => break,
+    //             // Newline without following '\'' means unclosed quote, stop parsing.
+    //             '\n' if self.second() != '\'' => break,
+    //             // End of file, stop parsing.
+    //             EOF_CHAR if self.is_eof() => break,
+    //             // Escaped slash is considered one character, so bump twice.
+    //             '\\' => {
+    //                 self.bump();
+    //                 self.bump();
+    //             }
+    //             // Skip the character.
+    //             _ => {
+    //                 self.bump();
+    //             }
+    //         }
+    //     }
+    //     // String was not terminated.
+    //     false
+    // }
 
     /// Eats double-quoted string and returns true
     /// if string is terminated.
-    fn double_quoted_string(&mut self) -> bool {
-        debug_assert!(self.prev() == '"');
-        while let Some(c) = self.bump() {
-            match c {
-                '"' => {
-                    return true;
-                }
-                '\\' if self.first() == '\\' || self.first() == '"' => {
-                    // Bump again to skip escaped character.
-                    self.bump();
-                }
-                _ => (),
-            }
-        }
-        // End of file reached.
-        false
-    }
+    // fn double_quoted_string(&mut self) -> bool {
+    //     debug_assert!(self.prev() == '"');
+    //     while let Some(c) = self.bump() {
+    //         match c {
+    //             '"' => {
+    //                 return true;
+    //             }
+    //             '\\' if self.first() == '\\' || self.first() == '"' => {
+    //                 // Bump again to skip escaped character.
+    //                 self.bump();
+    //             }
+    //             _ => (),
+    //         }
+    //     }
+    //     // End of file reached.
+    //     false
+    // }
 
     /// Eats the double-quoted string and returns a tuple of
     /// (amount of the '#' symbols, raw string started, raw string terminated)
-    fn raw_double_quoted_string(&mut self) -> (usize, bool, bool) {
-        debug_assert!(self.prev() == 'r');
-        let mut started: bool = false;
-        let mut finished: bool = false;
+    // fn raw_double_quoted_string(&mut self) -> (usize, bool, bool) {
+    //     debug_assert!(self.prev() == 'r');
+    //     let mut started: bool = false;
+    //     let mut finished: bool = false;
 
-        // Count opening '#' symbols.
-        let n_hashes = self.eat_while(|c| c == '#');
+    //     // Count opening '#' symbols.
+    //     let n_hashes = self.eat_while(|c| c == '#');
 
-        // Check that string is started.
-        match self.bump() {
-            Some('"') => started = true,
-            _ => return (n_hashes, started, finished),
-        }
+    //     // Check that string is started.
+    //     match self.bump() {
+    //         Some('"') => started = true,
+    //         _ => return (n_hashes, started, finished),
+    //     }
 
-        // Skip the string contents and on each '#' character met, check if this is
-        // a raw string termination.
-        while !finished {
-            self.eat_while(|c| c != '"');
+    //     // Skip the string contents and on each '#' character met, check if this is
+    //     // a raw string termination.
+    //     while !finished {
+    //         self.eat_while(|c| c != '"');
 
-            if self.is_eof() {
-                return (n_hashes, started, finished);
-            }
+    //         if self.is_eof() {
+    //             return (n_hashes, started, finished);
+    //         }
 
-            // Eat closing double quote.
-            self.bump();
+    //         // Eat closing double quote.
+    //         self.bump();
 
-            // Check that amount of closing '#' symbols
-            // is equal to the amount of opening ones.
-            let mut hashes_left = n_hashes;
-            let is_closing_hash = |c| {
-                if c == '#' && hashes_left != 0 {
-                    hashes_left -= 1;
-                    true
-                } else {
-                    false
-                }
-            };
-            finished = self.eat_while(is_closing_hash) == n_hashes;
-        }
+    //         // Check that amount of closing '#' symbols
+    //         // is equal to the amount of opening ones.
+    //         let mut hashes_left = n_hashes;
+    //         let is_closing_hash = |c| {
+    //             if c == '#' && hashes_left != 0 {
+    //                 hashes_left -= 1;
+    //                 true
+    //             } else {
+    //                 false
+    //             }
+    //         };
+    //         finished = self.eat_while(is_closing_hash) == n_hashes;
+    //     }
 
-        (n_hashes, started, finished)
-    }
+    //     (n_hashes, started, finished)
+    // }
 
     fn eat_decimal_digits(&mut self) -> bool {
         let mut has_digits = false;
@@ -770,14 +770,14 @@ impl Cursor<'_> {
     }
 
     // Eats the identifier.
-    fn eat_identifier(&mut self) {
-        if !is_id_start(self.first()) {
-            return;
-        }
-        self.bump();
+    // fn eat_identifier(&mut self) {
+    //     if !is_id_start(self.first()) {
+    //         return;
+    //     }
+    //     self.bump();
 
-        self.eat_while(is_id_continue);
-    }
+    //     self.eat_while(is_id_continue);
+    // }
 
     /// Eats symbols while predicate returns true or until the end of file is reached.
     /// Returns amount of eaten symbols.
