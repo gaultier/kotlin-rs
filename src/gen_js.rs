@@ -188,24 +188,24 @@ impl JsEmitter<'_> {
             AstNode {
                 kind:
                     AstNodeExpr::Binary(
-                        left,
+                        _,
                         Token {
                             kind: TokenKind::BangEqualEqual,
-                            span,
+                            ..
                         },
-                        right,
+                        _,
                     ),
                 ..
             }
             | AstNode {
                 kind:
                     AstNodeExpr::Binary(
-                        left,
+                        _,
                         Token {
                             kind: TokenKind::EqualEqualEqual,
-                            span,
+                            ..
                         },
-                        right,
+                        _,
                     ),
                 ..
             } => unimplemented!(),
