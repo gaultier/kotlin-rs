@@ -154,7 +154,7 @@ impl Parser<'_> {
         let left = self.unary()?;
         let previous = self.previous.clone().unwrap();
         match previous.kind {
-            TokenKind::Star | TokenKind::Slash => {
+            TokenKind::Percent | TokenKind::Star | TokenKind::Slash => {
                 self.advance()?;
                 let right = self.multiplication()?;
                 Ok(AstNode {
