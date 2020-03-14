@@ -161,15 +161,12 @@ impl JsEmitter<'_> {
                     )
                 })
                 .map(|_| ()),
+            _ => unreachable!(),
         }
     }
 
-    pub fn expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
+    fn unary<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNode {
-                kind: AstNodeExpr::Literal(..),
-                ..
-            } => self.literal(ast, w),
             AstNode {
                 kind: AstNodeExpr::Unary(tok, right),
                 ..
@@ -182,6 +179,20 @@ impl JsEmitter<'_> {
                 })?;
                 self.expr(right, w)
             }
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
+        match ast {
+            AstNode {
+                kind: AstNodeExpr::Literal(..),
+                ..
+            } => self.literal(ast, w),
+            AstNode {
+                kind: AstNodeExpr::Unary(..),
+                ..
+            } => self.unary(ast, w),
             AstNode {
                 kind: AstNodeExpr::Binary(left, tok, right),
                 ..
