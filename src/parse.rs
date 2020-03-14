@@ -205,7 +205,10 @@ impl Parser<'_> {
         let left = self.comparison()?;
         let previous = self.previous.clone().unwrap();
         match previous.kind {
-            TokenKind::BangEqual | TokenKind::EqualEqual => {
+            TokenKind::BangEqual
+            | TokenKind::EqualEqual
+            | TokenKind::EqualEqualEqual
+            | TokenKind::BangEqualEqual => {
                 self.advance()?;
                 let right = self.equality()?;
                 Ok(AstNode {

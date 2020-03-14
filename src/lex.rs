@@ -198,7 +198,9 @@ enum CursorTokenKind {
     Percent,
     Equal,
     EqualEqual,
+    EqualEqualEqual,
     BangEqual,
+    BangEqualEqual,
     Newline,
     Whitespace,
     Colon,
@@ -328,9 +330,21 @@ impl Cursor<'_> {
             '?' => CursorTokenKind::Question,
             ':' => CursorTokenKind::Colon,
             '$' => CursorTokenKind::Dollar,
-            '=' if self.match_char('=') => CursorTokenKind::EqualEqual,
+            '=' if self.match_char('=') => {
+                if self.match_char('=') {
+                    CursorTokenKind::EqualEqualEqual
+                } else {
+                    CursorTokenKind::EqualEqual
+                }
+            }
             '=' => CursorTokenKind::Equal,
-            '!' if self.match_char('=') => CursorTokenKind::BangEqual,
+            '!' if self.match_char('=') => {
+                if self.match_char('=') {
+                    CursorTokenKind::BangEqualEqual
+                } else {
+                    CursorTokenKind::BangEqual
+                }
+            }
             '!' => CursorTokenKind::Bang,
             '<' => CursorTokenKind::Lesser,
             '>' => CursorTokenKind::Greater,
@@ -1028,9 +1042,11 @@ impl Lexer {
             CursorTokenKind::Greater => Ok(TokenKind::Greater),
             CursorTokenKind::Equal => Ok(TokenKind::Equal),
             CursorTokenKind::EqualEqual => Ok(TokenKind::EqualEqual),
+            CursorTokenKind::EqualEqualEqual => Ok(TokenKind::EqualEqualEqual),
             CursorTokenKind::Whitespace => Ok(TokenKind::Whitespace),
             CursorTokenKind::Bang => Ok(TokenKind::Bang),
             CursorTokenKind::BangEqual => Ok(TokenKind::BangEqual),
+            CursorTokenKind::BangEqualEqual => Ok(TokenKind::BangEqualEqual),
             CursorTokenKind::Percent => Ok(TokenKind::Percent),
             CursorTokenKind::Colon => Ok(TokenKind::Colon),
             CursorTokenKind::Dot => Ok(TokenKind::Dot),
