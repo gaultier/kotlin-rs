@@ -33,6 +33,17 @@ impl TypeChecker<'_> {
                         right,
                     ),
                 ..
+            }
+            | AstNode {
+                kind:
+                    AstNodeExpr::Unary(
+                        Token {
+                            kind: TokenKind::Plus,
+                            ..
+                        },
+                        right,
+                    ),
+                ..
             } => {
                 let t = self.type_check_expr(right)?;
                 ast.type_info = Some(t);

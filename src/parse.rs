@@ -138,7 +138,7 @@ impl Parser<'_> {
     fn unary(&mut self) -> Result<AstNode, Error> {
         let previous = self.previous.clone().unwrap();
         match previous.kind {
-            TokenKind::Bang | TokenKind::Minus => {
+            TokenKind::Plus | TokenKind::Bang | TokenKind::Minus => {
                 self.advance()?;
                 let right = self.unary()?;
                 Ok(AstNode {
