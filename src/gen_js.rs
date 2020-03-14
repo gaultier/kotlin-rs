@@ -186,6 +186,72 @@ impl JsEmitter<'_> {
     fn binary<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNode {
+                kind:
+                    AstNodeExpr::Binary(
+                        left,
+                        Token {
+                            kind: TokenKind::BangEqual,
+                            span,
+                        },
+                        right,
+                    ),
+                ..
+            }
+            | AstNode {
+                kind:
+                    AstNodeExpr::Binary(
+                        left,
+                        Token {
+                            kind: TokenKind::BangEqualEqual,
+                            span,
+                        },
+                        right,
+                    ),
+                ..
+            } => {
+                self.expr(left, w)?;
+                write!(w, "!==").map_err(|err| {
+                    Error::new(
+                        ErrorKind::EmitError(err.to_string()),
+                        self.lexer.span_location(&span),
+                    )
+                })?;
+                self.expr(right, w)
+            }
+            AstNode {
+                kind:
+                    AstNodeExpr::Binary(
+                        left,
+                        Token {
+                            kind: TokenKind::EqualEqualEqual,
+                            span,
+                        },
+                        right,
+                    ),
+                ..
+            }
+            | AstNode {
+                kind:
+                    AstNodeExpr::Binary(
+                        left,
+                        Token {
+                            kind: TokenKind::EqualEqual,
+                            span,
+                        },
+                        right,
+                    ),
+                ..
+            } => {
+                self.expr(left, w)?;
+                write!(w, "===").map_err(|err| {
+                    Error::new(
+                        ErrorKind::EmitError(err.to_string()),
+                        self.lexer.span_location(&span),
+                    )
+                })?;
+                self.expr(right, w)
+            }
+            AstNode {
                 kind: AstNodeExpr::Binary(left, tok, right),
                 ..
             } => {
