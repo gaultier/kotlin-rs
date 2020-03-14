@@ -224,12 +224,77 @@ impl TypeChecker<'_> {
             } => {
                 let left_t = self.type_check_expr(left)?;
                 let right_t = self.type_check_expr(right)?;
+
                 if left_t != right_t {
                     return Err(Error::new(
                         ErrorKind::IncompatibleTypes(left_t, right_t),
                         self.lexer.span_location(&tok.span),
                     ));
                 }
+
+                ast.type_info = Some(Type::Bool);
+                Ok(Type::Bool)
+            }
+            AstNode {
+                kind:
+                    AstNodeExpr::Binary(
+                        left,
+                        tok
+                        @
+                        Token {
+                            kind: TokenKind::Lesser,
+                            ..
+                        },
+                        right,
+                    ),
+                ..
+            }
+            | AstNode {
+                kind:
+                    AstNodeExpr::Binary(
+                        left,
+                        tok
+                        @
+                        Token {
+                            kind: TokenKind::LesserEqual,
+                            ..
+                        },
+                        right,
+                    ),
+                ..
+            }
+            | AstNode {
+                kind:
+                    AstNodeExpr::Binary(
+                        left,
+                        tok
+                        @
+                        Token {
+                            kind: TokenKind::Greater,
+                            ..
+                        },
+                        right,
+                    ),
+                ..
+            }
+            | AstNode {
+                kind:
+                    AstNodeExpr::Binary(
+                        left,
+                        tok
+                        @
+                        Token {
+                            kind: TokenKind::GreaterEqual,
+                            ..
+                        },
+                        right,
+                    ),
+                ..
+            } => {
+                let left_t = self.type_check_expr(left)?;
+                let right_t = self.type_check_expr(right)?;
+
+                self.coalesce_types(left_t, right_t, &tok)?;
                 ast.type_info = Some(Type::Bool);
                 Ok(Type::Bool)
             }
