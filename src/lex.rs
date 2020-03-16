@@ -85,6 +85,7 @@ pub enum TokenKind {
     ULong(u64),
     Float(f32),
     Double(f64),
+    Char(char),
     Shebang,
     Comment,
     TString,
@@ -210,6 +211,9 @@ enum CursorTokenKind {
     Dot,
     LineComment,
     BlockComment {
+        terminated: bool,
+    },
+    Char {
         terminated: bool,
     },
     OpenParen,
@@ -542,32 +546,11 @@ impl Cursor<'_> {
         }
     }
 
-    fn char_literal(&mut self) -> TokenKind {
+    fn char_literal(&mut self) -> CursorTokenKind {
         debug_assert!(self.prev() == '\'');
 
-        if self.second() == '\'' {
-            let terminated = self.single_quoted_string();
-            let suffix_start = self.len_consumed();
-            if terminated {
-                self.eat_literal_suffix();
-            }
-            let kind = Char { terminated };
-            return Literal { kind, suffix_start };
-        }
-
-        self.eat_while(is_id_continue);
-
-        // Check if after skipping literal contents we've met a closing
-        // single quote (which means that user attempted to create a
-        // string with single quotes).
-        if self.first() == '\'' {
-            self.bump();
-            let kind = Char { terminated: true };
-            return Literal {
-                kind,
-                suffix_start: self.len_consumed(),
-            };
-        }
+        let terminated = self.single_quoted_string();
+        CursorTokenKind::Char { terminated }
     }
 
     fn single_quoted_string(&mut self) -> bool {
@@ -800,6 +783,10 @@ pub struct Span {
 impl Span {
     pub fn new(start: usize, end: usize) -> Span {
         Span { start, end }
+    }
+
+    pub fn len(&self) -> usize {
+        self.end - self.start
     }
 }
 
@@ -1043,6 +1030,23 @@ impl Lexer {
             CursorTokenKind::CloseBracket => Ok(TokenKind::RightSquareBracket),
             CursorTokenKind::Question => Ok(TokenKind::QuestionMark),
             CursorTokenKind::Pound => Ok(TokenKind::Pound),
+            CursorTokenKind::Char { terminated: false } => Err(Error::new(
+                ErrorKind::UnterminatedChar,
+                self.span_location(&span),
+            )),
+            CursorTokenKind::Char { terminated: true } => {
+                let c: char = if span.len() == 3 {
+                    // Trim surrounding quotes to get content
+                    self.src[span.start + 1..span.end - 1]
+                        .chars()
+                        .next()
+                        .unwrap()
+                } else {
+                    unimplemented!()
+                };
+
+                Ok(TokenKind::Char(c))
+            }
             CursorTokenKind::Number {
                 kind,
                 suffix,
