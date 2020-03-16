@@ -786,6 +786,7 @@ impl Span {
     }
 
     pub fn len(&self) -> usize {
+        debug_assert!(self.end >= self.start);
         self.end - self.start
     }
 }
@@ -1042,6 +1043,7 @@ impl Lexer {
                         .next()
                         .unwrap()
                 } else {
+                    // Unicode literal
                     unimplemented!()
                 };
 
