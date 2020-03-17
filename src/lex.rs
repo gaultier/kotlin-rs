@@ -3092,6 +3092,20 @@ mod tests {
         assert_eq!(tok.location.start_pos, 0);
         assert_eq!(tok.location.end_pos, 8);
     }
+
+    #[test]
+    fn unicode_char_literal() {
+        let s = String::from("'\\uabcd'");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Char('ꯍ'));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 3);
+    }
+
     //     #[test]
     //     fn shebang() {
     //         let s = "#!/bin/cat\n+";
