@@ -1043,7 +1043,9 @@ impl Lexer {
                 let c: char = match slice {
                     [c] => *c,
                     // Unicode literal
-                    ['\\', 'u', a, b, c, d] => unimplemented!(),
+                    ['\\', 'u', a, b, c, d] => {
+                        self.char_literal_unicode([*a, *b, *c, *d], &span)?
+                    }
                     _ => {
                         return Err(Error::new(
                             ErrorKind::InvalidCharLiteral,
@@ -1060,6 +1062,10 @@ impl Lexer {
                 suffix_start,
             } => self.cursor_number_to_token_number(kind, suffix, suffix_start, &span),
         }
+    }
+
+    fn char_literal_unicode(&self, chars: [char; 4], span: &Span) -> Result<char, Error> {
+        Ok('a')
     }
 
     pub fn new(src: String) -> Lexer {
@@ -3083,6 +3089,19 @@ mod tests {
     #[test]
     fn invalid_char_literal_7() {
         let s = String::from("'\\ud800'");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, ErrorKind::InvalidCharLiteral);
+        assert_eq!(tok.location.start_pos, 0);
+        assert_eq!(tok.location.end_pos, 8);
+    }
+
+    #[test]
+    fn invalid_char_literal_8() {
+        let s = String::from("'\\uwxyz'");
         let mut lexer = Lexer::new(s);
 
         let tok = lexer.next_token();
