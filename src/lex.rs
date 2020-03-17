@@ -1043,7 +1043,12 @@ impl Lexer {
                 let c: char = match slice {
                     [c] => *c,
                     // Unicode literal
-                    ['\\', 'u', a, b, c, d] => {
+                    ['\\', 'u', a, b, c, d]
+                        if a.is_ascii_hexdigit()
+                            && b.is_ascii_hexdigit()
+                            && c.is_ascii_hexdigit()
+                            && d.is_ascii_hexdigit() =>
+                    {
                         self.char_literal_unicode([*a, *b, *c, *d], &span)?
                     }
                     _ => {
