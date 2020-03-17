@@ -1036,12 +1036,11 @@ impl Lexer {
                 self.span_location(&span),
             )),
             CursorTokenKind::Char { terminated: true } => {
-                let c: char = if span.len() == 3 {
-                    // Trim surrounding quotes to get content
-                    self.src[span.start + 1..span.end - 1]
-                        .chars()
-                        .next()
-                        .unwrap()
+                // Trim surrounding quotes to get content
+                let c_str = &self.src[span.start + 1..span.end - 1];
+                let c_chars = c_str.chars().collect::<Vec<_>>();
+                let c: char = if c_chars.len() == 1 {
+                    c_chars[0]
                 } else {
                     // Unicode literal
                     unimplemented!()

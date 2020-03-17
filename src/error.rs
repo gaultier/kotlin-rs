@@ -26,8 +26,7 @@ pub enum ErrorKind {
     TrailingDotInNumber,
     MissingExponentInNumber,
     UnknownEscapeSequence(Option<char>),
-    IncompleteUnicodeLiteral,
-    InvalidUnicodeLiteral(String),
+    InvalidCharLiteral,
     ExpectedPrimary,
     IncompatibleTypes(Type, Type),
     EmitError(String),
@@ -53,8 +52,7 @@ impl fmt::Display for ErrorKind {
             ErrorKind::UnknownEscapeSequence(esc) => {
                 write!(f, "Unknown escape sequence: {:?}", esc)
             }
-            ErrorKind::IncompleteUnicodeLiteral => write!(f, "Incomplete unicode literal"),
-            ErrorKind::InvalidUnicodeLiteral(_s) => write!(f, "Invalid unicode literal"),
+            ErrorKind::InvalidCharLiteral => write!(f, "Invalid char literal"),
             ErrorKind::ExpectedPrimary => write!(f, "Expected primary"),
             ErrorKind::IncompatibleTypes(left, right) => {
                 write!(f, "Incompatible types: {} and {}", left, right)
