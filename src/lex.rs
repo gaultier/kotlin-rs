@@ -3002,6 +3002,96 @@ mod tests {
         assert_eq!(tok.span.end, 3);
     }
 
+    #[test]
+    fn invalid_char_literal() {
+        let s = String::from("'ab'");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, ErrorKind::InvalidCharLiteral);
+        assert_eq!(tok.location.start_pos, 0);
+        assert_eq!(tok.location.end_pos, 4);
+    }
+
+    #[test]
+    fn invalid_char_literal_2() {
+        let s = String::from("'\\ab'");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, ErrorKind::InvalidCharLiteral);
+        assert_eq!(tok.location.start_pos, 0);
+        assert_eq!(tok.location.end_pos, 5);
+    }
+
+    #[test]
+    fn invalid_char_literal_3() {
+        let s = String::from("'\\ua'");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, ErrorKind::InvalidCharLiteral);
+        assert_eq!(tok.location.start_pos, 0);
+        assert_eq!(tok.location.end_pos, 5);
+    }
+
+    #[test]
+    fn invalid_char_literal_4() {
+        let s = String::from("'\\uab'");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, ErrorKind::InvalidCharLiteral);
+        assert_eq!(tok.location.start_pos, 0);
+        assert_eq!(tok.location.end_pos, 6);
+    }
+
+    #[test]
+    fn invalid_char_literal_5() {
+        let s = String::from("'\\uabc'");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, ErrorKind::InvalidCharLiteral);
+        assert_eq!(tok.location.start_pos, 0);
+        assert_eq!(tok.location.end_pos, 7);
+    }
+
+    #[test]
+    fn invalid_char_literal_6() {
+        let s = String::from("'\\Uabcd'");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, ErrorKind::InvalidCharLiteral);
+        assert_eq!(tok.location.start_pos, 0);
+        assert_eq!(tok.location.end_pos, 8);
+    }
+
+    #[test]
+    fn invalid_char_literal_7() {
+        let s = String::from("'\\ud800'");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_err(), true);
+        let tok = tok.as_ref().unwrap_err();
+        assert_eq!(tok.kind, ErrorKind::InvalidCharLiteral);
+        assert_eq!(tok.location.start_pos, 0);
+        assert_eq!(tok.location.end_pos, 8);
+    }
     //     #[test]
     //     fn shebang() {
     //         let s = "#!/bin/cat\n+";
