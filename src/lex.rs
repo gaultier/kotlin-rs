@@ -1070,7 +1070,16 @@ impl Lexer {
     }
 
     fn char_literal_unicode(&self, chars: [char; 4], span: &Span) -> Result<char, Error> {
-        Ok('a')
+        dbg!(chars);
+        let [a, b, c, d] = chars;
+        let num: u32 = d.to_digit(16).unwrap()
+            + c.to_digit(16).unwrap() * 0x10
+            + b.to_digit(16).unwrap() * 0x100
+            + a.to_digit(16).unwrap() * 0x1000;
+        dbg!(num);
+
+        let c: char = std::char::from_u32(num).unwrap();
+        Ok(c)
     }
 
     pub fn new(src: String) -> Lexer {
@@ -3127,7 +3136,7 @@ mod tests {
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Char('ꯍ'));
         assert_eq!(tok.span.start, 0);
-        assert_eq!(tok.span.end, 3);
+        assert_eq!(tok.span.end, 8);
     }
 
     //     #[test]
