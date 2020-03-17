@@ -1039,11 +1039,17 @@ impl Lexer {
                 // Trim surrounding quotes to get content
                 let c_str = &self.src[span.start + 1..span.end - 1];
                 let c_chars = c_str.chars().collect::<Vec<_>>();
-                let c: char = if c_chars.len() == 1 {
-                    c_chars[0]
-                } else {
+                let slice: &[char] = &c_chars;
+                let c: char = match slice {
+                    [c] => *c,
                     // Unicode literal
-                    unimplemented!()
+                    ['\\', 'u', a, b, c, d] => unimplemented!(),
+                    _ => {
+                        return Err(Error::new(
+                            ErrorKind::InvalidCharLiteral,
+                            self.span_location(&span),
+                        ));
+                    }
                 };
 
                 Ok(TokenKind::Char(c))
@@ -2981,6 +2987,19 @@ mod tests {
         assert_eq!(location.start_column, 6);
         assert_eq!(location.end_line, 2);
         assert_eq!(location.end_column, 7);
+    }
+
+    #[test]
+    fn single_char_literal() {
+        let s = String::from("'a'");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Char('a'));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 3);
     }
 
     //     #[test]
