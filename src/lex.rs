@@ -1078,8 +1078,8 @@ impl Lexer {
             + a.to_digit(16).unwrap() * 0x1000;
         dbg!(num);
 
-        let c: char = std::char::from_u32(num).unwrap();
-        Ok(c)
+        std::char::from_u32(num)
+            .ok_or_else(|| Error::new(ErrorKind::InvalidCharLiteral, self.span_location(&span)))
     }
 
     pub fn new(src: String) -> Lexer {
@@ -3134,7 +3134,20 @@ mod tests {
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, TokenKind::Char('ꯍ'));
+        assert_eq!(tok.kind, TokenKind::Char('\u{abcd}'));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 8);
+    }
+
+    #[test]
+    fn unicode_char_literal_unassigned_unicode() {
+        let s = String::from("'\\u2fe0'");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Char('\u{2fe0}'));
         assert_eq!(tok.span.start, 0);
         assert_eq!(tok.span.end, 8);
     }
