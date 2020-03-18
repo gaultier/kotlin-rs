@@ -57,9 +57,9 @@
 - [x] Type check math
 - [ ] Type inference (hard)
 
-Research:
-- type inference
-- Generics
-- Java Byte Code
-- Varargs
-- Null safety 
+## Research
+- [ ] Type inference
+- [ ] Generics
+- [ ] Java Byte Code
+- [ ] Varargs
+- [ ] Null safety 
