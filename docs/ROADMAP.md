@@ -23,6 +23,8 @@
 - [x] Come up with a simple AST
 - [x] Parse math expressions (e.g  `1 + 3`)
 - [x] Strip comments, shebang, etc from ast before parsing
+- [x] Math
+- [x] Boolean logic
 - [ ] Newline-sensitive
 - [ ] If
 - [ ] For
