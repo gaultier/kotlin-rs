@@ -1070,13 +1070,11 @@ impl Lexer {
     }
 
     fn char_literal_unicode(&self, chars: [char; 4], span: &Span) -> Result<char, Error> {
-        dbg!(chars);
         let [a, b, c, d] = chars;
         let num: u32 = d.to_digit(16).unwrap()
             + c.to_digit(16).unwrap() * 0x10
             + b.to_digit(16).unwrap() * 0x100
             + a.to_digit(16).unwrap() * 0x1000;
-        dbg!(num);
 
         std::char::from_u32(num)
             .ok_or_else(|| Error::new(ErrorKind::InvalidCharLiteral, self.span_location(&span)))
