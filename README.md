@@ -24,8 +24,4 @@ $ echo '123' | cargo run -- build
 
 ## Status
 
-Pre-pre alpha. Do not use yet.
-
-- [ ] Lexer: WIP
-- [ ] Parser
-- [ ] Multi files given on the command line
+Pre-pre alpha. Do not use yet. See `docs/ROADMAP.md`.
