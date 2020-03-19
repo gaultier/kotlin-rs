@@ -6,7 +6,7 @@
 
 - [ ] Triple quote strings (multiline) e.g `""" abc """`
 - [ ] Templated strings
-- [ ] Templated strings nested (?)
+- [ ] Templated strings nested
 - [ ] Simple Strings e.g `“abc”`
 - [x] Char literals e.g `'a'`
 - [x] Char unicode literals e.g `'\uabcd'`
