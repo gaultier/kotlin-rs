@@ -579,8 +579,8 @@ impl Cursor<'_> {
                 '\n' if self.second() != '\'' => break,
                 // End of file, stop parsing.
                 EOF_CHAR if self.is_eof() => break,
-                // Escaped slash is considered one character, so bump twice.
-                '\\' => {
+                // Escaped sequences are considered one character, so bump twice.
+                '\r' | '\t' | '\u{0008}' | '\\' => {
                     self.bump();
                     self.bump();
                 }
@@ -1038,10 +1038,18 @@ impl Lexer {
             CursorTokenKind::Char { terminated: true } => {
                 // Trim surrounding quotes to get content
                 let c_str = &self.src[span.start + 1..span.end - 1];
+                dbg!(c_str);
                 let c_chars = c_str.chars().collect::<Vec<_>>();
+                dbg!(&c_chars);
                 let slice: &[char] = &c_chars;
                 let c: char = match slice {
                     [c] => *c,
+                    ['\\', 'r'] => '\r',
+                    ['\\', 't'] => '\t',
+                    ['\\', 'n'] => '\n',
+                    ['\\', 'b'] => '\u{0008}',
+                    ['\\', '\''] => '\'',
+                    ['\\', '\\'] => '\\',
                     // Unicode literal
                     ['\\', 'u', a, b, c, d]
                         if a.is_ascii_hexdigit()
@@ -3148,6 +3156,110 @@ mod tests {
         assert_eq!(tok.kind, TokenKind::Char('\u{2fe0}'));
         assert_eq!(tok.span.start, 0);
         assert_eq!(tok.span.end, 8);
+    }
+
+    #[test]
+    fn escaped_sequence_char_literal_r() {
+        let s = String::from(r#"'\r'"#);
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Char('\r'));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 4);
+    }
+
+    #[test]
+    fn escaped_sequence_char_literal_n() {
+        let s = String::from(r#"'\n'"#);
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Char('\n'));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 4);
+    }
+
+    #[test]
+    fn escaped_sequence_char_literal_t() {
+        let s = String::from(r#"'\t'"#);
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Char('\t'));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 4);
+    }
+
+    #[test]
+    fn escaped_sequence_char_literal_b() {
+        let s = String::from(r#"'\b'"#);
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Char('\u{0008}'));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 4);
+    }
+
+    #[test]
+    fn escaped_sequence_char_literal_single_quote() {
+        let s = String::from(r#"'\''"#);
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Char('\''));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 4);
+    }
+
+    #[test]
+    fn escaped_sequence_char_literal_double_quote() {
+        let s = String::from(r#"'"'"#);
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Char('"'));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 3);
+    }
+
+    #[test]
+    fn escaped_sequence_char_literal_dollar() {
+        let s = String::from("'$'");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Char('$'));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 3);
+    }
+
+    #[test]
+    fn escaped_sequence_char_literal_backslash() {
+        let s = String::from(r#"'\\'"#);
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Char('\\'));
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 4);
     }
 
     //     #[test]
