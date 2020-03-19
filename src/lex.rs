@@ -302,6 +302,10 @@ impl Cursor<'_> {
                 '*' => self.block_comment(lines, start_pos),
                 _ => CursorTokenKind::Slash,
             },
+            '\r' if self.first() == '\n' => {
+                self.bump();
+                CursorTokenKind::Newline
+            }
             '\n' => CursorTokenKind::Newline,
             // Whitespace sequence.
             c if is_whitespace(c) => self.whitespace(),
@@ -3013,6 +3017,33 @@ mod tests {
         assert_eq!(location.start_column, 6);
         assert_eq!(location.end_line, 2);
         assert_eq!(location.end_column, 7);
+    }
+
+    #[test]
+    fn windows_newline() {
+        let s = String::from("@\r\n1");
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::At);
+        assert_eq!(tok.span.start, 0);
+        assert_eq!(tok.span.end, 1);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Newline);
+        assert_eq!(tok.span.start, 1);
+        assert_eq!(tok.span.end, 3);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Int(1));
+        assert_eq!(tok.span.start, 3);
+        assert_eq!(tok.span.end, 4);
     }
 
     #[test]
