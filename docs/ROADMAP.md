@@ -80,6 +80,7 @@
 - [ ] Varargs
 - [ ] Null safety
 - [ ] Class loader (hard)
+- [ ] Language server (?)
 
 ## Code emitting
 
