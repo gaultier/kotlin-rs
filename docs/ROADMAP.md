@@ -42,6 +42,10 @@
 
 - [ ] `Short` type
 - [ ] `UShort` type
+- [x] Type check math
+- [x] Type check boolean logic
+- [ ] Type inference (hard)
+
 
 ## Name resolution
 
@@ -62,21 +66,10 @@
 - [x] Show full line of source code on error
 - [x] Show the exact location on the line of the error with description
 
-## Code emitting
-
-- [ ] IR (?)
-- [ ] Jar
-
 ## Examples of using the libparsing
 
 - [ ] Write examples in rust
 - [ ] Write one example in another language (C? Python? Java with JNI?) -> simple stats, kotlinfmt, remove unused, loc count
-
-## Type checker
-
-- [x] Type check math
-- [x] Type check boolean logic
-- [ ] Type inference (hard)
 
 ## Research
 - [ ] Type inference
@@ -85,3 +78,9 @@
 - [ ] Varargs
 - [ ] Null safety
 - [ ] Class loader (hard)
+
+## Code emitting
+
+- [ ] IR (?)
+- [ ] Jar
+
