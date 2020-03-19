@@ -217,6 +217,8 @@ enum CursorTokenKind {
     Colon,
     Comma,
     Dot,
+    Arrow,
+    FatArrow,
     LineComment,
     BlockComment {
         terminated: bool,
@@ -349,6 +351,7 @@ impl Cursor<'_> {
             '?' => CursorTokenKind::Question,
             ':' => CursorTokenKind::Colon,
             '$' => CursorTokenKind::Dollar,
+            '=' if self.match_char('>') => CursorTokenKind::FatArrow,
             '=' if self.match_char('=') => {
                 if self.match_char('=') {
                     CursorTokenKind::EqualEqualEqual
@@ -371,6 +374,7 @@ impl Cursor<'_> {
             '>' => CursorTokenKind::Greater,
             '-' if self.match_char('-') => CursorTokenKind::MinusMinus,
             '-' if self.match_char('=') => CursorTokenKind::MinusEqual,
+            '-' if self.match_char('>') => CursorTokenKind::Arrow,
             '-' => CursorTokenKind::Minus,
             '&' if self.match_char('&') => CursorTokenKind::AmpersandAmpersand,
             '&' => CursorTokenKind::Ampersand,
@@ -1038,6 +1042,8 @@ impl Lexer {
             CursorTokenKind::StarEqual => Ok(TokenKind::StarEqual),
             CursorTokenKind::Slash => Ok(TokenKind::Slash),
             CursorTokenKind::SlashEqual => Ok(TokenKind::SlashEqual),
+            CursorTokenKind::Arrow => Ok(TokenKind::Arrow),
+            CursorTokenKind::FatArrow => Ok(TokenKind::FatArrow),
             CursorTokenKind::Comma => Ok(TokenKind::Comma),
             CursorTokenKind::Semicolon => Ok(TokenKind::Semicolon),
             CursorTokenKind::Pipe => Ok(TokenKind::Pipe),
