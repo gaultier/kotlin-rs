@@ -38,7 +38,8 @@
 - [ ] Variable assignement
 - [ ] Simple inline functions declaration e.g `fun add(a: Int, b: Int): Int = a + b`
 - [ ] Simple C-like functions declaration e.g `fun add(a: Int, b: Int): Int { return a + b; }`
-- [ ] Function call
+- [ ] Function call e.g `add(1, 5)`
+- [ ] Variadic functions
 
 ## Type checker
 
