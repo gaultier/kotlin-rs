@@ -13,7 +13,7 @@
 - [x] Char escaped sequences literals e.g `'\r'`
 - [ ] All single character lex tokens e.g `}`
 - [ ] All multi character lex tokens e.g `!==`
-- [ ] Check that `\r\n` line terminated files are handled correctly
+- [x] Treat `\r\n` as newline
 - [ ] Nested comments
 - [ ] Doc comments
 - [ ] Identifiers (potentially with unicode)
