@@ -439,7 +439,18 @@ impl Cursor<'_> {
 
     fn whitespace(&mut self) -> CursorTokenKind {
         debug_assert!(is_whitespace(self.prev()));
-        self.eat_while(is_whitespace);
+
+        while !self.is_eof() {
+            match self.first() {
+            | '\t'
+            | '\u{000B}' // vertical tab
+            | '\u{000C}' // form feed
+            | ' ' => { self.bump(); }
+            | '\r' if self.second() != '\n' =>{ self.bump(); }
+            _ => break,
+            }
+        }
+
         CursorTokenKind::Whitespace
     }
 
@@ -3021,7 +3032,7 @@ mod tests {
 
     #[test]
     fn windows_newline() {
-        let s = String::from("@\r\n1");
+        let s = String::from("@\r\r\n1");
         let mut lexer = Lexer::new(s);
 
         let tok = lexer.next_token();
@@ -3034,16 +3045,23 @@ mod tests {
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, TokenKind::Newline);
+        assert_eq!(tok.kind, TokenKind::Whitespace);
         assert_eq!(tok.span.start, 1);
-        assert_eq!(tok.span.end, 3);
+        assert_eq!(tok.span.end, 2);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Newline);
+        assert_eq!(tok.span.start, 2);
+        assert_eq!(tok.span.end, 4);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Int(1));
-        assert_eq!(tok.span.start, 3);
-        assert_eq!(tok.span.end, 4);
+        assert_eq!(tok.span.start, 4);
+        assert_eq!(tok.span.end, 5);
     }
 
     #[test]
