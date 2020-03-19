@@ -2,22 +2,20 @@
 
 ## Lexer
 
-- [ ] Triple quote strings (multiline)
+- [ ] Triple quote strings (multiline) e.g `""" abc """`
 - [ ] Templated strings
 - [ ] Templated strings nested (?)
-- [ ] Simple Strings (e.g `“abc”`)
-- [x] Char literals (e.g `'a'`)
-- [x] Char unicode literals (e.g `'\uabcd'`)
-- [x] Char escaped sequences literals (e.g `'\r'`)
-- [ ] All single character lex tokens (e.g `}`)
-- [ ] All multi character lex tokens (e.g `!==`)
+- [ ] Simple Strings e.g `“abc”`
+- [x] Char literals e.g `'a'`
+- [x] Char unicode literals e.g `'\uabcd'`
+- [x] Char escaped sequences literals e.g `'\r'`
+- [ ] All single character lex tokens e.g `}`
+- [ ] All multi character lex tokens e.g `!==`
 - [ ] Check that `\r\n` line terminated files are handled correctly
 - [ ] Nested comments
 - [ ] Doc comments
 - [ ] Identifiers (potentially with unicode)
 - [x] Don’t give out of bounds locations
-- [ ] Support character literals (e.g \r \n \b \t etc)
-- [x] Support literal unicode points (e.g \uFFFF)
 - [x] Newline-sensitive
 - [ ] Annotations (e.g `@Timeout`)
 
