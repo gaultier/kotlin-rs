@@ -58,6 +58,10 @@
 - [x] Show full line of source code on error
 - [x] Show the exact location on the line of the error with description
 
+## Code emitting
+
+- [ ] Jar
+
 ## Examples of using the libparsing
 
 - [ ] Write examples in rust
