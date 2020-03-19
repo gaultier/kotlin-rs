@@ -64,6 +64,7 @@
 
 ## Code emitting
 
+- [ ] IR (?)
 - [ ] Jar
 
 ## Examples of using the libparsing
