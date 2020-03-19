@@ -15,6 +15,7 @@
 - [ ] `Short` type
 - [ ] Nested comments
 - [ ] Doc comments
+- [ ] Identifiers (potentially with unicode)
 - [x] Don’t give out of bounds locations
 - [ ] Support character literals (e.g \r \n \b \t etc)
 - [x] Support literal unicode points (e.g \uFFFF)
