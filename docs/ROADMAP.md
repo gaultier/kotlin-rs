@@ -29,6 +29,7 @@
 - [x] Math
 - [x] Boolean logic e.g `1 > 2 != 3<4`
 - [ ] Newline-sensitive
+- [ ] Range e.g `1..5`
 - [ ] If
 - [ ] For
 - [ ] When
