@@ -59,6 +59,7 @@
 ## Type checker
 
 - [x] Type check math
+- [x] Type check boolean logic
 - [ ] Type inference (hard)
 
 ## Research
