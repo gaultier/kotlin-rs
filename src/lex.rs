@@ -190,7 +190,9 @@ enum CursorTokenKind {
     MinusMinus,
     MinusEqual,
     Star,
+    StarEqual,
     Slash,
+    SlashEqual,
     Ampersand,
     AmpersandAmpersand,
     Pipe,
@@ -204,6 +206,7 @@ enum CursorTokenKind {
     Greater,
     GreaterEqual,
     Percent,
+    PercentEqual,
     Equal,
     EqualEqual,
     EqualEqualEqual,
@@ -305,6 +308,7 @@ impl Cursor<'_> {
             '/' => match self.first() {
                 '/' => self.line_comment(),
                 '*' => self.block_comment(lines, start_pos),
+                '=' => CursorTokenKind::SlashEqual,
                 _ => CursorTokenKind::Slash,
             },
             '\r' if self.first() == '\n' => {
@@ -375,7 +379,9 @@ impl Cursor<'_> {
             '+' if self.match_char('+') => CursorTokenKind::PlusPlus,
             '+' if self.match_char('=') => CursorTokenKind::PlusEqual,
             '+' => CursorTokenKind::Plus,
+            '*' if self.match_char('=') => CursorTokenKind::StarEqual,
             '*' => CursorTokenKind::Star,
+            '%' if self.match_char('=') => CursorTokenKind::PercentEqual,
             '%' => CursorTokenKind::Percent,
 
             // Character literal.
@@ -1029,7 +1035,9 @@ impl Lexer {
             CursorTokenKind::MinusMinus => Ok(TokenKind::MinusMinus),
             CursorTokenKind::MinusEqual => Ok(TokenKind::MinusEqual),
             CursorTokenKind::Star => Ok(TokenKind::Star),
+            CursorTokenKind::StarEqual => Ok(TokenKind::StarEqual),
             CursorTokenKind::Slash => Ok(TokenKind::Slash),
+            CursorTokenKind::SlashEqual => Ok(TokenKind::SlashEqual),
             CursorTokenKind::Comma => Ok(TokenKind::Comma),
             CursorTokenKind::Semicolon => Ok(TokenKind::Semicolon),
             CursorTokenKind::Pipe => Ok(TokenKind::Pipe),
@@ -1050,6 +1058,7 @@ impl Lexer {
             CursorTokenKind::BangEqual => Ok(TokenKind::BangEqual),
             CursorTokenKind::BangEqualEqual => Ok(TokenKind::BangEqualEqual),
             CursorTokenKind::Percent => Ok(TokenKind::Percent),
+            CursorTokenKind::PercentEqual => Ok(TokenKind::PercentEqual),
             CursorTokenKind::Colon => Ok(TokenKind::Colon),
             CursorTokenKind::Dot => Ok(TokenKind::Dot),
             CursorTokenKind::OpenParen => Ok(TokenKind::LeftParen),
