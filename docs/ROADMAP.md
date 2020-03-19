@@ -8,7 +8,7 @@
 - [ ] Simple Strings (e.g `“abc”`)
 - [x] Char literals (e.g `'a'`)
 - [x] Char unicode literals (e.g `'\uabcd'`)
-- [ ] Char escaped sequences literals (e.g `'\r'`)
+- [x] Char escaped sequences literals (e.g `'\r'`)
 - [x] Remaining single character lex tokens (e.g `}`)
 - [ ] Check that `\r\n` line terminated files are handled correctly
 - [ ] Short type
