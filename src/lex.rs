@@ -185,6 +185,7 @@ enum CursorTokenKind {
     },
     Plus,
     PlusPlus,
+    PlusEqual,
     Minus,
     MinusMinus,
     Star,
@@ -370,6 +371,7 @@ impl Cursor<'_> {
             '|' if self.match_char('|') => CursorTokenKind::PipePipe,
             '|' => CursorTokenKind::Pipe,
             '+' if self.match_char('+') => CursorTokenKind::PlusPlus,
+            '+' if self.match_char('=') => CursorTokenKind::PlusEqual,
             '+' => CursorTokenKind::Plus,
             '*' => CursorTokenKind::Star,
             '%' => CursorTokenKind::Percent,
@@ -1020,6 +1022,7 @@ impl Lexer {
             }
             CursorTokenKind::Plus => Ok(TokenKind::Plus),
             CursorTokenKind::PlusPlus => Ok(TokenKind::PlusPlus),
+            CursorTokenKind::PlusEqual => Ok(TokenKind::PlusEqual),
             CursorTokenKind::Minus => Ok(TokenKind::Minus),
             CursorTokenKind::MinusMinus => Ok(TokenKind::MinusMinus),
             CursorTokenKind::Star => Ok(TokenKind::Star),
