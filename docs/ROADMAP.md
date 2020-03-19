@@ -9,12 +9,13 @@
 - [x] Char literals (e.g `'a'`)
 - [x] Char unicode literals (e.g `'\uabcd'`)
 - [x] Char escaped sequences literals (e.g `'\r'`)
-- [x] Remaining single character lex tokens (e.g `}`)
+- [ ] All single character lex tokens (e.g `}`)
+- [ ] All multi character lex tokens (e.g `!==`)
 - [ ] Check that `\r\n` line terminated files are handled correctly
-- [ ] Short type
-- [ ] nested comments
-- [ ] doc comments 
-- [x] don’t give out of bounds locations
+- [ ] `Short` type
+- [ ] Nested comments
+- [ ] Doc comments
+- [x] Don’t give out of bounds locations
 - [ ] Support character literals (e.g \r \n \b \t etc)
 - [x] Support literal unicode points (e.g \uFFFF)
 - [x] Newline-sensitive
@@ -22,19 +23,20 @@
 
 ## Parser
 
-- [x] Come up with a simple AST
-- [x] Parse math expressions (e.g  `1 + 3`)
+- [x] Simple AST
+- [x] Math expressions e.g  `1 + 3`
 - [x] Strip comments, shebang, etc from ast before parsing
 - [x] Math
-- [x] Boolean logic
+- [x] Boolean logic e.g `1 > 2 != 3<4`
 - [ ] Newline-sensitive
 - [ ] If
 - [ ] For
 - [ ] When
 - [ ] Elvis operator
 - [ ] While
-- [ ] Parse statements
-- [ ] Functions
+- [ ] Statements
+- [ ] Simple inline functions e.g `fun add(a: Int, b: Int): Int = a + b`
+- [ ] Simple C-like functions e.g `fun add(a: Int, b: Int): Int { return a + b; }`
 
 ## CLI
 
@@ -64,4 +66,4 @@
 - [ ] Generics
 - [ ] Java Byte Code
 - [ ] Varargs
-- [ ] Null safety 
+- [ ] Null safety
