@@ -48,6 +48,8 @@
 
 - [ ] `Short` type
 - [ ] `UShort` type
+- [ ] `Byte` type
+- [ ] `UByte` type
 - [x] Type check math
 - [x] Type check boolean logic
 - [ ] Type inference (hard)
