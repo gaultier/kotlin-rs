@@ -1,6 +1,6 @@
 # Roadmap
 
-*Roughly in order of priority*
+*Roughly in order of priority, non exhaustive*
 
 ## Lexer
 
