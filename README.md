@@ -24,4 +24,4 @@ $ echo '123' | cargo run -- build
 
 ## Status
 
-Pre-pre alpha. Do not use yet. See `docs/ROADMAP.md`.
+Pre-pre alpha. Do not use yet. See the [roadmap](docs/ROADMAP.md).
