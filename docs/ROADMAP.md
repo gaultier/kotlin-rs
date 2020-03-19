@@ -34,9 +34,16 @@
 - [ ] When
 - [ ] Elvis operator
 - [ ] While
-- [ ] Statements
-- [ ] Simple inline functions e.g `fun add(a: Int, b: Int): Int = a + b`
-- [ ] Simple C-like functions e.g `fun add(a: Int, b: Int): Int { return a + b; }`
+- [ ] Variable declaration
+- [ ] Variable assignement
+- [ ] Simple inline functions declaration e.g `fun add(a: Int, b: Int): Int = a + b`
+- [ ] Simple C-like functions declaration e.g `fun add(a: Int, b: Int): Int { return a + b; }`
+- [ ] Function call
+
+## Name resolution
+
+- [ ] Variable
+- [ ] Function call
 
 ## CLI
 
