@@ -12,7 +12,6 @@
 - [ ] All single character lex tokens (e.g `}`)
 - [ ] All multi character lex tokens (e.g `!==`)
 - [ ] Check that `\r\n` line terminated files are handled correctly
-- [ ] `Short` type
 - [ ] Nested comments
 - [ ] Doc comments
 - [ ] Identifiers (potentially with unicode)
@@ -41,10 +40,16 @@
 - [ ] Simple C-like functions declaration e.g `fun add(a: Int, b: Int): Int { return a + b; }`
 - [ ] Function call
 
+## Type checker
+
+- [ ] `Short` type
+- [ ] `UShort` type
+
 ## Name resolution
 
 - [ ] Variable
 - [ ] Function call
+- [ ] Class loader (hard)
 
 ## CLI
 
@@ -80,3 +85,4 @@
 - [ ] Java Byte Code
 - [ ] Varargs
 - [ ] Null safety
+- [ ] Class loader (hard)
