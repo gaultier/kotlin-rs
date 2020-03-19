@@ -44,6 +44,7 @@ pub enum TokenKind {
     LeftCurlyBracket,
     RightCurlyBracket,
     Dot,
+    DotDot,
     Ampersand,
     AmpersandAmpersand,
     Pipe,
@@ -217,6 +218,7 @@ enum CursorTokenKind {
     Colon,
     Comma,
     Dot,
+    DotDot,
     Arrow,
     FatArrow,
     LineComment,
@@ -324,6 +326,7 @@ impl Cursor<'_> {
             // Identifier (this should be checked after other variant that can
             // start as identifier).
             // c if is_id_start(c) => self.ident(),
+            '.' if self.match_char('.') => CursorTokenKind::DotDot,
             '.' if !self.first().is_ascii_digit() => CursorTokenKind::Dot,
             // Numeric literal.
             '0'..='9' | '.' => {
@@ -1067,6 +1070,7 @@ impl Lexer {
             CursorTokenKind::PercentEqual => Ok(TokenKind::PercentEqual),
             CursorTokenKind::Colon => Ok(TokenKind::Colon),
             CursorTokenKind::Dot => Ok(TokenKind::Dot),
+            CursorTokenKind::DotDot => Ok(TokenKind::DotDot),
             CursorTokenKind::OpenParen => Ok(TokenKind::LeftParen),
             CursorTokenKind::CloseParen => Ok(TokenKind::RightParen),
             CursorTokenKind::OpenBrace => Ok(TokenKind::LeftCurlyBracket),
