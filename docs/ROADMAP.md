@@ -1,5 +1,7 @@
 # Roadmap
 
+*roughly in order of priority*
+
 ## Lexer
 
 - [ ] Triple quote strings (multiline) e.g `""" abc """`
