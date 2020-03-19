@@ -11,8 +11,8 @@
 - [x] Char literals e.g `'a'`
 - [x] Char unicode literals e.g `'\uabcd'`
 - [x] Char escaped sequences literals e.g `'\r'`
-- [ ] All single character lex tokens e.g `}`
-- [ ] All multi character lex tokens e.g `!==`
+- [x] All single character lex tokens e.g `}`
+- [x] All multi character lex tokens e.g `!==`
 - [x] Treat `\r\n` as newline
 - [ ] Nested comments
 - [ ] Doc comments
