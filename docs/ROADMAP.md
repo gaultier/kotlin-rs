@@ -40,6 +40,8 @@
 - [ ] Simple C-like functions declaration e.g `fun add(a: Int, b: Int): Int { return a + b; }`
 - [ ] Function call e.g `add(1, 5)`
 - [ ] Variadic functions
+- [ ] Class
+- [ ] Enum
 
 ## Type checker
 
