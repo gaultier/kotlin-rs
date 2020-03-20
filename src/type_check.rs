@@ -329,6 +329,44 @@ impl TypeChecker<'_> {
         }
     }
 
+    fn type_check_if_expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
+        if let Some(t) = ast.type_info {
+            return Ok(t);
+        }
+
+        match ast {
+            AstNode {
+                kind:
+                    AstNodeExpr::IfExpr {
+                        cond,
+                        cond_start_tok,
+                        if_body,
+                        else_body,
+                    },
+                ..
+            } => {
+                let t = self.type_check_expr(cond)?;
+                if t != Type::Bool {
+                    return Err(Error::new(
+                        ErrorKind::IncompatibleTypes(t, Type::Bool),
+                        self.lexer.span_location(&cond_start_tok.span),
+                    ));
+                }
+                let if_body_t = self.type_check_expr(if_body)?;
+                let else_body_t = self.type_check_expr(else_body)?;
+                if if_body_t != else_body_t {
+                    return Err(Error::new(
+                        ErrorKind::IncompatibleTypes(if_body_t, else_body_t),
+                        self.lexer.span_location(&cond_start_tok.span),
+                    ));
+                }
+                ast.type_info = Some(if_body_t);
+                Ok(t)
+            }
+            _ => unreachable!(),
+        }
+    }
+
     fn type_check_expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
         match ast {
             AstNode {
@@ -350,7 +388,7 @@ impl TypeChecker<'_> {
             AstNode {
                 kind: AstNodeExpr::IfExpr { .. },
                 ..
-            } => unimplemented!(),
+            } => self.type_check_if_expr(ast),
         }
     }
 

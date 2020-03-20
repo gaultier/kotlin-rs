@@ -57,6 +57,7 @@ pub enum AstNodeExpr {
     Grouping(Box<AstNode>),
     IfExpr {
         cond: Box<AstNode>,
+        cond_start_tok: Token,
         if_body: Box<AstNode>,
         else_body: Box<AstNode>,
     },
@@ -99,18 +100,19 @@ impl Parser<'_> {
                     kind: TokenKind::Newline,
                     ..
                 }) => (),
-                _ => break,
+                _ => {
+                    return Ok(());
+                }
             }
         }
-        Ok(())
     }
 
-    fn expect(&mut self, kind: TokenKind) -> Result<(), Error> {
+    fn expect(&mut self, kind: TokenKind) -> Result<Token, Error> {
         let previous = self.previous;
         match previous {
             Some(Token { kind: k, .. }) if k == kind => {
                 self.advance()?;
-                Ok(())
+                return Ok(self.previous.unwrap());
             }
             _ => Err(Error::new(
                 ErrorKind::ExpectedToken,
@@ -121,7 +123,7 @@ impl Parser<'_> {
 
     fn if_expr(&mut self) -> Result<AstNode, Error> {
         self.expect(TokenKind::KeywordIf)?;
-        self.expect(TokenKind::LeftParen)?;
+        let cond_start_tok = self.expect(TokenKind::LeftParen)?;
 
         let cond = self.expression()?;
 
@@ -134,6 +136,7 @@ impl Parser<'_> {
         Ok(AstNode {
             kind: AstNodeExpr::IfExpr {
                 cond: Box::new(cond),
+                cond_start_tok,
                 if_body: Box::new(if_body),
                 else_body: Box::new(else_body),
             },
