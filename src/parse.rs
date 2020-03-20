@@ -119,8 +119,27 @@ impl Parser<'_> {
         }
     }
 
-    // fn if_expr(&mut self) -> Result<AstNode, Error> {
-    // }
+    fn if_expr(&mut self) -> Result<AstNode, Error> {
+        self.expect(TokenKind::KeywordIf)?;
+        self.expect(TokenKind::LeftParen)?;
+
+        let cond = self.expression()?;
+
+        self.expect(TokenKind::RightParen)?;
+        let if_body = self.expression()?;
+
+        self.expect(TokenKind::KeywordElse)?;
+        let else_body = self.expression()?;
+
+        Ok(AstNode {
+            kind: AstNodeExpr::IfExpr {
+                cond: Box::new(cond),
+                if_body: Box::new(if_body),
+                else_body: Box::new(else_body),
+            },
+            type_info: None,
+        })
+    }
 
     fn primary(&mut self) -> Result<AstNode, Error> {
         let previous = self.previous.unwrap();
@@ -151,6 +170,7 @@ impl Parser<'_> {
                     type_info: None,
                 })
             }
+            TokenKind::KeywordIf => self.if_expr(),
             _ => Err(Error::new(
                 ErrorKind::ExpectedPrimary,
                 self.lexer.span_location(&previous.span),
