@@ -291,19 +291,13 @@ impl JsEmitter<'_> {
                     },
                 ..
             } => {
-                write!(w, "(").unwrap();
-                write!(w, "(").unwrap();
+                write!(w, "((").unwrap();
                 self.expr(cond, w)?;
-                write!(w, ")").unwrap();
-                write!(w, "?").unwrap();
-                write!(w, "(").unwrap();
+                write!(w, ")?(").unwrap();
                 self.expr(if_body, w)?;
-                write!(w, ")").unwrap();
-                write!(w, ":").unwrap();
-                write!(w, "(").unwrap();
+                write!(w, "):(").unwrap();
                 self.expr(else_body, w)?;
-                write!(w, ")").unwrap();
-                write!(w, ")").unwrap();
+                write!(w, "))").unwrap();
 
                 Ok(())
             }
