@@ -33,7 +33,7 @@
 - [x] Strip comments, shebang, etc from ast before parsing
 - [x] Math
 - [x] Boolean logic e.g `1 > 2 != 3<4`
-- [ ] Newline-sensitive
+- [x] Newline-sensitive
 - [ ] Range e.g `1..5`
 - [ ] If
 - [ ] For
