@@ -225,10 +225,6 @@ impl SexpEmitter<'_> {
                 kind: AstNodeExpr::Binary(left, tok, right),
                 ..
             } => {
-                if let (Some(Type::Null), Some(Type::Null)) = (left.type_info, right.type_info) {
-                    unimplemented!();
-                }
-
                 write!(w, "({} ", &self.lexer.src[tok.span.start..tok.span.end]).unwrap();
                 self.expr(left, w)?;
                 write!(w, " ").unwrap();
