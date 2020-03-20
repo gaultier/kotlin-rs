@@ -2,13 +2,13 @@ use crate::error::*;
 use crate::lex::{Lexer, Token, TokenKind};
 use crate::parse::*;
 
-pub(crate) struct JsEmitter<'a> {
+pub(crate) struct SexpEmitter<'a> {
     lexer: &'a Lexer,
 }
 
-impl JsEmitter<'_> {
-    pub(crate) fn new(lexer: &Lexer) -> JsEmitter {
-        JsEmitter { lexer }
+impl SexpEmitter<'_> {
+    pub(crate) fn new(lexer: &Lexer) -> SexpEmitter {
+        SexpEmitter { lexer }
     }
 
     pub fn stmts<W: std::io::Write>(
@@ -21,7 +21,7 @@ impl JsEmitter<'_> {
                 AstNodeStmt::Expr(expr, _) => expr,
             };
             self.expr(&ast, w)?;
-            writeln!(w, ";").unwrap();
+            writeln!(w, "\n").unwrap();
         }
         Ok(())
     }
@@ -32,105 +32,79 @@ impl JsEmitter<'_> {
                 kind:
                     AstNodeExpr::Literal(Token {
                         kind: TokenKind::Int(n),
-                        span,
+                        ..
                     }),
                 ..
-            } => write!(w, "{}", n).map_err(|err| {
-                Error::new(
-                    ErrorKind::EmitError(err.to_string()),
-                    self.lexer.span_location(&span),
-                )
-            }),
+            } => {
+                write!(w, "{}", n).unwrap();
+                Ok(())
+            }
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
                         kind: TokenKind::UInt(n),
-                        span,
+                        ..
                     }),
                 ..
-            } => write!(w, "{}", n)
-                .map_err(|err| {
-                    Error::new(
-                        ErrorKind::EmitError(err.to_string()),
-                        self.lexer.span_location(&span),
-                    )
-                })
-                .map(|_| ()),
+            } => {
+                write!(w, "{}", n).unwrap();
+                Ok(())
+            }
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
                         kind: TokenKind::Long(n),
-                        span,
+                        ..
                     }),
                 ..
-            } => write!(w, "{}", n)
-                .map_err(|err| {
-                    Error::new(
-                        ErrorKind::EmitError(err.to_string()),
-                        self.lexer.span_location(&span),
-                    )
-                })
-                .map(|_| ()),
+            } => {
+                write!(w, "{}", n).unwrap();
+                Ok(())
+            }
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
                         kind: TokenKind::ULong(n),
-                        span,
+                        ..
                     }),
                 ..
-            } => write!(w, "{}", n)
-                .map_err(|err| {
-                    Error::new(
-                        ErrorKind::EmitError(err.to_string()),
-                        self.lexer.span_location(&span),
-                    )
-                })
-                .map(|_| ()),
+            } => {
+                write!(w, "{}", n).unwrap();
+                Ok(())
+            }
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
                         kind: TokenKind::Float(n),
-                        span,
+                        ..
                     }),
                 ..
-            } => write!(w, "{}", n)
-                .map_err(|err| {
-                    Error::new(
-                        ErrorKind::EmitError(err.to_string()),
-                        self.lexer.span_location(&span),
-                    )
-                })
-                .map(|_| ()),
+            } => {
+                write!(w, "{}", n).unwrap();
+                Ok(())
+            }
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
                         kind: TokenKind::Double(n),
-                        span,
+                        ..
                     }),
                 ..
-            } => write!(w, "{}", n)
-                .map_err(|err| {
-                    Error::new(
-                        ErrorKind::EmitError(err.to_string()),
-                        self.lexer.span_location(&span),
-                    )
-                })
-                .map(|_| ()),
+            } => {
+                write!(w, "{}", n).unwrap();
+                Ok(())
+            }
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
                         kind: TokenKind::Bool(n),
-                        span,
+                        ..
                     }),
                 ..
-            } => write!(w, "{}", n)
-                .map_err(|err| {
-                    Error::new(
-                        ErrorKind::EmitError(err.to_string()),
-                        self.lexer.span_location(&span),
-                    )
-                })
-                .map(|_| ()),
+            } => {
+                write!(w, "{}", n).unwrap();
+                Ok(())
+            }
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
@@ -149,29 +123,21 @@ impl JsEmitter<'_> {
                         span,
                     }),
                 ..
-            } => write!(w, "{}", &self.lexer.src[span.start..span.end])
-                .map_err(|err| {
-                    Error::new(
-                        ErrorKind::EmitError(err.to_string()),
-                        self.lexer.span_location(&span),
-                    )
-                })
-                .map(|_| ()),
+            } => {
+                write!(w, "{}", &self.lexer.src[span.start..span.end]).unwrap();
+                Ok(())
+            }
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
                         kind: TokenKind::Null,
-                        span,
+                        ..
                     }),
                 ..
-            } => write!(w, "null")
-                .map_err(|err| {
-                    Error::new(
-                        ErrorKind::EmitError(err.to_string()),
-                        self.lexer.span_location(&span),
-                    )
-                })
-                .map(|_| ()),
+            } => {
+                write!(w, "'nil").unwrap();
+                Ok(())
+            }
             _ => unreachable!(),
         }
     }
@@ -182,13 +148,10 @@ impl JsEmitter<'_> {
                 kind: AstNodeExpr::Unary(tok, right),
                 ..
             } => {
-                write!(w, "{}", &self.lexer.src[tok.span.start..tok.span.end]).map_err(|err| {
-                    Error::new(
-                        ErrorKind::EmitError(err.to_string()),
-                        self.lexer.span_location(&tok.span),
-                    )
-                })?;
-                self.expr(right, w)
+                write!(w, "({} ", &self.lexer.src[tok.span.start..tok.span.end]).unwrap();
+                self.expr(right, w)?;
+                write!(w, ")").unwrap();
+                Ok(())
             }
             _ => unreachable!(),
         }
@@ -226,20 +189,18 @@ impl JsEmitter<'_> {
                         left,
                         Token {
                             kind: TokenKind::BangEqual,
-                            span,
+                            ..
                         },
                         right,
                     ),
                 ..
             } => {
+                write!(w, "(not (= ").unwrap();
                 self.expr(left, w)?;
-                write!(w, "!==").map_err(|err| {
-                    Error::new(
-                        ErrorKind::EmitError(err.to_string()),
-                        self.lexer.span_location(&span),
-                    )
-                })?;
-                self.expr(right, w)
+                write!(w, " ").unwrap();
+                self.expr(right, w)?;
+                write!(w, "))").unwrap();
+                Ok(())
             }
             AstNode {
                 kind:
@@ -247,44 +208,33 @@ impl JsEmitter<'_> {
                         left,
                         Token {
                             kind: TokenKind::EqualEqual,
-                            span,
+                            ..
                         },
                         right,
                     ),
                 ..
             } => {
+                write!(w, "(= ").unwrap();
                 self.expr(left, w)?;
-                write!(w, "===").map_err(|err| {
-                    Error::new(
-                        ErrorKind::EmitError(err.to_string()),
-                        self.lexer.span_location(&span),
-                    )
-                })?;
-                self.expr(right, w)
+                write!(w, " ").unwrap();
+                self.expr(right, w)?;
+                write!(w, ")").unwrap();
+                Ok(())
             }
             AstNode {
                 kind: AstNodeExpr::Binary(left, tok, right),
                 ..
             } => {
                 if let (Some(Type::Null), Some(Type::Null)) = (left.type_info, right.type_info) {
-                    if ast.type_info == Some(Type::TString) {
-                        write!(w, "\"\"+").map_err(|err| {
-                            Error::new(
-                                ErrorKind::EmitError(err.to_string()),
-                                self.lexer.span_location(&tok.span),
-                            )
-                        })?;
-                    }
+                    unimplemented!();
                 }
 
+                write!(w, "({} ", &self.lexer.src[tok.span.start..tok.span.end]).unwrap();
                 self.expr(left, w)?;
-                write!(w, "{}", &self.lexer.src[tok.span.start..tok.span.end]).map_err(|err| {
-                    Error::new(
-                        ErrorKind::EmitError(err.to_string()),
-                        self.lexer.span_location(&tok.span),
-                    )
-                })?;
-                self.expr(right, w)
+                write!(w, " ").unwrap();
+                self.expr(right, w)?;
+                write!(w, ")").unwrap();
+                Ok(())
             }
             _ => unreachable!(),
         }
@@ -302,13 +252,13 @@ impl JsEmitter<'_> {
                     },
                 ..
             } => {
-                write!(w, "((").unwrap();
+                write!(w, "(if ").unwrap();
                 self.expr(cond, w)?;
-                write!(w, ")?(").unwrap();
+                write!(w, " ").unwrap();
                 self.expr(if_body, w)?;
-                write!(w, "):(").unwrap();
+                write!(w, " ").unwrap();
                 self.expr(else_body, w)?;
-                write!(w, "))").unwrap();
+                write!(w, ")").unwrap();
 
                 Ok(())
             }
