@@ -17,7 +17,10 @@
 - [ ] Nested comments
 - [ ] Doc comments
 - [x] Identifiers (potentially with unicode)
-- [ ] Identifiers inside backticks e.g ``` `foo bar` ```
+- [ ] Identifiers inside backticks e.g 
+    ``` 
+    `foo bar` 
+    ```
 - [x] Don’t give out of bounds locations
 - [x] Newline-sensitive
 - [ ] Annotations (e.g `@Timeout`)
