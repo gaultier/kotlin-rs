@@ -302,6 +302,10 @@ impl JsEmitter<'_> {
                 write!(w, ")").unwrap();
                 Ok(())
             }
+            AstNode {
+                kind: AstNodeExpr::IfExpr { .. },
+                ..
+            } => unimplemented!(),
         }
     }
 }

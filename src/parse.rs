@@ -55,6 +55,11 @@ pub enum AstNodeExpr {
     Unary(Token, Box<AstNode>),
     Literal(Token),
     Grouping(Box<AstNode>),
+    IfExpr {
+        cond: Box<AstNode>,
+        if_body: Box<AstNode>,
+        else_body: Box<AstNode>,
+    },
 }
 
 #[derive(Debug)]
@@ -113,6 +118,9 @@ impl Parser<'_> {
             )),
         }
     }
+
+    // fn if_expr(&mut self) -> Result<AstNode, Error> {
+    // }
 
     fn primary(&mut self) -> Result<AstNode, Error> {
         let previous = self.previous.unwrap();

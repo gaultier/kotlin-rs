@@ -347,6 +347,10 @@ impl TypeChecker<'_> {
                 kind: AstNodeExpr::Grouping(expr),
                 ..
             } => self.type_check_expr(&mut (**expr)),
+            AstNode {
+                kind: AstNodeExpr::IfExpr { .. },
+                ..
+            } => unimplemented!(),
         }
     }
 
