@@ -142,7 +142,8 @@ fn add_string_string() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ "abc" "def")\n"##
+        &r##"(+ "abc" "def")
+"##
     );
 }
 
@@ -154,7 +155,7 @@ fn add_string_int() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ "abc" 2)\n
+        &r##"(+ "abc" 2)
 "##
     );
 }
@@ -167,7 +168,7 @@ fn add_int_string() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"2+"abc";
+        &r##"(+ 2 "abc")
 "##
     );
 }
@@ -180,7 +181,7 @@ fn add_string_long() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ "abc" 2)\n
+        &r##"(+ "abc" 2)
 "##
     );
 }
@@ -193,7 +194,7 @@ fn add_long_string() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"2+"abc";
+        &r##"(+ 2 "abc")
 "##
     );
 }
@@ -206,7 +207,7 @@ fn add_string_uint() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ "abc" 2)\n
+        &r##"(+ "abc" 2)
 "##
     );
 }
@@ -219,7 +220,7 @@ fn add_uint_string() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"2+"abc";
+        &r##"(+ 2 "abc")
 "##
     );
 }
@@ -232,7 +233,7 @@ fn add_string_ulong() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ "abc" 2)\n
+        &r##"(+ "abc" 2)
 "##
     );
 }
@@ -245,7 +246,7 @@ fn add_ulong_string() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"2+"abc";
+        &r##"(+ 2 "abc")
 "##
     );
 }
@@ -331,7 +332,7 @@ fn add_null_string() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"null+"abc";
+        &r##"(+ 'nil "abc")
 "##
     );
 }
@@ -344,7 +345,6 @@ fn add_null_null() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"""(+ 'nil 'nil)
-"##
+        &"(+ 'nil 'nil)\n"
     );
 }

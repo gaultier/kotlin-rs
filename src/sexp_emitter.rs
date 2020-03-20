@@ -97,12 +97,12 @@ impl SexpEmitter<'_> {
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
-                        kind: TokenKind::Bool(n),
+                        kind: TokenKind::Bool(b),
                         ..
                     }),
                 ..
             } => {
-                write!(w, "{}", n).unwrap();
+                write!(w, "{}", if *b { "#t" } else { "#f" }).unwrap();
                 Ok(())
             }
             AstNode {
