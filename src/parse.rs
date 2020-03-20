@@ -85,6 +85,21 @@ impl Parser<'_> {
         Ok(())
     }
 
+    fn advance_skip_newlines(&mut self) -> Result<(), Error> {
+        loop {
+            self.advance()?;
+
+            match self.current {
+                Some(Token {
+                    kind: TokenKind::Newline,
+                    ..
+                }) => (),
+                _ => break,
+            }
+        }
+        Ok(())
+    }
+
     fn expect(&mut self, kind: TokenKind) -> Result<(), Error> {
         let previous = self.previous;
         match previous {
@@ -112,7 +127,7 @@ impl Parser<'_> {
             | TokenKind::TString
             | TokenKind::Null
             | TokenKind::UnicodeLiteral(_) => {
-                self.advance()?;
+                self.advance_skip_newlines()?;
                 // TODO: fill type info here right away
                 Ok(AstNode {
                     kind: AstNodeExpr::Literal(previous),
@@ -120,7 +135,7 @@ impl Parser<'_> {
                 })
             }
             TokenKind::LeftParen => {
-                self.advance()?;
+                self.advance_skip_newlines()?;
                 let expr = self.expression()?;
                 self.expect(TokenKind::RightParen)?;
                 Ok(AstNode {
@@ -139,7 +154,7 @@ impl Parser<'_> {
         let previous = self.previous.clone().unwrap();
         match previous.kind {
             TokenKind::Plus | TokenKind::Bang | TokenKind::Minus => {
-                self.advance()?;
+                self.advance_skip_newlines()?;
                 let right = self.unary()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Unary(previous, Box::new(right)),
@@ -155,7 +170,7 @@ impl Parser<'_> {
         let previous = self.previous.clone().unwrap();
         match previous.kind {
             TokenKind::Percent | TokenKind::Star | TokenKind::Slash => {
-                self.advance()?;
+                self.advance_skip_newlines()?;
                 let right = self.multiplication()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
@@ -171,7 +186,7 @@ impl Parser<'_> {
         let previous = self.previous.clone().unwrap();
         match previous.kind {
             TokenKind::Plus | TokenKind::Minus => {
-                self.advance()?;
+                self.advance_skip_newlines()?;
                 let right = self.addition()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
@@ -190,7 +205,7 @@ impl Parser<'_> {
             | TokenKind::GreaterEqual
             | TokenKind::Lesser
             | TokenKind::LesserEqual => {
-                self.advance()?;
+                self.advance_skip_newlines()?;
                 let right = self.comparison()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
@@ -209,7 +224,7 @@ impl Parser<'_> {
             | TokenKind::EqualEqual
             | TokenKind::EqualEqualEqual
             | TokenKind::BangEqualEqual => {
-                self.advance()?;
+                self.advance_skip_newlines()?;
                 let right = self.equality()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
@@ -229,7 +244,7 @@ impl Parser<'_> {
         let previous = self.previous.clone().unwrap();
         match previous.kind {
             TokenKind::Semicolon | TokenKind::Newline => {
-                self.advance()?;
+                self.advance_skip_newlines()?;
                 Ok(AstNodeStmt::Expr(expr, previous))
             }
             _ => {
@@ -255,8 +270,8 @@ impl Parser<'_> {
     }
 
     pub fn parse(&mut self) -> Result<Statements, Error> {
-        self.advance()?;
-        self.advance()?;
+        self.advance_skip_newlines()?;
+        self.advance_skip_newlines()?;
 
         let mut stmts = Vec::new();
         while let Some(tok) = &self.previous {
