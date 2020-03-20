@@ -228,6 +228,9 @@ enum CursorTokenKind {
     Char {
         terminated: bool,
     },
+    TString {
+        terminated: bool,
+    },
     OpenParen,
     CloseParen,
     OpenBrace,
@@ -391,15 +394,13 @@ impl Cursor<'_> {
             '\'' => self.char_literal(),
 
             // String literal.
-            // '"' => {
-            //     let terminated = self.double_quoted_string();
-            //     let suffix_start = self.len_consumed();
-            //     if terminated {
-            //         self.eat_literal_suffix();
-            //     }
-            //     let kind = Str { terminated };
-            //     Literal { kind, suffix_start }
-            // }
+            '"' => {
+                let terminated = self.double_quoted_string();
+                // if terminated {
+                // self.eat_literal_suffix();
+                // }
+                CursorTokenKind::TString { terminated }
+            }
             _ => CursorTokenKind::Unknown,
         };
         CursorToken::new(token_kind, self.len_consumed())
@@ -620,23 +621,23 @@ impl Cursor<'_> {
 
     /// Eats double-quoted string and returns true
     /// if string is terminated.
-    // fn double_quoted_string(&mut self) -> bool {
-    //     debug_assert!(self.prev() == '"');
-    //     while let Some(c) = self.bump() {
-    //         match c {
-    //             '"' => {
-    //                 return true;
-    //             }
-    //             '\\' if self.first() == '\\' || self.first() == '"' => {
-    //                 // Bump again to skip escaped character.
-    //                 self.bump();
-    //             }
-    //             _ => (),
-    //         }
-    //     }
-    //     // End of file reached.
-    //     false
-    // }
+    fn double_quoted_string(&mut self) -> bool {
+        debug_assert!(self.prev() == '"');
+        while let Some(c) = self.bump() {
+            match c {
+                '"' => {
+                    return true;
+                }
+                '\\' if self.first() == '\\' || self.first() == '"' => {
+                    // Bump again to skip escaped character.
+                    self.bump();
+                }
+                _ => (),
+            }
+        }
+        // End of file reached.
+        false
+    }
 
     fn eat_decimal_digits(&mut self) -> bool {
         let mut has_digits = false;
@@ -1031,6 +1032,7 @@ impl Lexer {
         span: &Span,
     ) -> Result<TokenKind, Error> {
         match kind {
+            CursorTokenKind::TString { .. } => Ok(TokenKind::TString),
             CursorTokenKind::Newline => {
                 debug!("newline: pos={}", self.pos);
                 self.lines.push(self.pos);
