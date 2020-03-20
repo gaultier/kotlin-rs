@@ -1032,7 +1032,11 @@ impl Lexer {
         span: &Span,
     ) -> Result<TokenKind, Error> {
         match kind {
-            CursorTokenKind::TString { .. } => Ok(TokenKind::TString),
+            CursorTokenKind::TString { terminated: false } => Err(Error::new(
+                ErrorKind::UnterminatedString,
+                self.span_location(&span),
+            )),
+            CursorTokenKind::TString { terminated: true } => Ok(TokenKind::TString),
             CursorTokenKind::Newline => {
                 debug!("newline: pos={}", self.pos);
                 self.lines.push(self.pos);
