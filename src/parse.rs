@@ -93,18 +93,15 @@ impl Parser<'_> {
     }
 
     fn advance_skip_newlines(&mut self) -> Result<(), Error> {
-        loop {
-            self.advance()?;
+        self.advance()?;
 
-            match self.current {
-                Some(Token {
-                    kind: TokenKind::Newline,
-                    ..
-                }) => (),
-                _ => {
-                    return Ok(());
-                }
-            }
+        match self.previous {
+            Some(Token {
+                kind: TokenKind::Newline,
+                ..
+            }) => self.advance_skip_newlines(),
+
+            _ => Ok(()),
         }
     }
 
@@ -281,6 +278,25 @@ impl Parser<'_> {
         Ok(AstNodeStmt::Expr(self.expression()?))
     }
 
+    fn statements(&mut self) -> Result<Statements, Error> {
+        let mut stmts = Vec::new();
+
+        while let Some(tok) = &self.previous {
+            match tok.kind {
+                TokenKind::Eof => {
+                    break;
+                }
+                TokenKind::Semicolon | TokenKind::Newline => {
+                    self.advance()?;
+                }
+                _ => {
+                    stmts.push(self.statement()?);
+                }
+            }
+        }
+        Ok(stmts)
+    }
+
     pub fn new(lexer: &mut Lexer) -> Parser {
         Parser {
             previous: None,
@@ -292,19 +308,6 @@ impl Parser<'_> {
     pub fn parse(&mut self) -> Result<Statements, Error> {
         self.advance_skip_newlines()?;
         self.advance_skip_newlines()?;
-
-        let mut stmts = Vec::new();
-        while let Some(tok) = &self.previous {
-            match tok.kind {
-                TokenKind::Eof => {
-                    return Ok(stmts);
-                }
-                TokenKind::Semicolon | TokenKind::Newline => {
-                    self.advance()?;
-                }
-                _ => stmts.push(self.statement()?),
-            }
-        }
-        unreachable!()
+        self.statements()
     }
 }
