@@ -96,7 +96,6 @@ pub enum TokenKind {
     KeywordActual,
     KeywordAnnotation,
     KeywordAs,
-    KeywordAsSafe,
     KeywordBy,
     KeywordCatch,
     KeywordClass,
@@ -774,6 +773,84 @@ impl Token {
 }
 
 impl Lexer {
+    fn cursor_identifier_to_token_identifier(&self, span: &Span) -> TokenKind {
+        let s = &self.src[span.start..span.end];
+        dbg!(&s);
+
+        match s {
+            "true" => TokenKind::Bool(true),
+            "false" => TokenKind::Bool(false),
+            "null" => TokenKind::Null,
+            "abstract" => TokenKind::KeywordAbstract,
+            "annotation" => TokenKind::KeywordAnnotation,
+            "by" => TokenKind::KeywordBy,
+            "catch" => TokenKind::KeywordCatch,
+            "companion" => TokenKind::KeywordCompanion,
+            "constructor" => TokenKind::KeywordConstructor,
+            "crossinline" => TokenKind::KeywordCrossinline,
+            "data" => TokenKind::KeywordData,
+            "dynamic" => TokenKind::KeywordDynamic,
+            "enum" => TokenKind::KeywordEnum,
+            "external" => TokenKind::KeywordExternal,
+            "final" => TokenKind::KeywordFinal,
+            "finally" => TokenKind::KeywordFinally,
+            "import" => TokenKind::KeywordImport,
+            "infix" => TokenKind::KeywordInfix,
+            "init" => TokenKind::KeywordInit,
+            "inline" => TokenKind::KeywordInline,
+            "inner" => TokenKind::KeywordInner,
+            "internal" => TokenKind::KeywordInternal,
+            "lateinit" => TokenKind::KeywordLateinit,
+            "noinline" => TokenKind::KeywordNoinline,
+            "open" => TokenKind::KeywordOpen,
+            "operator" => TokenKind::KeywordOperator,
+            "out" => TokenKind::KeywordOut,
+            "override" => TokenKind::KeywordOverride,
+            "private" => TokenKind::KeywordPrivate,
+            "protected" => TokenKind::KeywordProtected,
+            "public" => TokenKind::KeywordPublic,
+            "reified" => TokenKind::KeywordReified,
+            "sealed" => TokenKind::KeywordSealed,
+            "tailrec" => TokenKind::KeywordTailrec,
+            "vararg" => TokenKind::KeywordVararg,
+            "where" => TokenKind::KeywordWhere,
+            "get" => TokenKind::KeywordGet,
+            "set" => TokenKind::KeywordSet,
+            "field" => TokenKind::KeywordField,
+            "property" => TokenKind::KeywordProperty,
+            "receiver" => TokenKind::KeywordReceiver,
+            "param" => TokenKind::KeywordParam,
+            "setparam" => TokenKind::KeywordSetparam,
+            "delegate" => TokenKind::KeywordDelegate,
+            "file" => TokenKind::KeywordFile,
+            "expect" => TokenKind::KeywordExpect,
+            "actual" => TokenKind::KeywordActual,
+            "const" => TokenKind::KeywordConst,
+            "suspend" => TokenKind::KeywordSuspend,
+            "package" => TokenKind::KeywordPackage,
+            "class" => TokenKind::KeywordClass,
+            "interface" => TokenKind::KeywordInterface,
+            "fun" => TokenKind::KeywordFun,
+            "object" => TokenKind::KeywordObject,
+            "val" => TokenKind::KeywordVal,
+            "var" => TokenKind::KeywordVar,
+            "typeof" => TokenKind::KeywordTypeof,
+            "if" => TokenKind::KeywordIf,
+            "else" => TokenKind::KeywordElse,
+            "when" => TokenKind::KeywordWhen,
+            "try" => TokenKind::KeywordTry,
+            "for" => TokenKind::KeywordFor,
+            "do" => TokenKind::KeywordDo,
+            "throw" => TokenKind::KeywordThrow,
+            "return" => TokenKind::KeywordReturn,
+            "continue" => TokenKind::KeywordContinue,
+            "as" => TokenKind::KeywordAs,
+            "is" => TokenKind::KeywordIs,
+            "in" => TokenKind::KeywordIn,
+            _ => TokenKind::Identifier,
+        }
+    }
+
     fn cursor_number_to_token_number(
         &self,
         kind: CursorNumberKind,
@@ -964,7 +1041,7 @@ impl Lexer {
                 ErrorKind::UnknownChar,
                 self.span_location(&span),
             )),
-            CursorTokenKind::Identifier => Ok(TokenKind::Identifier),
+            CursorTokenKind::Identifier => Ok(self.cursor_identifier_to_token_identifier(&span)),
             CursorTokenKind::LineComment => Ok(TokenKind::LineComment),
             CursorTokenKind::BlockComment { terminated } => {
                 Ok(TokenKind::BlockComment { terminated })
@@ -1178,619 +1255,6 @@ impl Lexer {
 //             start_line,
 //             start_column,
 //         ))
-//     }
-
-//     fn identifier(
-//         &mut self,
-//         start_pos: usize,
-//         start_line: usize,
-//         start_column: usize,
-//     ) -> Result<Token, Error> {
-//         while let Some(c) = self.peek() {
-//             if c.is_alphanumeric() || c == '_' {
-//                 self.advance();
-//             } else {
-//                 break;
-//             }
-//         }
-//         let s = &self.src[start_pos..self.pos as usize];
-
-//         match s {
-//             "true" => Ok(Token::new(
-//                 self,
-//                 TokenKind::Bool(true),
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "false" => Ok(Token::new(
-//                 self,
-//                 TokenKind::Bool(false),
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "null" => Ok(Token::new(
-//                 self,
-//                 TokenKind::Null,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "abstract" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordAbstract,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "annotation" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordAnnotation,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "by" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordBy,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "catch" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordCatch,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "companion" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordCompanion,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "constructor" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordConstructor,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "crossinline" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordCrossinline,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "data" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordData,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "dynamic" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordDynamic,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "enum" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordEnum,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "external" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordExternal,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "final" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordFinal,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "finally" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordFinally,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "import" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordImport,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "infix" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordInfix,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "init" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordInit,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "inline" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordInline,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "inner" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordInner,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "internal" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordInternal,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "lateinit" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordLateinit,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "noinline" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordNoinline,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "open" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordOpen,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "operator" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordOperator,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "out" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordOut,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "override" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordOverride,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "private" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordPrivate,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "protected" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordProtected,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "public" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordPublic,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "reified" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordReified,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "sealed" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordSealed,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "tailrec" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordTailrec,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "vararg" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordVararg,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "where" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordWhere,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "get" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordGet,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "set" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordSet,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "field" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordField,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "property" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordProperty,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "receiver" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordReceiver,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "param" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordParam,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "setparam" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordSetparam,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "delegate" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordDelegate,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "file" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordFile,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "expect" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordExpect,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "actual" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordActual,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "const" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordConst,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "suspend" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordSuspend,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "package" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordPackage,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "class" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordClass,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "interface" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordInterface,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "fun" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordFun,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "object" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordObject,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "val" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordVal,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "var" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordVar,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "typeof" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordTypeof,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "if" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordIf,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "else" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordElse,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "when" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordWhen,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "try" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordTry,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "for" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordFor,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "do" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordDo,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "throw" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordThrow,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "return" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordReturn,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "continue" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordContinue,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "as" => {
-//                 if self.match_char('?') {
-//                     Ok(Token::new(
-//                         self,
-//                         TokenKind::KeywordAsSafe,
-//                         start_pos,
-//                         start_line,
-//                         start_column,
-//                     ))
-//                 } else {
-//                     Ok(Token::new(
-//                         self,
-//                         TokenKind::KeywordAs,
-//                         start_pos,
-//                         start_line,
-//                         start_column,
-//                     ))
-//                 }
-//             }
-//             "is" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordIs,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             "in" => Ok(Token::new(
-//                 self,
-//                 TokenKind::KeywordIn,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//             _ => Ok(Token::new(
-//                 self,
-//                 TokenKind::Identifier,
-//                 start_pos,
-//                 start_line,
-//                 start_column,
-//             )),
-//         }
-//     }
-
-//     fn skip_whitespace(&mut self) -> Result<Option<Token>, Error> {
-//         while !self.is_at_end() {
-//             match self.peek() {
-//                 None | Some(' ') | Some('\t') | Some('\r') => {
-//                     self.advance();
-//                 }
-//                 Some('#') => match self.peek_next() {
-//                     Some('!') => {
-//                         let start_pos = self.pos as usize;
-//                         let start_line = self.line;
-//                         let start_column = self.column as usize;
-//                         if self.line != 1 {
-//                             self.skip_until('\n');
-//                             return Err(Error::new(
-//                                 ErrorKind::ShebangNotOnFirstLine,
-//                                 start_pos,
-//                                 start_line,
-//                                 start_column,
-//                                 self.pos as usize,
-//                                 self.line as usize,
-//                                 self.column as usize,
-//                             ));
-//                         }
-//                         self.skip_until('\n');
-//                         return Ok(Some(Token::new(
-//                             self,
-//                             TokenKind::Shebang,
-//                             start_pos,
-//                             start_line,
-//                             start_column,
-//                         )));
-//                     }
-//                     _ => {
-//                         return Ok(None);
-//                     }
-//                 },
-//                 Some('/') => match self.peek_next() {
-//                     Some('/') => {
-//                         let start_pos = self.pos as usize;
-//                         let start_line = self.line;
-//                         let start_column = self.column as usize;
-//                         self.skip_until('\n');
-//                         return Ok(Some(Token::new(
-//                             self,
-//                             TokenKind::Comment,
-//                             start_pos,
-//                             start_line,
-//                             start_column,
-//                         )));
-//                     }
-//                     Some('*') => {
-//                         let start_pos = self.pos as usize;
-//                         let start_line = self.line;
-//                         let start_column = self.column as usize;
-//                         self.advance();
-//                         self.advance();
-//                         while let Some(c) = self.peek() {
-//                             match c {
-//                                 '*' if self.peek_next() == Some('/') => {
-//                                     self.advance();
-//                                     self.advance();
-//                                     break;
-//                                 }
-//                                 '\n' => {
-//                                     self.advance();
-//                                     self.newline(start_pos, start_line, start_column);
-//                                 }
-//                                 _ => {
-//                                     self.advance();
-//                                 }
-//                             }
-//                         }
-//                         return Ok(Some(Token::new(
-//                             self,
-//                             TokenKind::Comment,
-//                             start_pos,
-//                             start_line,
-//                             start_column,
-//                         )));
-//                     }
-//                     _ => {
-//                         return Ok(None);
-//                     }
-//                 },
-//                 Some(_) => {
-//                     return Ok(None);
-//                 }
-//             }
-//         }
-//         Ok(None)
 //     }
 
 //     pub fn lex(&mut self) -> Result<Token, Error> {
@@ -3277,6 +2741,32 @@ mod tests {
         assert_eq!(tok.kind, TokenKind::Char('\\'));
         assert_eq!(tok.span.start, 0);
         assert_eq!(tok.span.end, 4);
+    }
+
+    #[test]
+    fn keyword_true() {
+        let s = String::from("true");
+
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Bool(true));
+        assert_eq!(&lexer.src[tok.span.start..tok.span.end], "true");
+    }
+
+    #[test]
+    fn keyword_false() {
+        let s = String::from("false");
+
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), false);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Bool(false));
+        assert_eq!(&lexer.src[tok.span.start..tok.span.end], "false");
     }
 
     #[test]
