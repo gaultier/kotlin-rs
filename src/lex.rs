@@ -285,20 +285,14 @@ pub fn is_whitespace(c: char) -> bool {
 /// See [Rust language reference](https://doc.rust-lang.org/reference/identifiers.html) for
 /// a formal definition of valid identifier name.
 pub fn is_id_start(c: char) -> bool {
-    // This is XID_Start OR '_' (which formally is not a XID_Start).
-    // We also add fast-path for ascii idents
-    ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_'
-    // || (c > '\x7f' && unicode_xid::UnicodeXID::is_xid_start(c))
+    c.is_alphabetic() || c == '_'
 }
 
 /// True if `c` is valid as a non-first character of an identifier.
 /// See [Rust language reference](https://doc.rust-lang.org/reference/identifiers.html) for
 /// a formal definition of valid identifier name.
 pub fn is_id_continue(c: char) -> bool {
-    // This is exactly XID_Continue.
-    // We also add fast-path for ascii idents
-    ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || c == '_'
-    // || (c > '\x7f' && unicode_xid::UnicodeXID::is_xid_continue(c))
+    c.is_alphanumeric() || c == '_'
 }
 
 fn prepare_num_str_for_parsing(s: &str) -> String {
@@ -716,16 +710,6 @@ impl Cursor<'_> {
             _ => None,
         }
     }
-
-    // Eats the identifier.
-    // fn eat_identifier(&mut self) {
-    //     if !is_id_start(self.first()) {
-    //         return;
-    //     }
-    //     self.bump();
-
-    //     self.eat_while(is_id_continue);
-    // }
 
     /// Eats symbols while predicate returns true or until the end of file is reached.
     /// Returns amount of eaten symbols.
@@ -3293,6 +3277,38 @@ mod tests {
         assert_eq!(tok.kind, TokenKind::Char('\\'));
         assert_eq!(tok.span.start, 0);
         assert_eq!(tok.span.end, 4);
+    }
+
+    #[test]
+    fn identifier_ascii() {
+        let s = String::from("_foo_bar_");
+
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Identifier);
+        assert_eq!(&lexer.src[tok.span.start..tok.span.end], "_foo_bar_");
+    }
+
+    #[test]
+    fn identifier_unicode() {
+        // `ƍ` is of category Ll (letter lowercase)
+        // `ᴽ` is of category Lm (letter modifier)
+        // `א` is of categoy Lo (other letter)
+        // `ᾯ` is of category Lt (letter titlecase)
+        // `Ʊ` is of category Lu (letter uppercase)
+        // `ᛮ` is of category Nl (letter number)
+        let s = String::from("ᛮƍᴽאᾯƱ");
+
+        let mut lexer = Lexer::new(s);
+
+        let tok = lexer.next_token();
+        assert_eq!(tok.as_ref().is_ok(), true);
+        let tok = tok.as_ref().unwrap();
+        assert_eq!(tok.kind, TokenKind::Identifier);
+        assert_eq!(&lexer.src[tok.span.start..tok.span.end], "ᛮƍᴽאᾯƱ");
     }
 
     //     #[test]
