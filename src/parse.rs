@@ -115,7 +115,7 @@ impl Parser<'_> {
     }
 
     fn primary(&mut self) -> Result<AstNode, Error> {
-        let previous = self.previous.clone().unwrap();
+        let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::Int(_)
             | TokenKind::Long(_)
@@ -151,7 +151,7 @@ impl Parser<'_> {
     }
 
     fn unary(&mut self) -> Result<AstNode, Error> {
-        let previous = self.previous.clone().unwrap();
+        let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::Plus | TokenKind::Bang | TokenKind::Minus => {
                 self.advance_skip_newlines()?;
@@ -167,7 +167,7 @@ impl Parser<'_> {
 
     fn multiplication(&mut self) -> Result<AstNode, Error> {
         let left = self.unary()?;
-        let previous = self.previous.clone().unwrap();
+        let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::Percent | TokenKind::Star | TokenKind::Slash => {
                 self.advance_skip_newlines()?;
@@ -183,7 +183,7 @@ impl Parser<'_> {
 
     fn addition(&mut self) -> Result<AstNode, Error> {
         let left = self.multiplication()?;
-        let previous = self.previous.clone().unwrap();
+        let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::Plus | TokenKind::Minus => {
                 self.advance_skip_newlines()?;
@@ -199,7 +199,7 @@ impl Parser<'_> {
 
     fn comparison(&mut self) -> Result<AstNode, Error> {
         let left = self.addition()?;
-        let previous = self.previous.clone().unwrap();
+        let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::Greater
             | TokenKind::GreaterEqual
@@ -218,7 +218,7 @@ impl Parser<'_> {
 
     fn equality(&mut self) -> Result<AstNode, Error> {
         let left = self.comparison()?;
-        let previous = self.previous.clone().unwrap();
+        let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::BangEqual
             | TokenKind::EqualEqual
@@ -241,7 +241,7 @@ impl Parser<'_> {
 
     fn expression_stmt(&mut self) -> Result<AstNodeStmt, Error> {
         let expr = self.expression()?;
-        let previous = self.previous.clone().unwrap();
+        let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::Semicolon | TokenKind::Newline => {
                 self.advance_skip_newlines()?;
