@@ -342,6 +342,7 @@ impl TypeChecker<'_> {
                         cond_start_tok,
                         if_body,
                         else_body,
+                        else_body_tok,
                     },
                 ..
             } => {
@@ -354,10 +355,15 @@ impl TypeChecker<'_> {
                 }
                 let if_body_t = self.type_check_expr(if_body)?;
                 let else_body_t = self.type_check_expr(else_body)?;
+                /* Kotlinc(tm) actually does not check that, the type is Any
+                 which leads to weird, unchecked code like this that does not
+                 raise any compile-time error: `(if (1<2) "foo" else false) as String`,
+                but will potentially raise a runtime error.
+                */
                 if if_body_t != else_body_t {
                     return Err(Error::new(
                         ErrorKind::IncompatibleTypes(if_body_t, else_body_t),
-                        self.lexer.span_location(&cond_start_tok.span),
+                        self.lexer.span_location(&else_body_tok.span),
                     ));
                 }
                 ast.type_info = Some(if_body_t);

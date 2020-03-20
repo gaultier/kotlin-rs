@@ -59,7 +59,9 @@ pub enum AstNodeExpr {
         cond: Box<AstNode>,
         cond_start_tok: Token,
         if_body: Box<AstNode>,
+        // if_body_tok: Token,
         else_body: Box<AstNode>,
+        else_body_tok: Token,
     },
 }
 
@@ -131,7 +133,7 @@ impl Parser<'_> {
         self.expect(TokenKind::RightParen)?;
         let if_body = self.expression()?;
 
-        self.expect(TokenKind::KeywordElse)?;
+        let else_body_tok = self.expect(TokenKind::KeywordElse)?;
         let else_body = self.expression()?;
 
         Ok(AstNode {
@@ -140,6 +142,7 @@ impl Parser<'_> {
                 cond_start_tok,
                 if_body: Box::new(if_body),
                 else_body: Box::new(else_body),
+                else_body_tok,
             },
             type_info: None,
         })
