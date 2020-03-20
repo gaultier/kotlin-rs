@@ -18,7 +18,7 @@ impl SexpEmitter<'_> {
     ) -> Result<(), Error> {
         for stmt in statements {
             let ast = match &stmt {
-                AstNodeStmt::Expr(expr, _) => expr,
+                AstNodeStmt::Expr(expr) => expr,
             };
             self.expr(&ast, w)?;
             writeln!(w, "\n").unwrap();

@@ -1,6 +1,5 @@
 use crate::error::*;
 use crate::lex::*;
-use log::debug;
 use std::fmt;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -38,7 +37,7 @@ impl fmt::Display for Type {
 
 #[derive(Debug)]
 pub enum AstNodeStmt {
-    Expr(AstNode, Token),
+    Expr(AstNode),
 }
 
 pub type Statements = Vec<AstNodeStmt>;
@@ -179,10 +178,13 @@ impl Parser<'_> {
                 })
             }
             TokenKind::KeywordIf => self.if_expr(),
-            _ => Err(Error::new(
-                ErrorKind::ExpectedPrimary,
-                self.lexer.span_location(&previous.span),
-            )),
+            _ => {
+                dbg!(&previous);
+                Err(Error::new(
+                    ErrorKind::ExpectedPrimary,
+                    self.lexer.span_location(&previous.span),
+                ))
+            }
         }
     }
 
@@ -275,26 +277,8 @@ impl Parser<'_> {
         self.equality()
     }
 
-    fn expression_stmt(&mut self) -> Result<AstNodeStmt, Error> {
-        let expr = self.expression()?;
-        let previous = self.previous.unwrap();
-        match previous.kind {
-            TokenKind::Semicolon | TokenKind::Newline => {
-                self.advance_skip_newlines()?;
-                Ok(AstNodeStmt::Expr(expr, previous))
-            }
-            _ => {
-                debug!("got: {:?}", previous.kind);
-                Err(Error::new(
-                    ErrorKind::UnterminatedStatement,
-                    self.lexer.span_location(&previous.span),
-                ))
-            }
-        }
-    }
-
     fn statement(&mut self) -> Result<AstNodeStmt, Error> {
-        self.expression_stmt()
+        Ok(AstNodeStmt::Expr(self.expression()?))
     }
 
     pub fn new(lexer: &mut Lexer) -> Parser {

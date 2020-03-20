@@ -14,7 +14,7 @@ impl TypeChecker<'_> {
     pub fn type_check_stmts(&self, statements: &mut Statements) -> Result<(), Error> {
         for mut stmt in statements {
             let mut ast = match &mut stmt {
-                AstNodeStmt::Expr(expr, _) => expr,
+                AstNodeStmt::Expr(expr) => expr,
             };
             self.type_check_expr(&mut ast).map(|_| ())?;
         }
