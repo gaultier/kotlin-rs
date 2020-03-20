@@ -111,8 +111,9 @@ impl Parser<'_> {
         let previous = self.previous;
         match previous {
             Some(Token { kind: k, .. }) if k == kind => {
+                let tok = self.previous.unwrap();
                 self.advance()?;
-                return Ok(self.previous.unwrap());
+                return Ok(tok);
             }
             _ => Err(Error::new(
                 ErrorKind::ExpectedToken,
