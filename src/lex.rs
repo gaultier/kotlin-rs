@@ -775,7 +775,6 @@ impl Token {
 impl Lexer {
     fn cursor_identifier_to_token_identifier(&self, span: &Span) -> TokenKind {
         let s = &self.src[span.start..span.end];
-        dbg!(&s);
 
         match s {
             "true" => TokenKind::Bool(true),

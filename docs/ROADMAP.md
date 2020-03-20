@@ -14,7 +14,7 @@
 - [x] All single character lex tokens e.g `}`
 - [x] All multi character lex tokens e.g `!==`
 - [x] Treat `\r\n` as newline
-- [ ] Nested comments
+- [x] Nested comments
 - [ ] Doc comments
 - [x] Identifiers (potentially with unicode)
 - [ ] Identifiers inside backticks e.g 
