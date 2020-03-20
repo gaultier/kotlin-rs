@@ -92,6 +92,19 @@ impl Parser<'_> {
         Ok(())
     }
 
+    fn skip_newlines(&mut self) -> Result<(), Error> {
+        match self.previous {
+            Some(Token {
+                kind: TokenKind::Newline,
+                ..
+            }) => {
+                self.advance()?;
+                self.advance_skip_newlines()
+            }
+            _ => Ok(()),
+        }
+    }
+
     fn advance_skip_newlines(&mut self) -> Result<(), Error> {
         self.advance()?;
 
@@ -122,14 +135,22 @@ impl Parser<'_> {
 
     fn if_expr(&mut self) -> Result<AstNode, Error> {
         self.eat(TokenKind::KeywordIf)?;
+        self.skip_newlines()?;
+
         let cond_start_tok = self.eat(TokenKind::LeftParen)?;
+        self.skip_newlines()?;
 
         let cond = self.expression()?;
+        self.skip_newlines()?;
 
         self.eat(TokenKind::RightParen)?;
+        self.skip_newlines()?;
+
         let if_body = self.expression()?;
+        self.skip_newlines()?;
 
         let else_body_tok = self.eat(TokenKind::KeywordElse)?;
+        self.skip_newlines()?;
         let else_body = self.expression()?;
 
         Ok(AstNode {
