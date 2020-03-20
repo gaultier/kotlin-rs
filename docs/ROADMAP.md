@@ -16,7 +16,7 @@
 - [x] Treat `\r\n` as newline
 - [ ] Nested comments
 - [ ] Doc comments
-- [ ] Identifiers (potentially with unicode)
+- [x] Identifiers (potentially with unicode)
 - [ ] Identifiers inside backticks e.g ``` `foo bar` ```
 - [x] Don’t give out of bounds locations
 - [x] Newline-sensitive
