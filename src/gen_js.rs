@@ -279,6 +279,38 @@ impl JsEmitter<'_> {
         }
     }
 
+    fn if_expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
+        match ast {
+            AstNode {
+                kind:
+                    AstNodeExpr::IfExpr {
+                        cond,
+                        if_body,
+                        else_body,
+                        ..
+                    },
+                ..
+            } => {
+                write!(w, "(").unwrap();
+                write!(w, "(").unwrap();
+                self.expr(cond, w)?;
+                write!(w, ")").unwrap();
+                write!(w, "?").unwrap();
+                write!(w, "(").unwrap();
+                self.expr(if_body, w)?;
+                write!(w, ")").unwrap();
+                write!(w, ":").unwrap();
+                write!(w, "(").unwrap();
+                self.expr(else_body, w)?;
+                write!(w, ")").unwrap();
+                write!(w, ")").unwrap();
+
+                Ok(())
+            }
+            _ => unreachable!(),
+        }
+    }
+
     pub fn expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNode {
@@ -305,7 +337,7 @@ impl JsEmitter<'_> {
             AstNode {
                 kind: AstNodeExpr::IfExpr { .. },
                 ..
-            } => unimplemented!(),
+            } => self.if_expr(ast, w),
         }
     }
 }
