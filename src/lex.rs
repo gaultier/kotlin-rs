@@ -237,6 +237,7 @@ enum CursorTokenKind {
     CloseBracket,
     Pound,
     Question,
+    Identifier,
     Unknown,
 }
 
@@ -326,7 +327,7 @@ impl Cursor<'_> {
 
             // Identifier (this should be checked after other variant that can
             // start as identifier).
-            // c if is_id_start(c) => self.ident(),
+            c if is_id_start(c) => self.ident(),
             '.' if self.match_char('.') => CursorTokenKind::DotDot,
             '.' if !self.first().is_ascii_digit() => CursorTokenKind::Dot,
             // Numeric literal.
@@ -478,21 +479,12 @@ impl Cursor<'_> {
         CursorTokenKind::Whitespace
     }
 
-    // fn raw_ident(&mut self) -> TokenKind {
-    //     debug_assert!(self.prev() == 'r' && self.first() == '#' && is_id_start(self.second()));
-    //     // Eat "#" symbol.
-    //     self.bump();
-    //     // Eat the identifier part of RawIdent.
-    //     self.eat_identifier();
-    //     RawIdent
-    // }
-
-    // fn ident(&mut self) -> TokenKind {
-    //     debug_assert!(is_id_start(self.prev()));
-    //     // Start is already eaten, eat the rest of identifier.
-    //     self.eat_while(is_id_continue);
-    //     Ident
-    // }
+    fn ident(&mut self) -> CursorTokenKind {
+        debug_assert!(is_id_start(self.prev()));
+        // Start is already eaten, eat the rest of identifier.
+        self.eat_while(is_id_continue);
+        CursorTokenKind::Identifier
+    }
 
     fn number(&mut self, first_digit: char) -> CursorNumberKind {
         debug_assert!(self.prev() == '.' || ('0' <= self.prev() && self.prev() <= '9'));
@@ -651,51 +643,6 @@ impl Cursor<'_> {
     //     }
     //     // End of file reached.
     //     false
-    // }
-
-    /// Eats the double-quoted string and returns a tuple of
-    /// (amount of the '#' symbols, raw string started, raw string terminated)
-    // fn raw_double_quoted_string(&mut self) -> (usize, bool, bool) {
-    //     debug_assert!(self.prev() == 'r');
-    //     let mut started: bool = false;
-    //     let mut finished: bool = false;
-
-    //     // Count opening '#' symbols.
-    //     let n_hashes = self.eat_while(|c| c == '#');
-
-    //     // Check that string is started.
-    //     match self.bump() {
-    //         Some('"') => started = true,
-    //         _ => return (n_hashes, started, finished),
-    //     }
-
-    //     // Skip the string contents and on each '#' character met, check if this is
-    //     // a raw string termination.
-    //     while !finished {
-    //         self.eat_while(|c| c != '"');
-
-    //         if self.is_eof() {
-    //             return (n_hashes, started, finished);
-    //         }
-
-    //         // Eat closing double quote.
-    //         self.bump();
-
-    //         // Check that amount of closing '#' symbols
-    //         // is equal to the amount of opening ones.
-    //         let mut hashes_left = n_hashes;
-    //         let is_closing_hash = |c| {
-    //             if c == '#' && hashes_left != 0 {
-    //                 hashes_left -= 1;
-    //                 true
-    //             } else {
-    //                 false
-    //             }
-    //         };
-    //         finished = self.eat_while(is_closing_hash) == n_hashes;
-    //     }
-
-    //     (n_hashes, started, finished)
     // }
 
     fn eat_decimal_digits(&mut self) -> bool {
@@ -1033,6 +980,7 @@ impl Lexer {
                 ErrorKind::UnknownChar,
                 self.span_location(&span),
             )),
+            CursorTokenKind::Identifier => Ok(TokenKind::Identifier),
             CursorTokenKind::LineComment => Ok(TokenKind::LineComment),
             CursorTokenKind::BlockComment { terminated } => {
                 Ok(TokenKind::BlockComment { terminated })
