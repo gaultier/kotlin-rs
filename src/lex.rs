@@ -623,16 +623,23 @@ impl Cursor<'_> {
     /// if string is terminated.
     fn double_quoted_string(&mut self) -> bool {
         debug_assert!(self.prev() == '"');
-        while let Some(c) = self.bump() {
-            match c {
+        while !self.is_eof() {
+            match self.first() {
                 '"' => {
+                    self.bump();
                     return true;
                 }
-                '\\' if self.first() == '\\' || self.first() == '"' => {
+                '\\' if self.second() == '\\' || self.second() == '"' => {
                     // Bump again to skip escaped character.
                     self.bump();
+                    self.bump();
                 }
-                _ => (),
+                '\n' => {
+                    return false;
+                }
+                _ => {
+                    self.bump();
+                }
             }
         }
         // End of file reached.
