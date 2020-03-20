@@ -30,7 +30,7 @@ mod tests {
 
         assert!(compile(contents, writer.by_ref()).is_ok());
         let s = String::from_utf8(writer.into_inner().unwrap()).unwrap();
-        assert_eq!(&s, "171+24;\n");
+        assert_eq!(&s, "(+ 171 24)\n");
     }
 
     #[test]
@@ -41,6 +41,6 @@ mod tests {
 
         assert!(compile(contents, writer.by_ref()).is_ok());
         let s = String::from_utf8(writer.into_inner().unwrap()).unwrap();
-        assert_eq!(&s, "171*24;\n");
+        assert_eq!(&s, "(* 171 24)\n");
     }
 }

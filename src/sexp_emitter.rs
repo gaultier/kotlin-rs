@@ -21,7 +21,7 @@ impl SexpEmitter<'_> {
                 AstNodeStmt::Expr(expr) => expr,
             };
             self.expr(&ast, w)?;
-            writeln!(w, "\n").unwrap();
+            writeln!(w).unwrap();
         }
         Ok(())
     }
