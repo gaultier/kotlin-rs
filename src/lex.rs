@@ -2763,7 +2763,7 @@ mod tests {
         let mut lexer = Lexer::new(s);
 
         let tok = lexer.next_token();
-        assert_eq!(tok.as_ref().is_ok(), false);
+        assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Bool(false));
         assert_eq!(&lexer.src[tok.span.start..tok.span.end], "false");
