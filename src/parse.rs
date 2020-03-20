@@ -109,7 +109,7 @@ impl Parser<'_> {
         }
     }
 
-    fn expect(&mut self, kind: TokenKind) -> Result<Token, Error> {
+    fn eat(&mut self, kind: TokenKind) -> Result<Token, Error> {
         let previous = self.previous;
         match previous {
             Some(Token { kind: k, .. }) if k == kind => {
@@ -125,15 +125,15 @@ impl Parser<'_> {
     }
 
     fn if_expr(&mut self) -> Result<AstNode, Error> {
-        self.expect(TokenKind::KeywordIf)?;
-        let cond_start_tok = self.expect(TokenKind::LeftParen)?;
+        self.eat(TokenKind::KeywordIf)?;
+        let cond_start_tok = self.eat(TokenKind::LeftParen)?;
 
         let cond = self.expression()?;
 
-        self.expect(TokenKind::RightParen)?;
+        self.eat(TokenKind::RightParen)?;
         let if_body = self.expression()?;
 
-        let else_body_tok = self.expect(TokenKind::KeywordElse)?;
+        let else_body_tok = self.eat(TokenKind::KeywordElse)?;
         let else_body = self.expression()?;
 
         Ok(AstNode {
@@ -159,6 +159,7 @@ impl Parser<'_> {
             | TokenKind::Double(_)
             | TokenKind::Bool(_)
             | TokenKind::TString
+            | TokenKind::Char(_)
             | TokenKind::Null
             | TokenKind::UnicodeLiteral(_) => {
                 self.advance_skip_newlines()?;
@@ -171,7 +172,7 @@ impl Parser<'_> {
             TokenKind::LeftParen => {
                 self.advance_skip_newlines()?;
                 let expr = self.expression()?;
-                self.expect(TokenKind::RightParen)?;
+                self.eat(TokenKind::RightParen)?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Grouping(Box::new(expr)),
                     type_info: None,

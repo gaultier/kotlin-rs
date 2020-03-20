@@ -134,6 +134,17 @@ impl JsEmitter<'_> {
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
+                        kind: TokenKind::Char(c),
+                        ..
+                    }),
+                ..
+            } => {
+                write!(w, "'{}'", c).unwrap();
+                Ok(())
+            }
+            AstNode {
+                kind:
+                    AstNodeExpr::Literal(Token {
                         kind: TokenKind::TString,
                         span,
                     }),

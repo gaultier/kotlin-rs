@@ -171,6 +171,17 @@ impl TypeChecker<'_> {
                 ast.type_info = Some(Type::TString);
                 Ok(Type::TString)
             }
+            AstNode {
+                kind:
+                    AstNodeExpr::Literal(Token {
+                        kind: TokenKind::Char(_),
+                        ..
+                    }),
+                ..
+            } => {
+                ast.type_info = Some(Type::Char);
+                Ok(Type::Char)
+            }
             _ => unreachable!(),
         }
     }

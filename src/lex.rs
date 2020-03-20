@@ -1110,9 +1110,7 @@ impl Lexer {
             CursorTokenKind::Char { terminated: true } => {
                 // Trim surrounding quotes to get content
                 let c_str = &self.src[span.start + 1..span.end - 1];
-                dbg!(c_str);
                 let c_chars = c_str.chars().collect::<Vec<_>>();
-                dbg!(&c_chars);
                 let slice: &[char] = &c_chars;
                 let c: char = match slice {
                     [c] => *c,
