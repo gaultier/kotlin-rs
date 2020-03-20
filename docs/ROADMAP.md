@@ -40,6 +40,7 @@
 - [ ] When
 - [ ] Elvis operator
 - [ ] While
+- [ ] Do while
 - [ ] Variable declaration
 - [ ] Variable assignement
 - [ ] Simple inline functions declaration e.g `fun add(a: Int, b: Int): Int = a + b`
@@ -48,6 +49,9 @@
 - [ ] Variadic functions
 - [ ] Class
 - [ ] Enum
+- [ ] Shebang
+- [ ] Import
+- [ ] Package declaration
 
 ## Type checker
 
