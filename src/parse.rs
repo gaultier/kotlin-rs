@@ -163,6 +163,13 @@ impl Parser<'_> {
 
         let if_body = match self.previous {
             Some(Token {
+                kind: TokenKind::Semicolon,
+                ..
+            }) => {
+                self.advance()?;
+                vec![]
+            }
+            Some(Token {
                 kind: TokenKind::KeywordElse,
                 ..
             }) => vec![],
@@ -174,9 +181,14 @@ impl Parser<'_> {
         self.skip_newlines()?;
 
         let else_body = match self.previous {
-            Some(Token { kind: k, .. }) if k == TokenKind::Semicolon || k == TokenKind::Eof => {
-                vec![]
-            }
+            Some(Token {
+                kind: TokenKind::Eof,
+                ..
+            })
+            | Some(Token {
+                kind: TokenKind::Semicolon,
+                ..
+            }) => vec![],
             _ => self.control_structure_body()?,
         };
 

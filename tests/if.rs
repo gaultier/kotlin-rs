@@ -111,3 +111,21 @@ fn check_both_branches_types_match() -> Result<(), String> {
         other => Err(format!("Should be a type error: {:?}", other)),
     }
 }
+
+#[test]
+fn check_both_branches_types_match_unit_when_empty_else() {
+    let src = String::from("if (1<2) 'a' else {} \n");
+    let mut out: Vec<u8> = Vec::new();
+
+    let ast = compile(src, &mut out);
+    assert!(ast.is_ok());
+}
+
+#[test]
+fn check_both_branches_types_match_unit_when_empty_if() {
+    let src = String::from("if (1<2) ; else 42 \n");
+    let mut out: Vec<u8> = Vec::new();
+
+    let ast = compile(src, &mut out);
+    assert!(ast.is_ok());
+}
