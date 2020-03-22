@@ -37,7 +37,8 @@
 - [ ] Range e.g `1..5`
 - [x] If
 - [ ] For
-- [ ] When
+- [x] When
+- [ ] When with subject
 - [ ] Elvis operator
 - [ ] While
 - [ ] Do while
