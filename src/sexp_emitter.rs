@@ -51,7 +51,9 @@ impl SexpEmitter<'_> {
             AstNodeStmt::While { .. } => {
                 self.while_stmt(stmt, w)?;
             }
-            AstNodeStmt::DoWhile { .. } => unimplemented!(),
+            AstNodeStmt::DoWhile { .. } => {
+                self.do_while_stmt(stmt, w)?;
+            }
         };
         Ok(())
     }
@@ -66,6 +68,20 @@ impl SexpEmitter<'_> {
         }
         writeln!(w, "").unwrap();
         Ok(())
+    }
+
+    fn do_while_stmt<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
+        match ast {
+            AstNodeStmt::DoWhile { cond, body, .. } => {
+                write!(w, "(loop [] ").unwrap();
+                self.block(body, w)?;
+                write!(w, " (if ").unwrap();
+                self.expr(cond, w)?;
+                writeln!(w, " (recur)))").unwrap();
+                Ok(())
+            }
+            _ => unreachable!(),
+        }
     }
 
     fn while_stmt<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
