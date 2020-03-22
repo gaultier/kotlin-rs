@@ -59,3 +59,25 @@ fn while_bad_cond_type() -> Result<(), String> {
         other => Err(format!("Should be a type error: {:?}", other)),
     }
 }
+
+#[test]
+fn while_bad_body_type() -> Result<(), String> {
+    let src = String::from("while\n (true) {1+'c'}");
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::IncompatibleTypes(Type::Int, Type::Char),
+            location:
+                Location {
+                    start_pos: 16,
+                    start_line: 2,
+                    start_column: 11,
+                    end_pos: 17,
+                    end_line: 2,
+                    end_column: 12,
+                },
+        }) => Ok(()),
+        other => Err(format!("Should be a type error: {:?}", other)),
+    }
+}
