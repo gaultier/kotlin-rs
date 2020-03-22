@@ -148,34 +148,47 @@ impl Parser<'_> {
         }
     }
 
+    fn when_cond(&mut self) -> Result<AstNode, Error> {
+        // TODO: allow range & type test here
+        self.expression()
+    }
+
+    fn when_entry(&mut self) -> Result<AstNode, Error> {
+        let cond_start_tok = self.previous.unwrap();
+        let cond = self.when_cond()?;
+        self.skip_newlines()?;
+
+        self.eat(TokenKind::Arrow)?;
+        self.skip_newlines()?;
+
+        let body = self.control_structure_body()?;
+        Ok(AstNode {
+            kind: AstNodeExpr::IfExpr {
+                cond: Box::new(cond),
+                cond_start_tok,
+                if_body: body,
+                else_body: vec![],
+                else_body_tok: cond_start_tok, // FIXME ?
+            },
+            type_info: None,
+        })
+    }
+
     fn when_expr(&mut self) -> Result<AstNode, Error> {
         self.eat(TokenKind::KeywordWhen)?;
         self.skip_newlines()?;
 
-        // TODO: allow subject to declare variable here
-        let cond_start_tok = self.eat(TokenKind::LeftParen)?;
-        let subject = self.expression()?;
-        self.eat(TokenKind::RightParen)?;
-        self.skip_newlines()?;
+        // TODO: when subject
 
         self.eat(TokenKind::LeftCurlyBracket)?;
         self.skip_newlines()?;
 
-        // TODO: body
+        let entry = self.when_entry()?;
 
         self.skip_newlines()?;
-        let else_body_tok = self.eat(TokenKind::RightCurlyBracket)?;
+        self.eat(TokenKind::RightCurlyBracket)?;
 
-        Ok(AstNode {
-            kind: AstNodeExpr::IfExpr {
-                cond: Box::new(subject),
-                cond_start_tok,
-                if_body: vec![],
-                else_body: vec![],
-                else_body_tok,
-            },
-            type_info: None,
-        })
+        Ok(entry)
     }
 
     fn if_expr(&mut self) -> Result<AstNode, Error> {
