@@ -184,7 +184,11 @@ impl Parser<'_> {
         let cond = self.expression()?;
         self.eat(TokenKind::RightParen)?;
         self.skip_newlines()?;
-        let body = self.control_structure_body()?;
+
+        let body = match self.previous.unwrap().kind {
+            TokenKind::Semicolon => vec![],
+            _ => self.control_structure_body()?,
+        };
 
         Ok(AstNodeStmt::While {
             cond,
