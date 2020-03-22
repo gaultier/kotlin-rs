@@ -16,7 +16,7 @@ fn simple_range() {
 
 #[test]
 fn check_both_types_match() -> Result<(), String> {
-    let src = String::from("1U..5UL");
+    let src = String::from("1U..\n\n5UL");
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
