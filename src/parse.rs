@@ -206,7 +206,9 @@ impl Parser<'_> {
                     ..
                 }) => {
                     self.eat(TokenKind::KeywordElse)?;
+                    self.skip_newlines()?;
                     self.eat(TokenKind::Arrow)?;
+                    self.skip_newlines()?;
                     let else_entry = Some(self.control_structure_body()?);
                     self.eat_opt(TokenKind::Semicolon)?;
 
