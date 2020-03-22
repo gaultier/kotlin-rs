@@ -22,7 +22,7 @@ fn multi_if_expr() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) 'o' 'x')(if #t 42 99)\n"
+        &"(if (< 1 2) 'o' 'x')(if true 42 99)\n"
     );
 }
 
@@ -46,7 +46,7 @@ fn if_body_block() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) (begin 'a' 1 #t 'b') (begin (* 1 3) 'c'))\n"
+        &"(if (< 1 2) (begin 'a' 1 true 'b') (begin (* 1 3) 'c'))\n"
     );
 }
 
@@ -58,7 +58,7 @@ fn if_with_empty_else_block() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) (begin 'a' 1 #t 'b') (begin ))\n"
+        &"(if (< 1 2) (begin 'a' 1 true 'b') (begin ))\n"
     );
 }
 
@@ -70,7 +70,7 @@ fn if_with_empty_if_body_block() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) (begin ) (begin 'a' 1 #t 'b'))\n"
+        &"(if (< 1 2) (begin ) (begin 'a' 1 true 'b'))\n"
     );
 }
 
@@ -82,7 +82,7 @@ fn if_with_no_if_body_block() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) (begin ) (begin 'a' 1 #t 'b'))\n"
+        &"(if (< 1 2) (begin ) (begin 'a' 1 true 'b'))\n"
     );
 }
 
@@ -94,7 +94,7 @@ fn if_with_no_else_block() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) (begin 'a' 1 #t 'b') (begin ))\n"
+        &"(if (< 1 2) (begin 'a' 1 true 'b') (begin ))\n"
     );
 }
 

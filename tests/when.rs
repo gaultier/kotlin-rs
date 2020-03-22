@@ -10,7 +10,7 @@ fn simple_when_expr() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(cond (#t 1) (#f 0))\n"
+        &"(cond (true 1) (false 0))\n"
     );
 }
 
@@ -31,7 +31,7 @@ fn when_with_else() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(cond (#t 1) (#f 0) (else 42))\n"
+        &"(cond (true 1) (false 0) (else 42))\n"
     );
 }
 
@@ -43,7 +43,7 @@ fn when_with_boolean_exprs() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(cond ((or #t #f) 1) (#f 0) (else 42))\n"
+        &"(cond ((or true false) 1) (false 0) (else 42))\n"
     );
 }
 

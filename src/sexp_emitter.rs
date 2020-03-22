@@ -157,7 +157,7 @@ impl SexpEmitter<'_> {
                     }),
                 ..
             } => {
-                write!(w, "{}", if *b { "#t" } else { "#f" }).unwrap();
+                write!(w, "{}", if *b { "true" } else { "false" }).unwrap();
                 Ok(())
             }
             AstNode {

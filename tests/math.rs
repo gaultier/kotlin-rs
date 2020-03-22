@@ -285,7 +285,7 @@ fn add_string_bool() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ "abc" #t)
+        &r##"(+ "abc" true)
 "##
     );
 }
