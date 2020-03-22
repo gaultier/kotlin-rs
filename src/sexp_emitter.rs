@@ -6,12 +6,34 @@ pub(crate) struct SexpEmitter<'a> {
     lexer: &'a Lexer,
 }
 
-fn unary_op(kind: TokenKind) -> &'static str {
+fn unary_op(kind: &TokenKind) -> &'static str {
     match kind {
         TokenKind::Bang => "not",
         TokenKind::Plus => "+",
         TokenKind::Minus => "-",
         _ => unreachable!(),
+    }
+}
+
+fn binary_op(kind: &TokenKind) -> &'static str {
+    match kind {
+        TokenKind::Plus => "+",
+        TokenKind::Minus => "-",
+        TokenKind::Star => "*",
+        TokenKind::Slash => "/",
+        TokenKind::Percent => "%",
+        TokenKind::DotDot => "range",
+        TokenKind::EqualEqual | TokenKind::EqualEqualEqual => "=",
+        TokenKind::PipePipe => "or",
+        TokenKind::AmpersandAmpersand => "and",
+        TokenKind::Lesser => "<",
+        TokenKind::LesserEqual => "<=",
+        TokenKind::Greater => ">",
+        TokenKind::GreaterEqual => ">=",
+        _ => {
+            dbg!(kind);
+            unreachable!()
+        }
     }
 }
 
@@ -157,7 +179,7 @@ impl SexpEmitter<'_> {
                 kind: AstNodeExpr::Unary(tok, right),
                 ..
             } => {
-                write!(w, "({} ", unary_op(tok.kind)).unwrap();
+                write!(w, "({} ", unary_op(&tok.kind)).unwrap();
                 self.expr(right, w)?;
                 write!(w, ")").unwrap();
                 Ok(())
@@ -212,87 +234,10 @@ impl SexpEmitter<'_> {
                 Ok(())
             }
             AstNode {
-                kind:
-                    AstNodeExpr::Binary(
-                        left,
-                        Token {
-                            kind: TokenKind::EqualEqual,
-                            ..
-                        },
-                        right,
-                    ),
-                ..
-            } => {
-                write!(w, "(= ").unwrap();
-                self.expr(left, w)?;
-                write!(w, " ").unwrap();
-                self.expr(right, w)?;
-                write!(w, ")").unwrap();
-                Ok(())
-            }
-            AstNode {
-                kind:
-                    AstNodeExpr::Binary(
-                        left,
-                        Token {
-                            kind: TokenKind::DotDot,
-                            ..
-                        },
-                        right,
-                    ),
-                ..
-            } => {
-                // WARN: range is inclusive i.e: `5 in 1..5 == true`
-                write!(w, "(range ").unwrap();
-                self.expr(left, w)?;
-                write!(w, " ").unwrap();
-                self.expr(right, w)?;
-                write!(w, ")").unwrap();
-                Ok(())
-            }
-            AstNode {
-                kind:
-                    AstNodeExpr::Binary(
-                        left,
-                        Token {
-                            kind: TokenKind::PipePipe,
-                            ..
-                        },
-                        right,
-                    ),
-                ..
-            } => {
-                write!(w, "(or ").unwrap();
-                self.expr(left, w)?;
-                write!(w, " ").unwrap();
-                self.expr(right, w)?;
-                write!(w, ")").unwrap();
-                Ok(())
-            }
-            AstNode {
-                kind:
-                    AstNodeExpr::Binary(
-                        left,
-                        Token {
-                            kind: TokenKind::AmpersandAmpersand,
-                            ..
-                        },
-                        right,
-                    ),
-                ..
-            } => {
-                write!(w, "(and ").unwrap();
-                self.expr(left, w)?;
-                write!(w, " ").unwrap();
-                self.expr(right, w)?;
-                write!(w, ")").unwrap();
-                Ok(())
-            }
-            AstNode {
                 kind: AstNodeExpr::Binary(left, tok, right),
                 ..
             } => {
-                write!(w, "({} ", &self.lexer.src[tok.span.start..tok.span.end]).unwrap();
+                write!(w, "({} ", binary_op(&tok.kind)).unwrap();
                 self.expr(left, w)?;
                 write!(w, " ").unwrap();
                 self.expr(right, w)?;
