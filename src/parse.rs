@@ -62,6 +62,10 @@ pub enum AstNodeExpr {
         else_body: Statements,
         else_body_tok: Token,
     },
+    WhenExpr {
+        subject: Option<Box<AstNodeExpr>>,
+        entries: Vec<AstNode>,
+    },
 }
 
 #[derive(Debug)]
@@ -174,6 +178,24 @@ impl Parser<'_> {
         })
     }
 
+    fn when_entries(&mut self) -> Result<Vec<AstNode>, Error> {
+        let mut entries = Vec::new();
+
+        loop {
+            match self.previous {
+                Some(Token {
+                    kind: TokenKind::RightCurlyBracket,
+                    ..
+                }) => {
+                    return Ok(entries);
+                }
+                _ => {
+                    entries.push(self.when_entry()?);
+                }
+            }
+        }
+    }
+
     fn when_expr(&mut self) -> Result<AstNode, Error> {
         self.eat(TokenKind::KeywordWhen)?;
         self.skip_newlines()?;
@@ -183,12 +205,18 @@ impl Parser<'_> {
         self.eat(TokenKind::LeftCurlyBracket)?;
         self.skip_newlines()?;
 
-        let entry = self.when_entry()?;
+        let entries = self.when_entries()?;
 
         self.skip_newlines()?;
         self.eat(TokenKind::RightCurlyBracket)?;
 
-        Ok(entry)
+        Ok(AstNode {
+            kind: AstNodeExpr::WhenExpr {
+                entries,
+                subject: None,
+            },
+            type_info: None,
+        })
     }
 
     fn if_expr(&mut self) -> Result<AstNode, Error> {

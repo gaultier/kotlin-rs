@@ -291,6 +291,10 @@ impl SexpEmitter<'_> {
     pub fn expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNode {
+                kind: AstNodeExpr::WhenExpr { .. },
+                ..
+            } => unimplemented!(),
+            AstNode {
                 kind: AstNodeExpr::Literal(..),
                 ..
             } => self.literal(ast, w),

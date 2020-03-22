@@ -421,6 +421,10 @@ impl TypeChecker<'_> {
                 kind: AstNodeExpr::IfExpr { .. },
                 ..
             } => self.type_check_if_expr(ast),
+            AstNode {
+                kind: AstNodeExpr::WhenExpr { .. },
+                ..
+            } => unimplemented!(),
         }
     }
 
