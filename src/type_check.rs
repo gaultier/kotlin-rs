@@ -28,18 +28,14 @@ impl TypeChecker<'_> {
         body: &mut [AstNodeStmt],
         cond_start_tok: &Token,
     ) -> Result<Type, Error> {
-        self.eq(
-            self.type_check_expr(cond)?,
-            Type::Bool,
-            &cond_start_tok.span,
-        )?;
+        self.eq(self.expr(cond)?, Type::Bool, &cond_start_tok.span)?;
         self.statements(body)?;
         Ok(Type::Unit)
     }
 
     fn statement(&self, statement: &mut AstNodeStmt) -> Result<Type, Error> {
         match statement {
-            AstNodeStmt::Expr(expr) => self.type_check_expr(expr),
+            AstNodeStmt::Expr(expr) => self.expr(expr),
             AstNodeStmt::While {
                 cond,
                 cond_start_tok,
@@ -62,7 +58,7 @@ impl TypeChecker<'_> {
             .unwrap_or(Type::Unit))
     }
 
-    fn type_check_unary(&self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn unary(&self, ast: &mut AstNode) -> Result<Type, Error> {
         match ast {
             AstNode {
                 kind:
@@ -86,7 +82,7 @@ impl TypeChecker<'_> {
                     ),
                 ..
             } => {
-                let t = self.type_check_expr(right)?;
+                let t = self.expr(right)?;
                 ast.type_info = Some(t);
                 Ok(t)
             }
@@ -103,7 +99,7 @@ impl TypeChecker<'_> {
                     ),
                 ..
             } => {
-                let t = self.type_check_expr(right)?;
+                let t = self.expr(right)?;
                 ast.type_info = Some(self.coalesce_types(Type::Bool, t, tok)?);
                 Ok(Type::Bool)
             }
@@ -111,7 +107,7 @@ impl TypeChecker<'_> {
         }
     }
 
-    fn type_check_literal(&self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn literal(&self, ast: &mut AstNode) -> Result<Type, Error> {
         match ast {
             AstNode {
                 kind:
@@ -227,7 +223,7 @@ impl TypeChecker<'_> {
         }
     }
 
-    fn type_check_binary(&self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn binary(&self, ast: &mut AstNode) -> Result<Type, Error> {
         if let Some(t) = ast.type_info {
             return Ok(t);
         }
@@ -303,8 +299,8 @@ impl TypeChecker<'_> {
                     ),
                 ..
             } => {
-                let left_t = self.type_check_expr(left)?;
-                let right_t = self.type_check_expr(right)?;
+                let left_t = self.expr(left)?;
+                let right_t = self.expr(right)?;
 
                 self.eq(left_t, right_t, &tok.span)?;
                 let t = match left_t {
@@ -384,8 +380,8 @@ impl TypeChecker<'_> {
                     ),
                 ..
             } => {
-                let left_t = self.type_check_expr(left)?;
-                let right_t = self.type_check_expr(right)?;
+                let left_t = self.expr(left)?;
+                let right_t = self.expr(right)?;
 
                 self.coalesce_types(left_t, right_t, &tok)?;
                 ast.type_info = Some(Type::Bool);
@@ -395,11 +391,7 @@ impl TypeChecker<'_> {
                 kind: AstNodeExpr::Binary(left, tok, right),
                 ..
             } => {
-                let t = self.coalesce_types(
-                    self.type_check_expr(left)?,
-                    self.type_check_expr(right)?,
-                    &tok,
-                )?;
+                let t = self.coalesce_types(self.expr(left)?, self.expr(right)?, &tok)?;
                 ast.type_info = Some(t);
                 Ok(t)
             }
@@ -411,7 +403,7 @@ impl TypeChecker<'_> {
         for stmt in stmts.iter_mut() {
             match stmt {
                 AstNodeStmt::Expr(stmt_expr) => {
-                    self.type_check_expr(stmt_expr)?;
+                    self.expr(stmt_expr)?;
                 }
                 AstNodeStmt::While { .. } => unimplemented!(),
             }
@@ -437,9 +429,9 @@ impl TypeChecker<'_> {
                     },
                 ..
             } => {
-                let subject_t = self.type_check_expr(subject)?;
+                let subject_t = self.expr(subject)?;
                 for entry in entries.iter_mut() {
-                    let cond_t = self.type_check_expr(&mut entry.cond)?;
+                    let cond_t = self.expr(&mut entry.cond)?;
                     self.eq(subject_t, cond_t, &entry.cond_start_tok.span)?;
 
                     self.statements(&mut entry.body)?;
@@ -456,7 +448,7 @@ impl TypeChecker<'_> {
                 ..
             } => {
                 for entry in entries.iter_mut() {
-                    let cond_t = self.type_check_expr(&mut entry.cond)?;
+                    let cond_t = self.expr(&mut entry.cond)?;
                     self.eq(cond_t, Type::Bool, &entry.cond_start_tok.span)?;
                     self.statements(&mut entry.body)?;
                 }
@@ -466,7 +458,7 @@ impl TypeChecker<'_> {
         }
     }
 
-    fn type_check_if_expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn if_expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
         if let Some(t) = ast.type_info {
             return Ok(t);
         }
@@ -483,7 +475,7 @@ impl TypeChecker<'_> {
                     },
                 ..
             } => {
-                let t = self.type_check_expr(cond)?;
+                let t = self.expr(cond)?;
                 self.eq(t, Type::Bool, &cond_start_tok.span)?;
 
                 let if_body_t = self.block(if_body)?;
@@ -506,28 +498,28 @@ impl TypeChecker<'_> {
         }
     }
 
-    fn type_check_expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
         match ast {
             AstNode {
                 kind: AstNodeExpr::Literal(..),
                 ..
-            } => self.type_check_literal(ast),
+            } => self.literal(ast),
             AstNode {
                 kind: AstNodeExpr::Unary(..),
                 ..
-            } => self.type_check_unary(ast),
+            } => self.unary(ast),
             AstNode {
                 kind: AstNodeExpr::Binary(..),
                 ..
-            } => self.type_check_binary(ast),
+            } => self.binary(ast),
             AstNode {
                 kind: AstNodeExpr::Grouping(expr),
                 ..
-            } => self.type_check_expr(&mut (**expr)),
+            } => self.expr(&mut (**expr)),
             AstNode {
                 kind: AstNodeExpr::IfExpr { .. },
                 ..
-            } => self.type_check_if_expr(ast),
+            } => self.if_expr(ast),
             AstNode {
                 kind: AstNodeExpr::WhenExpr { .. },
                 ..
