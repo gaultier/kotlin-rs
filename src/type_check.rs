@@ -15,6 +15,7 @@ impl TypeChecker<'_> {
         for mut stmt in statements.iter_mut() {
             let mut ast = match &mut stmt {
                 AstNodeStmt::Expr(expr) => expr,
+                AstNodeStmt::While { .. } => unimplemented!(),
             };
             self.type_check_expr(&mut ast)?;
         }
@@ -23,6 +24,7 @@ impl TypeChecker<'_> {
             .last()
             .map(|stmt| match stmt {
                 AstNodeStmt::Expr(expr) => expr.type_info.unwrap_or(Type::Unit),
+                _ => Type::Unit,
             })
             .unwrap_or(Type::Unit))
     }
@@ -383,6 +385,7 @@ impl TypeChecker<'_> {
                 AstNodeStmt::Expr(stmt_expr) => {
                     self.type_check_expr(stmt_expr)?;
                 }
+                AstNodeStmt::While { .. } => unimplemented!(),
             }
         }
         Ok(match stmts.last() {

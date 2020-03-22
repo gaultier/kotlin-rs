@@ -51,6 +51,7 @@ impl SexpEmitter<'_> {
         for stmt in statements {
             let ast = match &stmt {
                 AstNodeStmt::Expr(expr) => expr,
+                AstNodeStmt::While { .. } => unimplemented!(),
             };
             self.expr(&ast, w)?;
             writeln!(w).unwrap();
@@ -209,6 +210,7 @@ impl SexpEmitter<'_> {
     fn statement<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeStmt::Expr(expr) => self.expr(expr, w),
+            AstNodeStmt::While { .. } => unimplemented!(),
         }
     }
 

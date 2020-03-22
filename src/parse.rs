@@ -56,6 +56,10 @@ impl fmt::Display for Type {
 #[derive(Debug)]
 pub enum AstNodeStmt {
     Expr(AstNode),
+    While {
+        cond: AstNode,
+        body: Vec<AstNodeStmt>,
+    },
 }
 
 pub type Statements = Vec<AstNodeStmt>;
