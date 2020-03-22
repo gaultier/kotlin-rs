@@ -35,7 +35,7 @@
 - [x] Boolean logic e.g `1 > 2 != 3<4`
 - [x] Newline-sensitive
 - [ ] Range e.g `1..5`
-- [ ] If
+- [x] If
 - [ ] For
 - [ ] When
 - [ ] Elvis operator
