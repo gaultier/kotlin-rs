@@ -428,7 +428,24 @@ impl Parser<'_> {
     }
 
     fn conjunction(&mut self) -> Result<AstNode, Error> {
-        self.equality() // FIXME
+        let left = self.equality()?;
+        self.skip_newlines()?;
+
+        match self.previous {
+            Some(Token {
+                kind: TokenKind::AmpersandAmpersand,
+                ..
+            }) => {
+                let tok = self.eat(TokenKind::AmpersandAmpersand)?;
+                self.skip_newlines()?;
+                let right = self.equality()?;
+                Ok(AstNode {
+                    kind: AstNodeExpr::Binary(Box::new(left), tok, Box::new(right)),
+                    type_info: None,
+                })
+            }
+            _ => Ok(left),
+        }
     }
 
     fn disjunction(&mut self) -> Result<AstNode, Error> {
