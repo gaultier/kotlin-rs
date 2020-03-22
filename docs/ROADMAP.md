@@ -44,7 +44,7 @@
 - [ ] Range test in when entry
 - [ ] Elvis operator
 - [ ] As expression
-- [ ] While
+- [x] While
 - [ ] Do while
 - [ ] Variable declaration
 - [ ] Explicit types
