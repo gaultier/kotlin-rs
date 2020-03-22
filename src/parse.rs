@@ -148,6 +148,36 @@ impl Parser<'_> {
         }
     }
 
+    fn when_expr(&mut self) -> Result<AstNode, Error> {
+        self.eat(TokenKind::KeywordWhen)?;
+        self.skip_newlines()?;
+
+        // TODO: allow subject to declare variable here
+        let cond_start_tok = self.eat(TokenKind::LeftParen)?;
+        let subject = self.expression()?;
+        self.eat(TokenKind::RightParen)?;
+        self.skip_newlines()?;
+
+        self.eat(TokenKind::LeftCurlyBracket)?;
+        self.skip_newlines()?;
+
+        // TODO: body
+
+        self.skip_newlines()?;
+        let else_body_tok = self.eat(TokenKind::RightCurlyBracket)?;
+
+        Ok(AstNode {
+            kind: AstNodeExpr::IfExpr {
+                cond: Box::new(subject),
+                cond_start_tok,
+                if_body: vec![],
+                else_body: vec![],
+                else_body_tok,
+            },
+            type_info: None,
+        })
+    }
+
     fn if_expr(&mut self) -> Result<AstNode, Error> {
         self.eat(TokenKind::KeywordIf)?;
         self.skip_newlines()?;
@@ -235,6 +265,7 @@ impl Parser<'_> {
                 })
             }
             TokenKind::KeywordIf => self.if_expr(),
+            TokenKind::KeywordWhen => self.when_expr(),
             _ => Err(Error::new(
                 ErrorKind::ExpectedPrimary,
                 self.lexer.span_location(&previous.span),
