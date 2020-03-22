@@ -340,6 +340,20 @@ impl TypeChecker<'_> {
         }
     }
 
+    fn block(&self, stmts: &mut Statements) -> Result<Type, Error> {
+        for mut stmt in stmts.iter_mut() {
+            match &mut stmt {
+                &mut AstNodeStmt::Expr(stmt_expr) => {
+                    self.type_check_expr(stmt_expr)?;
+                }
+            }
+        }
+        Ok(match stmts.last() {
+            Some(AstNodeStmt::Expr(stmt_expr)) => stmt_expr.type_info.unwrap(),
+            _ => Type::Unit,
+        })
+    }
+
     fn type_check_if_expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
         if let Some(t) = ast.type_info {
             return Ok(t);
@@ -365,28 +379,9 @@ impl TypeChecker<'_> {
                     ));
                 }
 
-                for mut stmt in if_body.iter_mut() {
-                    match &mut stmt {
-                        &mut AstNodeStmt::Expr(stmt_expr) => {
-                            self.type_check_expr(stmt_expr)?;
-                        }
-                    }
-                }
-                for mut stmt in else_body.iter_mut() {
-                    match &mut stmt {
-                        &mut AstNodeStmt::Expr(stmt_expr) => {
-                            self.type_check_expr(stmt_expr)?;
-                        }
-                    }
-                }
-                let if_body_t = match if_body.last() {
-                    Some(AstNodeStmt::Expr(stmt_expr)) => stmt_expr.type_info.unwrap(),
-                    _ => Type::Unit,
-                };
-                let else_body_t = match else_body.last() {
-                    Some(AstNodeStmt::Expr(stmt_expr)) => stmt_expr.type_info.unwrap(),
-                    _ => Type::Unit,
-                };
+                let if_body_t = self.block(if_body)?;
+                let else_body_t = self.block(else_body)?;
+
                 /* Kotlinc(tm) actually does not check that, the type is Any
                  which leads to weird, unchecked code like this that does not
                  raise any compile-time error: `(if (1<2) "foo" else false) as String`,
