@@ -268,13 +268,13 @@ impl SexpEmitter<'_> {
                 kind: AstNodeExpr::WhenExpr { entries, .. },
                 ..
             } => {
-                write!(w, "(cond (").unwrap();
+                write!(w, "(cond ").unwrap();
                 for entry in entries {
+                    write!(w, "(").unwrap();
                     self.expr(&entry.cond, w)?;
                     write!(w, " ").unwrap();
                     self.block(&entry.body, w)?;
-                    write!(w, ")").unwrap();
-                    write!(w, " ").unwrap();
+                    write!(w, ") ").unwrap();
                 }
                 write!(w, ")").unwrap();
                 Ok(())

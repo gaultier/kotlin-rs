@@ -172,6 +172,17 @@ impl Parser<'_> {
         self.skip_newlines()?;
 
         let body = self.control_structure_body()?;
+
+        match self.previous {
+            Some(Token {
+                kind: TokenKind::Semicolon,
+                ..
+            }) => {
+                self.advance()?;
+            }
+            _ => (),
+        }
+
         Ok(WhenEntry {
             cond,
             body,
