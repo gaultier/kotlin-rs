@@ -62,14 +62,21 @@ impl SexpEmitter<'_> {
     ) -> Result<(), Error> {
         for stmt in statements {
             self.statement(stmt, w)?;
-            writeln!(w).unwrap();
         }
+        writeln!(w, "").unwrap();
         Ok(())
     }
 
     fn while_stmt<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNodeStmt::While { .. } => unimplemented!(),
+            AstNodeStmt::While { cond, body, .. } => {
+                write!(w, "(while ").unwrap();
+                self.expr(cond, w)?;
+                write!(w, " ").unwrap();
+                self.block(body, w)?;
+                writeln!(w, ")").unwrap();
+                Ok(())
+            }
             _ => unreachable!(),
         }
     }

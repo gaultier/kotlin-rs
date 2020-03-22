@@ -22,7 +22,7 @@ fn multi_if_expr() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) 'o' 'x')\n(if #t 42 99)\n"
+        &"(if (< 1 2) 'o' 'x')(if #t 42 99)\n"
     );
 }
 
