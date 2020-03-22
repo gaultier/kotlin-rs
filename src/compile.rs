@@ -11,10 +11,10 @@ pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
     let mut stmts = parser.parse()?;
 
     let type_checker = TypeChecker::new(&lexer);
-    type_checker.stmts(&mut stmts)?;
+    type_checker.statements(&mut stmts)?;
 
-    let js_emitter = SexpEmitter::new(&lexer);
-    js_emitter.stmts(&stmts, w)
+    let emitter = SexpEmitter::new(&lexer);
+    emitter.statements(&stmts, w)
 }
 
 #[cfg(test)]

@@ -43,7 +43,7 @@ impl SexpEmitter<'_> {
         SexpEmitter { lexer }
     }
 
-    pub fn stmts<W: std::io::Write>(
+    pub fn statements<W: std::io::Write>(
         &self,
         statements: &[AstNodeStmt],
         w: &mut W,

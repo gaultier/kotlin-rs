@@ -33,11 +33,11 @@ impl TypeChecker<'_> {
             Type::Bool,
             &cond_start_tok.span,
         )?;
-        self.stmts(body)?;
+        self.statements(body)?;
         Ok(Type::Unit)
     }
 
-    fn stmt(&self, statement: &mut AstNodeStmt) -> Result<Type, Error> {
+    fn statement(&self, statement: &mut AstNodeStmt) -> Result<Type, Error> {
         match statement {
             AstNodeStmt::Expr(expr) => self.type_check_expr(expr),
             AstNodeStmt::While {
@@ -48,9 +48,9 @@ impl TypeChecker<'_> {
         }
     }
 
-    pub fn stmts(&self, statements: &mut [AstNodeStmt]) -> Result<Type, Error> {
+    pub fn statements(&self, statements: &mut [AstNodeStmt]) -> Result<Type, Error> {
         for stmt in statements.iter_mut() {
-            self.stmt(stmt)?;
+            self.statement(stmt)?;
         }
 
         Ok(statements
@@ -442,7 +442,7 @@ impl TypeChecker<'_> {
                     let cond_t = self.type_check_expr(&mut entry.cond)?;
                     self.eq(subject_t, cond_t, &entry.cond_start_tok.span)?;
 
-                    self.stmts(&mut entry.body)?;
+                    self.statements(&mut entry.body)?;
                 }
                 Ok(Type::Unit)
             }
@@ -458,7 +458,7 @@ impl TypeChecker<'_> {
                 for entry in entries.iter_mut() {
                     let cond_t = self.type_check_expr(&mut entry.cond)?;
                     self.eq(cond_t, Type::Bool, &entry.cond_start_tok.span)?;
-                    self.stmts(&mut entry.body)?;
+                    self.statements(&mut entry.body)?;
                 }
                 Ok(Type::Unit)
             }
