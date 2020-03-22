@@ -1,4 +1,6 @@
 use kotlin::compile::compile;
+use kotlin::error::*;
+use kotlin::parse::Type;
 
 #[test]
 fn simple_if_expr() {
@@ -94,4 +96,18 @@ fn if_with_no_else_block() {
         std::str::from_utf8(&out).as_ref().unwrap(),
         &"(if (< 1 2) (begin 'a' 1 #t 'b') (begin ))\n"
     );
+}
+
+#[test]
+fn check_both_branches_types_match() -> Result<(), String> {
+    let src = String::from("if (1<2) 'a' else 1 \n");
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::IncompatibleTypes(Type::Char, Type::Int),
+            ..
+        }) => Ok(()),
+        other => Err(format!("Should be a type error: {:?}", other)),
+    }
 }
