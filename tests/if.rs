@@ -100,13 +100,21 @@ fn if_with_no_else_block() {
 
 #[test]
 fn check_both_branches_types_match() -> Result<(), String> {
-    let src = String::from("if (1<2) 'a' else 1 \n");
+    let src = String::from("if (1<2) \n 'a'\n\n else 1 \n");
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
         Err(Error {
             kind: ErrorKind::IncompatibleTypes(Type::Char, Type::Int),
-            ..
+            location:
+                Location {
+                    start_pos: 17,
+                    start_line: 4,
+                    start_column: 2,
+                    end_pos: 21,
+                    end_line: 4,
+                    end_column: 6,
+                },
         }) => Ok(()),
         other => Err(format!("Should be a type error: {:?}", other)),
     }
