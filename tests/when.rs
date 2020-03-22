@@ -34,3 +34,15 @@ fn when_with_else() {
         &"(cond (#t 1) (#f 0) (else 42))\n"
     );
 }
+
+#[test]
+fn when_with_boolean_exprs() {
+    let src = String::from("when {true || false -> 1\n false -> 0\n\n else -> 42\n}\n");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_ref().unwrap(),
+        &"(cond ((or #t #f) 1) (#f 0) (else 42))\n"
+    );
+}
