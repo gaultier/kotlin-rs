@@ -61,6 +61,11 @@ pub enum AstNodeStmt {
         cond_start_tok: Token,
         body: Vec<AstNodeStmt>,
     },
+    DoWhile {
+        cond: AstNode,
+        cond_start_tok: Token,
+        body: Vec<AstNodeStmt>,
+    },
 }
 
 pub type Statements = Vec<AstNodeStmt>;
@@ -191,6 +196,27 @@ impl Parser<'_> {
         };
 
         Ok(AstNodeStmt::While {
+            cond,
+            cond_start_tok,
+            body,
+        })
+    }
+
+    fn do_while_stmt(&mut self) -> Result<AstNodeStmt, Error> {
+        self.eat(TokenKind::KeywordDo)?;
+        self.skip_newlines()?;
+
+        let body = match self.previous.unwrap().kind {
+            TokenKind::KeywordWhile => vec![],
+            _ => self.control_structure_body()?,
+        };
+        self.eat(TokenKind::KeywordWhile)?;
+        self.skip_newlines()?;
+        let cond_start_tok = self.eat(TokenKind::LeftParen)?;
+        let cond = self.expression()?;
+        self.eat(TokenKind::RightParen)?;
+
+        Ok(AstNodeStmt::DoWhile {
             cond,
             cond_start_tok,
             body,
@@ -540,6 +566,7 @@ impl Parser<'_> {
     fn statement(&mut self) -> Result<AstNodeStmt, Error> {
         match self.previous.unwrap().kind {
             TokenKind::KeywordWhile => self.while_stmt(),
+            TokenKind::KeywordDo => self.do_while_stmt(),
             _ => Ok(AstNodeStmt::Expr(self.expression()?)),
         }
     }

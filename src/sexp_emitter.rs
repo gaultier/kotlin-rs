@@ -51,6 +51,7 @@ impl SexpEmitter<'_> {
             AstNodeStmt::While { .. } => {
                 self.while_stmt(stmt, w)?;
             }
+            AstNodeStmt::DoWhile { .. } => unimplemented!(),
         };
         Ok(())
     }

@@ -36,7 +36,12 @@ impl TypeChecker<'_> {
     fn statement(&self, statement: &mut AstNodeStmt) -> Result<Type, Error> {
         match statement {
             AstNodeStmt::Expr(expr) => self.expr(expr),
-            AstNodeStmt::While {
+            AstNodeStmt::DoWhile {
+                cond,
+                cond_start_tok,
+                body,
+            }
+            | AstNodeStmt::While {
                 cond,
                 cond_start_tok,
                 body,
@@ -401,12 +406,7 @@ impl TypeChecker<'_> {
 
     fn block(&self, stmts: &mut Statements) -> Result<Type, Error> {
         for stmt in stmts.iter_mut() {
-            match stmt {
-                AstNodeStmt::Expr(stmt_expr) => {
-                    self.expr(stmt_expr)?;
-                }
-                AstNodeStmt::While { .. } => unimplemented!(),
-            }
+            self.statement(stmt)?;
         }
         Ok(match stmts.last() {
             Some(AstNodeStmt::Expr(stmt_expr)) => stmt_expr.type_info.unwrap(),
