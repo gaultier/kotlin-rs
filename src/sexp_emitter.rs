@@ -30,6 +30,7 @@ fn binary_op(kind: &TokenKind) -> &'static str {
         TokenKind::LesserEqual => "<=",
         TokenKind::Greater => ">",
         TokenKind::GreaterEqual => ">=",
+        TokenKind::BangEqual | TokenKind::BangEqualEqual => "not=",
         _ => {
             dbg!(kind);
             unreachable!()
@@ -190,49 +191,6 @@ impl SexpEmitter<'_> {
 
     fn binary<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNode {
-                kind:
-                    AstNodeExpr::Binary(
-                        _,
-                        Token {
-                            kind: TokenKind::BangEqualEqual,
-                            ..
-                        },
-                        _,
-                    ),
-                ..
-            }
-            | AstNode {
-                kind:
-                    AstNodeExpr::Binary(
-                        _,
-                        Token {
-                            kind: TokenKind::EqualEqualEqual,
-                            ..
-                        },
-                        _,
-                    ),
-                ..
-            } => unimplemented!(),
-            AstNode {
-                kind:
-                    AstNodeExpr::Binary(
-                        left,
-                        Token {
-                            kind: TokenKind::BangEqual,
-                            ..
-                        },
-                        right,
-                    ),
-                ..
-            } => {
-                write!(w, "(not (= ").unwrap();
-                self.expr(left, w)?;
-                write!(w, " ").unwrap();
-                self.expr(right, w)?;
-                write!(w, "))").unwrap();
-                Ok(())
-            }
             AstNode {
                 kind: AstNodeExpr::Binary(left, tok, right),
                 ..
