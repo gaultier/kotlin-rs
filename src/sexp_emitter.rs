@@ -43,20 +43,35 @@ impl SexpEmitter<'_> {
         SexpEmitter { lexer }
     }
 
+    fn statement<W: std::io::Write>(&self, stmt: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
+        match stmt {
+            AstNodeStmt::Expr(expr) => {
+                self.expr(expr, w)?;
+            }
+            AstNodeStmt::While { .. } => {
+                self.while_stmt(stmt, w)?;
+            }
+        };
+        Ok(())
+    }
+
     pub fn statements<W: std::io::Write>(
         &self,
         statements: &[AstNodeStmt],
         w: &mut W,
     ) -> Result<(), Error> {
         for stmt in statements {
-            let ast = match &stmt {
-                AstNodeStmt::Expr(expr) => expr,
-                AstNodeStmt::While { .. } => unimplemented!(),
-            };
-            self.expr(&ast, w)?;
+            self.statement(stmt, w)?;
             writeln!(w).unwrap();
         }
         Ok(())
+    }
+
+    fn while_stmt<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
+        match ast {
+            AstNodeStmt::While { .. } => unimplemented!(),
+            _ => unreachable!(),
+        }
     }
 
     fn literal<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
@@ -204,13 +219,6 @@ impl SexpEmitter<'_> {
                 Ok(())
             }
             _ => unreachable!(),
-        }
-    }
-
-    fn statement<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
-        match ast {
-            AstNodeStmt::Expr(expr) => self.expr(expr, w),
-            AstNodeStmt::While { .. } => unimplemented!(),
         }
     }
 
