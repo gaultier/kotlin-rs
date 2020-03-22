@@ -248,6 +248,7 @@ impl SexpEmitter<'_> {
         }
         for stmt in ast {
             self.statement(stmt, w)?;
+            write!(w, " ").unwrap();
         }
         if ast.len() > 1 {
             write!(w, ")").unwrap();
