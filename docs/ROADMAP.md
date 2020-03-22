@@ -40,7 +40,10 @@
 - [x] When
 - [x] When with subject
 - [ ] When with subject with var declaration
+- [ ] Type test in when entry
+- [ ] Range test in when entry
 - [ ] Elvis operator
+- [ ] As expression
 - [ ] While
 - [ ] Do while
 - [ ] Variable declaration

@@ -405,8 +405,28 @@ impl Parser<'_> {
         }
     }
 
-    fn comparison(&mut self) -> Result<AstNode, Error> {
+    fn range(&mut self) -> Result<AstNode, Error> {
         let left = self.addition()?;
+        match self.previous {
+            Some(Token {
+                kind: TokenKind::DotDot,
+                ..
+            }) => {
+                let previous = self.eat(TokenKind::DotDot)?;
+                self.skip_newlines()?;
+                let right = self.range()?;
+
+                Ok(AstNode {
+                    kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
+                    type_info: None,
+                })
+            }
+            _ => Ok(left),
+        }
+    }
+
+    fn comparison(&mut self) -> Result<AstNode, Error> {
+        let left = self.range()?;
         let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::Greater
@@ -454,7 +474,7 @@ impl Parser<'_> {
             }) => {
                 let tok = self.eat(TokenKind::AmpersandAmpersand)?;
                 self.skip_newlines()?;
-                let right = self.equality()?;
+                let right = self.conjunction()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), tok, Box::new(right)),
                     type_info: None,
@@ -475,7 +495,7 @@ impl Parser<'_> {
             }) => {
                 let tok = self.eat(TokenKind::PipePipe)?;
                 self.skip_newlines()?;
-                let right = self.conjunction()?;
+                let right = self.disjunction()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), tok, Box::new(right)),
                     type_info: None,
