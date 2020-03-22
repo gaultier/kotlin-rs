@@ -391,14 +391,9 @@ impl TypeChecker<'_> {
                     return Ok(Type::Unit);
                 }
 
-                if if_body_t != else_body_t {
-                    return Err(Error::new(
-                        ErrorKind::IncompatibleTypes(if_body_t, else_body_t),
-                        self.lexer.span_location(&else_body_tok.span),
-                    ));
-                }
-                ast.type_info = Some(if_body_t);
-                Ok(if_body_t)
+                let t = self.coalesce_types(if_body_t, else_body_t, &else_body_tok)?;
+                ast.type_info = Some(t);
+                Ok(t)
             }
             _ => unreachable!(),
         }
@@ -431,6 +426,7 @@ impl TypeChecker<'_> {
 
     fn coalesce_types(&self, left: Type, right: Type, token: &Token) -> Result<Type, Error> {
         match (left, right) {
+            (Type::Char, Type::Char) => Ok(Type::Char),
             (Type::Bool, Type::Bool) => Ok(Type::Bool),
             (Type::Int, Type::Int) => Ok(Type::Int),
             (Type::UInt, Type::UInt) => Ok(Type::UInt),
