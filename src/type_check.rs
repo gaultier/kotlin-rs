@@ -364,8 +364,31 @@ impl TypeChecker<'_> {
                         self.lexer.span_location(&cond_start_tok.span),
                     ));
                 }
-                let if_body_t = self.type_check_expr(if_body)?;
-                let else_body_t = self.type_check_expr(else_body)?;
+
+                for stmt in if_body {
+                    match stmt {
+                        AstNodeStmt::Expr(stmt_expr) => {
+                            self.type_check_expr(stmt_expr)?;
+                        }
+                        _ => unimplemented!(),
+                    }
+                }
+                for stmt in else_body {
+                    match stmt {
+                        AstNodeStmt::Expr(stmt_expr) => {
+                            self.type_check_expr(stmt_expr)?;
+                        }
+                        _ => unimplemented!(),
+                    }
+                }
+                let if_body_t = match if_body.last() {
+                    Some(AstNodeStmt::Expr(stmt_expr)) => stmt_expr.type_info.unwrap(),
+                    _ => Type::Unit,
+                };
+                let else_body_t = match else_body.last() {
+                    Some(AstNodeStmt::Expr(stmt_expr)) => stmt_expr.type_info.unwrap(),
+                    _ => Type::Unit,
+                };
                 /* Kotlinc(tm) actually does not check that, the type is Any
                  which leads to weird, unchecked code like this that does not
                  raise any compile-time error: `(if (1<2) "foo" else false) as String`,

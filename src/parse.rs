@@ -57,9 +57,9 @@ pub enum AstNodeExpr {
     IfExpr {
         cond: Box<AstNode>,
         cond_start_tok: Token,
-        if_body: Box<AstNode>,
+        if_body: Statements,
         // if_body_tok: Token,
-        else_body: Box<AstNode>,
+        else_body: Statements,
         else_body_tok: Token,
     },
 }
@@ -133,6 +133,30 @@ impl Parser<'_> {
         }
     }
 
+    fn eat_opt(&mut self, kind: TokenKind) -> Result<(), Error> {
+        match self.previous {
+            Some(Token { kind: k, .. }) if k == kind => self.eat(kind).map(|_| ()),
+            _ => Ok(()),
+        }
+    }
+
+    fn block(&mut self) -> Result<Statements, Error> {
+        self.eat(TokenKind::LeftCurlyBracket)?;
+        self.skip_newlines()?;
+        let stmts = self.statements()?;
+        self.skip_newlines()?;
+        self.eat(TokenKind::RightCurlyBracket)?;
+        Ok(stmts)
+    }
+
+    // if-body. for-body, etc
+    fn control_structure_body(&mut self) -> Result<Statements, Error> {
+        match self.previous {
+            Some(Token { kind: k, .. }) if k == TokenKind::LeftCurlyBracket => self.block(),
+            _ => Ok(vec![self.statement()?]),
+        }
+    }
+
     fn if_expr(&mut self) -> Result<AstNode, Error> {
         self.eat(TokenKind::KeywordIf)?;
         self.skip_newlines()?;
@@ -146,19 +170,19 @@ impl Parser<'_> {
         self.eat(TokenKind::RightParen)?;
         self.skip_newlines()?;
 
-        let if_body = self.expression()?;
+        let if_body = self.control_structure_body()?;
         self.skip_newlines()?;
 
         let else_body_tok = self.eat(TokenKind::KeywordElse)?;
         self.skip_newlines()?;
-        let else_body = self.expression()?;
+        let else_body = self.control_structure_body()?;
 
         Ok(AstNode {
             kind: AstNodeExpr::IfExpr {
                 cond: Box::new(cond),
                 cond_start_tok,
-                if_body: Box::new(if_body),
-                else_body: Box::new(else_body),
+                if_body,
+                else_body,
                 else_body_tok,
             },
             type_info: None,
