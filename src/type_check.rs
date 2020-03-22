@@ -368,16 +368,35 @@ impl TypeChecker<'_> {
             AstNode {
                 kind:
                     AstNodeExpr::WhenExpr {
-                        subject, entries, ..
+                        subject: Some(subject),
+                        entries,
+                        ..
                     },
                 ..
             } => {
-                let _subject_t = if let Some(subject) = subject {
-                    Some(self.type_check_expr(subject)?)
-                } else {
-                    None
-                };
+                let subject_t = self.type_check_expr(subject)?;
+                for entry in entries.iter_mut() {
+                    let cond_t = self.type_check_expr(&mut entry.cond)?;
+                    if subject_t != cond_t {
+                        return Err(Error::new(
+                            ErrorKind::IncompatibleTypes(subject_t, cond_t),
+                            self.lexer.span_location(&entry.cond_start_tok.span),
+                        ));
+                    }
 
+                    self.type_check_stmts(&mut entry.body)?;
+                }
+                Ok(Type::Unit)
+            }
+            AstNode {
+                kind:
+                    AstNodeExpr::WhenExpr {
+                        subject: None,
+                        entries,
+                        ..
+                    },
+                ..
+            } => {
                 for entry in entries.iter_mut() {
                     let cond_t = self.type_check_expr(&mut entry.cond)?;
                     if cond_t != Type::Bool {
@@ -386,7 +405,7 @@ impl TypeChecker<'_> {
                             self.lexer.span_location(&entry.cond_start_tok.span),
                         ));
                     }
-                    let _body_t = self.type_check_stmts(&mut entry.body)?;
+                    self.type_check_stmts(&mut entry.body)?;
                 }
                 Ok(Type::Unit)
             }

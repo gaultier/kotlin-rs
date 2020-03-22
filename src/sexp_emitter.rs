@@ -307,7 +307,44 @@ impl SexpEmitter<'_> {
                     AstNodeExpr::WhenExpr {
                         entries,
                         else_entry,
-                        ..
+                        subject: Some(subject),
+                    },
+                ..
+            } => {
+                write!(w, "(case ").unwrap();
+                self.expr(&subject, w)?;
+                write!(w, " ").unwrap();
+
+                if let Some((last, entries)) = entries.split_last() {
+                    for entry in entries {
+                        write!(w, "((").unwrap();
+                        self.expr(&entry.cond, w)?;
+                        write!(w, ") ").unwrap();
+                        self.block(&entry.body, w)?;
+                        write!(w, ") ").unwrap();
+                    }
+                    write!(w, "((").unwrap();
+                    self.expr(&last.cond, w)?;
+                    write!(w, ") ").unwrap();
+                    self.block(&last.body, w)?;
+                    write!(w, ")").unwrap();
+                }
+
+                if let Some(else_entry) = else_entry {
+                    write!(w, " (else ").unwrap();
+                    self.block(&else_entry, w)?;
+                    write!(w, ")").unwrap();
+                }
+
+                write!(w, ")").unwrap();
+                Ok(())
+            }
+            AstNode {
+                kind:
+                    AstNodeExpr::WhenExpr {
+                        entries,
+                        else_entry,
+                        subject: None,
                     },
                 ..
             } => {
