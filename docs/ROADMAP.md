@@ -47,6 +47,7 @@
 - [ ] While
 - [ ] Do while
 - [ ] Variable declaration
+- [ ] Explicit types
 - [ ] Variable assignement
 - [ ] Simple inline functions declaration e.g `fun add(a: Int, b: Int): Int = a + b`
 - [ ] Simple C-like functions declaration e.g `fun add(a: Int, b: Int): Int { return a + b; }`
@@ -57,6 +58,7 @@
 - [ ] Shebang
 - [ ] Import
 - [ ] Package declaration
+- [ ] Try-catch
 
 ## Type checker
 

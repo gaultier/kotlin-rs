@@ -6,6 +6,15 @@ pub(crate) struct SexpEmitter<'a> {
     lexer: &'a Lexer,
 }
 
+fn unary_op(kind: TokenKind) -> &'static str {
+    match kind {
+        TokenKind::Bang => "not",
+        TokenKind::Plus => "+",
+        TokenKind::Minus => "-",
+        _ => unreachable!(),
+    }
+}
+
 impl SexpEmitter<'_> {
     pub(crate) fn new(lexer: &Lexer) -> SexpEmitter {
         SexpEmitter { lexer }
@@ -148,7 +157,7 @@ impl SexpEmitter<'_> {
                 kind: AstNodeExpr::Unary(tok, right),
                 ..
             } => {
-                write!(w, "({} ", &self.lexer.src[tok.span.start..tok.span.end]).unwrap();
+                write!(w, "({} ", unary_op(tok.kind)).unwrap();
                 self.expr(right, w)?;
                 write!(w, ")").unwrap();
                 Ok(())
