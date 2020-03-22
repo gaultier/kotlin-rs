@@ -378,9 +378,9 @@ impl TypeChecker<'_> {
     }
 
     fn block(&self, stmts: &mut Statements) -> Result<Type, Error> {
-        for mut stmt in stmts.iter_mut() {
-            match &mut stmt {
-                &mut AstNodeStmt::Expr(stmt_expr) => {
+        for stmt in stmts.iter_mut() {
+            match stmt {
+                AstNodeStmt::Expr(stmt_expr) => {
                     self.type_check_expr(stmt_expr)?;
                 }
             }

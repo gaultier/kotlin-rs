@@ -763,6 +763,10 @@ impl Span {
         debug_assert!(self.end >= self.start);
         self.end - self.start
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 #[derive(Debug, Copy, Clone)]

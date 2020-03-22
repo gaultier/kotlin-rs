@@ -300,7 +300,7 @@ impl SexpEmitter<'_> {
         }
     }
 
-    fn block<W: std::io::Write>(&self, ast: &Statements, w: &mut W) -> Result<(), Error> {
+    fn block<W: std::io::Write>(&self, ast: &[AstNodeStmt], w: &mut W) -> Result<(), Error> {
         if ast.len() != 1 {
             write!(w, "(begin ").unwrap();
         }

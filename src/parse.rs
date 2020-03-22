@@ -139,7 +139,7 @@ impl Parser<'_> {
         match self.previous {
             Some(tok @ Token { .. }) if tok.kind == kind => {
                 self.advance()?;
-                return Ok(tok);
+                Ok(tok)
             }
             _ => Err(Error::new(
                 ErrorKind::ExpectedToken,
