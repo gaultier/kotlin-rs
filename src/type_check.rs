@@ -1,5 +1,5 @@
 use crate::error::*;
-use crate::lex::{Lexer, Token, TokenKind};
+use crate::lex::{Lexer, Span, Token, TokenKind};
 use crate::parse::*;
 
 pub(crate) struct TypeChecker<'a> {
@@ -9,6 +9,17 @@ pub(crate) struct TypeChecker<'a> {
 impl TypeChecker<'_> {
     pub fn new(lexer: &Lexer) -> TypeChecker {
         TypeChecker { lexer }
+    }
+
+    fn eq(&self, left: Type, right: Type, span: &Span) -> Result<(), Error> {
+        if left != right {
+            Err(Error::new(
+                ErrorKind::IncompatibleTypes(left, right),
+                self.lexer.span_location(&span),
+            ))
+        } else {
+            Ok(())
+        }
     }
 
     pub fn type_check_stmts(&self, statements: &mut Statements) -> Result<Type, Error> {
@@ -273,12 +284,7 @@ impl TypeChecker<'_> {
                 let left_t = self.type_check_expr(left)?;
                 let right_t = self.type_check_expr(right)?;
 
-                if left_t != right_t {
-                    return Err(Error::new(
-                        ErrorKind::IncompatibleTypes(left_t, right_t),
-                        self.lexer.span_location(&tok.span),
-                    ));
-                }
+                self.eq(left_t, right_t, &tok.span)?;
                 let t = match left_t {
                     Type::Int => Type::IntRange,
                     Type::UInt => Type::UIntRange,
@@ -411,12 +417,7 @@ impl TypeChecker<'_> {
                 let subject_t = self.type_check_expr(subject)?;
                 for entry in entries.iter_mut() {
                     let cond_t = self.type_check_expr(&mut entry.cond)?;
-                    if subject_t != cond_t {
-                        return Err(Error::new(
-                            ErrorKind::IncompatibleTypes(subject_t, cond_t),
-                            self.lexer.span_location(&entry.cond_start_tok.span),
-                        ));
-                    }
+                    self.eq(subject_t, cond_t, &entry.cond_start_tok.span)?;
 
                     self.type_check_stmts(&mut entry.body)?;
                 }
@@ -433,12 +434,7 @@ impl TypeChecker<'_> {
             } => {
                 for entry in entries.iter_mut() {
                     let cond_t = self.type_check_expr(&mut entry.cond)?;
-                    if cond_t != Type::Bool {
-                        return Err(Error::new(
-                            ErrorKind::IncompatibleTypes(cond_t, Type::Bool),
-                            self.lexer.span_location(&entry.cond_start_tok.span),
-                        ));
-                    }
+                    self.eq(cond_t, Type::Bool, &entry.cond_start_tok.span)?;
                     self.type_check_stmts(&mut entry.body)?;
                 }
                 Ok(Type::Unit)
@@ -465,12 +461,7 @@ impl TypeChecker<'_> {
                 ..
             } => {
                 let t = self.type_check_expr(cond)?;
-                if t != Type::Bool {
-                    return Err(Error::new(
-                        ErrorKind::IncompatibleTypes(t, Type::Bool),
-                        self.lexer.span_location(&cond_start_tok.span),
-                    ));
-                }
+                self.eq(t, Type::Bool, &cond_start_tok.span)?;
 
                 let if_body_t = self.block(if_body)?;
                 let else_body_t = self.block(else_body)?;
