@@ -22,13 +22,35 @@ impl TypeChecker<'_> {
         }
     }
 
-    pub fn type_check_stmts(&self, statements: &mut Statements) -> Result<Type, Error> {
-        for mut stmt in statements.iter_mut() {
-            let mut ast = match &mut stmt {
-                AstNodeStmt::Expr(expr) => expr,
-                AstNodeStmt::While { .. } => unimplemented!(),
-            };
-            self.type_check_expr(&mut ast)?;
+    fn while_stmt(
+        &self,
+        cond: &mut AstNode,
+        body: &mut [AstNodeStmt],
+        cond_start_tok: &Token,
+    ) -> Result<Type, Error> {
+        self.eq(
+            self.type_check_expr(cond)?,
+            Type::Bool,
+            &cond_start_tok.span,
+        )?;
+        self.stmts(body)?;
+        Ok(Type::Unit)
+    }
+
+    fn stmt(&self, statement: &mut AstNodeStmt) -> Result<Type, Error> {
+        match statement {
+            AstNodeStmt::Expr(expr) => self.type_check_expr(expr),
+            AstNodeStmt::While {
+                cond,
+                cond_start_tok,
+                body,
+            } => self.while_stmt(cond, body, &cond_start_tok),
+        }
+    }
+
+    pub fn stmts(&self, statements: &mut [AstNodeStmt]) -> Result<Type, Error> {
+        for stmt in statements.iter_mut() {
+            self.stmt(stmt)?;
         }
 
         Ok(statements
@@ -399,6 +421,7 @@ impl TypeChecker<'_> {
             _ => Type::Unit,
         })
     }
+
     fn when_expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
         if let Some(t) = ast.type_info {
             return Ok(t);
@@ -419,7 +442,7 @@ impl TypeChecker<'_> {
                     let cond_t = self.type_check_expr(&mut entry.cond)?;
                     self.eq(subject_t, cond_t, &entry.cond_start_tok.span)?;
 
-                    self.type_check_stmts(&mut entry.body)?;
+                    self.stmts(&mut entry.body)?;
                 }
                 Ok(Type::Unit)
             }
@@ -435,7 +458,7 @@ impl TypeChecker<'_> {
                 for entry in entries.iter_mut() {
                     let cond_t = self.type_check_expr(&mut entry.cond)?;
                     self.eq(cond_t, Type::Bool, &entry.cond_start_tok.span)?;
-                    self.type_check_stmts(&mut entry.body)?;
+                    self.stmts(&mut entry.body)?;
                 }
                 Ok(Type::Unit)
             }

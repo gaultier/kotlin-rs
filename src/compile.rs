@@ -11,7 +11,7 @@ pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
     let mut stmts = parser.parse()?;
 
     let type_checker = TypeChecker::new(&lexer);
-    type_checker.type_check_stmts(&mut stmts)?;
+    type_checker.stmts(&mut stmts)?;
 
     let js_emitter = SexpEmitter::new(&lexer);
     js_emitter.stmts(&stmts, w)

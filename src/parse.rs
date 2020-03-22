@@ -58,6 +58,7 @@ pub enum AstNodeStmt {
     Expr(AstNode),
     While {
         cond: AstNode,
+        cond_start_tok: Token,
         body: Vec<AstNodeStmt>,
     },
 }
@@ -179,13 +180,17 @@ impl Parser<'_> {
     fn while_stmt(&mut self) -> Result<AstNodeStmt, Error> {
         self.eat(TokenKind::KeywordWhile)?;
         self.skip_newlines()?;
-        self.eat(TokenKind::LeftParen)?;
+        let cond_start_tok = self.eat(TokenKind::LeftParen)?;
         let cond = self.expression()?;
         self.eat(TokenKind::RightParen)?;
         self.skip_newlines()?;
         let body = self.control_structure_body()?;
 
-        Ok(AstNodeStmt::While { cond, body })
+        Ok(AstNodeStmt::While {
+            cond,
+            cond_start_tok,
+            body,
+        })
     }
 
     fn when_cond(&mut self) -> Result<AstNode, Error> {
