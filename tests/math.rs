@@ -319,7 +319,7 @@ fn add_string_null() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ "abc" 'nil)
+        &r##"(+ "abc" nil)
 "##
     );
 }
@@ -332,7 +332,7 @@ fn add_null_string() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ 'nil "abc")
+        &r##"(+ nil "abc")
 "##
     );
 }
@@ -345,6 +345,6 @@ fn add_null_null() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(+ 'nil 'nil)\n"
+        &"(+ nil nil)\n"
     );
 }

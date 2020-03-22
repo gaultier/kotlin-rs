@@ -190,7 +190,7 @@ impl SexpEmitter<'_> {
                     }),
                 ..
             } => {
-                write!(w, "'nil").unwrap();
+                write!(w, "nil").unwrap();
                 Ok(())
             }
             _ => unreachable!(),
