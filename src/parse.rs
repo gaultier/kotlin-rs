@@ -206,6 +206,8 @@ impl Parser<'_> {
                     kind: TokenKind::KeywordElse,
                     ..
                 }) => {
+                    self.eat(TokenKind::KeywordElse)?;
+                    self.eat(TokenKind::Arrow)?;
                     let else_entry = Some(self.control_structure_body()?);
                     return Ok((entries, else_entry));
                 }
