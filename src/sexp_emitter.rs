@@ -274,16 +274,24 @@ impl SexpEmitter<'_> {
                 ..
             } => {
                 write!(w, "(cond ").unwrap();
-                for entry in entries {
+
+                if let Some((last, entries)) = entries.split_last() {
+                    for entry in entries {
+                        write!(w, "(").unwrap();
+                        self.expr(&entry.cond, w)?;
+                        write!(w, " ").unwrap();
+                        self.block(&entry.body, w)?;
+                        write!(w, ") ").unwrap();
+                    }
                     write!(w, "(").unwrap();
-                    self.expr(&entry.cond, w)?;
+                    self.expr(&last.cond, w)?;
                     write!(w, " ").unwrap();
-                    self.block(&entry.body, w)?;
-                    write!(w, ") ").unwrap();
+                    self.block(&last.body, w)?;
+                    write!(w, ")").unwrap();
                 }
 
                 if let Some(else_entry) = else_entry {
-                    write!(w, "(else ").unwrap();
+                    write!(w, " (else ").unwrap();
                     self.block(&else_entry, w)?;
                     write!(w, ")").unwrap();
                 }
