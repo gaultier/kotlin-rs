@@ -417,11 +417,8 @@ impl Parser<'_> {
 
     fn range(&mut self) -> Result<AstNode, Error> {
         let left = self.addition()?;
-        match self.previous {
-            Some(Token {
-                kind: TokenKind::DotDot,
-                ..
-            }) => {
+        match self.previous.unwrap().kind {
+            TokenKind::DotDot => {
                 let previous = self.eat(TokenKind::DotDot)?;
                 self.skip_newlines()?;
                 let right = self.range()?;
@@ -479,11 +476,8 @@ impl Parser<'_> {
         let left = self.equality()?;
         self.skip_newlines()?;
 
-        match self.previous {
-            Some(Token {
-                kind: TokenKind::AmpersandAmpersand,
-                ..
-            }) => {
+        match self.previous.unwrap().kind {
+            TokenKind::AmpersandAmpersand => {
                 let tok = self.eat(TokenKind::AmpersandAmpersand)?;
                 self.skip_newlines()?;
                 let right = self.conjunction()?;
@@ -500,11 +494,8 @@ impl Parser<'_> {
         let left = self.conjunction()?;
         self.skip_newlines()?;
 
-        match self.previous {
-            Some(Token {
-                kind: TokenKind::PipePipe,
-                ..
-            }) => {
+        match self.previous.unwrap().kind {
+            TokenKind::PipePipe => {
                 let tok = self.eat(TokenKind::PipePipe)?;
                 self.skip_newlines()?;
                 let right = self.disjunction()?;
