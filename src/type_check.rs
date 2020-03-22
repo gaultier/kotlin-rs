@@ -387,6 +387,10 @@ impl TypeChecker<'_> {
                  raise any compile-time error: `(if (1<2) "foo" else false) as String`,
                 but will potentially raise a runtime error.
                 */
+                if if_body_t == Type::Unit || else_body_t == Type::Unit {
+                    return Ok(Type::Unit);
+                }
+
                 if if_body_t != else_body_t {
                     return Err(Error::new(
                         ErrorKind::IncompatibleTypes(if_body_t, else_body_t),

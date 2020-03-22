@@ -56,6 +56,6 @@ fn if_with_empty_else_block() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) (begin 'a' 1 #t 'b') 'nil)\n"
+        &"(if (< 1 2) (begin 'a' 1 #t 'b') )\n"
     );
 }
