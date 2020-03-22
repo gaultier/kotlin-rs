@@ -38,7 +38,8 @@
 - [x] If
 - [ ] For
 - [x] When
-- [ ] When with subject
+- [x] When with subject
+- [ ] When with subject with var declaration
 - [ ] Elvis operator
 - [ ] While
 - [ ] Do while
