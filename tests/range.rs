@@ -35,3 +35,25 @@ fn check_both_types_match() -> Result<(), String> {
         other => Err(format!("Should be a type error: {:?}", other)),
     }
 }
+
+#[test]
+fn reject_invalid_range_type() -> Result<(), String> {
+    let src = String::from("null..null");
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::InvalidRange(Type::Null),
+            location:
+                Location {
+                    start_pos: 4,
+                    start_line: 1,
+                    start_column: 5,
+                    end_pos: 6,
+                    end_line: 1,
+                    end_column: 7,
+                },
+        }) => Ok(()),
+        other => Err(format!("Should be a type error: {:?}", other)),
+    }
+}
