@@ -15,6 +15,18 @@ fn while_with_body() {
 }
 
 #[test]
+fn while_with_empty_body() {
+    let src = String::from("while (1 < 10) {}");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_ref().unwrap(),
+        &"(while (< 1 10) (do ))\n\n"
+    );
+}
+
+#[test]
 fn while_without_body() {
     let src = String::from("while (1 < 10) ;");
     let mut out: Vec<u8> = Vec::new();
@@ -22,6 +34,6 @@ fn while_without_body() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(while (< 1 10) )\n\n"
+        &"(while (< 1 10) (do ))\n\n"
     );
 }
