@@ -117,19 +117,6 @@ impl Parser<'_> {
         }
     }
 
-    fn advance_skip_newlines(&mut self) -> Result<(), Error> {
-        self.advance()?;
-
-        match self.previous {
-            Some(Token {
-                kind: TokenKind::Newline,
-                ..
-            }) => self.advance_skip_newlines(),
-
-            _ => Ok(()),
-        }
-    }
-
     fn eat(&mut self, kind: TokenKind) -> Result<Token, Error> {
         match self.previous {
             Some(tok @ Token { .. }) if tok.kind == kind => {
@@ -333,7 +320,8 @@ impl Parser<'_> {
             | TokenKind::Char(_)
             | TokenKind::Null
             | TokenKind::UnicodeLiteral(_) => {
-                self.advance_skip_newlines()?;
+                self.advance()?;
+                self.skip_newlines()?;
                 // TODO: fill type info here right away
                 Ok(AstNode {
                     kind: AstNodeExpr::Literal(previous),
@@ -341,7 +329,8 @@ impl Parser<'_> {
                 })
             }
             TokenKind::LeftParen => {
-                self.advance_skip_newlines()?;
+                self.advance()?;
+                self.skip_newlines()?;
                 let expr = self.expression()?;
                 self.eat(TokenKind::RightParen)?;
                 Ok(AstNode {
@@ -362,7 +351,8 @@ impl Parser<'_> {
         let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::Plus | TokenKind::Bang | TokenKind::Minus => {
-                self.advance_skip_newlines()?;
+                self.advance()?;
+                self.skip_newlines()?;
                 let right = self.unary()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Unary(previous, Box::new(right)),
@@ -378,7 +368,8 @@ impl Parser<'_> {
         let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::Percent | TokenKind::Star | TokenKind::Slash => {
-                self.advance_skip_newlines()?;
+                self.advance()?;
+                self.skip_newlines()?;
                 let right = self.multiplication()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
@@ -394,7 +385,8 @@ impl Parser<'_> {
         let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::Plus | TokenKind::Minus => {
-                self.advance_skip_newlines()?;
+                self.advance()?;
+                self.skip_newlines()?;
                 let right = self.addition()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
@@ -433,7 +425,8 @@ impl Parser<'_> {
             | TokenKind::GreaterEqual
             | TokenKind::Lesser
             | TokenKind::LesserEqual => {
-                self.advance_skip_newlines()?;
+                self.advance()?;
+                self.skip_newlines()?;
                 let right = self.comparison()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
@@ -452,7 +445,8 @@ impl Parser<'_> {
             | TokenKind::EqualEqual
             | TokenKind::EqualEqualEqual
             | TokenKind::BangEqualEqual => {
-                self.advance_skip_newlines()?;
+                self.advance()?;
+                self.skip_newlines()?;
                 let right = self.equality()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
@@ -560,8 +554,10 @@ impl Parser<'_> {
     }
 
     pub fn parse(&mut self) -> Result<Statements, Error> {
-        self.advance_skip_newlines()?;
-        self.advance_skip_newlines()?;
+        self.advance()?;
+        self.skip_newlines()?;
+        self.advance()?;
+        self.skip_newlines()?;
         self.statements()
     }
 }

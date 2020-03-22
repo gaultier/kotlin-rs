@@ -233,6 +233,7 @@ impl SexpEmitter<'_> {
                     ),
                 ..
             } => {
+                // WARN: range is inclusive i.e: `5 in 1..5 == true`
                 write!(w, "(range ").unwrap();
                 self.expr(left, w)?;
                 write!(w, " ").unwrap();
