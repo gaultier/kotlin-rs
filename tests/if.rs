@@ -23,3 +23,15 @@ fn multi_if_expr() {
         &"(if (< 1 2) 'o' 'x')\n(if #t 42 99)\n"
     );
 }
+
+#[test]
+fn nested_if_expr() {
+    let src = String::from("if (1<2) if (99U < 100UL) 'a' else 'b' else 'c'\n");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_ref().unwrap(),
+        &"(if (< 1 2) (if (< 99 100) 'a' 'b') 'c')\n"
+    );
+}

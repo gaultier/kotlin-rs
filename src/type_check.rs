@@ -378,7 +378,7 @@ impl TypeChecker<'_> {
                     ));
                 }
                 ast.type_info = Some(if_body_t);
-                Ok(t)
+                Ok(if_body_t)
             }
             _ => unreachable!(),
         }
