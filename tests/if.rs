@@ -117,8 +117,11 @@ fn check_both_branches_types_match_unit_when_empty_else() {
     let src = String::from("if (1<2) 'a' else {} \n");
     let mut out: Vec<u8> = Vec::new();
 
-    let ast = compile(src, &mut out);
-    assert!(ast.is_ok());
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_ref().unwrap(),
+        &"(if (< 1 2) 'a' (begin ))\n"
+    );
 }
 
 #[test]
@@ -126,6 +129,9 @@ fn check_both_branches_types_match_unit_when_empty_if() {
     let src = String::from("if (1<2) ; else 42 \n");
     let mut out: Vec<u8> = Vec::new();
 
-    let ast = compile(src, &mut out);
-    assert!(ast.is_ok());
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_ref().unwrap(),
+        &"(if (< 1 2) (begin ) 42)\n"
+    );
 }
