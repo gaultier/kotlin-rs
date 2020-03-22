@@ -36,7 +36,6 @@
 - [x] Newline-sensitive
 - [x] Range e.g `1..5`
 - [x] If
-- [ ] For
 - [x] When
 - [x] When with subject
 - [ ] Type test in when entry
@@ -50,6 +49,7 @@
 - [ ] Do while with binding
 - [ ] Explicit types
 - [ ] Variable assignement
+- [ ] For
 - [ ] Simple inline functions declaration e.g `fun add(a: Int, b: Int): Int = a + b`
 - [ ] Simple C-like functions declaration e.g `fun add(a: Int, b: Int): Int { return a + b; }`
 - [ ] Function call e.g `add(1, 5)`
