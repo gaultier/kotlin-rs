@@ -280,9 +280,8 @@ impl SexpEmitter<'_> {
                 }
 
                 if let Some(else_entry) = else_entry {
-                    write!(w, " (else ").unwrap();
+                    write!(w, " :else ").unwrap();
                     self.block(&else_entry, w)?;
-                    write!(w, ")").unwrap();
                 }
 
                 write!(w, ")").unwrap();
@@ -315,9 +314,8 @@ impl SexpEmitter<'_> {
                 }
 
                 if let Some(else_entry) = else_entry {
-                    write!(w, " (else ").unwrap();
+                    write!(w, " :else ").unwrap();
                     self.block(&else_entry, w)?;
-                    write!(w, ")").unwrap();
                 }
 
                 write!(w, ")").unwrap();
