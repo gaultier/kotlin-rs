@@ -136,7 +136,7 @@ impl Parser<'_> {
     fn block(&mut self) -> Result<Statements, Error> {
         self.eat(TokenKind::LeftCurlyBracket)?;
         self.skip_newlines()?;
-        let stmts = self.statements()?;
+        let stmts = self.block_statements()?;
         self.skip_newlines()?;
         self.eat(TokenKind::RightCurlyBracket)?;
         Ok(stmts)
@@ -213,13 +213,10 @@ impl Parser<'_> {
                 })
             }
             TokenKind::KeywordIf => self.if_expr(),
-            _ => {
-                dbg!(&previous);
-                Err(Error::new(
-                    ErrorKind::ExpectedPrimary,
-                    self.lexer.span_location(&previous.span),
-                ))
-            }
+            _ => Err(Error::new(
+                ErrorKind::ExpectedPrimary,
+                self.lexer.span_location(&previous.span),
+            )),
         }
     }
 
@@ -314,6 +311,25 @@ impl Parser<'_> {
 
     fn statement(&mut self) -> Result<AstNodeStmt, Error> {
         Ok(AstNodeStmt::Expr(self.expression()?))
+    }
+
+    fn block_statements(&mut self) -> Result<Statements, Error> {
+        let mut stmts = Vec::new();
+
+        while let Some(tok) = &self.previous {
+            match tok.kind {
+                TokenKind::RightCurlyBracket => {
+                    break;
+                }
+                TokenKind::Semicolon | TokenKind::Newline => {
+                    self.advance()?;
+                }
+                _ => {
+                    stmts.push(self.statement()?);
+                }
+            }
+        }
+        Ok(stmts)
     }
 
     fn statements(&mut self) -> Result<Statements, Error> {
