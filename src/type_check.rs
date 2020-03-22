@@ -366,9 +366,18 @@ impl TypeChecker<'_> {
 
         match ast {
             AstNode {
-                kind: AstNodeExpr::WhenExpr { entries, .. },
+                kind:
+                    AstNodeExpr::WhenExpr {
+                        subject, entries, ..
+                    },
                 ..
             } => {
+                let _subject_t = if let Some(subject) = subject {
+                    Some(self.type_check_expr(subject)?)
+                } else {
+                    None
+                };
+
                 for entry in entries.iter_mut() {
                     let cond_t = self.type_check_expr(&mut entry.cond)?;
                     if cond_t != Type::Bool {
