@@ -56,6 +56,18 @@ fn if_with_empty_else_block() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) (begin 'a' 1 #t 'b') )\n"
+        &"(if (< 1 2) (begin 'a' 1 #t 'b') (begin ))\n"
+    );
+}
+
+#[test]
+fn if_with_empty_if_body_block() {
+    let src = String::from("if (1<2) {} else {'a'; 1\n\n true;; 'b'}\n");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_ref().unwrap(),
+        &"(if (< 1 2) (begin ) (begin 'a' 1 #t 'b'))\n"
     );
 }
