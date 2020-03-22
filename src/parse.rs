@@ -99,7 +99,7 @@ impl Parser<'_> {
                 ..
             }) => {
                 self.advance()?;
-                self.advance_skip_newlines()
+                self.skip_newlines()
             }
             _ => Ok(()),
         }
@@ -161,8 +161,6 @@ impl Parser<'_> {
         self.eat(TokenKind::RightParen)?;
         self.skip_newlines()?;
 
-        dbg!(&self.previous);
-        dbg!(&self.current);
         let if_body = match self.previous {
             Some(Token {
                 kind: TokenKind::KeywordElse,
@@ -170,8 +168,6 @@ impl Parser<'_> {
             }) => vec![],
             _ => self.control_structure_body()?,
         };
-        dbg!(&self.previous);
-        dbg!(&self.current);
         self.skip_newlines()?;
 
         let else_body_tok = self.eat(TokenKind::KeywordElse)?;
