@@ -49,6 +49,13 @@ pub struct AstNode {
 }
 
 #[derive(Debug)]
+pub struct WhenEntry {
+    pub cond: AstNode,
+    pub body: Statements,
+    pub cond_start_tok: Token,
+}
+
+#[derive(Debug)]
 pub enum AstNodeExpr {
     Binary(Box<AstNode>, Token, Box<AstNode>),
     Unary(Token, Box<AstNode>),
@@ -64,7 +71,7 @@ pub enum AstNodeExpr {
     },
     WhenExpr {
         subject: Option<Box<AstNodeExpr>>,
-        entries: Vec<AstNode>,
+        entries: Vec<WhenEntry>,
     },
 }
 
@@ -157,28 +164,22 @@ impl Parser<'_> {
         self.expression()
     }
 
-    fn when_entry(&mut self) -> Result<AstNode, Error> {
-        let cond_start_tok = self.previous.unwrap();
+    fn when_entry(&mut self) -> Result<WhenEntry, Error> {
         let cond = self.when_cond()?;
         self.skip_newlines()?;
 
-        self.eat(TokenKind::Arrow)?;
+        let cond_start_tok = self.eat(TokenKind::Arrow)?;
         self.skip_newlines()?;
 
         let body = self.control_structure_body()?;
-        Ok(AstNode {
-            kind: AstNodeExpr::IfExpr {
-                cond: Box::new(cond),
-                cond_start_tok,
-                if_body: body,
-                else_body: vec![],
-                else_body_tok: cond_start_tok, // FIXME ?
-            },
-            type_info: None,
+        Ok(WhenEntry {
+            cond,
+            body,
+            cond_start_tok,
         })
     }
 
-    fn when_entries(&mut self) -> Result<Vec<AstNode>, Error> {
+    fn when_entries(&mut self) -> Result<Vec<WhenEntry>, Error> {
         let mut entries = Vec::new();
 
         loop {

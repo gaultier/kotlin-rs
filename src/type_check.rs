@@ -11,14 +11,20 @@ impl TypeChecker<'_> {
         TypeChecker { lexer }
     }
 
-    pub fn type_check_stmts(&self, statements: &mut Statements) -> Result<(), Error> {
-        for mut stmt in statements {
+    pub fn type_check_stmts(&self, statements: &mut Statements) -> Result<Type, Error> {
+        for mut stmt in statements.iter_mut() {
             let mut ast = match &mut stmt {
                 AstNodeStmt::Expr(expr) => expr,
             };
-            self.type_check_expr(&mut ast).map(|_| ())?;
+            self.type_check_expr(&mut ast)?;
         }
-        Ok(())
+
+        Ok(statements
+            .last()
+            .map(|stmt| match stmt {
+                AstNodeStmt::Expr(expr) => expr.type_info.unwrap(),
+            })
+            .unwrap_or(Type::Unit))
     }
 
     fn type_check_unary(&self, ast: &mut AstNode) -> Result<Type, Error> {
@@ -353,6 +359,31 @@ impl TypeChecker<'_> {
             _ => Type::Unit,
         })
     }
+    fn when_expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
+        if let Some(t) = ast.type_info {
+            return Ok(t);
+        }
+
+        match ast {
+            AstNode {
+                kind: AstNodeExpr::WhenExpr { entries, .. },
+                ..
+            } => {
+                for entry in entries.iter_mut() {
+                    let cond_t = self.type_check_expr(&mut entry.cond)?;
+                    if cond_t != Type::Bool {
+                        return Err(Error::new(
+                            ErrorKind::IncompatibleTypes(cond_t, Type::Bool),
+                            self.lexer.span_location(&entry.cond_start_tok.span),
+                        ));
+                    }
+                    let _body_t = self.type_check_stmts(&mut entry.body)?;
+                }
+                Ok(Type::Unit)
+            }
+            _ => unreachable!(),
+        }
+    }
 
     fn type_check_if_expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
         if let Some(t) = ast.type_info {
@@ -424,7 +455,7 @@ impl TypeChecker<'_> {
             AstNode {
                 kind: AstNodeExpr::WhenExpr { .. },
                 ..
-            } => unimplemented!(),
+            } => self.when_expr(ast),
         }
     }
 
