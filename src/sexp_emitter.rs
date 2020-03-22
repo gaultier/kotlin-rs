@@ -236,6 +236,21 @@ impl SexpEmitter<'_> {
         }
     }
 
+    fn statement<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
+        match ast {
+            AstNodeStmt::Expr(expr) => self.expr(expr, w),
+        }
+    }
+
+    fn block<W: std::io::Write>(&self, ast: &Statements, w: &mut W) -> Result<(), Error> {
+        for stmt in ast {
+            write!(w, "(begin ").unwrap();
+            self.statement(stmt, w)?;
+            write!(w, ")").unwrap();
+        }
+        Ok(())
+    }
+
     fn if_expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNode {
@@ -251,9 +266,9 @@ impl SexpEmitter<'_> {
                 write!(w, "(if ").unwrap();
                 self.expr(cond, w)?;
                 write!(w, " ").unwrap();
-                self.expr(if_body, w)?;
+                self.block(if_body, w)?;
                 write!(w, " ").unwrap();
-                self.expr(else_body, w)?;
+                self.block(else_body, w)?;
                 write!(w, ")").unwrap();
 
                 Ok(())

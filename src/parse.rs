@@ -133,13 +133,6 @@ impl Parser<'_> {
         }
     }
 
-    fn eat_opt(&mut self, kind: TokenKind) -> Result<(), Error> {
-        match self.previous {
-            Some(Token { kind: k, .. }) if k == kind => self.eat(kind).map(|_| ()),
-            _ => Ok(()),
-        }
-    }
-
     fn block(&mut self) -> Result<Statements, Error> {
         self.eat(TokenKind::LeftCurlyBracket)?;
         self.skip_newlines()?;

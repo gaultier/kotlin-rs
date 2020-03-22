@@ -365,20 +365,18 @@ impl TypeChecker<'_> {
                     ));
                 }
 
-                for stmt in if_body {
-                    match stmt {
-                        AstNodeStmt::Expr(stmt_expr) => {
+                for mut stmt in if_body.iter_mut() {
+                    match &mut stmt {
+                        &mut AstNodeStmt::Expr(stmt_expr) => {
                             self.type_check_expr(stmt_expr)?;
                         }
-                        _ => unimplemented!(),
                     }
                 }
-                for stmt in else_body {
-                    match stmt {
-                        AstNodeStmt::Expr(stmt_expr) => {
+                for mut stmt in else_body.iter_mut() {
+                    match &mut stmt {
+                        &mut AstNodeStmt::Expr(stmt_expr) => {
                             self.type_check_expr(stmt_expr)?;
                         }
-                        _ => unimplemented!(),
                     }
                 }
                 let if_body_t = match if_body.last() {
