@@ -211,11 +211,13 @@ impl Parser<'_> {
                     self.skip_newlines()?;
                     let else_entry = Some(self.control_structure_body()?);
                     self.eat_opt(TokenKind::Semicolon)?;
+                    self.skip_newlines()?;
 
                     return Ok((entries, else_entry));
                 }
                 _ => {
                     entries.push(self.when_entry()?);
+                    self.skip_newlines()?;
                 }
             }
         }
