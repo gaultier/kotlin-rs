@@ -22,7 +22,7 @@ impl TypeChecker<'_> {
         Ok(statements
             .last()
             .map(|stmt| match stmt {
-                AstNodeStmt::Expr(expr) => expr.type_info.unwrap(),
+                AstNodeStmt::Expr(expr) => expr.type_info.unwrap_or(Type::Unit),
             })
             .unwrap_or(Type::Unit))
     }

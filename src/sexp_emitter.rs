@@ -262,6 +262,27 @@ impl SexpEmitter<'_> {
         Ok(())
     }
 
+    fn when_expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
+        match ast {
+            AstNode {
+                kind: AstNodeExpr::WhenExpr { entries, .. },
+                ..
+            } => {
+                write!(w, "(cond (").unwrap();
+                for entry in entries {
+                    self.expr(&entry.cond, w)?;
+                    write!(w, " ").unwrap();
+                    self.block(&entry.body, w)?;
+                    write!(w, ")").unwrap();
+                    write!(w, " ").unwrap();
+                }
+                write!(w, ")").unwrap();
+                Ok(())
+            }
+            _ => unreachable!(),
+        }
+    }
+
     fn if_expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNode {
@@ -293,7 +314,7 @@ impl SexpEmitter<'_> {
             AstNode {
                 kind: AstNodeExpr::WhenExpr { .. },
                 ..
-            } => unimplemented!(),
+            } => self.when_expr(ast, w),
             AstNode {
                 kind: AstNodeExpr::Literal(..),
                 ..
