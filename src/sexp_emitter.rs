@@ -66,7 +66,7 @@ impl SexpEmitter<'_> {
         for stmt in statements {
             self.statement(stmt, w)?;
         }
-        writeln!(w, "").unwrap();
+        writeln!(w).unwrap();
         Ok(())
     }
 
