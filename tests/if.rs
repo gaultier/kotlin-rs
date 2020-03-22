@@ -83,3 +83,15 @@ fn if_with_no_if_body_block() {
         &"(if (< 1 2) (begin ) (begin 'a' 1 #t 'b'))\n"
     );
 }
+
+#[test]
+fn if_with_no_else_block() {
+    let src = String::from("if (1<2) {'a'; 1\n\n true;; 'b'} else ; \n");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_ref().unwrap(),
+        &"(if (< 1 2) (begin 'a' 1 #t 'b') (begin ))\n"
+    );
+}

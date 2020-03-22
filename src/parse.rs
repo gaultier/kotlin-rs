@@ -172,7 +172,13 @@ impl Parser<'_> {
 
         let else_body_tok = self.eat(TokenKind::KeywordElse)?;
         self.skip_newlines()?;
-        let else_body = self.control_structure_body()?;
+
+        let else_body = match self.previous {
+            Some(Token { kind: k, .. }) if k == TokenKind::Semicolon || k == TokenKind::Eof => {
+                vec![]
+            }
+            _ => self.control_structure_body()?,
+        };
 
         Ok(AstNode {
             kind: AstNodeExpr::IfExpr {
