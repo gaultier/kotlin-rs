@@ -277,9 +277,26 @@ impl TypeChecker<'_> {
                         self.lexer.span_location(&tok.span),
                     ));
                 }
+                let t = match left_t {
+                    Type::Int => Type::IntRange,
+                    Type::UInt => Type::UIntRange,
+                    Type::Long => Type::LongRange,
+                    Type::ULong => Type::ULongRange,
+                    Type::Float => Type::FloatRange,
+                    Type::Double => Type::DoubleRange,
+                    Type::TString => Type::TStringRange,
+                    Type::Char => Type::CharRange,
+                    Type::Bool => Type::BoolRange,
+                    _ => {
+                        return Err(Error::new(
+                            ErrorKind::InvalidRange(left_t),
+                            self.lexer.span_location(&tok.span),
+                        ));
+                    }
+                };
 
-                ast.type_info = Some(Type::Bool);
-                Ok(Type::Bool)
+                ast.type_info = Some(t);
+                Ok(t)
             }
             AstNode {
                 kind:

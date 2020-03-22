@@ -33,6 +33,7 @@ pub enum ErrorKind {
     InvalidNumberSuffix(String),
     UnterminatedStatement,
     UnterminatedChar,
+    InvalidRange(Type),
     ExpectedToken,
 }
 
@@ -64,6 +65,7 @@ impl fmt::Display for ErrorKind {
                 write!(f, "Invalid number suffix `{}`", suffix)
             }
             ErrorKind::ExpectedToken => write!(f, "Expected token"),
+            ErrorKind::InvalidRange(t) => write!(f, "Invalid range of type {}", t),
         }
     }
 }

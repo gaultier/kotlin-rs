@@ -15,6 +15,15 @@ pub enum Type {
     TString,
     Char,
     Unit,
+    IntRange,
+    UIntRange,
+    LongRange,
+    ULongRange,
+    FloatRange,
+    DoubleRange,
+    TStringRange,
+    CharRange,
+    BoolRange,
 }
 
 impl fmt::Display for Type {
@@ -31,6 +40,15 @@ impl fmt::Display for Type {
             Type::Char => write!(f, "Char"),
             Type::TString => write!(f, "String"),
             Type::Unit => write!(f, "Unit"),
+            Type::BoolRange => write!(f, "BoolRange"),
+            Type::IntRange => write!(f, "IntRange"),
+            Type::UIntRange => write!(f, "UIntRange"),
+            Type::LongRange => write!(f, "LongRange"),
+            Type::ULongRange => write!(f, "ULongRange"),
+            Type::FloatRange => write!(f, "FloatRange"),
+            Type::DoubleRange => write!(f, "DoubleRange"),
+            Type::CharRange => write!(f, "CharRange"),
+            Type::TStringRange => write!(f, "StringRange"),
         }
     }
 }
