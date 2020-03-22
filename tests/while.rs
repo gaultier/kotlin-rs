@@ -37,3 +37,25 @@ fn while_without_body() {
         &"(while (< 1 10) (do ))\n\n"
     );
 }
+
+#[test]
+fn while_bad_cond_type() -> Result<(), String> {
+    let src = String::from("while\n ('a') ;");
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::IncompatibleTypes(Type::Char, Type::Bool),
+            location:
+                Location {
+                    start_pos: 7,
+                    start_line: 2,
+                    start_column: 2,
+                    end_pos: 8,
+                    end_line: 2,
+                    end_column: 3,
+                },
+        }) => Ok(()),
+        other => Err(format!("Should be a type error: {:?}", other)),
+    }
+}
