@@ -143,6 +143,13 @@ impl Parser<'_> {
         }
     }
 
+    fn eat_opt(&mut self, kind: TokenKind) -> Result<(), Error> {
+        match self.previous {
+            Some(Token { kind: k, .. }) if k == kind => self.eat(kind).map(|_| ()),
+            _ => Ok(()),
+        }
+    }
+
     fn block(&mut self) -> Result<Statements, Error> {
         self.eat(TokenKind::LeftCurlyBracket)?;
         self.skip_newlines()?;
@@ -174,15 +181,7 @@ impl Parser<'_> {
 
         let body = self.control_structure_body()?;
 
-        match self.previous {
-            Some(Token {
-                kind: TokenKind::Semicolon,
-                ..
-            }) => {
-                self.advance()?;
-            }
-            _ => (),
-        }
+        self.eat_opt(TokenKind::Semicolon)?;
 
         Ok(WhenEntry {
             cond,
@@ -209,6 +208,8 @@ impl Parser<'_> {
                     self.eat(TokenKind::KeywordElse)?;
                     self.eat(TokenKind::Arrow)?;
                     let else_entry = Some(self.control_structure_body()?);
+                    self.eat_opt(TokenKind::Semicolon)?;
+
                     return Ok((entries, else_entry));
                 }
                 _ => {
