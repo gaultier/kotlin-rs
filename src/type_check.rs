@@ -436,6 +436,7 @@ impl TypeChecker<'_> {
             (Type::UInt, Type::ULong) | (Type::ULong, Type::UInt) | (Type::ULong, Type::ULong) => {
                 Ok(Type::ULong)
             }
+            // Plus
             (Type::Float, Type::Float)
             | (Type::Int, Type::Float)
             | (Type::Float, Type::Int)
