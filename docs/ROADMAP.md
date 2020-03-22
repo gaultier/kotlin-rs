@@ -38,16 +38,16 @@
 - [x] If
 - [x] When
 - [x] When with subject
-- [ ] Type test in when entry
-- [ ] Range test in when entry
+- [ ] Type test in when entry e.g `when {4 is Int -> true else false}`
+- [ ] Range test in when entry e.g `when {4 in 1..5 -> 99 else 0}`
 - [ ] Elvis operator
 - [ ] As expression
 - [x] While
 - [x] Do while
-- [ ] Variable declaration
-- [ ] When with subject with binding
-- [ ] Do while with binding
-- [ ] Explicit types
+- [ ] Variable declaration e.g `val a = 1`
+- [ ] When with subject with binding e.g `when (val x = 1) {}`
+- [ ] Do while with binding e.g `do {val a = 1} while (a < 10)`
+- [ ] Explicit types e.g `val a: Long = 1`
 - [ ] Variable assignement
 - [ ] For
 - [ ] Simple inline functions declaration e.g `fun add(a: Int, b: Int): Int = a + b`
