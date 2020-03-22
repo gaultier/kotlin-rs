@@ -222,6 +222,25 @@ impl SexpEmitter<'_> {
                 Ok(())
             }
             AstNode {
+                kind:
+                    AstNodeExpr::Binary(
+                        left,
+                        Token {
+                            kind: TokenKind::PipePipe,
+                            ..
+                        },
+                        right,
+                    ),
+                ..
+            } => {
+                write!(w, "(or ").unwrap();
+                self.expr(left, w)?;
+                write!(w, " ").unwrap();
+                self.expr(right, w)?;
+                write!(w, ")").unwrap();
+                Ok(())
+            }
+            AstNode {
                 kind: AstNodeExpr::Binary(left, tok, right),
                 ..
             } => {
