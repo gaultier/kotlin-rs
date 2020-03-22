@@ -246,10 +246,16 @@ impl SexpEmitter<'_> {
         if ast.len() > 1 {
             write!(w, "(begin ").unwrap();
         }
-        for stmt in ast {
-            self.statement(stmt, w)?;
-            write!(w, " ").unwrap();
+
+        // Akin to ast.map(...).join(" ")
+        if let Some((last, rest)) = ast.split_last() {
+            for stmt in rest {
+                self.statement(stmt, w)?;
+                write!(w, " ").unwrap();
+            }
+            self.statement(last, w)?;
         }
+
         if ast.len() > 1 {
             write!(w, ")").unwrap();
         }
