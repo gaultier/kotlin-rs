@@ -39,14 +39,15 @@
 - [ ] For
 - [x] When
 - [x] When with subject
-- [ ] When with subject with var declaration
 - [ ] Type test in when entry
 - [ ] Range test in when entry
 - [ ] Elvis operator
 - [ ] As expression
 - [x] While
-- [ ] Do while
+- [x] Do while
 - [ ] Variable declaration
+- [ ] When with subject with binding
+- [ ] Do while with binding
 - [ ] Explicit types
 - [ ] Variable assignement
 - [ ] Simple inline functions declaration e.g `fun add(a: Int, b: Int): Int = a + b`
