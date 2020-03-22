@@ -119,16 +119,14 @@ impl Parser<'_> {
     }
 
     fn eat(&mut self, kind: TokenKind) -> Result<Token, Error> {
-        let previous = self.previous;
-        match previous {
-            Some(Token { kind: k, .. }) if k == kind => {
-                let tok = self.previous.unwrap();
+        match self.previous {
+            Some(tok @ Token { .. }) if tok.kind == kind => {
                 self.advance()?;
                 return Ok(tok);
             }
             _ => Err(Error::new(
                 ErrorKind::ExpectedToken,
-                self.lexer.span_location(&previous.unwrap().span),
+                self.lexer.span_location(&self.previous.unwrap().span),
             )),
         }
     }
@@ -163,6 +161,8 @@ impl Parser<'_> {
         self.eat(TokenKind::RightParen)?;
         self.skip_newlines()?;
 
+        dbg!(&self.previous);
+        dbg!(&self.current);
         let if_body = match self.previous {
             Some(Token {
                 kind: TokenKind::KeywordElse,
@@ -170,6 +170,8 @@ impl Parser<'_> {
             }) => vec![],
             _ => self.control_structure_body()?,
         };
+        dbg!(&self.previous);
+        dbg!(&self.current);
         self.skip_newlines()?;
 
         let else_body_tok = self.eat(TokenKind::KeywordElse)?;
