@@ -176,6 +176,18 @@ impl Parser<'_> {
         }
     }
 
+    fn while_stmt(&mut self) -> Result<AstNodeStmt, Error> {
+        self.eat(TokenKind::KeywordWhile)?;
+        self.skip_newlines()?;
+        self.eat(TokenKind::LeftParen)?;
+        let cond = self.expression()?;
+        self.eat(TokenKind::RightParen)?;
+        self.skip_newlines()?;
+        let body = self.control_structure_body()?;
+
+        Ok(AstNodeStmt::While { cond, body })
+    }
+
     fn when_cond(&mut self) -> Result<AstNode, Error> {
         // TODO: allow range & type test here
         self.expression()
@@ -517,7 +529,10 @@ impl Parser<'_> {
     }
 
     fn statement(&mut self) -> Result<AstNodeStmt, Error> {
-        Ok(AstNodeStmt::Expr(self.expression()?))
+        match self.previous.unwrap().kind {
+            TokenKind::KeywordWhile => self.while_stmt(),
+            _ => Ok(AstNodeStmt::Expr(self.expression()?)),
+        }
     }
 
     fn block_statements(&mut self) -> Result<Statements, Error> {
