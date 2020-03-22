@@ -70,7 +70,7 @@ pub enum AstNodeExpr {
         else_body_tok: Token,
     },
     WhenExpr {
-        subject: Option<Box<AstNodeExpr>>,
+        subject: Option<Box<AstNode>>,
         entries: Vec<WhenEntry>,
         else_entry: Option<Vec<AstNodeStmt>>,
     },
@@ -223,11 +223,27 @@ impl Parser<'_> {
         }
     }
 
+    fn when_subject(&mut self) -> Result<Option<Box<AstNode>>, Error> {
+        match self.previous {
+            Some(Token {
+                kind: TokenKind::LeftParen,
+                ..
+            }) => {
+                self.eat(TokenKind::LeftParen)?;
+                // TODO: val
+                let subject = self.expression()?;
+                self.eat(TokenKind::RightParen)?;
+                Ok(Some(Box::new(subject)))
+            }
+            _ => Ok(None),
+        }
+    }
+
     fn when_expr(&mut self) -> Result<AstNode, Error> {
         self.eat(TokenKind::KeywordWhen)?;
         self.skip_newlines()?;
 
-        // TODO: when subject
+        let subject = self.when_subject()?;
 
         self.eat(TokenKind::LeftCurlyBracket)?;
         self.skip_newlines()?;
@@ -240,7 +256,7 @@ impl Parser<'_> {
         Ok(AstNode {
             kind: AstNodeExpr::WhenExpr {
                 entries,
-                subject: None,
+                subject,
                 else_entry,
             },
             type_info: None,
