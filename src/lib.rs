@@ -4,5 +4,6 @@ mod cursor;
 pub mod error;
 pub mod lex;
 pub mod parse;
+pub mod resolver;
 pub mod sexp_emitter;
 pub mod type_check;
