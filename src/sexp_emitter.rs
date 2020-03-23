@@ -40,7 +40,7 @@ fn binary_op(kind: &TokenKind) -> &'static str {
 }
 
 impl<'a> SexpEmitter<'a> {
-    pub(crate) fn new(session: &Session) -> SexpEmitter<'a> {
+    pub(crate) fn new(session: &'a Session) -> SexpEmitter<'a> {
         SexpEmitter { session }
     }
 
