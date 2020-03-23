@@ -1,14 +1,15 @@
 use crate::error::*;
-use crate::lex::{Lexer, Span, Token, TokenKind};
+use crate::lex::{Span, Token, TokenKind};
 use crate::parse::*;
+use crate::session::Session;
 
 pub(crate) struct TypeChecker<'a> {
-    lexer: &'a Lexer,
+    session: &'a Session<'a>,
 }
 
 impl TypeChecker<'_> {
-    pub fn new(lexer: &Lexer) -> TypeChecker {
-        TypeChecker { lexer }
+    pub fn new(session: &Session) -> TypeChecker {
+        TypeChecker { session }
     }
 
     fn eq(&self, left: Type, right: Type, span: &Span) -> Result<(), Error> {

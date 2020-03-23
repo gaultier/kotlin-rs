@@ -737,11 +737,10 @@ impl Cursor<'_> {
 }
 
 #[derive(Debug)]
-pub struct Lexer {
+pub struct Lexer<'a> {
     pub(crate) src: String,
     pos: usize,
-    // Index of each line, 0 based
-    lines: Vec<usize>,
+    session: &'a Session<'a>,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -1044,7 +1043,7 @@ impl Lexer {
             CursorTokenKind::TString { terminated: true } => Ok(TokenKind::TString),
             CursorTokenKind::Newline => {
                 debug!("newline: pos={}", self.pos);
-                self.lines.push(self.pos);
+                self.session.newline(self.pos);
                 Ok(TokenKind::Newline)
             }
             CursorTokenKind::Unknown => Err(Error::new(
@@ -1154,12 +1153,8 @@ impl Lexer {
             .ok_or_else(|| Error::new(ErrorKind::InvalidCharLiteral, self.span_location(&span)))
     }
 
-    pub fn new(src: String) -> Lexer {
-        Lexer {
-            src,
-            pos: 0,
-            lines: vec![0],
-        }
+    pub fn new(session: &mut Session) -> Lexer<'a> {
+        Lexer { pos: 0, session }
     }
 
     pub fn next_token(&mut self) -> Result<Token, Error> {

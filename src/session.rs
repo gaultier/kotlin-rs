@@ -3,6 +3,7 @@ use std::path::PathBuf;
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) struct Session<'a> {
     file: Option<PathBuf>,
+    // Index of each line, 0 based
     lines: Vec<usize>,
     pub(crate) src: &'a str,
 }

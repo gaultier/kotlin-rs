@@ -1,5 +1,6 @@
 use crate::error::*;
 use crate::lex::*;
+use crate::session::Session;
 use std::fmt;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -112,7 +113,7 @@ pub enum AstNodeExpr {
 pub struct Parser<'a> {
     previous: Option<Token>,
     current: Option<Token>,
-    lexer: &'a mut Lexer,
+    session: &'a mut Session<'a>,
 }
 
 impl Parser<'_> {
