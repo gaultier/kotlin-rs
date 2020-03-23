@@ -54,6 +54,9 @@ impl SexpEmitter<'_> {
             AstNodeStmt::DoWhile { .. } => {
                 self.do_while_stmt(stmt, w)?;
             }
+            AstNodeStmt::VarDeclaration { .. } => {
+                self.var_decl(stmt, w)?;
+            }
         };
         Ok(())
     }
@@ -68,6 +71,13 @@ impl SexpEmitter<'_> {
         }
         writeln!(w).unwrap();
         Ok(())
+    }
+
+    fn var_decl<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
+        match ast {
+            AstNodeStmt::VarDeclaration { identifier, value } => unimplemented!(),
+            _ => unreachable!(),
+        }
     }
 
     fn do_while_stmt<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {

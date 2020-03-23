@@ -33,6 +33,10 @@ impl TypeChecker<'_> {
         Ok(Type::Unit)
     }
 
+    fn var_decl(&self, identifier: &Token, value: &mut AstNode) -> Result<Type, Error> {
+        Ok(Type::Unit)
+    }
+
     fn statement(&self, statement: &mut AstNodeStmt) -> Result<Type, Error> {
         match statement {
             AstNodeStmt::Expr(expr) => self.expr(expr),
@@ -46,6 +50,7 @@ impl TypeChecker<'_> {
                 cond_start_tok,
                 body,
             } => self.while_stmt(cond, body, &cond_start_tok),
+            AstNodeStmt::VarDeclaration { identifier, value } => self.var_decl(identifier, value),
         }
     }
 

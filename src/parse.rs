@@ -66,6 +66,10 @@ pub enum AstNodeStmt {
         cond_start_tok: Token,
         body: Vec<AstNodeStmt>,
     },
+    VarDeclaration {
+        identifier: Token,
+        value: AstNode,
+    },
 }
 
 pub type Statements = Vec<AstNodeStmt>;
@@ -563,10 +567,25 @@ impl Parser<'_> {
         self.disjunction()
     }
 
+    fn var_decl(&mut self) -> Result<AstNodeStmt, Error> {
+        self.eat(TokenKind::KeywordVar)?;
+        self.skip_newlines()?;
+        let identifier = self.eat(TokenKind::Identifier)?;
+        self.skip_newlines()?;
+        self.eat(TokenKind::Equal)?;
+        self.skip_newlines()?;
+        let value = self.expression()?;
+        self.eat(TokenKind::Newline)?;
+        self.skip_newlines()?;
+
+        Ok(AstNodeStmt::VarDeclaration { identifier, value })
+    }
+
     fn statement(&mut self) -> Result<AstNodeStmt, Error> {
         match self.previous.unwrap().kind {
             TokenKind::KeywordWhile => self.while_stmt(),
             TokenKind::KeywordDo => self.do_while_stmt(),
+            TokenKind::KeywordVar => self.var_decl(),
             _ => Ok(AstNodeStmt::Expr(self.expression()?)),
         }
     }
