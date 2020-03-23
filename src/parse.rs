@@ -631,7 +631,7 @@ impl<'a> Parser<'a> {
         Ok(stmts)
     }
 
-    pub fn new(lexer: &'a mut Lexer, session: &'a Session) -> Parser<'a> {
+    pub fn new(lexer: &'a mut Lexer<'a>, session: &'a Session) -> Parser<'a> {
         Parser {
             previous: None,
             current: None,
