@@ -1,7 +1,7 @@
 use crate::error::*;
-use crate::lex::{Span, Token, TokenKind};
+use crate::lex::{Token, TokenKind};
 use crate::parse::*;
-use crate::session::Session;
+use crate::session::{Session, Span};
 
 pub(crate) struct TypeChecker<'a> {
     session: &'a Session<'a>,
