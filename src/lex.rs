@@ -1135,7 +1135,7 @@ impl<'a> Lexer<'a> {
         })
     }
 
-    pub fn new(session: &mut Session<'a>) -> Lexer<'a> {
+    pub fn new(session: &'a mut Session) -> Lexer<'a> {
         Lexer { pos: 0, session }
     }
 
