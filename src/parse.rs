@@ -1,6 +1,5 @@
 use crate::error::*;
 use crate::lex::*;
-use crate::session::Session;
 use std::fmt;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -113,7 +112,6 @@ pub enum AstNodeExpr {
 pub(crate) struct Parser<'a> {
     previous: Option<Token>,
     current: Option<Token>,
-    session: &'a Session<'a>,
     lexer: &'a mut Lexer<'a>,
 }
 
@@ -159,7 +157,9 @@ impl<'a> Parser<'a> {
             }
             _ => Err(Error::new(
                 ErrorKind::ExpectedToken,
-                self.session.span_location(&self.previous.unwrap().span),
+                self.lexer
+                    .session
+                    .span_location(&self.previous.unwrap().span),
             )),
         }
     }
@@ -417,7 +417,7 @@ impl<'a> Parser<'a> {
             TokenKind::KeywordWhen => self.when_expr(),
             _ => Err(Error::new(
                 ErrorKind::ExpectedPrimary,
-                self.session.span_location(&previous.span),
+                self.lexer.session.span_location(&previous.span),
             )),
         }
     }
@@ -631,12 +631,11 @@ impl<'a> Parser<'a> {
         Ok(stmts)
     }
 
-    pub fn new(lexer: &'a mut Lexer<'a>, session: &'a Session) -> Parser<'a> {
+    pub fn new(lexer: &'a mut Lexer<'a>) -> Parser<'a> {
         Parser {
             previous: None,
             current: None,
             lexer,
-            session,
         }
     }
 

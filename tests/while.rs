@@ -4,10 +4,10 @@ use kotlin::parse::Type;
 
 #[test]
 fn while_with_body() {
-    let src = String::from("while (1 < 10) { 'c' }");
+    let src = "while (1 < 10) { 'c' }";
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(compile(&src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
         &"(while (< 1 10) 'c')\n\n"
@@ -16,10 +16,10 @@ fn while_with_body() {
 
 #[test]
 fn while_with_empty_body() {
-    let src = String::from("while (1 < 10) {}");
+    let src = "while (1 < 10) {}";
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(compile(&src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
         &"(while (< 1 10) (do ))\n\n"
@@ -28,10 +28,10 @@ fn while_with_empty_body() {
 
 #[test]
 fn while_without_body() {
-    let src = String::from("while (1 < 10) ;");
+    let src = "while (1 < 10) ;";
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(compile(&src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
         &"(while (< 1 10) (do ))\n\n"
@@ -40,10 +40,10 @@ fn while_without_body() {
 
 #[test]
 fn while_bad_cond_type() -> Result<(), String> {
-    let src = String::from("while\n ('a') ;");
+    let src = "while\n ('a') ;";
     let mut out: Vec<u8> = Vec::new();
 
-    match compile(src, &mut out) {
+    match compile(&src, &mut out) {
         Err(Error {
             kind: ErrorKind::IncompatibleTypes(Type::Char, Type::Bool),
             location:
@@ -62,10 +62,10 @@ fn while_bad_cond_type() -> Result<(), String> {
 
 #[test]
 fn while_bad_body_type() -> Result<(), String> {
-    let src = String::from("while\n (true) {1+'c'}");
+    let src = "while\n (true) {1+'c'}";
     let mut out: Vec<u8> = Vec::new();
 
-    match compile(src, &mut out) {
+    match compile(&src, &mut out) {
         Err(Error {
             kind: ErrorKind::IncompatibleTypes(Type::Int, Type::Char),
             location:

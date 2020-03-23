@@ -1,18 +1,22 @@
 use crate::error::*;
 use crate::lex::Lexer;
-use crate::parse::Parser;
+use crate::parse::{Parser, Statements};
 use crate::session::Session;
 use crate::sexp_emitter::SexpEmitter;
 use crate::type_check::TypeChecker;
+use log::debug;
 use std::io;
+
+fn parse(session: &mut Session) -> Result<Statements, Error> {
+    let mut lexer = Lexer::new(&mut session);
+    let mut parser = Parser::new(&mut lexer);
+    Ok(parser.parse()?)
+}
 
 pub fn compile<W: io::Write>(src: &str, w: &mut W) -> Result<(), Error> {
     let mut session = Session::from_stdin(src);
-    let mut lexer = Lexer::new(&mut session);
-    let session = lexer.session.clone();
-    let mut parser = Parser::new(&mut lexer, &session);
-    let mut stmts = parser.parse()?;
-
+    let mut stmts = parse(&mut session)?;
+    debug!("lines={:?}", &session.lines);
     let type_checker = TypeChecker::new(&session);
     type_checker.statements(&mut stmts)?;
 

@@ -36,7 +36,7 @@ impl<'a> Session<'a> {
     pub(crate) fn from_stdin(src: &'a str) -> Session {
         Session {
             file: None,
-            lines: Vec::new(),
+            lines: vec![0],
             src,
         }
     }
@@ -44,7 +44,7 @@ impl<'a> Session<'a> {
     pub(crate) fn from_file(src: &'a str, file: PathBuf) -> Session {
         Session {
             file: Some(file),
-            lines: Vec::new(),
+            lines: vec![0],
             src,
         }
     }
