@@ -1,6 +1,6 @@
 use crate::cursor::*;
 use crate::error::*;
-use crate::session::Session;
+use crate::session::{Session, Span};
 use log::debug;
 // use std::convert::TryFrom;
 // use std::fmt;
@@ -738,30 +738,8 @@ impl Cursor<'_> {
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
-    pub(crate) src: String,
     pos: usize,
     session: &'a Session<'a>,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct Span {
-    pub start: usize,
-    pub end: usize,
-}
-
-impl Span {
-    pub fn new(start: usize, end: usize) -> Span {
-        Span { start, end }
-    }
-
-    pub fn len(&self) -> usize {
-        debug_assert!(self.end >= self.start);
-        self.end - self.start
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -778,7 +756,7 @@ impl Token {
 
 impl<'a> Lexer<'a> {
     fn cursor_identifier_to_token_identifier(&self, span: &Span) -> TokenKind {
-        let s = &self.src[span.start..span.end];
+        let s = &self.session.src[span.start..span.end];
 
         match s {
             "true" => TokenKind::Bool(true),
@@ -866,10 +844,10 @@ impl<'a> Lexer<'a> {
         if let Some(NumberSuffix::Invalid(suffix)) = suffix {
             return Err(Error::new(
                 ErrorKind::InvalidNumberSuffix(suffix.to_string()),
-                self.span_location(&span),
+                self.session.span_location(&span),
             ));
         }
-        let original_str = &self.src[span.start..span.end];
+        let original_str = &self.session.src[span.start..span.end];
 
         // Remove prefix e.g `0x` and suffix e.g `UL`
         let num_str = match kind {
@@ -880,8 +858,8 @@ impl<'a> Lexer<'a> {
             | CursorNumberKind::Float {
                 base: NumberBase::Decimal,
                 ..
-            } => &self.src[span.start..span.start + suffix_start],
-            _ => &self.src[span.start + 2..span.start + suffix_start],
+            } => &self.session.src[span.start..span.start + suffix_start],
+            _ => &self.session.src[span.start + 2..span.start + suffix_start],
         };
 
         let suffix_str = &original_str[suffix_start..];
@@ -894,7 +872,7 @@ impl<'a> Lexer<'a> {
         if num_str.ends_with(&"_") {
             return Err(Error::new(
                 ErrorKind::TrailingUnderscoreInNumber,
-                self.span_location(span),
+                self.session.span_location(span),
             ));
         }
         let s = prepare_num_str_for_parsing(&num_str);
@@ -903,7 +881,7 @@ impl<'a> Lexer<'a> {
         if s.is_empty() {
             return Err(Error::new(
                 ErrorKind::MissingDigitsInNumber,
-                self.span_location(&span),
+                self.session.span_location(&span),
             ));
         }
 
@@ -918,7 +896,7 @@ impl<'a> Lexer<'a> {
                 ..
             } => Err(Error::new(
                 ErrorKind::OctalNumber,
-                self.span_location(&span),
+                self.session.span_location(&span),
             )),
             // Forbid empty exponent
             CursorNumberKind::Float {
@@ -926,7 +904,7 @@ impl<'a> Lexer<'a> {
                 ..
             } => Err(Error::new(
                 ErrorKind::MissingExponentInNumber,
-                self.span_location(&span),
+                self.session.span_location(&span),
             )),
             CursorNumberKind::Int {
                 base: NumberBase::Hexadecimal,
@@ -962,7 +940,7 @@ impl<'a> Lexer<'a> {
                 Some(NumberSuffix::L) => Ok(TokenKind::Long(i64::from_str_radix(&s, 2).unwrap())),
                 Some(NumberSuffix::F) => Err(Error::new(
                     ErrorKind::InvalidNumberSuffix(suffix_str.to_string()),
-                    self.span_location(&span),
+                    self.session.span_location(&span),
                 )),
                 _ => {
                     let num = i64::from_str_radix(&s, 2).expect("Could not parse number");
@@ -980,7 +958,7 @@ impl<'a> Lexer<'a> {
                 if s.len() > 1 && s.starts_with('0') {
                     return Err(Error::new(
                         ErrorKind::LeadingZeroInNumber,
-                        self.span_location(&span),
+                        self.session.span_location(&span),
                     ));
                 }
 
@@ -1014,7 +992,7 @@ impl<'a> Lexer<'a> {
                 Some(NumberSuffix::U) | Some(NumberSuffix::UL) | Some(NumberSuffix::L) => {
                     Err(Error::new(
                         ErrorKind::InvalidNumberSuffix(suffix_str.to_string()),
-                        self.span_location(&span),
+                        self.session.span_location(&span),
                     ))
                 }
                 Some(NumberSuffix::F) => Ok(TokenKind::Float(s.parse().unwrap())),
@@ -1025,7 +1003,7 @@ impl<'a> Lexer<'a> {
             },
             CursorNumberKind::Float { .. } => Err(Error::new(
                 ErrorKind::TrailingDotInNumber,
-                self.span_location(&span),
+                self.session.span_location(&span),
             )),
         }
     }
@@ -1038,7 +1016,7 @@ impl<'a> Lexer<'a> {
         match kind {
             CursorTokenKind::TString { terminated: false } => Err(Error::new(
                 ErrorKind::UnterminatedString,
-                self.span_location(&span),
+                self.session.span_location(&span),
             )),
             CursorTokenKind::TString { terminated: true } => Ok(TokenKind::TString),
             CursorTokenKind::Newline => {
@@ -1048,7 +1026,7 @@ impl<'a> Lexer<'a> {
             }
             CursorTokenKind::Unknown => Err(Error::new(
                 ErrorKind::UnknownChar,
-                self.span_location(&span),
+                self.session.span_location(&span),
             )),
             CursorTokenKind::Identifier => Ok(self.cursor_identifier_to_token_identifier(&span)),
             CursorTokenKind::LineComment => Ok(TokenKind::LineComment),
@@ -1100,11 +1078,11 @@ impl<'a> Lexer<'a> {
             CursorTokenKind::Pound => Ok(TokenKind::Pound),
             CursorTokenKind::Char { terminated: false } => Err(Error::new(
                 ErrorKind::UnterminatedChar,
-                self.span_location(&span),
+                self.session.span_location(&span),
             )),
             CursorTokenKind::Char { terminated: true } => {
                 // Trim surrounding quotes to get content
-                let c_str = &self.src[span.start + 1..span.end - 1];
+                let c_str = &self.session.src[span.start + 1..span.end - 1];
                 let c_chars = c_str.chars().collect::<Vec<_>>();
                 let slice: &[char] = &c_chars;
                 let c: char = match slice {
@@ -1127,7 +1105,7 @@ impl<'a> Lexer<'a> {
                     _ => {
                         return Err(Error::new(
                             ErrorKind::InvalidCharLiteral,
-                            self.span_location(&span),
+                            self.session.span_location(&span),
                         ));
                     }
                 };
@@ -1149,26 +1127,30 @@ impl<'a> Lexer<'a> {
             + b.to_digit(16).unwrap() * 0x100
             + a.to_digit(16).unwrap() * 0x1000;
 
-        std::char::from_u32(num)
-            .ok_or_else(|| Error::new(ErrorKind::InvalidCharLiteral, self.span_location(&span)))
+        std::char::from_u32(num).ok_or_else(|| {
+            Error::new(
+                ErrorKind::InvalidCharLiteral,
+                self.session.span_location(&span),
+            )
+        })
     }
 
-    pub fn new(session: &mut Session) -> Lexer<'a> {
+    pub fn new(session: &mut Session<'a>) -> Lexer<'a> {
         Lexer { pos: 0, session }
     }
 
     pub fn next_token(&mut self) -> Result<Token, Error> {
-        if self.pos >= self.src.len() {
+        if self.pos >= self.session.src.len() {
             return Ok(Token::new(TokenKind::Eof, Span::new(self.pos, self.pos)));
         }
-        let cursor_token = first_token(&self.src[self.pos..], &mut self.lines, self.pos);
+        let cursor_token = first_token(&self.session.src[self.pos..], &mut self.lines, self.pos);
         let start = self.pos;
         self.pos += cursor_token.len;
 
         debug!(
             "next_token: kind={:?} c={:?} start={} pos={}",
             cursor_token.kind,
-            &self.src[start..self.pos],
+            &self.session.src[start..self.pos],
             start,
             self.pos
         );
@@ -1177,45 +1159,6 @@ impl<'a> Lexer<'a> {
         let kind = self.cursor_to_lex_token_kind(cursor_token.kind, &span)?;
 
         Ok(Token::new(kind, span))
-    }
-
-    pub fn span_location(&self, span: &Span) -> Location {
-        let start_line_i = match self.lines.binary_search(&span.start) {
-            Ok(l) => l,
-            Err(l) => l - 1,
-        };
-        let end_line_i = match self.lines.binary_search(&span.end) {
-            Ok(l) => l,
-            Err(l) => l - 1,
-        };
-        let start_line_pos = self.lines[start_line_i];
-        let end_line_pos = self.lines[end_line_i];
-
-        let start_line_s = &self.src[start_line_pos..span.start];
-        let start_col = start_line_s
-            .char_indices()
-            .take_while(|(i, _)| *i != span.start)
-            .count();
-
-        let end_line_s = &self.src[end_line_pos..span.end];
-        let end_col = end_line_s
-            .char_indices()
-            .take_while(|(i, _)| *i != span.end)
-            .count();
-
-        debug!(
-            "token: start_col={} end_col={} start={} start_line={} end={} end_line={}",
-            start_col, end_col, span.start, start_line_pos, span.end, end_line_pos
-        );
-
-        Location {
-            start_pos: span.start,
-            start_line: start_line_i + 1,
-            start_column: start_col + 1,
-            end_pos: span.end,
-            end_line: end_line_i + 1,
-            end_column: end_col + 1,
-        }
     }
 }
 
