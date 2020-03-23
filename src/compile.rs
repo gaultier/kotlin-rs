@@ -7,15 +7,13 @@ use crate::type_check::TypeChecker;
 use log::debug;
 use std::io;
 
-fn parse(session: &mut Session) -> Result<Statements, Error> {
-    let mut lexer = Lexer::new(&mut session);
-    let mut parser = Parser::new(&mut lexer);
-    Ok(parser.parse()?)
-}
-
 pub fn compile<W: io::Write>(src: &str, w: &mut W) -> Result<(), Error> {
     let mut session = Session::from_stdin(src);
-    let mut stmts = parse(&mut session)?;
+    let mut lexer = Lexer::new(&mut session);
+    let tokens = lexer.scan()?;
+
+    let mut parser = Parser::new(&tokens, &session);
+    let mut stmts: Statements = parser.parse()?;
     debug!("lines={:?}", &session.lines);
     let type_checker = TypeChecker::new(&session);
     type_checker.statements(&mut stmts)?;

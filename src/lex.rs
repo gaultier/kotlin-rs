@@ -737,9 +737,9 @@ impl Cursor<'_> {
 }
 
 #[derive(Debug)]
-pub(crate) struct Lexer<'long> {
+pub(crate) struct Lexer<'a> {
     pos: usize,
-    pub(crate) session: &'long mut Session<'long>,
+    pub(crate) session: &'a mut Session<'a>,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -754,7 +754,7 @@ impl Token {
     }
 }
 
-impl<'long> Lexer<'long> {
+impl Lexer<'_> {
     fn cursor_identifier_to_token_identifier(&self, span: &Span) -> TokenKind {
         let s = &self.session.src[span.start..span.end];
 
@@ -1135,8 +1135,23 @@ impl<'long> Lexer<'long> {
         })
     }
 
-    pub fn new<'short: 'long>(session: &'long mut Session<'long>) -> Lexer<'short> {
+    pub fn new<'a>(session: &'a mut Session<'a>) -> Lexer<'a> {
         Lexer { pos: 0, session }
+    }
+
+    pub fn scan(&mut self) -> Result<Vec<Token>, Error> {
+        let mut tokens = Vec::new();
+        loop {
+            match self.next_token()? {
+                Token {
+                    kind: TokenKind::Eof,
+                    ..
+                } => return Ok(tokens),
+                tok => {
+                    tokens.push(tok);
+                }
+            }
+        }
     }
 
     pub fn next_token(&mut self) -> Result<Token, Error> {

@@ -1,6 +1,8 @@
 use crate::error::*;
 use crate::lex::*;
+use crate::session::Session;
 use std::fmt;
+use std::slice::Iter;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Type {
@@ -112,14 +114,16 @@ pub enum AstNodeExpr {
 pub(crate) struct Parser<'a> {
     previous: Option<Token>,
     current: Option<Token>,
-    lexer: &'a mut Lexer<'a>,
+    tokens: &'a [Token],
+    tokens_it: &'a Iter<'a, Token>,
+    session: &'a Session<'a>,
 }
 
-impl<'a> Parser<'a> {
+impl Parser<'_> {
     /// Skip over unsignificant tokens
     fn next_parse_token(&mut self) -> Result<Token, Error> {
         loop {
-            let token = self.lexer.next_token()?;
+            let token = self.tokens_it.next();
             match token.kind {
                 TokenKind::Whitespace | TokenKind::LineComment | TokenKind::BlockComment { .. } => {
                 }
@@ -631,11 +635,12 @@ impl<'a> Parser<'a> {
         Ok(stmts)
     }
 
-    pub fn new(lexer: &'a mut Lexer<'a>) -> Parser<'a> {
+    pub fn new<'a>(tokens: &[Token], session: &Session) -> Parser<'a> {
         Parser {
             previous: None,
             current: None,
-            lexer,
+            tokens,
+            session,
         }
     }
 
