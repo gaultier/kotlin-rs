@@ -776,7 +776,7 @@ impl Token {
     }
 }
 
-impl Lexer {
+impl<'a> Lexer<'a> {
     fn cursor_identifier_to_token_identifier(&self, span: &Span) -> TokenKind {
         let s = &self.src[span.start..span.end];
 

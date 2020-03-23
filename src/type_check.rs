@@ -7,8 +7,8 @@ pub(crate) struct TypeChecker<'a> {
     session: &'a Session<'a>,
 }
 
-impl TypeChecker<'_> {
-    pub fn new(session: &Session) -> TypeChecker {
+impl<'a> TypeChecker<'a> {
+    pub fn new(session: &Session) -> TypeChecker<'a> {
         TypeChecker { session }
     }
 

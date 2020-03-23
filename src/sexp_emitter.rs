@@ -1,9 +1,10 @@
 use crate::error::*;
-use crate::lex::{Lexer, Token, TokenKind};
+use crate::lex::{Token, TokenKind};
 use crate::parse::*;
+use crate::session::Session;
 
 pub(crate) struct SexpEmitter<'a> {
-    lexer: &'a Lexer,
+    session: &'a Session<'a>,
 }
 
 fn unary_op(kind: &TokenKind) -> &'static str {
@@ -38,9 +39,9 @@ fn binary_op(kind: &TokenKind) -> &'static str {
     }
 }
 
-impl SexpEmitter<'_> {
-    pub(crate) fn new(lexer: &Lexer) -> SexpEmitter {
-        SexpEmitter { lexer }
+impl<'a> SexpEmitter<'a> {
+    pub(crate) fn new(session: &Session) -> SexpEmitter<'a> {
+        SexpEmitter { session }
     }
 
     fn statement<W: std::io::Write>(&self, stmt: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
