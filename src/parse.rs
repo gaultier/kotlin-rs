@@ -159,7 +159,7 @@ impl<'a> Parser<'a> {
             }
             _ => Err(Error::new(
                 ErrorKind::ExpectedToken,
-                self.lexer.span_location(&self.previous.unwrap().span),
+                self.session.span_location(&self.previous.unwrap().span),
             )),
         }
     }
@@ -417,7 +417,7 @@ impl<'a> Parser<'a> {
             TokenKind::KeywordWhen => self.when_expr(),
             _ => Err(Error::new(
                 ErrorKind::ExpectedPrimary,
-                self.lexer.span_location(&previous.span),
+                self.session.span_location(&previous.span),
             )),
         }
     }

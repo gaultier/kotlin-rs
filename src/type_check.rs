@@ -16,7 +16,7 @@ impl<'a> TypeChecker<'a> {
         if left != right {
             Err(Error::new(
                 ErrorKind::IncompatibleTypes(left, right),
-                self.lexer.span_location(&span),
+                self.session.span_location(&span),
             ))
         } else {
             Ok(())
@@ -335,7 +335,7 @@ impl<'a> TypeChecker<'a> {
                     _ => {
                         return Err(Error::new(
                             ErrorKind::InvalidRange(left_t),
-                            self.lexer.span_location(&tok.span),
+                            self.session.span_location(&tok.span),
                         ));
                     }
                 };
@@ -596,7 +596,7 @@ impl<'a> TypeChecker<'a> {
             (Type::Char, Type::Int) if token.kind == TokenKind::Minus => Ok(Type::Char),
             _ => Err(Error::new(
                 ErrorKind::IncompatibleTypes(left, right),
-                self.lexer.span_location(&token.span))),
+                self.session.span_location(&token.span))),
         }
     }
 }
