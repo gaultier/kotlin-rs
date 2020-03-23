@@ -9,7 +9,7 @@ use std::io;
 pub fn compile<W: io::Write>(src: &str, w: &mut W) -> Result<(), Error> {
     let mut session = Session::from_stdin(src);
     let mut lexer = Lexer::new(&mut session);
-    let mut parser = Parser::new(&session);
+    let mut parser = Parser::new(&mut lexer, &session);
     let mut stmts = parser.parse()?;
 
     let type_checker = TypeChecker::new(&session);

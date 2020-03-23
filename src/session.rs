@@ -9,7 +9,7 @@ pub(crate) struct Session<'a> {
 }
 
 impl<'a> Session<'a> {
-    fn from_stdin(src: &'a str) -> Session {
+    pub(crate) fn from_stdin(src: &'a str) -> Session {
         Session {
             file: None,
             lines: Vec::new(),
@@ -17,7 +17,7 @@ impl<'a> Session<'a> {
         }
     }
 
-    fn from_file(src: &'a str, file: PathBuf) -> Session {
+    pub(crate) fn from_file(src: &'a str, file: PathBuf) -> Session {
         Session {
             file: Some(file),
             lines: Vec::new(),
@@ -25,7 +25,7 @@ impl<'a> Session<'a> {
         }
     }
 
-    fn newline(&mut self, pos: usize) {
+    pub(crate) fn newline(&mut self, pos: usize) {
         self.lines.push(pos);
     }
 }
