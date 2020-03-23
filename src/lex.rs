@@ -737,9 +737,9 @@ impl Cursor<'_> {
 }
 
 #[derive(Debug)]
-pub struct Lexer<'a> {
+pub(crate) struct Lexer<'a> {
     pos: usize,
-    session: &'a Session<'a>,
+    pub(crate) session: &'a mut Session<'a>,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -1135,7 +1135,7 @@ impl<'a> Lexer<'a> {
         })
     }
 
-    pub fn new(session: &'a mut Session) -> Lexer<'a> {
+    pub fn new(session: &'a mut Session<'a>) -> Lexer<'a> {
         Lexer { pos: 0, session }
     }
 
@@ -1143,7 +1143,8 @@ impl<'a> Lexer<'a> {
         if self.pos >= self.session.src.len() {
             return Ok(Token::new(TokenKind::Eof, Span::new(self.pos, self.pos)));
         }
-        let cursor_token = first_token(&self.session.src[self.pos..], &mut self.lines, self.pos);
+        let src = &self.session.src[self.pos..];
+        let cursor_token = first_token(src, &mut self.session.lines, self.pos);
         let start = self.pos;
         self.pos += cursor_token.len;
 

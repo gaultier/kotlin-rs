@@ -27,7 +27,8 @@ impl Span {
 pub(crate) struct Session<'a> {
     file: Option<PathBuf>,
     // Index of each line, 0 based
-    lines: Vec<usize>,
+    // FIXME: should be private
+    pub(crate) lines: Vec<usize>,
     pub(crate) src: &'a str,
 }
 

@@ -46,9 +46,8 @@ fn main() {
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
 
-    let cpy = contents.clone();
-    if let Err(err) = compile(contents, &mut handle) {
-        err.eprint(&cpy);
+    if let Err(err) = compile(&contents, &mut handle) {
+        err.eprint(&contents);
         std::process::exit(1);
     }
 }

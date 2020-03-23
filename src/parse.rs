@@ -110,7 +110,7 @@ pub enum AstNodeExpr {
 }
 
 #[derive(Debug)]
-pub struct Parser<'a> {
+pub(crate) struct Parser<'a> {
     previous: Option<Token>,
     current: Option<Token>,
     session: &'a Session<'a>,
