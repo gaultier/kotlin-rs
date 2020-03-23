@@ -75,7 +75,17 @@ impl SexpEmitter<'_> {
 
     fn var_decl<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNodeStmt::VarDeclaration { identifier, value } => unimplemented!(),
+            AstNodeStmt::VarDeclaration { identifier, value } => {
+                write!(
+                    w,
+                    "(def {} ",
+                    &self.lexer.src[identifier.span.start..identifier.span.end]
+                )
+                .unwrap();
+                self.expr(value, w)?;
+                write!(w, ")").unwrap();
+                Ok(())
+            }
             _ => unreachable!(),
         }
     }
