@@ -80,7 +80,7 @@ impl<'a> SexpEmitter<'a> {
                 write!(
                     w,
                     "(def {} ",
-                    &self.lexer.src[identifier.span.start..identifier.span.end]
+                    &self.session.src[identifier.span.start..identifier.span.end]
                 )
                 .unwrap();
                 self.expr(value, w)?;
@@ -217,7 +217,7 @@ impl<'a> SexpEmitter<'a> {
                     }),
                 ..
             } => {
-                write!(w, "{}", &self.lexer.src[span.start..span.end]).unwrap();
+                write!(w, "{}", &self.session.src[span.start..span.end]).unwrap();
                 Ok(())
             }
             AstNode {
