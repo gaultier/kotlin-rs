@@ -1,5 +1,6 @@
 use crate::cursor::*;
 use crate::error::*;
+use crate::session::Session;
 use log::debug;
 // use std::convert::TryFrom;
 // use std::fmt;
