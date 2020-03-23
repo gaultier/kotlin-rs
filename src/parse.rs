@@ -76,6 +76,7 @@ pub type Statements = Vec<AstNodeStmt>;
 
 #[derive(Debug)]
 pub struct AstNode {
+    pub id: usize,
     pub kind: AstNodeExpr,
     pub type_info: Option<Type>,
 }
@@ -113,6 +114,7 @@ pub struct Parser<'a> {
     previous: Option<Token>,
     current: Option<Token>,
     lexer: &'a mut Lexer,
+    current_id: usize,
 }
 
 impl Parser<'_> {
@@ -320,6 +322,7 @@ impl Parser<'_> {
                 else_entry,
             },
             type_info: None,
+            id: self.next_id(),
         })
     }
 
@@ -376,6 +379,7 @@ impl Parser<'_> {
                 else_body_tok,
             },
             type_info: None,
+            id: self.next_id(),
         })
     }
 
@@ -399,6 +403,7 @@ impl Parser<'_> {
                 Ok(AstNode {
                     kind: AstNodeExpr::Literal(previous),
                     type_info: None,
+                    id: self.next_id(),
                 })
             }
             TokenKind::LeftParen => {
@@ -409,6 +414,7 @@ impl Parser<'_> {
                 Ok(AstNode {
                     kind: AstNodeExpr::Grouping(Box::new(expr)),
                     type_info: None,
+                    id: self.next_id(),
                 })
             }
             TokenKind::KeywordIf => self.if_expr(),
@@ -430,6 +436,7 @@ impl Parser<'_> {
                 Ok(AstNode {
                     kind: AstNodeExpr::Unary(previous, Box::new(right)),
                     type_info: None,
+                    id: self.next_id(),
                 })
             }
             _ => self.primary(),
@@ -447,6 +454,7 @@ impl Parser<'_> {
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
                     type_info: None,
+                    id: self.next_id(),
                 })
             }
             _ => Ok(left),
@@ -464,6 +472,7 @@ impl Parser<'_> {
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
                     type_info: None,
+                    id: self.next_id(),
                 })
             }
             _ => Ok(left),
@@ -481,6 +490,7 @@ impl Parser<'_> {
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
                     type_info: None,
+                    id: self.next_id(),
                 })
             }
             _ => Ok(left),
@@ -501,6 +511,7 @@ impl Parser<'_> {
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
                     type_info: None,
+                    id: self.next_id(),
                 })
             }
             _ => Ok(left),
@@ -521,6 +532,7 @@ impl Parser<'_> {
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
                     type_info: None,
+                    id: self.next_id(),
                 })
             }
             _ => Ok(left),
@@ -539,6 +551,7 @@ impl Parser<'_> {
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), tok, Box::new(right)),
                     type_info: None,
+                    id: self.next_id(),
                 })
             }
             _ => Ok(left),
@@ -557,6 +570,7 @@ impl Parser<'_> {
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), tok, Box::new(right)),
                     type_info: None,
+                    id: self.next_id(),
                 })
             }
             _ => Ok(left),
@@ -634,7 +648,16 @@ impl Parser<'_> {
             previous: None,
             current: None,
             lexer,
+            current_id: 0,
         }
+    }
+
+    fn next_id(&mut self) -> usize {
+        self.current_id = self
+            .current_id
+            .checked_add(1)
+            .expect("Out of ids, input too big");
+        self.current_id
     }
 
     pub fn parse(&mut self) -> Result<Statements, Error> {
