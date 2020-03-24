@@ -6,7 +6,22 @@ use std::collections::BTreeMap;
 pub(crate) struct Resolver<'a> {
     lexer: &'a Lexer,
     resolution: Resolution,
+    scopes: Scopes<'a>,
 }
+
+#[derive(Debug, Copy, Clone)]
+enum VarStatus {
+    Declared,
+    Defined,
+}
+
+#[derive(Debug, Clone)]
+struct Scope<'a> {
+    var_statuses: BTreeMap<&'a str, VarStatus>,
+    block_id: NodeId,
+}
+
+type Scopes<'a> = Vec<Scope<'a>>;
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct VarUsageRef {
@@ -21,6 +36,7 @@ impl Resolver<'_> {
         Resolver {
             lexer,
             resolution: Resolution::new(),
+            scopes: Scopes::new(),
         }
     }
 
