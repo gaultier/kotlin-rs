@@ -63,7 +63,7 @@ impl SexpEmitter<'_> {
 
     pub fn statements<W: std::io::Write>(
         &self,
-        statements: &[AstNodeStmt],
+        statements: &BlockSlice,
         w: &mut W,
     ) -> Result<(), Error> {
         for stmt in statements {
@@ -266,7 +266,7 @@ impl SexpEmitter<'_> {
         }
     }
 
-    fn block<W: std::io::Write>(&self, ast: &[AstNodeStmt], w: &mut W) -> Result<(), Error> {
+    fn block<W: std::io::Write>(&self, ast: &BlockSlice, w: &mut W) -> Result<(), Error> {
         if ast.len() != 1 {
             write!(w, "(do ").unwrap();
         }

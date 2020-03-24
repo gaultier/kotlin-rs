@@ -73,7 +73,7 @@ pub enum AstNodeStmt {
 }
 
 pub type Block = Vec<AstNodeStmt>;
-pub type BlockRef = [AstNodeStmt];
+pub type BlockSlice = [AstNodeStmt];
 
 #[derive(Debug)]
 pub struct AstNode {

@@ -17,7 +17,7 @@ impl Resolver<'_> {
         }
     }
 
-    pub(crate) fn statements(&mut self, statements: &[AstNodeStmt]) -> Result<Resolution, Error> {
+    pub(crate) fn statements(&mut self, statements: &BlockSlice) -> Result<Resolution, Error> {
         unimplemented!()
     }
 }
