@@ -192,16 +192,22 @@ impl<'a> Resolver<'a> {
         self.expr(target)?;
         self.expr(value)?;
 
-        let identifier = match target {
+        let (identifier, span) = match target {
             AstNode {
                 kind: AstNodeExpr::VarRef(span),
                 ..
-            } => &self.lexer.src[span.start..span.end],
+            } => (&self.lexer.src[span.start..span.end], span),
             _ => unreachable!(),
         };
 
         let (_, var, _) = self.find_var(identifier).unwrap();
         let flags = var.flags;
+        if flags & VAR_DEFINITION_FLAG_VAL as u16 == 1 {
+            return Err(Error::new(
+                ErrorKind::CannotReassignVal(identifier.to_string()),
+                self.lexer.span_location(span),
+            ));
+        }
 
         debug!(
             "assign: identifier={} target={:?} value={:?} flags={}",

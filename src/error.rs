@@ -36,6 +36,7 @@ pub enum ErrorKind {
     InvalidRange(Type),
     UnknownIdentifier(String),
     ExpectedToken,
+    CannotReassignVal(String),
 }
 
 impl fmt::Display for ErrorKind {
@@ -70,6 +71,11 @@ impl fmt::Display for ErrorKind {
             ErrorKind::UnknownIdentifier(identifier) => {
                 write!(f, "Unknown identifier {}", identifier)
             }
+            ErrorKind::CannotReassignVal(identifier) => write!(
+                f,
+                "Cannot reassign variable {} declared with `val`",
+                identifier
+            ),
         }
     }
 }

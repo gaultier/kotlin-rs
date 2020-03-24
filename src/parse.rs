@@ -60,8 +60,8 @@ pub struct Block {
     pub body: Statements,
 }
 
-const VAR_DEFINITION_FLAG_VAR: u8 = 0;
-const VAR_DEFINITION_FLAG_VAL: u8 = 1;
+pub(crate) const VAR_DEFINITION_FLAG_VAR: u8 = 0;
+pub(crate) const VAR_DEFINITION_FLAG_VAL: u8 = 1;
 
 #[derive(Debug)]
 pub enum AstNodeStmt {
