@@ -114,7 +114,7 @@ impl<'a> Resolver<'a> {
                 else_entry,
             } => {
                 if let Some(subject) = subject {
-                    self.expr(subject)?;
+                    self.statement(subject)?;
                 }
 
                 for entry in entries {

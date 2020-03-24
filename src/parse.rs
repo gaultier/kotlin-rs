@@ -116,7 +116,7 @@ pub enum AstNodeExpr {
         else_body_tok: Token,
     },
     WhenExpr {
-        subject: Option<Box<AstNode>>,
+        subject: Option<Box<AstNodeStmt>>,
         entries: Vec<WhenEntry>,
         else_entry: Option<Block>,
     },
@@ -308,7 +308,7 @@ impl Parser<'_> {
         }
     }
 
-    fn when_subject(&mut self) -> Result<Option<Box<AstNode>>, Error> {
+    fn when_subject(&mut self) -> Result<Option<Box<AstNodeStmt>>, Error> {
         match self.previous {
             Some(Token {
                 kind: TokenKind::LeftParen,
@@ -316,7 +316,7 @@ impl Parser<'_> {
             }) => {
                 self.eat(TokenKind::LeftParen)?;
 
-                let _var = loop {
+                let identifier = loop {
                     match self.previous.unwrap().kind {
                         TokenKind::Newline => {
                             self.advance()?;
@@ -335,9 +335,20 @@ impl Parser<'_> {
                     }
                 };
 
-                let subject = self.expression()?;
+                let value = self.expression()?;
                 self.eat(TokenKind::RightParen)?;
-                Ok(Some(Box::new(subject)))
+
+                if let Some(identifier) = identifier {
+                    // Ok(Some(Box::new(AstNode::AstNodeExpr())))
+                    Ok(Some(Box::new(AstNodeStmt::VarDefinition {
+                        identifier,
+                        value,
+                        id: self.next_id(),
+                        flags: VAR_DEFINITION_FLAG_VAL,
+                    })))
+                } else {
+                    Ok(Some(Box::new(AstNodeStmt::Expr(value))))
+                }
             }
             _ => Ok(None),
         }

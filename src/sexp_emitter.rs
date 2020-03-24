@@ -296,7 +296,7 @@ impl SexpEmitter<'_> {
                 ..
             } => {
                 write!(w, "(case ").unwrap();
-                self.expr(&subject, w)?;
+                self.statement(&subject, w)?;
                 write!(w, " ").unwrap();
 
                 if let Some((last, entries)) = entries.split_last() {

@@ -449,7 +449,7 @@ impl<'a> TypeChecker<'a> {
                     },
                 ..
             } => {
-                let subject_t = self.expr(subject)?;
+                let subject_t = self.statement(subject)?;
                 for entry in entries.iter_mut() {
                     let cond_t = self.expr(&mut entry.cond)?;
                     self.eq(subject_t, cond_t, &entry.cond_start_tok.span)?;
