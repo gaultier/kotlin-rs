@@ -50,7 +50,7 @@ impl TypeChecker<'_> {
                 cond_start_tok,
                 body,
             } => self.while_stmt(cond, body, &cond_start_tok),
-            AstNodeStmt::VarDeclaration { value, .. } => self.var_decl(value),
+            AstNodeStmt::VarDefinition { value, .. } => self.var_decl(value),
         }
     }
 

@@ -54,7 +54,7 @@ impl SexpEmitter<'_> {
             AstNodeStmt::DoWhile { .. } => {
                 self.do_while_stmt(stmt, w)?;
             }
-            AstNodeStmt::VarDeclaration { .. } => {
+            AstNodeStmt::VarDefinition { .. } => {
                 self.var_decl(stmt, w)?;
             }
         };
@@ -75,7 +75,7 @@ impl SexpEmitter<'_> {
 
     fn var_decl<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNodeStmt::VarDeclaration { identifier, value } => {
+            AstNodeStmt::VarDefinition { identifier, value } => {
                 write!(
                     w,
                     "(def {} ",

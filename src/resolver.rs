@@ -95,7 +95,20 @@ impl<'a> Resolver<'a> {
     fn var_decl(&mut self, identifier: &'a str) -> Result<(), Error> {
         let scope = self.scopes.last_mut().unwrap();
         scope.var_statuses.insert(identifier, VarStatus::Declared);
-        debug!("new var {} in scope {}", identifier, scope.block_id);
+        debug!(
+            "var declaration: identifier=`{}` scope={}",
+            identifier, scope.block_id
+        );
+        Ok(())
+    }
+
+    fn var_def(&mut self, identifier: &'a str) -> Result<(), Error> {
+        let scope = self.scopes.last_mut().unwrap();
+        scope.var_statuses.insert(identifier, VarStatus::Defined);
+        debug!(
+            "var definition: identifier=`{}` scope={}",
+            identifier, scope.block_id
+        );
         Ok(())
     }
 
@@ -108,9 +121,11 @@ impl<'a> Resolver<'a> {
                 self.expr(cond)?;
                 self.statements(body)?;
             }
-            AstNodeStmt::VarDeclaration { identifier, value } => {
+            AstNodeStmt::VarDefinition { identifier, value } => {
                 self.expr(value)?;
-                self.var_decl(&self.lexer.src[identifier.span.start..identifier.span.end])?;
+                let identifier = &self.lexer.src[identifier.span.start..identifier.span.end];
+                self.var_decl(identifier)?;
+                self.var_def(identifier)?;
             }
         };
         Ok(())
