@@ -22,6 +22,15 @@ struct Scope<'a> {
     block_id: NodeId,
 }
 
+impl<'a> Scope<'a> {
+    fn new(block_id: NodeId) -> Scope<'a> {
+        Scope {
+            block_id,
+            var_statuses: BTreeMap::new(),
+        }
+    }
+}
+
 type Scopes<'a> = Vec<Scope<'a>>;
 
 #[derive(Debug, Copy, Clone)]
@@ -34,10 +43,7 @@ pub(crate) type Resolution = BTreeMap<NodeId, VarUsageRef>;
 
 impl<'a> Resolver<'a> {
     pub(crate) fn new(lexer: &Lexer) -> Resolver {
-        let global_scope = Scope {
-            var_statuses: BTreeMap::new(),
-            block_id: 0,
-        };
+        let global_scope = Scope::new(0);
         Resolver {
             lexer,
             resolution: Resolution::new(),
@@ -110,6 +116,14 @@ impl<'a> Resolver<'a> {
             identifier, scope.block_id
         );
         Ok(())
+    }
+
+    fn enter_scope(&mut self, block_id: NodeId) {
+        self.scopes.push(Scope::new(block_id));
+    }
+
+    fn exit_scope(&mut self) {
+        self.scopes.pop();
     }
 
     fn statement(&mut self, statement: &AstNodeStmt) -> Result<(), Error> {
