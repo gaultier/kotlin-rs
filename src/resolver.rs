@@ -43,7 +43,7 @@ type Scopes<'a> = Vec<Scope<'a>>;
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct VarUsageRef {
     pub(crate) scope_depth: usize,
-    pub(crate) node_id_ref: NodeId,
+    pub(crate) node_ref_id: NodeId,
     pub(crate) node_ref_flags: u16,
     pub(crate) block_id_ref: NodeId,
 }
@@ -79,7 +79,7 @@ impl<'a> Resolver<'a> {
                 id,
                 VarUsageRef {
                     scope_depth: depth,
-                    node_id_ref: var.id,
+                    node_ref_id: var.id,
                     node_ref_flags: var.flags,
                     block_id_ref: scope.block_id,
                 },
