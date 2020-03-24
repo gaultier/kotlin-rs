@@ -704,7 +704,11 @@ impl Parser<'_> {
             TokenKind::KeywordVal | TokenKind::KeywordVar => self.var_def(),
             _ => match (self.previous.unwrap().kind, self.current.unwrap().kind) {
                 (TokenKind::Identifier, TokenKind::Equal)
-                | (TokenKind::Identifier, TokenKind::PlusEqual) => self.assign(),
+                | (TokenKind::Identifier, TokenKind::PlusEqual)
+                | (TokenKind::Identifier, TokenKind::MinusEqual)
+                | (TokenKind::Identifier, TokenKind::StarEqual)
+                | (TokenKind::Identifier, TokenKind::SlashEqual)
+                | (TokenKind::Identifier, TokenKind::PercentEqual) => self.assign(),
                 _ => Ok(AstNodeStmt::Expr(self.expression()?)),
             },
         }
