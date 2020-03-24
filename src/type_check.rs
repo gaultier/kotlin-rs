@@ -2,15 +2,21 @@ use crate::error::*;
 use crate::lex::{Lexer, Span, Token, TokenKind};
 use crate::parse::*;
 use crate::resolver::Resolution;
+use std::collections::BTreeMap;
 
 pub(crate) struct TypeChecker<'a> {
     lexer: &'a Lexer,
     resolution: &'a Resolution,
+    types: BTreeMap<NodeId, Type>,
 }
 
 impl<'a> TypeChecker<'a> {
     pub fn new(lexer: &'a Lexer, resolution: &'a Resolution) -> TypeChecker<'a> {
-        TypeChecker { lexer, resolution }
+        TypeChecker {
+            lexer,
+            resolution,
+            types: BTreeMap::new(),
+        }
     }
 
     fn eq(&self, left: Type, right: Type, span: &Span) -> Result<(), Error> {
@@ -25,21 +31,22 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn while_stmt(
-        &self,
+        &mut self,
         cond: &mut AstNode,
         block: &mut Block,
         cond_start_tok: &Token,
     ) -> Result<Type, Error> {
-        self.eq(self.expr(cond)?, Type::Bool, &cond_start_tok.span)?;
+        let cond_t = self.expr(cond)?;
+        self.eq(cond_t, Type::Bool, &cond_start_tok.span)?;
         self.statements(block)?;
         Ok(Type::Unit)
     }
 
-    fn var_def(&self, value: &mut AstNode) -> Result<Type, Error> {
+    fn var_def(&mut self, value: &mut AstNode) -> Result<Type, Error> {
         self.expr(value)
     }
 
-    fn statement(&self, statement: &mut AstNodeStmt) -> Result<Type, Error> {
+    fn statement(&mut self, statement: &mut AstNodeStmt) -> Result<Type, Error> {
         match statement {
             AstNodeStmt::Expr(expr) => self.expr(expr),
             AstNodeStmt::DoWhile {
@@ -56,7 +63,7 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    pub fn statements(&self, statements: &mut Block) -> Result<Type, Error> {
+    pub fn statements(&mut self, statements: &mut Block) -> Result<Type, Error> {
         for stmt in statements.body.iter_mut() {
             self.statement(stmt)?;
         }
@@ -71,7 +78,7 @@ impl<'a> TypeChecker<'a> {
             .unwrap_or(Type::Unit))
     }
 
-    fn unary(&self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn unary(&mut self, ast: &mut AstNode) -> Result<Type, Error> {
         if let Some(t) = ast.type_info {
             return Ok(t);
         }
@@ -124,12 +131,12 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn literal(&self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn literal(&mut self, ast: &mut AstNode) -> Result<Type, Error> {
         if let Some(t) = ast.type_info {
             return Ok(t);
         }
 
-        match ast {
+        let t = match ast {
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
@@ -241,10 +248,13 @@ impl<'a> TypeChecker<'a> {
                 Ok(Type::Char)
             }
             _ => unreachable!(),
-        }
+        }?;
+
+        self.types.insert(ast.id, t);
+        Ok(t)
     }
 
-    fn binary(&self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn binary(&mut self, ast: &mut AstNode) -> Result<Type, Error> {
         if let Some(t) = ast.type_info {
             return Ok(t);
         }
@@ -412,7 +422,9 @@ impl<'a> TypeChecker<'a> {
                 kind: AstNodeExpr::Binary(left, tok, right),
                 ..
             } => {
-                let t = self.coalesce_types(self.expr(left)?, self.expr(right)?, &tok)?;
+                let left_t = self.expr(left)?;
+                let right_t = self.expr(right)?;
+                let t = self.coalesce_types(left_t, right_t, &tok)?;
                 ast.type_info = Some(t);
                 Ok(t)
             }
@@ -420,7 +432,7 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn block(&self, block: &mut Block) -> Result<Type, Error> {
+    fn block(&mut self, block: &mut Block) -> Result<Type, Error> {
         for stmt in block.body.iter_mut() {
             self.statement(stmt)?;
         }
@@ -430,7 +442,7 @@ impl<'a> TypeChecker<'a> {
         })
     }
 
-    fn when_expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn when_expr(&mut self, ast: &mut AstNode) -> Result<Type, Error> {
         if let Some(t) = ast.type_info {
             return Ok(t);
         }
@@ -474,7 +486,7 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn if_expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn if_expr(&mut self, ast: &mut AstNode) -> Result<Type, Error> {
         if let Some(t) = ast.type_info {
             return Ok(t);
         }
@@ -514,7 +526,14 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn expr(&self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn var_ref(&mut self, id: NodeId) -> Result<Type, Error> {
+        let var_usage_ref = self.resolution.get(&id).unwrap();
+        let t = *(self.types.get(&var_usage_ref.node_id_ref).unwrap());
+        self.types.insert(id, t);
+        Ok(t)
+    }
+
+    fn expr(&mut self, ast: &mut AstNode) -> Result<Type, Error> {
         match ast {
             AstNode {
                 kind: AstNodeExpr::Literal(..),
@@ -541,9 +560,10 @@ impl<'a> TypeChecker<'a> {
                 ..
             } => self.when_expr(ast),
             AstNode {
-                kind: AstNodeExpr::VarRef(identifier),
+                kind: AstNodeExpr::VarRef(_),
+                id,
                 ..
-            } => unimplemented!(),
+            } => self.var_ref(*id),
         }
     }
 

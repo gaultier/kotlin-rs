@@ -35,8 +35,8 @@ type Scopes<'a> = Vec<Scope<'a>>;
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct VarUsageRef {
-    scope_depth: usize,
-    node_id_ref: NodeId,
+    pub(crate) scope_depth: usize,
+    pub(crate) node_id_ref: NodeId,
 }
 
 pub(crate) type Resolution = BTreeMap<NodeId, VarUsageRef>;
