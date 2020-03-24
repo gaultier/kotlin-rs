@@ -88,7 +88,6 @@ pub type NodeId = usize;
 pub struct AstNode {
     pub id: NodeId,
     pub kind: AstNodeExpr,
-    pub type_info: Option<Type>,
 }
 
 #[derive(Debug)]
@@ -341,7 +340,6 @@ impl Parser<'_> {
                 subject,
                 else_entry,
             },
-            type_info: None,
             id: self.next_id(),
         })
     }
@@ -407,7 +405,6 @@ impl Parser<'_> {
                 else_body,
                 else_body_tok,
             },
-            type_info: None,
             id: self.next_id(),
         })
     }
@@ -430,7 +427,6 @@ impl Parser<'_> {
                 // TODO: fill type info here right away
                 Ok(AstNode {
                     kind: AstNodeExpr::Literal(previous),
-                    type_info: None,
                     id: self.next_id(),
                 })
             }
@@ -441,7 +437,6 @@ impl Parser<'_> {
                 self.eat(TokenKind::RightParen)?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Grouping(Box::new(expr)),
-                    type_info: None,
                     id: self.next_id(),
                 })
             }
@@ -451,7 +446,6 @@ impl Parser<'_> {
                 self.advance()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::VarRef(previous.span),
-                    type_info: None,
                     id: self.next_id(),
                 })
             }
@@ -471,7 +465,6 @@ impl Parser<'_> {
                 let right = self.unary()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Unary(previous, Box::new(right)),
-                    type_info: None,
                     id: self.next_id(),
                 })
             }
@@ -489,7 +482,6 @@ impl Parser<'_> {
                 let right = self.multiplication()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
-                    type_info: None,
                     id: self.next_id(),
                 })
             }
@@ -507,7 +499,6 @@ impl Parser<'_> {
                 let right = self.addition()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
-                    type_info: None,
                     id: self.next_id(),
                 })
             }
@@ -525,7 +516,6 @@ impl Parser<'_> {
 
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
-                    type_info: None,
                     id: self.next_id(),
                 })
             }
@@ -546,7 +536,6 @@ impl Parser<'_> {
                 let right = self.comparison()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
-                    type_info: None,
                     id: self.next_id(),
                 })
             }
@@ -567,7 +556,6 @@ impl Parser<'_> {
                 let right = self.equality()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
-                    type_info: None,
                     id: self.next_id(),
                 })
             }
@@ -586,7 +574,6 @@ impl Parser<'_> {
                 let right = self.conjunction()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), tok, Box::new(right)),
-                    type_info: None,
                     id: self.next_id(),
                 })
             }
@@ -605,7 +592,6 @@ impl Parser<'_> {
                 let right = self.disjunction()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Binary(Box::new(left), tok, Box::new(right)),
-                    type_info: None,
                     id: self.next_id(),
                 })
             }

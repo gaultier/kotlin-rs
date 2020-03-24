@@ -76,15 +76,15 @@ impl<'a> TypeChecker<'a> {
             .body
             .last()
             .map(|stmt| match stmt {
-                AstNodeStmt::Expr(expr) => expr.type_info.unwrap_or(Type::Unit),
+                AstNodeStmt::Expr(expr) => *self.types.get(&expr.id).unwrap_or(&Type::Unit),
                 _ => Type::Unit,
             })
             .unwrap_or(Type::Unit))
     }
 
     fn unary(&mut self, ast: &mut AstNode) -> Result<Type, Error> {
-        if let Some(t) = ast.type_info {
-            return Ok(t);
+        if let Some(t) = self.types.get(&ast.id) {
+            return Ok(*t);
         }
 
         match ast {
@@ -97,6 +97,7 @@ impl<'a> TypeChecker<'a> {
                         },
                         right,
                     ),
+                id,
                 ..
             }
             | AstNode {
@@ -108,10 +109,11 @@ impl<'a> TypeChecker<'a> {
                         },
                         right,
                     ),
+                id,
                 ..
             } => {
                 let t = self.expr(right)?;
-                ast.type_info = Some(t);
+                self.types.insert(*id, t);
                 Ok(t)
             }
             AstNode {
@@ -125,10 +127,12 @@ impl<'a> TypeChecker<'a> {
                         },
                         right,
                     ),
+                id,
                 ..
             } => {
-                let t = self.expr(right)?;
-                ast.type_info = Some(self.coalesce_types(Type::Bool, t, tok)?);
+                let right_t = self.expr(right)?;
+                let t = self.coalesce_types(Type::Bool, right_t, tok)?;
+                self.types.insert(*id, t);
                 Ok(Type::Bool)
             }
             _ => unreachable!(),
@@ -136,8 +140,8 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn literal(&mut self, ast: &mut AstNode) -> Result<Type, Error> {
-        if let Some(t) = ast.type_info {
-            return Ok(t);
+        if let Some(t) = self.types.get(&ast.id) {
+            return Ok(*t);
         }
 
         let t = match ast {
@@ -148,10 +152,7 @@ impl<'a> TypeChecker<'a> {
                         ..
                     }),
                 ..
-            } => {
-                ast.type_info = Some(Type::Int);
-                Ok(Type::Int)
-            }
+            } => Type::Int,
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
@@ -159,10 +160,7 @@ impl<'a> TypeChecker<'a> {
                         ..
                     }),
                 ..
-            } => {
-                ast.type_info = Some(Type::UInt);
-                Ok(Type::UInt)
-            }
+            } => Type::UInt,
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
@@ -170,10 +168,7 @@ impl<'a> TypeChecker<'a> {
                         ..
                     }),
                 ..
-            } => {
-                ast.type_info = Some(Type::Long);
-                Ok(Type::Long)
-            }
+            } => Type::Long,
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
@@ -181,10 +176,7 @@ impl<'a> TypeChecker<'a> {
                         ..
                     }),
                 ..
-            } => {
-                ast.type_info = Some(Type::ULong);
-                Ok(Type::ULong)
-            }
+            } => Type::ULong,
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
@@ -192,10 +184,7 @@ impl<'a> TypeChecker<'a> {
                         ..
                     }),
                 ..
-            } => {
-                ast.type_info = Some(Type::Float);
-                Ok(Type::Float)
-            }
+            } => Type::Float,
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
@@ -203,10 +192,7 @@ impl<'a> TypeChecker<'a> {
                         ..
                     }),
                 ..
-            } => {
-                ast.type_info = Some(Type::Double);
-                Ok(Type::Double)
-            }
+            } => Type::Double,
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
@@ -214,10 +200,7 @@ impl<'a> TypeChecker<'a> {
                         ..
                     }),
                 ..
-            } => {
-                ast.type_info = Some(Type::Null);
-                Ok(Type::Null)
-            }
+            } => Type::Null,
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
@@ -225,10 +208,7 @@ impl<'a> TypeChecker<'a> {
                         ..
                     }),
                 ..
-            } => {
-                ast.type_info = Some(Type::Bool);
-                Ok(Type::Bool)
-            }
+            } => Type::Bool,
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
@@ -236,10 +216,7 @@ impl<'a> TypeChecker<'a> {
                         ..
                     }),
                 ..
-            } => {
-                ast.type_info = Some(Type::TString);
-                Ok(Type::TString)
-            }
+            } => Type::TString,
             AstNode {
                 kind:
                     AstNodeExpr::Literal(Token {
@@ -247,20 +224,17 @@ impl<'a> TypeChecker<'a> {
                         ..
                     }),
                 ..
-            } => {
-                ast.type_info = Some(Type::Char);
-                Ok(Type::Char)
-            }
+            } => Type::Char,
             _ => unreachable!(),
-        }?;
+        };
 
         self.types.insert(ast.id, t);
         Ok(t)
     }
 
     fn binary(&mut self, ast: &mut AstNode) -> Result<Type, Error> {
-        if let Some(t) = ast.type_info {
-            return Ok(t);
+        if let Some(t) = self.types.get(&ast.id) {
+            return Ok(*t);
         }
 
         match ast {
@@ -276,6 +250,7 @@ impl<'a> TypeChecker<'a> {
                         },
                         right,
                     ),
+                id,
                 ..
             }
             | AstNode {
@@ -290,6 +265,7 @@ impl<'a> TypeChecker<'a> {
                         },
                         right,
                     ),
+                id,
                 ..
             }
             | AstNode {
@@ -304,6 +280,7 @@ impl<'a> TypeChecker<'a> {
                         },
                         right,
                     ),
+                id,
                 ..
             }
             | AstNode {
@@ -318,6 +295,7 @@ impl<'a> TypeChecker<'a> {
                         },
                         right,
                     ),
+                id,
                 ..
             }
             | AstNode {
@@ -332,6 +310,7 @@ impl<'a> TypeChecker<'a> {
                         },
                         right,
                     ),
+                id,
                 ..
             } => {
                 let left_t = self.expr(left)?;
@@ -356,7 +335,7 @@ impl<'a> TypeChecker<'a> {
                     }
                 };
 
-                ast.type_info = Some(t);
+                self.types.insert(*id, t);
                 Ok(t)
             }
             AstNode {
@@ -371,6 +350,7 @@ impl<'a> TypeChecker<'a> {
                         },
                         right,
                     ),
+                id,
                 ..
             }
             | AstNode {
@@ -385,6 +365,7 @@ impl<'a> TypeChecker<'a> {
                         },
                         right,
                     ),
+                id,
                 ..
             }
             | AstNode {
@@ -399,6 +380,7 @@ impl<'a> TypeChecker<'a> {
                         },
                         right,
                     ),
+                id,
                 ..
             }
             | AstNode {
@@ -413,23 +395,27 @@ impl<'a> TypeChecker<'a> {
                         },
                         right,
                     ),
+                id,
                 ..
             } => {
                 let left_t = self.expr(left)?;
                 let right_t = self.expr(right)?;
 
                 self.coalesce_types(left_t, right_t, &tok)?;
-                ast.type_info = Some(Type::Bool);
-                Ok(Type::Bool)
+
+                let t = Type::Bool;
+                self.types.insert(*id, t);
+                Ok(t)
             }
             AstNode {
                 kind: AstNodeExpr::Binary(left, tok, right),
+                id,
                 ..
             } => {
                 let left_t = self.expr(left)?;
                 let right_t = self.expr(right)?;
                 let t = self.coalesce_types(left_t, right_t, &tok)?;
-                ast.type_info = Some(t);
+                self.types.insert(*id, t);
                 Ok(t)
             }
             _ => unreachable!(),
@@ -441,14 +427,16 @@ impl<'a> TypeChecker<'a> {
             self.statement(stmt)?;
         }
         Ok(match block.body.last() {
-            Some(AstNodeStmt::Expr(stmt_expr)) => stmt_expr.type_info.unwrap(),
+            Some(AstNodeStmt::Expr(stmt_expr)) => {
+                *self.types.get(&stmt_expr.id).unwrap_or(&Type::Unit)
+            }
             _ => Type::Unit,
         })
     }
 
     fn when_expr(&mut self, ast: &mut AstNode) -> Result<Type, Error> {
-        if let Some(t) = ast.type_info {
-            return Ok(t);
+        if let Some(t) = self.types.get(&ast.id) {
+            return Ok(*t);
         }
 
         match ast {
@@ -491,8 +479,8 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn if_expr(&mut self, ast: &mut AstNode) -> Result<Type, Error> {
-        if let Some(t) = ast.type_info {
-            return Ok(t);
+        if let Some(t) = self.types.get(&ast.id) {
+            return Ok(*t);
         }
 
         match ast {
@@ -505,6 +493,7 @@ impl<'a> TypeChecker<'a> {
                         else_body,
                         else_body_tok,
                     },
+                id,
                 ..
             } => {
                 let t = self.expr(cond)?;
@@ -523,7 +512,7 @@ impl<'a> TypeChecker<'a> {
                 }
 
                 let t = self.coalesce_types(if_body_t, else_body_t, &else_body_tok)?;
-                ast.type_info = Some(t);
+                self.types.insert(*id, t);
                 Ok(t)
             }
             _ => unreachable!(),
