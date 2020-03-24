@@ -1,6 +1,7 @@
 use crate::error::*;
 use crate::lex::Lexer;
 use crate::parse::*;
+use log::debug;
 use std::collections::BTreeMap;
 
 pub(crate) struct Resolver<'a> {
@@ -31,7 +32,7 @@ pub(crate) struct VarUsageRef {
 
 pub(crate) type Resolution = BTreeMap<NodeId, VarUsageRef>;
 
-impl Resolver<'_> {
+impl<'a> Resolver<'a> {
     pub(crate) fn new(lexer: &Lexer) -> Resolver {
         Resolver {
             lexer,
@@ -87,7 +88,10 @@ impl Resolver<'_> {
         Ok(())
     }
 
-    fn var_decl(&mut self, identifier: &str, value: &AstNode) -> Result<(), Error> {
+    fn var_decl(&mut self, identifier: &'a str) -> Result<(), Error> {
+        let scope = self.scopes.last_mut().unwrap();
+        scope.var_statuses.insert(identifier, VarStatus::Declared);
+        debug!("new var {} in scope {}", identifier, scope.block_id);
         Ok(())
     }
 
@@ -101,10 +105,8 @@ impl Resolver<'_> {
                 self.statements(body)?;
             }
             AstNodeStmt::VarDeclaration { identifier, value } => {
-                self.var_decl(
-                    &self.lexer.src[identifier.span.start..identifier.span.end],
-                    value,
-                )?;
+                self.expr(value)?;
+                self.var_decl(&self.lexer.src[identifier.span.start..identifier.span.end])?;
             }
         };
         Ok(())
