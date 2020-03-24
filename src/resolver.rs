@@ -18,14 +18,49 @@ impl Resolver<'_> {
         }
     }
 
+    fn when_entry(&mut self, entry: &WhenEntry) -> Result<(), Error> {
+        self.expr(&entry.cond)?;
+        self.statements(&entry.body)?;
+        Ok(())
+    }
+
     fn expr(&mut self, expr: &AstNode) -> Result<(), Error> {
         match &expr.kind {
             AstNodeExpr::Literal(_) => (),
-            AstNodeExpr::Unary(_, expr) => {
+            AstNodeExpr::Grouping(expr) | AstNodeExpr::Unary(_, expr) => {
                 self.expr(&*expr)?;
             }
-            AstNodeExpr::IfExpr { .. } | AstNodeExpr::WhenExpr { .. } => unimplemented!(),
-            _ => unreachable!(),
+            AstNodeExpr::Binary(left, _, right) => {
+                self.expr(&*left)?;
+                self.expr(&*right)?;
+            }
+            AstNodeExpr::IfExpr {
+                cond,
+                if_body,
+                else_body,
+                ..
+            } => {
+                self.expr(cond)?;
+                self.statements(if_body)?;
+                self.statements(else_body)?;
+            }
+            AstNodeExpr::WhenExpr {
+                subject,
+                entries,
+                else_entry,
+            } => {
+                if let Some(subject) = subject {
+                    self.expr(subject)?;
+                }
+
+                for entry in entries {
+                    self.when_entry(entry)?;
+                }
+
+                if let Some([else_entry]) = else_entry.as_ref().map(|v| v.as_slice()) {
+                    self.statement(else_entry)?;
+                }
+            }
         };
         Ok(())
     }
@@ -35,7 +70,6 @@ impl Resolver<'_> {
             AstNodeStmt::Expr(expr) => self.expr(expr),
             AstNodeStmt::While { .. } | AstNodeStmt::DoWhile { .. } => unimplemented!(),
             AstNodeStmt::VarDeclaration { .. } => unimplemented!(),
-            _ => unreachable!(),
         }
     }
 
