@@ -55,7 +55,7 @@ fn when_with_subject() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(case 5 ((1) 2) ((2) 4) ((3) 6) ((4) 8) ((5) 10) :else 42)\n"
+        &"(case 5 1 2 2 4 3 6 4 8 5 10 :else 42)\n"
     );
 }
 
