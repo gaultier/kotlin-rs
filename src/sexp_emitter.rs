@@ -99,7 +99,7 @@ impl SexpEmitter<'_> {
                 )
                 .unwrap();
                 self.expr(value, w)?;
-                write!(w, ")").unwrap();
+                writeln!(w, ")").unwrap();
                 Ok(())
             }
             _ => unreachable!(),

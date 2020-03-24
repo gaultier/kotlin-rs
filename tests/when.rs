@@ -81,7 +81,7 @@ fn when_with_val_subject() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(case (def a 5) 1 2 2 4 3 6 4 8 5 10 :else (* a 2))\n"
+        &"(case (def a 5)\n 1 2 2 4 3 6 4 8 5 10 :else (* a 2))\n"
     );
 }
 

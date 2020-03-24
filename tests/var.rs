@@ -7,7 +7,10 @@ fn simple_var() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(def a 1)\n");
+    assert_eq!(
+        std::str::from_utf8(&out).as_ref().unwrap(),
+        &"(def a 1)\n\n"
+    );
 }
 
 #[test]
@@ -18,7 +21,7 @@ fn var_with_math_expr() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(def a (* 5 10))\n"
+        &"(def a (* 5 10))\n\n"
     );
 }
 
@@ -44,7 +47,7 @@ fn ref_var() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(def a 1)(def b (* a 2))(if (< b 4) (do ) (do ))\n"
+        &"(def a 1)\n(def b (* a 2))\n(if (< b 4) (do ) (do ))\n"
     )
 }
 
@@ -54,7 +57,10 @@ fn simple_val() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(def a 1)\n");
+    assert_eq!(
+        std::str::from_utf8(&out).as_ref().unwrap(),
+        &"(def a 1)\n\n"
+    );
 }
 
 #[test]
@@ -65,7 +71,7 @@ fn val_with_math_expr() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(def a (* 5 10))\n"
+        &"(def a (* 5 10))\n\n"
     );
 }
 
@@ -91,7 +97,7 @@ fn ref_val() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(def a 1)(def b (* a 2))(if (< b 4) (do ) (do ))\n"
+        &"(def a 1)\n(def b (* a 2))\n(if (< b 4) (do ) (do ))\n"
     )
 }
 
@@ -103,7 +109,7 @@ fn simple_var_assign() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(def a 1)(set! a 4)\n\n"
+        &"(def a 1)\n(set! a 4)\n\n"
     );
 }
 
@@ -115,6 +121,6 @@ fn var_assign_with_math_expr() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(def a (* 5 10))(set! a (* a 2))\n\n"
+        &"(def a (* 5 10))\n(set! a (* a 2))\n\n"
     );
 }
