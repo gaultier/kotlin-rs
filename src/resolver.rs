@@ -65,40 +65,39 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn find_var(&self, depth: usize, identifier: &str) -> Option<(&Scope, &Var)> {
+    fn find_var(&self, identifier: &str) -> Option<(&Scope, &Var, usize)> {
+        let depth = self
+            .scopes
+            .iter()
+            .rev()
+            .position(|scope| scope.var_statuses.contains_key(identifier))?;
         let scope = self.scopes.iter().rev().nth(depth)?;
         let var = scope.var_statuses.get(identifier)?;
-        Some((scope, var))
+        Some((scope, var, depth))
     }
 
     fn var_ref(&mut self, span: &Span, id: NodeId) -> Result<(), Error> {
         let identifier = &self.lexer.src[span.start..span.end];
-        if let Some(depth) = self
-            .scopes
-            .iter()
-            .rev()
-            .position(|scope| scope.var_statuses.contains_key(identifier))
-        {
-            let (scope, var) = self.find_var(depth, identifier).unwrap();
-            let var_usage_ref = VarUsageRef {
-                scope_depth: depth,
-                node_ref_id: var.id,
-                node_ref_flags: var.flags,
-                block_id_ref: scope.block_id,
-            };
-
-            debug!(
-                "var_ref: identifier={} id={} depth={} scope_id={}",
-                identifier, id, depth, scope.block_id
-            );
-            self.resolution.insert(id, var_usage_ref);
-            Ok(())
-        } else {
-            Err(Error::new(
+        let (scope, var, depth) = self.find_var(identifier).ok_or_else(|| {
+            Error::new(
                 ErrorKind::UnknownIdentifier(identifier.to_string()),
                 self.lexer.span_location(span),
-            ))
-        }
+            )
+        })?;
+
+        let var_usage_ref = VarUsageRef {
+            scope_depth: depth,
+            node_ref_id: var.id,
+            node_ref_flags: var.flags,
+            block_id_ref: scope.block_id,
+        };
+
+        debug!(
+            "var_ref: identifier={} id={} depth={} scope_id={}",
+            identifier, id, depth, scope.block_id
+        );
+        self.resolution.insert(id, var_usage_ref);
+        Ok(())
     }
 
     fn expr(&mut self, expr: &AstNode) -> Result<(), Error> {
@@ -192,7 +191,22 @@ impl<'a> Resolver<'a> {
     fn assign(&mut self, target: &AstNode, value: &AstNode) -> Result<(), Error> {
         self.expr(target)?;
         self.expr(value)?;
-        debug!("assign: target={:?} value={:?}", target, value);
+
+        let identifier = match target {
+            AstNode {
+                kind: AstNodeExpr::VarRef(span),
+                ..
+            } => &self.lexer.src[span.start..span.end],
+            _ => unreachable!(),
+        };
+
+        let (_, var, _) = self.find_var(identifier).unwrap();
+        let flags = var.flags;
+
+        debug!(
+            "assign: identifier={} target={:?} value={:?} flags={}",
+            identifier, target, value, flags
+        );
         Ok(())
     }
 
