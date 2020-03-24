@@ -1,14 +1,16 @@
 use crate::error::*;
 use crate::lex::{Lexer, Span, Token, TokenKind};
 use crate::parse::*;
+use crate::resolver::Resolution;
 
 pub(crate) struct TypeChecker<'a> {
     lexer: &'a Lexer,
+    resolution: &'a Resolution,
 }
 
-impl TypeChecker<'_> {
-    pub fn new(lexer: &Lexer) -> TypeChecker {
-        TypeChecker { lexer }
+impl<'a> TypeChecker<'a> {
+    pub fn new(lexer: &'a Lexer, resolution: &'a Resolution) -> TypeChecker<'a> {
+        TypeChecker { lexer, resolution }
     }
 
     fn eq(&self, left: Type, right: Type, span: &Span) -> Result<(), Error> {

@@ -12,9 +12,9 @@ pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
     let mut stmts = parser.parse()?;
 
     let mut resolver = Resolver::new(&lexer);
-    let _resolution = resolver.statements(&stmts)?;
+    let resolution = resolver.statements(&stmts)?;
 
-    let type_checker = TypeChecker::new(&lexer);
+    let type_checker = TypeChecker::new(&lexer, &resolution);
     type_checker.statements(&mut stmts)?;
 
     let emitter = SexpEmitter::new(&lexer);
