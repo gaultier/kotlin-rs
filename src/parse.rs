@@ -82,6 +82,10 @@ pub enum AstNodeStmt {
         id: NodeId,
         flags: u8,
     },
+    Assign {
+        target: AstNode,
+        value: AstNode,
+    },
 }
 
 pub type Statements = Vec<AstNodeStmt>;
@@ -92,6 +96,18 @@ pub type NodeId = usize;
 pub struct AstNode {
     pub id: NodeId,
     pub kind: AstNodeExpr,
+}
+
+impl AstNode {
+    fn is_assignable(&self) -> bool {
+        match self.kind {
+            AstNodeExpr::Literal(Token {
+                kind: TokenKind::Identifier,
+                ..
+            }) => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -178,10 +194,13 @@ impl Parser<'_> {
         }
     }
 
-    fn eat_opt(&mut self, kind: TokenKind) -> Result<(), Error> {
+    fn eat_opt(&mut self, kind: TokenKind) -> Result<bool, Error> {
         match self.previous {
-            Some(Token { kind: k, .. }) if k == kind => self.eat(kind).map(|_| ()),
-            _ => Ok(()),
+            Some(Token { kind: k, .. }) if k == kind => {
+                self.eat(kind).map(|_| ())?;
+                Ok(true)
+            }
+            _ => Ok(false),
         }
     }
 
@@ -674,7 +693,21 @@ impl Parser<'_> {
             TokenKind::KeywordWhile => self.while_stmt(),
             TokenKind::KeywordDo => self.do_while_stmt(),
             TokenKind::KeywordVal | TokenKind::KeywordVar => self.var_def(),
-            _ => Ok(AstNodeStmt::Expr(self.expression()?)),
+            _ => {
+                let expr = self.expression()?;
+                debug!("expr={:?}", &expr);
+                if expr.is_assignable() && self.eat_opt(TokenKind::Equal)? {
+                    self.skip_newlines()?;
+                    debug!("assignement");
+                    let value = self.expression()?;
+                    Ok(AstNodeStmt::Assign {
+                        target: expr,
+                        value,
+                    })
+                } else {
+                    Ok(AstNodeStmt::Expr(self.expression()?))
+                }
+            }
         }
     }
 

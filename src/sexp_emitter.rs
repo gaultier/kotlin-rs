@@ -57,6 +57,7 @@ impl SexpEmitter<'_> {
             AstNodeStmt::VarDefinition { .. } => {
                 self.var_def(stmt, w)?;
             }
+            AstNodeStmt::Assign { .. } => unimplemented!(),
         };
         Ok(())
     }

@@ -64,6 +64,7 @@ impl<'a> TypeChecker<'a> {
                 body,
             } => self.while_stmt(cond, body, &cond_start_tok),
             AstNodeStmt::VarDefinition { value, id, .. } => self.var_def(value, *id),
+            AstNodeStmt::Assign { .. } => unimplemented!(),
         }
     }
 
