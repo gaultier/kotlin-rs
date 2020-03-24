@@ -60,6 +60,9 @@ pub struct Block {
     pub body: Statements,
 }
 
+const VAR_DEFINITION_FLAG_VAR: u8 = 0;
+const VAR_DEFINITION_FLAG_VAL: u8 = 1;
+
 #[derive(Debug)]
 pub enum AstNodeStmt {
     Expr(AstNode),
@@ -77,6 +80,7 @@ pub enum AstNodeStmt {
         identifier: Token,
         value: AstNode,
         id: NodeId,
+        flags: u8,
     },
 }
 
@@ -604,7 +608,18 @@ impl Parser<'_> {
     }
 
     fn var_def(&mut self) -> Result<AstNodeStmt, Error> {
-        self.eat(TokenKind::KeywordVar)?;
+        let flags = match self.previous.unwrap().kind {
+            TokenKind::KeywordVar => {
+                self.advance()?;
+                VAR_DEFINITION_FLAG_VAR
+            }
+            TokenKind::KeywordVal => {
+                self.advance()?;
+                VAR_DEFINITION_FLAG_VAL
+            }
+            _ => unreachable!(),
+        };
+
         self.skip_newlines()?;
         let identifier = self.eat(TokenKind::Identifier)?;
         self.skip_newlines()?;
@@ -619,6 +634,7 @@ impl Parser<'_> {
             identifier,
             value,
             id: self.next_id(),
+            flags,
         })
     }
 

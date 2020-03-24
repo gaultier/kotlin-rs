@@ -179,6 +179,7 @@ impl<'a> Resolver<'a> {
                 identifier,
                 value,
                 id,
+                ..
             } => {
                 self.expr(value)?;
                 let identifier = &self.lexer.src[identifier.span.start..identifier.span.end];
