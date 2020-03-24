@@ -642,7 +642,7 @@ impl Parser<'_> {
         match self.previous.unwrap().kind {
             TokenKind::KeywordWhile => self.while_stmt(),
             TokenKind::KeywordDo => self.do_while_stmt(),
-            TokenKind::KeywordVar => self.var_def(),
+            TokenKind::KeywordVal | TokenKind::KeywordVar => self.var_def(),
             _ => Ok(AstNodeStmt::Expr(self.expression()?)),
         }
     }
