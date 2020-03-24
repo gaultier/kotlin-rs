@@ -34,10 +34,14 @@ pub(crate) type Resolution = BTreeMap<NodeId, VarUsageRef>;
 
 impl<'a> Resolver<'a> {
     pub(crate) fn new(lexer: &Lexer) -> Resolver {
+        let global_scope = Scope {
+            var_statuses: BTreeMap::new(),
+            block_id: 0,
+        };
         Resolver {
             lexer,
             resolution: Resolution::new(),
-            scopes: Scopes::new(),
+            scopes: vec![global_scope],
         }
     }
 
