@@ -67,10 +67,16 @@ impl Resolver<'_> {
 
     fn statement(&mut self, statement: &AstNodeStmt) -> Result<(), Error> {
         match statement {
-            AstNodeStmt::Expr(expr) => self.expr(expr),
-            AstNodeStmt::While { .. } | AstNodeStmt::DoWhile { .. } => unimplemented!(),
+            AstNodeStmt::Expr(expr) => {
+                self.expr(expr)?;
+            }
+            AstNodeStmt::While { cond, body, .. } | AstNodeStmt::DoWhile { cond, body, .. } => {
+                self.expr(cond)?;
+                self.statements(body)?;
+            }
             AstNodeStmt::VarDeclaration { .. } => unimplemented!(),
-        }
+        };
+        Ok(())
     }
 
     pub(crate) fn statements(&mut self, statements: &BlockSlice) -> Result<Resolution, Error> {
