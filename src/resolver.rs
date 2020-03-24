@@ -166,6 +166,13 @@ impl<'a> Resolver<'a> {
         self.scopes.pop();
     }
 
+    fn assign(&mut self, target: &AstNode, value: &AstNode) -> Result<(), Error> {
+        self.expr(target)?;
+        self.expr(value)?;
+        debug!("assign: target={:?} value={:?}", target, value);
+        Ok(())
+    }
+
     fn statement(&mut self, statement: &AstNodeStmt) -> Result<(), Error> {
         match statement {
             AstNodeStmt::Expr(expr) => {
@@ -186,7 +193,9 @@ impl<'a> Resolver<'a> {
                 self.var_decl(identifier, *id)?;
                 self.var_def(identifier, *id)?;
             }
-            AstNodeStmt::Assign { .. } => unimplemented!(),
+            AstNodeStmt::Assign { target, value } => {
+                self.assign(target, value)?;
+            }
         };
         Ok(())
     }

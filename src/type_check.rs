@@ -33,8 +33,8 @@ impl<'a> TypeChecker<'a> {
 
     fn while_stmt(
         &mut self,
-        cond: &mut AstNode,
-        block: &mut Block,
+        cond: &AstNode,
+        block: &Block,
         cond_start_tok: &Token,
     ) -> Result<Type, Error> {
         let cond_t = self.expr(cond)?;
@@ -43,14 +43,20 @@ impl<'a> TypeChecker<'a> {
         Ok(Type::Unit)
     }
 
-    fn var_def(&mut self, value: &mut AstNode, id: NodeId) -> Result<Type, Error> {
+    fn var_def(&mut self, value: &AstNode, id: NodeId) -> Result<Type, Error> {
         let t = self.expr(value)?;
         self.types.insert(id, t);
 
         Ok(t)
     }
 
-    fn statement(&mut self, statement: &mut AstNodeStmt) -> Result<Type, Error> {
+    fn assign(&mut self, target: &AstNode, value: &AstNode) -> Result<Type, Error> {
+        self.expr(target)?;
+        self.expr(value)?;
+        Ok(Type::Unit)
+    }
+
+    fn statement(&mut self, statement: &AstNodeStmt) -> Result<Type, Error> {
         match statement {
             AstNodeStmt::Expr(expr) => self.expr(expr),
             AstNodeStmt::DoWhile {
@@ -64,12 +70,12 @@ impl<'a> TypeChecker<'a> {
                 body,
             } => self.while_stmt(cond, body, &cond_start_tok),
             AstNodeStmt::VarDefinition { value, id, .. } => self.var_def(value, *id),
-            AstNodeStmt::Assign { .. } => unimplemented!(),
+            AstNodeStmt::Assign { target, value } => self.assign(target, value),
         }
     }
 
-    pub fn statements(&mut self, statements: &mut Block) -> Result<Type, Error> {
-        for stmt in statements.body.iter_mut() {
+    pub fn statements(&mut self, statements: &Block) -> Result<Type, Error> {
+        for stmt in statements.body.iter() {
             self.statement(stmt)?;
         }
 
@@ -83,7 +89,7 @@ impl<'a> TypeChecker<'a> {
             .unwrap_or(Type::Unit))
     }
 
-    fn unary(&mut self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn unary(&mut self, ast: &AstNode) -> Result<Type, Error> {
         if let Some(t) = self.types.get(&ast.id) {
             return Ok(*t);
         }
@@ -140,7 +146,7 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn literal(&mut self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn literal(&mut self, ast: &AstNode) -> Result<Type, Error> {
         if let Some(t) = self.types.get(&ast.id) {
             return Ok(*t);
         }
@@ -233,7 +239,7 @@ impl<'a> TypeChecker<'a> {
         Ok(t)
     }
 
-    fn binary(&mut self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn binary(&mut self, ast: &AstNode) -> Result<Type, Error> {
         if let Some(t) = self.types.get(&ast.id) {
             return Ok(*t);
         }
@@ -423,8 +429,8 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn block(&mut self, block: &mut Block) -> Result<Type, Error> {
-        for stmt in block.body.iter_mut() {
+    fn block(&mut self, block: &Block) -> Result<Type, Error> {
+        for stmt in block.body.iter() {
             self.statement(stmt)?;
         }
         Ok(match block.body.last() {
@@ -435,7 +441,7 @@ impl<'a> TypeChecker<'a> {
         })
     }
 
-    fn when_expr(&mut self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn when_expr(&mut self, ast: &AstNode) -> Result<Type, Error> {
         if let Some(t) = self.types.get(&ast.id) {
             return Ok(*t);
         }
@@ -451,11 +457,11 @@ impl<'a> TypeChecker<'a> {
                 ..
             } => {
                 let subject_t = self.statement(subject)?;
-                for entry in entries.iter_mut() {
-                    let cond_t = self.expr(&mut entry.cond)?;
+                for entry in entries.iter() {
+                    let cond_t = self.expr(&entry.cond)?;
                     self.eq(subject_t, cond_t, &entry.cond_start_tok.span)?;
 
-                    self.statements(&mut entry.body)?;
+                    self.statements(&entry.body)?;
                 }
                 Ok(Type::Unit)
             }
@@ -468,10 +474,10 @@ impl<'a> TypeChecker<'a> {
                     },
                 ..
             } => {
-                for entry in entries.iter_mut() {
-                    let cond_t = self.expr(&mut entry.cond)?;
+                for entry in entries.iter() {
+                    let cond_t = self.expr(&entry.cond)?;
                     self.eq(cond_t, Type::Bool, &entry.cond_start_tok.span)?;
-                    self.statements(&mut entry.body)?;
+                    self.statements(&entry.body)?;
                 }
                 Ok(Type::Unit)
             }
@@ -479,7 +485,7 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn if_expr(&mut self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn if_expr(&mut self, ast: &AstNode) -> Result<Type, Error> {
         if let Some(t) = self.types.get(&ast.id) {
             return Ok(*t);
         }
@@ -528,7 +534,7 @@ impl<'a> TypeChecker<'a> {
         Ok(t)
     }
 
-    fn expr(&mut self, ast: &mut AstNode) -> Result<Type, Error> {
+    fn expr(&mut self, ast: &AstNode) -> Result<Type, Error> {
         match ast {
             AstNode {
                 kind: AstNodeExpr::Literal(..),
@@ -545,7 +551,7 @@ impl<'a> TypeChecker<'a> {
             AstNode {
                 kind: AstNodeExpr::Grouping(expr),
                 ..
-            } => self.expr(&mut (**expr)),
+            } => self.expr(&(**expr)),
             AstNode {
                 kind: AstNodeExpr::IfExpr { .. },
                 ..
