@@ -16,9 +16,16 @@ enum VarStatus {
     Defined,
 }
 
+#[derive(Debug, Copy, Clone)]
+struct Var {
+    id: NodeId,
+    status: VarStatus,
+    flags: u16,
+}
+
 #[derive(Debug, Clone)]
 struct Scope<'a> {
-    var_statuses: BTreeMap<&'a str, (NodeId, VarStatus)>,
+    var_statuses: BTreeMap<&'a str, Var>,
     block_id: NodeId,
 }
 
@@ -37,6 +44,7 @@ type Scopes<'a> = Vec<Scope<'a>>;
 pub(crate) struct VarUsageRef {
     pub(crate) scope_depth: usize,
     pub(crate) node_id_ref: NodeId,
+    pub(crate) node_ref_flags: u16,
     pub(crate) block_id_ref: NodeId,
 }
 
@@ -71,7 +79,8 @@ impl<'a> Resolver<'a> {
                 id,
                 VarUsageRef {
                     scope_depth: depth,
-                    node_id_ref: var.0,
+                    node_id_ref: var.id,
+                    node_ref_flags: var.flags,
                     block_id_ref: scope.block_id,
                 },
             );
@@ -134,9 +143,14 @@ impl<'a> Resolver<'a> {
 
     fn var_decl(&mut self, identifier: &'a str, id: NodeId) -> Result<(), Error> {
         let scope = self.scopes.last_mut().unwrap();
-        scope
-            .var_statuses
-            .insert(identifier, (id, VarStatus::Declared));
+        scope.var_statuses.insert(
+            identifier,
+            Var {
+                id,
+                status: VarStatus::Declared,
+                flags: 0,
+            },
+        );
         debug!(
             "var declaration: identifier=`{}` scope_id={} id={}",
             identifier, scope.block_id, id
@@ -146,9 +160,14 @@ impl<'a> Resolver<'a> {
 
     fn var_def(&mut self, identifier: &'a str, id: NodeId) -> Result<(), Error> {
         let scope = self.scopes.last_mut().unwrap();
-        scope
-            .var_statuses
-            .insert(identifier, (id, VarStatus::Defined));
+        scope.var_statuses.insert(
+            identifier,
+            Var {
+                id,
+                status: VarStatus::Defined,
+                flags: 0,
+            },
+        );
         debug!(
             "var definition: identifier=`{}` scope={}",
             identifier, scope.block_id
