@@ -84,3 +84,19 @@ fn when_with_val_subject() {
         &"(case (def a 5) 1 2 2 4 3 6 4 8 5 10 :else 42)\n"
     );
 }
+
+#[test]
+fn when_with_val_subject_type_err() -> Result<(), String> {
+    let src = String::from(
+        "when (\nval \n\na \n\n =\n\n 5) {1 -> 2; 2->4; 'a'->6; 4->8; 5->10; else -> 42\n}\n",
+    );
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::IncompatibleTypes(Type::Int, Type::Char),
+            ..
+        }) => Ok(()),
+        other => Err(format!("Should be a type error: {:?}", other)),
+    }
+}

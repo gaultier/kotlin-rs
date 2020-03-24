@@ -327,6 +327,7 @@ impl Parser<'_> {
                             let identifier = self.eat(TokenKind::Identifier)?;
                             self.skip_newlines()?;
                             self.eat(TokenKind::Equal)?;
+                            self.skip_newlines()?;
                             break Some(identifier);
                         }
                         _ => {
