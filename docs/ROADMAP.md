@@ -44,7 +44,7 @@
 - [ ] As expression
 - [x] While
 - [x] Do while
-- [ ] Val declaration e.g `val a = 1`
+- [x] Val declaration e.g `val a = 1`
 - [x] Var declaration e.g `var a = 1`
 - [ ] When with subject with binding e.g `when (val x = 1) {}`
 - [ ] Do while with binding e.g `do {val a = 1} while (a < 10)`

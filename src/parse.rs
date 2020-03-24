@@ -315,7 +315,26 @@ impl Parser<'_> {
                 ..
             }) => {
                 self.eat(TokenKind::LeftParen)?;
-                // TODO: val
+
+                let _var = loop {
+                    match self.previous.unwrap().kind {
+                        TokenKind::Newline => {
+                            self.advance()?;
+                        }
+                        TokenKind::KeywordVal => {
+                            self.advance()?;
+                            self.skip_newlines()?;
+                            let identifier = self.eat(TokenKind::Identifier)?;
+                            self.skip_newlines()?;
+                            self.eat(TokenKind::Equal)?;
+                            break Some(identifier);
+                        }
+                        _ => {
+                            break None;
+                        }
+                    }
+                };
+
                 let subject = self.expression()?;
                 self.eat(TokenKind::RightParen)?;
                 Ok(Some(Box::new(subject)))
