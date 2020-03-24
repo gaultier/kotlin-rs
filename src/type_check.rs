@@ -25,11 +25,11 @@ impl TypeChecker<'_> {
     fn while_stmt(
         &self,
         cond: &mut AstNode,
-        body: &mut [AstNodeStmt],
+        block: &mut Block,
         cond_start_tok: &Token,
     ) -> Result<Type, Error> {
         self.eq(self.expr(cond)?, Type::Bool, &cond_start_tok.span)?;
-        self.statements(body)?;
+        self.statements(block)?;
         Ok(Type::Unit)
     }
 
@@ -54,12 +54,13 @@ impl TypeChecker<'_> {
         }
     }
 
-    pub fn statements(&self, statements: &mut [AstNodeStmt]) -> Result<Type, Error> {
-        for stmt in statements.iter_mut() {
+    pub fn statements(&self, statements: &mut Block) -> Result<Type, Error> {
+        for stmt in statements.body.iter_mut() {
             self.statement(stmt)?;
         }
 
         Ok(statements
+            .body
             .last()
             .map(|stmt| match stmt {
                 AstNodeStmt::Expr(expr) => expr.type_info.unwrap_or(Type::Unit),
@@ -417,11 +418,11 @@ impl TypeChecker<'_> {
         }
     }
 
-    fn block(&self, stmts: &mut BlockSlice) -> Result<Type, Error> {
-        for stmt in stmts.iter_mut() {
+    fn block(&self, block: &mut Block) -> Result<Type, Error> {
+        for stmt in block.body.iter_mut() {
             self.statement(stmt)?;
         }
-        Ok(match stmts.last() {
+        Ok(match block.body.last() {
             Some(AstNodeStmt::Expr(stmt_expr)) => stmt_expr.type_info.unwrap(),
             _ => Type::Unit,
         })

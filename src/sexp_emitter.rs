@@ -63,11 +63,11 @@ impl SexpEmitter<'_> {
 
     pub fn statements<W: std::io::Write>(
         &self,
-        statements: &BlockSlice,
+        statements: &Block,
         w: &mut W,
     ) -> Result<(), Error> {
-        for stmt in statements {
-            self.statement(stmt, w)?;
+        for stmt in &statements.body {
+            self.statement(&stmt, w)?;
         }
         writeln!(w).unwrap();
         Ok(())
@@ -266,13 +266,13 @@ impl SexpEmitter<'_> {
         }
     }
 
-    fn block<W: std::io::Write>(&self, ast: &BlockSlice, w: &mut W) -> Result<(), Error> {
-        if ast.len() != 1 {
+    fn block<W: std::io::Write>(&self, block: &Block, w: &mut W) -> Result<(), Error> {
+        if block.body.len() != 1 {
             write!(w, "(do ").unwrap();
         }
 
         // Akin to ast.map(...).join(" ")
-        if let Some((last, rest)) = ast.split_last() {
+        if let Some((last, rest)) = block.body.split_last() {
             for stmt in rest {
                 self.statement(stmt, w)?;
                 write!(w, " ").unwrap();
@@ -280,7 +280,7 @@ impl SexpEmitter<'_> {
             self.statement(last, w)?;
         }
 
-        if ast.len() != 1 {
+        if block.body.len() != 1 {
             write!(w, ")").unwrap();
         }
         Ok(())

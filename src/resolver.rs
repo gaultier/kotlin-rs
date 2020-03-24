@@ -79,7 +79,7 @@ impl Resolver<'_> {
                     self.when_entry(entry)?;
                 }
 
-                if let Some([else_entry]) = else_entry.as_ref().map(|v| v.as_slice()) {
+                if let Some([else_entry]) = else_entry.as_ref().map(|b| b.body.as_slice()) {
                     self.statement(else_entry)?;
                 }
             }
@@ -110,9 +110,9 @@ impl Resolver<'_> {
         Ok(())
     }
 
-    pub(crate) fn statements(&mut self, statements: &BlockSlice) -> Result<Resolution, Error> {
-        for stmt in statements {
-            self.statement(stmt)?;
+    pub(crate) fn statements(&mut self, statements: &Block) -> Result<Resolution, Error> {
+        for stmt in &statements.body {
+            self.statement(&stmt)?;
         }
         Ok(self.resolution.clone())
     }

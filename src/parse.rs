@@ -54,6 +54,12 @@ impl fmt::Display for Type {
 }
 
 #[derive(Debug)]
+pub struct Block {
+    pub id: NodeId,
+    pub body: Statements,
+}
+
+#[derive(Debug)]
 pub enum AstNodeStmt {
     Expr(AstNode),
     While {
@@ -72,8 +78,8 @@ pub enum AstNodeStmt {
     },
 }
 
-pub type Block = Vec<AstNodeStmt>;
-pub type BlockSlice = [AstNodeStmt];
+pub type Statements = Vec<AstNodeStmt>;
+pub type StatementsSlice = [AstNodeStmt];
 pub type NodeId = usize;
 
 #[derive(Debug)]
@@ -186,7 +192,10 @@ impl Parser<'_> {
     fn control_structure_body(&mut self) -> Result<Block, Error> {
         match self.previous {
             Some(Token { kind: k, .. }) if k == TokenKind::LeftCurlyBracket => self.block(),
-            _ => Ok(vec![self.statement()?]),
+            _ => Ok(Block {
+                id: self.next_id(),
+                body: vec![self.statement()?],
+            }),
         }
     }
 
@@ -199,7 +208,10 @@ impl Parser<'_> {
         self.skip_newlines()?;
 
         let body = match self.previous.unwrap().kind {
-            TokenKind::Semicolon => vec![],
+            TokenKind::Semicolon => Block {
+                id: self.next_id(),
+                body: vec![],
+            },
             _ => self.control_structure_body()?,
         };
 
@@ -215,7 +227,10 @@ impl Parser<'_> {
         self.skip_newlines()?;
 
         let body = match self.previous.unwrap().kind {
-            TokenKind::KeywordWhile => vec![],
+            TokenKind::KeywordWhile => Block {
+                id: self.next_id(),
+                body: vec![],
+            },
             _ => self.control_structure_body()?,
         };
         self.eat(TokenKind::KeywordWhile)?;
@@ -347,12 +362,18 @@ impl Parser<'_> {
                 ..
             }) => {
                 self.advance()?;
-                vec![]
+                Block {
+                    id: self.next_id(),
+                    body: vec![],
+                }
             }
             Some(Token {
                 kind: TokenKind::KeywordElse,
                 ..
-            }) => vec![],
+            }) => Block {
+                id: self.next_id(),
+                body: vec![],
+            },
             _ => self.control_structure_body()?,
         };
         self.skip_newlines()?;
@@ -368,7 +389,10 @@ impl Parser<'_> {
             | Some(Token {
                 kind: TokenKind::Semicolon,
                 ..
-            }) => vec![],
+            }) => Block {
+                id: self.next_id(),
+                body: vec![],
+            },
             _ => self.control_structure_body()?,
         };
 
@@ -608,7 +632,7 @@ impl Parser<'_> {
     }
 
     fn block_statements(&mut self) -> Result<Block, Error> {
-        let mut stmts = Vec::new();
+        let mut body = Vec::new();
 
         while let Some(tok) = &self.previous {
             match tok.kind {
@@ -619,15 +643,18 @@ impl Parser<'_> {
                     self.advance()?;
                 }
                 _ => {
-                    stmts.push(self.statement()?);
+                    body.push(self.statement()?);
                 }
             }
         }
-        Ok(stmts)
+        Ok(Block {
+            id: self.next_id(),
+            body,
+        })
     }
 
     fn statements(&mut self) -> Result<Block, Error> {
-        let mut stmts = Vec::new();
+        let mut body = Vec::new();
 
         while let Some(tok) = &self.previous {
             match tok.kind {
@@ -638,11 +665,14 @@ impl Parser<'_> {
                     self.advance()?;
                 }
                 _ => {
-                    stmts.push(self.statement()?);
+                    body.push(self.statement()?);
                 }
             }
         }
-        Ok(stmts)
+        Ok(Block {
+            id: self.next_id(),
+            body,
+        })
     }
 
     pub fn new(lexer: &mut Lexer) -> Parser {
