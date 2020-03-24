@@ -38,6 +38,20 @@ fn binary_op(kind: &TokenKind) -> &'static str {
     }
 }
 
+fn assign_op(kind: &TokenKind) -> &'static str {
+    match kind {
+        TokenKind::PlusEqual => "+=",
+        TokenKind::MinusEqual => "-=",
+        TokenKind::StarEqual => "*=",
+        TokenKind::SlashEqual => "/=",
+        TokenKind::PercentEqual => "%=",
+        _ => {
+            dbg!(kind);
+            unreachable!()
+        }
+    }
+}
+
 impl SexpEmitter<'_> {
     pub(crate) fn new(lexer: &Lexer) -> SexpEmitter {
         SexpEmitter { lexer }
@@ -47,13 +61,22 @@ impl SexpEmitter<'_> {
         &self,
         target: &AstNode,
         value: &AstNode,
+        op: &TokenKind,
         w: &mut W,
     ) -> Result<(), Error> {
-        write!(w, "(set! ").unwrap();
-        self.expr(target, w)?;
-        write!(w, " ").unwrap();
-        self.expr(value, w)?;
-        writeln!(w, ")").unwrap();
+        if *op == TokenKind::Equal {
+            write!(w, "(set! ").unwrap();
+            self.expr(target, w)?;
+            write!(w, " ").unwrap();
+            self.expr(value, w)?;
+            writeln!(w, ")").unwrap();
+        } else {
+            write!(w, "(set! ").unwrap();
+            self.expr(target, w)?;
+            write!(w, " ({} ", assign_op(op)).unwrap();
+            self.expr(value, w)?;
+            writeln!(w, "))").unwrap();
+        }
 
         Ok(())
     }
@@ -72,8 +95,10 @@ impl SexpEmitter<'_> {
             AstNodeStmt::VarDefinition { .. } => {
                 self.var_def(stmt, w)?;
             }
-            AstNodeStmt::Assign { target, value, .. } => {
-                self.assign(target, value, w)?;
+            AstNodeStmt::Assign {
+                target, value, op, ..
+            } => {
+                self.assign(target, value, op, w)?;
             }
         };
         Ok(())

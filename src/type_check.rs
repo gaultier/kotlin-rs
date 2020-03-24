@@ -75,6 +75,7 @@ impl<'a> TypeChecker<'a> {
                 target,
                 value,
                 span,
+                ..
             } => self.assign(target, value, span),
         }
     }

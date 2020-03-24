@@ -86,6 +86,7 @@ pub enum AstNodeStmt {
         target: AstNode,
         value: AstNode,
         span: Span,
+        op: TokenKind,
     },
 }
 
@@ -677,25 +678,33 @@ impl Parser<'_> {
         })
     }
 
+    fn assign(&mut self) -> Result<AstNodeStmt, Error> {
+        let span = self.current.unwrap().span;
+        let target = self.primary()?;
+
+        // Operator
+        let op = self.previous.unwrap().kind;
+        self.advance()?;
+
+        self.skip_newlines()?;
+        debug!("assignement");
+        let value = self.expression()?;
+        Ok(AstNodeStmt::Assign {
+            target,
+            value,
+            span,
+            op,
+        })
+    }
+
     fn statement(&mut self) -> Result<AstNodeStmt, Error> {
         match self.previous.unwrap().kind {
             TokenKind::KeywordWhile => self.while_stmt(),
             TokenKind::KeywordDo => self.do_while_stmt(),
             TokenKind::KeywordVal | TokenKind::KeywordVar => self.var_def(),
             _ => match (self.previous.unwrap().kind, self.current.unwrap().kind) {
-                (TokenKind::Identifier, TokenKind::Equal) => {
-                    let span = self.current.unwrap().span;
-                    let target = self.primary()?;
-                    self.eat(TokenKind::Equal)?;
-                    self.skip_newlines()?;
-                    debug!("assignement");
-                    let value = self.expression()?;
-                    Ok(AstNodeStmt::Assign {
-                        target,
-                        value,
-                        span,
-                    })
-                }
+                (TokenKind::Identifier, TokenKind::Equal)
+                | (TokenKind::Identifier, TokenKind::PlusEqual) => self.assign(),
                 _ => Ok(AstNodeStmt::Expr(self.expression()?)),
             },
         }
