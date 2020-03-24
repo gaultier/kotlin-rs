@@ -55,25 +55,21 @@ impl SexpEmitter<'_> {
                 self.do_while_stmt(stmt, w)?;
             }
             AstNodeStmt::VarDefinition { .. } => {
-                self.var_decl(stmt, w)?;
+                self.var_def(stmt, w)?;
             }
         };
         Ok(())
     }
 
-    pub fn statements<W: std::io::Write>(
-        &self,
-        statements: &Block,
-        w: &mut W,
-    ) -> Result<(), Error> {
-        for stmt in &statements.body {
+    pub fn statements<W: std::io::Write>(&self, block: &Block, w: &mut W) -> Result<(), Error> {
+        for stmt in &block.body {
             self.statement(&stmt, w)?;
         }
         writeln!(w).unwrap();
         Ok(())
     }
 
-    fn var_decl<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
+    fn var_def<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeStmt::VarDefinition { identifier, value } => {
                 write!(

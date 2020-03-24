@@ -607,7 +607,7 @@ impl Parser<'_> {
         self.disjunction()
     }
 
-    fn var_decl(&mut self) -> Result<AstNodeStmt, Error> {
+    fn var_def(&mut self) -> Result<AstNodeStmt, Error> {
         self.eat(TokenKind::KeywordVar)?;
         self.skip_newlines()?;
         let identifier = self.eat(TokenKind::Identifier)?;
@@ -626,7 +626,7 @@ impl Parser<'_> {
         match self.previous.unwrap().kind {
             TokenKind::KeywordWhile => self.while_stmt(),
             TokenKind::KeywordDo => self.do_while_stmt(),
-            TokenKind::KeywordVar => self.var_decl(),
+            TokenKind::KeywordVar => self.var_def(),
             _ => Ok(AstNodeStmt::Expr(self.expression()?)),
         }
     }
