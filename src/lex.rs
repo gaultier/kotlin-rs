@@ -77,7 +77,6 @@ pub enum TokenKind {
     EscapedDoubleQuote,
     EscapedBackSlash,
     EscapedDollar,
-    UnicodeLiteral(char),
     Int(i32),
     Long(i64),
     UInt(u32),

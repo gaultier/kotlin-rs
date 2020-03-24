@@ -1,5 +1,6 @@
 use crate::error::*;
 use crate::lex::*;
+use log::debug;
 use std::fmt;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -422,8 +423,7 @@ impl Parser<'_> {
             | TokenKind::Bool(_)
             | TokenKind::TString
             | TokenKind::Char(_)
-            | TokenKind::Null
-            | TokenKind::UnicodeLiteral(_) => {
+            | TokenKind::Null => {
                 self.advance()?;
                 self.skip_newlines()?;
                 // TODO: fill type info here right away
@@ -663,6 +663,7 @@ impl Parser<'_> {
         let mut body = Vec::new();
 
         while let Some(tok) = &self.previous {
+            debug!("statements: tok={:?}", tok);
             match tok.kind {
                 TokenKind::Eof => {
                     break;
