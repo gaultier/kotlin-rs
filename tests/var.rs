@@ -124,3 +124,17 @@ fn var_assign_with_math_expr() {
         &"(def a (* 5 10))\n(set! a (* a 2))\n\n"
     );
 }
+
+#[test]
+fn val_reassign() -> Result<(), String> {
+    let src = String::from("val a = 4; a = a*2;");
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::CannotReassignVal(identifier),
+            ..
+        }) if identifier == "a" => Ok(()),
+        other => Err(format!("Should be an error: {:?}", other)),
+    }
+}
