@@ -141,7 +141,7 @@ fn val_reassign() -> Result<(), String> {
 
 #[test]
 fn var_assign_other_ops() {
-    let src = String::from("var a = 5*10; a -= 1; a%=2; a/=3; a*=4 \n\n");
+    let src = String::from("var a = 5*10; a -=\n 1; a%=2; a/=3; a*=4 \n\n");
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
