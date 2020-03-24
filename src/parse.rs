@@ -85,6 +85,7 @@ pub enum AstNodeStmt {
     Assign {
         target: AstNode,
         value: AstNode,
+        span: Span,
     },
 }
 
@@ -683,12 +684,17 @@ impl Parser<'_> {
             TokenKind::KeywordVal | TokenKind::KeywordVar => self.var_def(),
             _ => match (self.previous.unwrap().kind, self.current.unwrap().kind) {
                 (TokenKind::Identifier, TokenKind::Equal) => {
+                    let span = self.current.unwrap().span;
                     let target = self.primary()?;
                     self.eat(TokenKind::Equal)?;
                     self.skip_newlines()?;
                     debug!("assignement");
                     let value = self.expression()?;
-                    Ok(AstNodeStmt::Assign { target, value })
+                    Ok(AstNodeStmt::Assign {
+                        target,
+                        value,
+                        span,
+                    })
                 }
                 _ => Ok(AstNodeStmt::Expr(self.expression()?)),
             },

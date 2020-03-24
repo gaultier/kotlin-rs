@@ -193,7 +193,7 @@ impl<'a> Resolver<'a> {
                 self.var_decl(identifier, *id)?;
                 self.var_def(identifier, *id)?;
             }
-            AstNodeStmt::Assign { target, value } => {
+            AstNodeStmt::Assign { target, value, .. } => {
                 self.assign(target, value)?;
             }
         };

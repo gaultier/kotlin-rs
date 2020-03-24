@@ -50,9 +50,10 @@ impl<'a> TypeChecker<'a> {
         Ok(t)
     }
 
-    fn assign(&mut self, target: &AstNode, value: &AstNode) -> Result<Type, Error> {
-        self.expr(target)?;
-        self.expr(value)?;
+    fn assign(&mut self, target: &AstNode, value: &AstNode, span: &Span) -> Result<Type, Error> {
+        let target_t = self.expr(target)?;
+        let value_t = self.expr(value)?;
+        self.eq(target_t, value_t, span)?;
         Ok(Type::Unit)
     }
 
@@ -70,7 +71,11 @@ impl<'a> TypeChecker<'a> {
                 body,
             } => self.while_stmt(cond, body, &cond_start_tok),
             AstNodeStmt::VarDefinition { value, id, .. } => self.var_def(value, *id),
-            AstNodeStmt::Assign { target, value } => self.assign(target, value),
+            AstNodeStmt::Assign {
+                target,
+                value,
+                span,
+            } => self.assign(target, value, span),
         }
     }
 
