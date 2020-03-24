@@ -43,6 +43,21 @@ impl SexpEmitter<'_> {
         SexpEmitter { lexer }
     }
 
+    fn assign<W: std::io::Write>(
+        &self,
+        target: &AstNode,
+        value: &AstNode,
+        w: &mut W,
+    ) -> Result<(), Error> {
+        write!(w, "(set! ").unwrap();
+        self.expr(target, w)?;
+        write!(w, " ").unwrap();
+        self.expr(value, w)?;
+        writeln!(w, ")").unwrap();
+
+        Ok(())
+    }
+
     fn statement<W: std::io::Write>(&self, stmt: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
         match stmt {
             AstNodeStmt::Expr(expr) => {
@@ -57,7 +72,9 @@ impl SexpEmitter<'_> {
             AstNodeStmt::VarDefinition { .. } => {
                 self.var_def(stmt, w)?;
             }
-            AstNodeStmt::Assign { .. } => unimplemented!(),
+            AstNodeStmt::Assign { target, value, .. } => {
+                self.assign(target, value, w)?;
+            }
         };
         Ok(())
     }
