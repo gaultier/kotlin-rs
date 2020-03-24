@@ -306,7 +306,10 @@ impl Cursor<'_> {
             '/' => match self.first() {
                 '/' => self.line_comment(),
                 '*' => self.block_comment(lines, start_pos),
-                '=' => CursorTokenKind::SlashEqual,
+                '=' => {
+                    self.bump();
+                    CursorTokenKind::SlashEqual
+                }
                 _ => CursorTokenKind::Slash,
             },
             '\r' if self.first() == '\n' => {
