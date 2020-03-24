@@ -12,7 +12,7 @@ pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
     let mut stmts = parser.parse()?;
 
     let mut resolver = Resolver::new(&lexer);
-    let resolution = resolver.statements(&stmts)?;
+    let _resolution = resolver.statements(&stmts)?;
 
     let type_checker = TypeChecker::new(&lexer);
     type_checker.statements(&mut stmts)?;

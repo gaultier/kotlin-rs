@@ -417,7 +417,7 @@ impl TypeChecker<'_> {
         }
     }
 
-    fn block(&self, stmts: &mut Statements) -> Result<Type, Error> {
+    fn block(&self, stmts: &mut BlockRef) -> Result<Type, Error> {
         for stmt in stmts.iter_mut() {
             self.statement(stmt)?;
         }
