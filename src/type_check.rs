@@ -534,7 +534,7 @@ impl<'a> TypeChecker<'a> {
     fn var_ref(&mut self, id: NodeId) -> Result<Type, Error> {
         let var_usage_ref = self.resolution.get(&id).unwrap();
         debug!("var ref: id={} var_usage_ref={:?}", id, &var_usage_ref);
-        let t = *(self.types.get(&var_usage_ref.node_id_ref).unwrap());
+        let t = *(self.types.get(&var_usage_ref.node_ref_id).unwrap());
         self.types.insert(id, t);
         Ok(t)
     }

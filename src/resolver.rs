@@ -65,6 +65,12 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
+    fn find_var(&self, depth: usize, identifier: &str) -> Option<(&Scope, &Var)> {
+        let scope = self.scopes.iter().rev().nth(depth)?;
+        let var = scope.var_statuses.get(identifier)?;
+        Some((scope, var))
+    }
+
     fn var_ref(&mut self, span: &Span, id: NodeId) -> Result<(), Error> {
         let identifier = &self.lexer.src[span.start..span.end];
         if let Some(depth) = self
@@ -73,21 +79,19 @@ impl<'a> Resolver<'a> {
             .rev()
             .position(|scope| scope.var_statuses.contains_key(identifier))
         {
-            let scope = self.scopes.iter().rev().nth(depth).unwrap();
-            let var = scope.var_statuses.get(identifier).unwrap();
-            self.resolution.insert(
-                id,
-                VarUsageRef {
-                    scope_depth: depth,
-                    node_ref_id: var.id,
-                    node_ref_flags: var.flags,
-                    block_id_ref: scope.block_id,
-                },
-            );
+            let (scope, var) = self.find_var(depth, identifier).unwrap();
+            let var_usage_ref = VarUsageRef {
+                scope_depth: depth,
+                node_ref_id: var.id,
+                node_ref_flags: var.flags,
+                block_id_ref: scope.block_id,
+            };
+
             debug!(
                 "var_ref: identifier={} id={} depth={} scope_id={}",
                 identifier, id, depth, scope.block_id
             );
+            self.resolution.insert(id, var_usage_ref);
             Ok(())
         } else {
             Err(Error::new(
