@@ -44,7 +44,8 @@
 - [ ] As expression
 - [x] While
 - [x] Do while
-- [ ] Variable declaration e.g `val a = 1`
+- [ ] Val declaration e.g `val a = 1`
+- [x] Var declaration e.g `var a = 1`
 - [ ] When with subject with binding e.g `when (val x = 1) {}`
 - [ ] Do while with binding e.g `do {val a = 1} while (a < 10)`
 - [ ] Explicit types e.g `val a: Long = 1`
@@ -74,7 +75,7 @@
 
 ## Name resolution
 
-- [ ] Variable
+- [x] Variable
 - [ ] Function call
 - [ ] Class loader (hard)
 
