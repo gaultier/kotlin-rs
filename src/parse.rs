@@ -98,18 +98,6 @@ pub struct AstNode {
     pub kind: AstNodeExpr,
 }
 
-impl AstNode {
-    fn is_assignable(&self) -> bool {
-        match self.kind {
-            AstNodeExpr::Literal(Token {
-                kind: TokenKind::Identifier,
-                ..
-            }) => true,
-            _ => false,
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct WhenEntry {
     pub cond: AstNode,
@@ -693,21 +681,17 @@ impl Parser<'_> {
             TokenKind::KeywordWhile => self.while_stmt(),
             TokenKind::KeywordDo => self.do_while_stmt(),
             TokenKind::KeywordVal | TokenKind::KeywordVar => self.var_def(),
-            _ => {
-                let expr = self.expression()?;
-                debug!("expr={:?}", &expr);
-                if expr.is_assignable() && self.eat_opt(TokenKind::Equal)? {
+            _ => match (self.previous.unwrap().kind, self.current.unwrap().kind) {
+                (TokenKind::Identifier, TokenKind::Equal) => {
+                    let target = self.primary()?;
+                    self.eat(TokenKind::Equal)?;
                     self.skip_newlines()?;
                     debug!("assignement");
                     let value = self.expression()?;
-                    Ok(AstNodeStmt::Assign {
-                        target: expr,
-                        value,
-                    })
-                } else {
-                    Ok(AstNodeStmt::Expr(self.expression()?))
+                    Ok(AstNodeStmt::Assign { target, value })
                 }
-            }
+                _ => Ok(AstNodeStmt::Expr(self.expression()?)),
+            },
         }
     }
 
