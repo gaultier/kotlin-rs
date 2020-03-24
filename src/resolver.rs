@@ -43,11 +43,10 @@ pub(crate) type Resolution = BTreeMap<NodeId, VarUsageRef>;
 
 impl<'a> Resolver<'a> {
     pub(crate) fn new(lexer: &Lexer) -> Resolver {
-        let global_scope = Scope::new(0);
         Resolver {
             lexer,
             resolution: Resolution::new(),
-            scopes: vec![global_scope],
+            scopes: Vec::new(),
         }
     }
 
@@ -119,10 +118,12 @@ impl<'a> Resolver<'a> {
     }
 
     fn enter_scope(&mut self, block_id: NodeId) {
+        debug!("enter scope: id={}", block_id);
         self.scopes.push(Scope::new(block_id));
     }
 
     fn exit_scope(&mut self) {
+        debug!("exit scope: id={}", self.scopes.last().unwrap().block_id);
         self.scopes.pop();
     }
 
@@ -145,10 +146,12 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    pub(crate) fn statements(&mut self, statements: &Block) -> Result<Resolution, Error> {
-        for stmt in &statements.body {
+    pub(crate) fn statements(&mut self, block: &Block) -> Result<Resolution, Error> {
+        self.enter_scope(block.id);
+        for stmt in &block.body {
             self.statement(&stmt)?;
         }
+        self.exit_scope();
         Ok(self.resolution.clone())
     }
 }
