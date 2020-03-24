@@ -516,8 +516,12 @@ impl Parser<'_> {
         }
     }
 
+    fn as_expr(&mut self) -> Result<AstNode, Error> {
+        self.unary()
+    }
+
     fn multiplication(&mut self) -> Result<AstNode, Error> {
-        let left = self.unary()?;
+        let left = self.as_expr()?;
         let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::Percent | TokenKind::Star | TokenKind::Slash => {
