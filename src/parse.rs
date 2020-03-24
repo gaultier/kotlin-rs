@@ -74,10 +74,11 @@ pub enum AstNodeStmt {
 
 pub type Block = Vec<AstNodeStmt>;
 pub type BlockSlice = [AstNodeStmt];
+pub type NodeId = usize;
 
 #[derive(Debug)]
 pub struct AstNode {
-    pub id: usize,
+    pub id: NodeId,
     pub kind: AstNodeExpr,
     pub type_info: Option<Type>,
 }
@@ -653,7 +654,7 @@ impl Parser<'_> {
         }
     }
 
-    fn next_id(&mut self) -> usize {
+    fn next_id(&mut self) -> NodeId {
         self.current_id = self
             .current_id
             .checked_add(1)

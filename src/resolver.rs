@@ -1,6 +1,7 @@
 use crate::error::*;
 use crate::lex::Lexer;
 use crate::parse::*;
+use std::collections::BTreeMap;
 
 pub(crate) struct Resolver<'a> {
     lexer: &'a Lexer,
@@ -8,13 +9,18 @@ pub(crate) struct Resolver<'a> {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub(crate) struct Resolution {}
+pub(crate) struct VarUsageRef {
+    scope_depth: usize,
+    node_id_ref: NodeId,
+}
+
+pub(crate) type Resolution = BTreeMap<NodeId, VarUsageRef>;
 
 impl Resolver<'_> {
     pub(crate) fn new(lexer: &Lexer) -> Resolver {
         Resolver {
             lexer,
-            resolution: Resolution {},
+            resolution: Resolution::new(),
         }
     }
 
@@ -65,6 +71,10 @@ impl Resolver<'_> {
         Ok(())
     }
 
+    fn var_decl(&mut self, identifier: &str, value: &AstNode) -> Result<(), Error> {
+        Ok(())
+    }
+
     fn statement(&mut self, statement: &AstNodeStmt) -> Result<(), Error> {
         match statement {
             AstNodeStmt::Expr(expr) => {
@@ -74,7 +84,12 @@ impl Resolver<'_> {
                 self.expr(cond)?;
                 self.statements(body)?;
             }
-            AstNodeStmt::VarDeclaration { .. } => unimplemented!(),
+            AstNodeStmt::VarDeclaration { identifier, value } => {
+                self.var_decl(
+                    &self.lexer.src[identifier.span.start..identifier.span.end],
+                    value,
+                )?;
+            }
         };
         Ok(())
     }
@@ -83,6 +98,6 @@ impl Resolver<'_> {
         for stmt in statements {
             self.statement(stmt)?;
         }
-        Ok(self.resolution)
+        Ok(self.resolution.clone())
     }
 }
