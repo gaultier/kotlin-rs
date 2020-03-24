@@ -144,14 +144,14 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn var_decl(&mut self, identifier: &'a str, id: NodeId) -> Result<(), Error> {
+    fn var_decl(&mut self, identifier: &'a str, flags: u16, id: NodeId) -> Result<(), Error> {
         let scope = self.scopes.last_mut().unwrap();
         scope.var_statuses.insert(
             identifier,
             Var {
                 id,
                 status: VarStatus::Declared,
-                flags: 0,
+                flags,
             },
         );
         debug!(
@@ -161,14 +161,14 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn var_def(&mut self, identifier: &'a str, id: NodeId) -> Result<(), Error> {
+    fn var_def(&mut self, identifier: &'a str, flags: u16, id: NodeId) -> Result<(), Error> {
         let scope = self.scopes.last_mut().unwrap();
         scope.var_statuses.insert(
             identifier,
             Var {
                 id,
                 status: VarStatus::Defined,
-                flags: 0,
+                flags,
             },
         );
         debug!(
@@ -223,12 +223,12 @@ impl<'a> Resolver<'a> {
                 identifier,
                 value,
                 id,
-                ..
+                flags,
             } => {
                 self.expr(value)?;
                 let identifier = &self.lexer.src[identifier.span.start..identifier.span.end];
-                self.var_decl(identifier, *id)?;
-                self.var_def(identifier, *id)?;
+                self.var_decl(identifier, *flags as u16, *id)?;
+                self.var_def(identifier, *flags as u16, *id)?;
             }
             AstNodeStmt::Assign { target, value, .. } => {
                 self.assign(target, value)?;
