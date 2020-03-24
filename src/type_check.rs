@@ -538,6 +538,10 @@ impl TypeChecker<'_> {
                 kind: AstNodeExpr::WhenExpr { .. },
                 ..
             } => self.when_expr(ast),
+            AstNode {
+                kind: AstNodeExpr::VarRef(identifier),
+                ..
+            } => unimplemented!(),
         }
     }
 

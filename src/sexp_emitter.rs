@@ -415,6 +415,10 @@ impl SexpEmitter<'_> {
                 kind: AstNodeExpr::IfExpr { .. },
                 ..
             } => self.if_expr(ast, w),
+            AstNode {
+                kind: AstNodeExpr::VarRef(identifier),
+                ..
+            } => unimplemented!(),
         }
     }
 }

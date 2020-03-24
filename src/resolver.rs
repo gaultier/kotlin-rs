@@ -93,6 +93,7 @@ impl<'a> Resolver<'a> {
                     self.statement(else_entry)?;
                 }
             }
+            AstNodeExpr::VarRef(identifier) => unimplemented!(),
         };
         Ok(())
     }
