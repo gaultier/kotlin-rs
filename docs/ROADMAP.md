@@ -78,6 +78,8 @@
 - [x] Variable
 - [ ] Function call
 - [ ] Class loader (hard)
+- [ ] Warning on shadowing
+- [ ] Warining on unused
 
 ## CLI
 
