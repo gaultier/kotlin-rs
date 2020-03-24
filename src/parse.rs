@@ -446,11 +446,14 @@ impl Parser<'_> {
             }
             TokenKind::KeywordIf => self.if_expr(),
             TokenKind::KeywordWhen => self.when_expr(),
-            TokenKind::Identifier => Ok(AstNode {
-                kind: AstNodeExpr::VarRef(previous.span),
-                type_info: None,
-                id: self.next_id(),
-            }),
+            TokenKind::Identifier => {
+                self.advance()?;
+                Ok(AstNode {
+                    kind: AstNodeExpr::VarRef(previous.span),
+                    type_info: None,
+                    id: self.next_id(),
+                })
+            }
             _ => Err(Error::new(
                 ErrorKind::ExpectedPrimary,
                 self.lexer.span_location(&previous.span),
