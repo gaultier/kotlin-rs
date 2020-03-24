@@ -18,16 +18,16 @@ impl Resolver<'_> {
         }
     }
 
+    fn expr(&mut self, expr: &AstNode) -> Result<Resolution, Error> {
+        match expr.kind {
+            AstNodeExpr::IfExpr { .. } | AstNodeExpr::WhenExpr { .. } => unreachable!(),
+            _ => unreachable!(),
+        }
+    }
+
     fn statement(&mut self, statement: &AstNodeStmt) -> Result<Resolution, Error> {
         match statement {
-            AstNodeStmt::Expr(AstNode {
-                kind: AstNodeExpr::WhenExpr { .. },
-                ..
-            })
-            | AstNodeStmt::Expr(AstNode {
-                kind: AstNodeExpr::IfExpr { .. },
-                ..
-            }) => unimplemented!(),
+            AstNodeStmt::Expr(expr) => self.expr(expr),
             AstNodeStmt::While { .. } | AstNodeStmt::DoWhile { .. } => unimplemented!(),
             AstNodeStmt::VarDeclaration { .. } => unimplemented!(),
             _ => unreachable!(),
