@@ -56,6 +56,10 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
+    fn var_ref(&mut self, identifier: &str) -> Result<(), Error> {
+        Ok(())
+    }
+
     fn expr(&mut self, expr: &AstNode) -> Result<(), Error> {
         match &expr.kind {
             AstNodeExpr::Literal(_) => (),
@@ -93,7 +97,9 @@ impl<'a> Resolver<'a> {
                     self.statement(else_entry)?;
                 }
             }
-            AstNodeExpr::VarRef(identifier) => unimplemented!(),
+            AstNodeExpr::VarRef(identifier) => {
+                self.var_ref(identifier)?;
+            }
         };
         Ok(())
     }
