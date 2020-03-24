@@ -18,7 +18,7 @@ enum VarStatus {
 
 #[derive(Debug, Clone)]
 struct Scope<'a> {
-    var_statuses: BTreeMap<&'a str, VarStatus>,
+    var_statuses: BTreeMap<&'a str, (NodeId, VarStatus)>,
     block_id: NodeId,
 }
 
@@ -37,6 +37,7 @@ type Scopes<'a> = Vec<Scope<'a>>;
 pub(crate) struct VarUsageRef {
     pub(crate) scope_depth: usize,
     pub(crate) node_id_ref: NodeId,
+    pub(crate) block_id_ref: NodeId,
 }
 
 pub(crate) type Resolution = BTreeMap<NodeId, VarUsageRef>;
@@ -65,11 +66,13 @@ impl<'a> Resolver<'a> {
             .position(|scope| scope.var_statuses.contains_key(identifier))
         {
             let scope = self.scopes.iter().rev().nth(depth).unwrap();
+            let var = scope.var_statuses.get(identifier).unwrap();
             self.resolution.insert(
                 id,
                 VarUsageRef {
                     scope_depth: depth,
-                    node_id_ref: scope.block_id,
+                    node_id_ref: var.0,
+                    block_id_ref: scope.block_id,
                 },
             );
             debug!(
@@ -129,19 +132,23 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn var_decl(&mut self, identifier: &'a str) -> Result<(), Error> {
+    fn var_decl(&mut self, identifier: &'a str, id: NodeId) -> Result<(), Error> {
         let scope = self.scopes.last_mut().unwrap();
-        scope.var_statuses.insert(identifier, VarStatus::Declared);
+        scope
+            .var_statuses
+            .insert(identifier, (id, VarStatus::Declared));
         debug!(
-            "var declaration: identifier=`{}` scope={}",
-            identifier, scope.block_id
+            "var declaration: identifier=`{}` scope_id={} id={}",
+            identifier, scope.block_id, id
         );
         Ok(())
     }
 
-    fn var_def(&mut self, identifier: &'a str) -> Result<(), Error> {
+    fn var_def(&mut self, identifier: &'a str, id: NodeId) -> Result<(), Error> {
         let scope = self.scopes.last_mut().unwrap();
-        scope.var_statuses.insert(identifier, VarStatus::Defined);
+        scope
+            .var_statuses
+            .insert(identifier, (id, VarStatus::Defined));
         debug!(
             "var definition: identifier=`{}` scope={}",
             identifier, scope.block_id
@@ -169,12 +176,14 @@ impl<'a> Resolver<'a> {
                 self.statements(body)?;
             }
             AstNodeStmt::VarDefinition {
-                identifier, value, ..
+                identifier,
+                value,
+                id,
             } => {
                 self.expr(value)?;
                 let identifier = &self.lexer.src[identifier.span.start..identifier.span.end];
-                self.var_decl(identifier)?;
-                self.var_def(identifier)?;
+                self.var_decl(identifier, *id)?;
+                self.var_def(identifier, *id)?;
             }
         };
         Ok(())

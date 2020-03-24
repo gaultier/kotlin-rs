@@ -1,5 +1,5 @@
 use crate::error::*;
-use crate::lex::{Lexer, Token, TokenKind};
+use crate::lex::{Lexer, Span, Token, TokenKind};
 use crate::parse::*;
 
 pub(crate) struct SexpEmitter<'a> {
@@ -386,6 +386,12 @@ impl SexpEmitter<'_> {
         }
     }
 
+    fn var_ref<W: std::io::Write>(&self, span: &Span, w: &mut W) -> Result<(), Error> {
+        let identifier = &self.lexer.src[span.start..span.end];
+        write!(w, "{}", identifier).unwrap();
+        Ok(())
+    }
+
     pub fn expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNode {
@@ -418,9 +424,9 @@ impl SexpEmitter<'_> {
                 ..
             } => self.if_expr(ast, w),
             AstNode {
-                kind: AstNodeExpr::VarRef(_),
+                kind: AstNodeExpr::VarRef(span),
                 ..
-            } => unimplemented!(),
+            } => self.var_ref(span, w),
         }
     }
 }
