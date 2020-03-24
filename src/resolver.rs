@@ -168,7 +168,9 @@ impl<'a> Resolver<'a> {
                 self.expr(cond)?;
                 self.statements(body)?;
             }
-            AstNodeStmt::VarDefinition { identifier, value } => {
+            AstNodeStmt::VarDefinition {
+                identifier, value, ..
+            } => {
                 self.expr(value)?;
                 let identifier = &self.lexer.src[identifier.span.start..identifier.span.end];
                 self.var_decl(identifier)?;

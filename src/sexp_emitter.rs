@@ -71,7 +71,9 @@ impl SexpEmitter<'_> {
 
     fn var_def<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNodeStmt::VarDefinition { identifier, value } => {
+            AstNodeStmt::VarDefinition {
+                identifier, value, ..
+            } => {
                 write!(
                     w,
                     "(def {} ",
@@ -416,7 +418,7 @@ impl SexpEmitter<'_> {
                 ..
             } => self.if_expr(ast, w),
             AstNode {
-                kind: AstNodeExpr::VarRef(identifier),
+                kind: AstNodeExpr::VarRef(_),
                 ..
             } => unimplemented!(),
         }

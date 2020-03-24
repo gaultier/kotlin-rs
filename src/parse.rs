@@ -76,6 +76,7 @@ pub enum AstNodeStmt {
     VarDefinition {
         identifier: Token,
         value: AstNode,
+        id: NodeId,
     },
 }
 
@@ -628,7 +629,11 @@ impl Parser<'_> {
         self.eat_opt(TokenKind::Semicolon)?;
         self.skip_newlines()?;
 
-        Ok(AstNodeStmt::VarDefinition { identifier, value })
+        Ok(AstNodeStmt::VarDefinition {
+            identifier,
+            value,
+            id: self.next_id(),
+        })
     }
 
     fn statement(&mut self) -> Result<AstNodeStmt, Error> {

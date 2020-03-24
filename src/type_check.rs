@@ -2,6 +2,7 @@ use crate::error::*;
 use crate::lex::{Lexer, Span, Token, TokenKind};
 use crate::parse::*;
 use crate::resolver::Resolution;
+use log::debug;
 use std::collections::BTreeMap;
 
 pub(crate) struct TypeChecker<'a> {
@@ -42,8 +43,11 @@ impl<'a> TypeChecker<'a> {
         Ok(Type::Unit)
     }
 
-    fn var_def(&mut self, value: &mut AstNode) -> Result<Type, Error> {
-        self.expr(value)
+    fn var_def(&mut self, value: &mut AstNode, id: NodeId) -> Result<Type, Error> {
+        let t = self.expr(value)?;
+        self.types.insert(id, t);
+
+        Ok(t)
     }
 
     fn statement(&mut self, statement: &mut AstNodeStmt) -> Result<Type, Error> {
@@ -59,7 +63,7 @@ impl<'a> TypeChecker<'a> {
                 cond_start_tok,
                 body,
             } => self.while_stmt(cond, body, &cond_start_tok),
-            AstNodeStmt::VarDefinition { value, .. } => self.var_def(value),
+            AstNodeStmt::VarDefinition { value, id, .. } => self.var_def(value, *id),
         }
     }
 
@@ -528,6 +532,7 @@ impl<'a> TypeChecker<'a> {
 
     fn var_ref(&mut self, id: NodeId) -> Result<Type, Error> {
         let var_usage_ref = self.resolution.get(&id).unwrap();
+        debug!("var ref: id={} var_usage_ref={:?}", id, &var_usage_ref);
         let t = *(self.types.get(&var_usage_ref.node_id_ref).unwrap());
         self.types.insert(id, t);
         Ok(t)
