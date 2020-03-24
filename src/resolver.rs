@@ -7,6 +7,7 @@ pub(crate) struct Resolver<'a> {
     resolution: Resolution,
 }
 
+#[derive(Debug, Copy, Clone)]
 pub(crate) struct Resolution {}
 
 impl Resolver<'_> {
@@ -17,7 +18,26 @@ impl Resolver<'_> {
         }
     }
 
+    fn statement(&mut self, statement: &AstNodeStmt) -> Result<Resolution, Error> {
+        match statement {
+            AstNodeStmt::Expr(AstNode {
+                kind: AstNodeExpr::WhenExpr { .. },
+                ..
+            })
+            | AstNodeStmt::Expr(AstNode {
+                kind: AstNodeExpr::IfExpr { .. },
+                ..
+            }) => unimplemented!(),
+            AstNodeStmt::While { .. } | AstNodeStmt::DoWhile { .. } => unimplemented!(),
+            AstNodeStmt::VarDeclaration { .. } => unimplemented!(),
+            _ => unreachable!(),
+        }
+    }
+
     pub(crate) fn statements(&mut self, statements: &BlockSlice) -> Result<Resolution, Error> {
-        unimplemented!()
+        for stmt in statements {
+            self.statement(stmt)?;
+        }
+        Ok(self.resolution)
     }
 }
