@@ -115,7 +115,7 @@ pub enum AstNodeExpr {
         entries: Vec<WhenEntry>,
         else_entry: Option<Block>,
     },
-    VarRef(String),
+    VarRef(Span),
 }
 
 #[derive(Debug)]
@@ -447,9 +447,7 @@ impl Parser<'_> {
             TokenKind::KeywordIf => self.if_expr(),
             TokenKind::KeywordWhen => self.when_expr(),
             TokenKind::Identifier => Ok(AstNode {
-                kind: AstNodeExpr::VarRef(
-                    self.lexer.src[previous.span.start..previous.span.end].to_string(),
-                ),
+                kind: AstNodeExpr::VarRef(previous.span),
                 type_info: None,
                 id: self.next_id(),
             }),

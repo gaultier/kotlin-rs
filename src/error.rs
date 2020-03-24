@@ -34,6 +34,7 @@ pub enum ErrorKind {
     UnterminatedStatement,
     UnterminatedChar,
     InvalidRange(Type),
+    UnknownIdentifier(String),
     ExpectedToken,
 }
 
@@ -66,6 +67,9 @@ impl fmt::Display for ErrorKind {
             }
             ErrorKind::ExpectedToken => write!(f, "Expected token"),
             ErrorKind::InvalidRange(t) => write!(f, "Invalid range of type {}", t),
+            ErrorKind::UnknownIdentifier(identifier) => {
+                write!(f, "Unknown identifier {}", identifier)
+            }
         }
     }
 }

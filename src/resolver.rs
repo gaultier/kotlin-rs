@@ -1,5 +1,5 @@
 use crate::error::*;
-use crate::lex::Lexer;
+use crate::lex::{Lexer, Span};
 use crate::parse::*;
 use log::debug;
 use std::collections::BTreeMap;
@@ -56,8 +56,33 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn var_ref(&mut self, identifier: &str) -> Result<(), Error> {
-        Ok(())
+    fn var_ref(&mut self, span: &Span, id: NodeId) -> Result<(), Error> {
+        let identifier = &self.lexer.src[span.start..span.end];
+        if let Some(depth) = self
+            .scopes
+            .iter()
+            .rev()
+            .position(|scope| scope.var_statuses.contains_key(identifier))
+        {
+            let scope = self.scopes.iter().rev().nth(depth).unwrap();
+            self.resolution.insert(
+                id,
+                VarUsageRef {
+                    scope_depth: depth,
+                    node_id_ref: scope.block_id,
+                },
+            );
+            debug!(
+                "var_ref: identifier={} id={} depth={} scope_id={}",
+                identifier, id, depth, scope.block_id
+            );
+            Ok(())
+        } else {
+            Err(Error::new(
+                ErrorKind::UnknownIdentifier(identifier.to_string()),
+                self.lexer.span_location(span),
+            ))
+        }
     }
 
     fn expr(&mut self, expr: &AstNode) -> Result<(), Error> {
@@ -97,8 +122,8 @@ impl<'a> Resolver<'a> {
                     self.statement(else_entry)?;
                 }
             }
-            AstNodeExpr::VarRef(identifier) => {
-                self.var_ref(identifier)?;
+            AstNodeExpr::VarRef(span) => {
+                self.var_ref(span, expr.id)?;
             }
         };
         Ok(())
