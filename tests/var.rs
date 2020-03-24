@@ -138,3 +138,15 @@ fn val_reassign() -> Result<(), String> {
         other => Err(format!("Should be an error: {:?}", other)),
     }
 }
+
+#[test]
+fn var_assign_other_ops() {
+    let src = String::from("var a = 5*10; a -= 1; a%=2; a/=3; a*=4 \n\n");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_ref().unwrap(),
+        &"(def a (* 5 10))\n(set! a (-= 1))\n(set! a (%= 2))\n(set! a (/= 3))\n(set! a (*= 4))\n\n"
+    );
+}
