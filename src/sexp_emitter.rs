@@ -102,6 +102,9 @@ impl SexpEmitter<'_> {
             } => {
                 self.assign(target, value, op, w)?;
             }
+            AstNodeStmt::FnDefinition { fn_name, body, .. } => {
+                self.fn_def(fn_name, body, w)?;
+            }
         };
         Ok(())
     }
@@ -351,6 +354,15 @@ impl SexpEmitter<'_> {
         write!(w, "))").unwrap();
 
         Ok(())
+    }
+
+    fn fn_def<W: std::io::Write>(
+        &self,
+        fn_name: &AstNode,
+        body: &AstNodeStmt,
+        w: &mut W,
+    ) -> Result<(), Error> {
+        unimplemented!()
     }
 
     fn when_expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {

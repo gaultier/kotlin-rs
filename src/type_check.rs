@@ -77,6 +77,13 @@ impl<'a> TypeChecker<'a> {
                 span,
                 ..
             } => self.assign(target, value, span),
+            AstNodeStmt::FnDefinition {
+                fn_name,
+                args,
+                body,
+                flags,
+                id,
+            } => self.fn_def(fn_name, args, body, *flags, *id),
         }
     }
 
@@ -598,6 +605,17 @@ impl<'a> TypeChecker<'a> {
             self.expr(arg)?;
         }
         Ok(Type::Unit)
+    }
+
+    fn fn_def(
+        &mut self,
+        fn_name: &AstNode,
+        args: &[AstNode],
+        body: &AstNodeStmt,
+        flags: u16,
+        id: NodeId,
+    ) -> Result<Type, Error> {
+        unimplemented!()
     }
 
     fn expr(&mut self, ast: &AstNode) -> Result<Type, Error> {

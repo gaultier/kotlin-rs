@@ -244,6 +244,17 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
+    fn fn_def(
+        &mut self,
+        fn_name: &AstNode,
+        args: &[AstNode],
+        body: &AstNodeStmt,
+        flags: u16,
+        id: NodeId,
+    ) -> Result<(), Error> {
+        unimplemented!()
+    }
+
     fn statement(&mut self, statement: &AstNodeStmt) -> Result<(), Error> {
         match statement {
             AstNodeStmt::Expr(expr) => {
@@ -266,6 +277,15 @@ impl<'a> Resolver<'a> {
             }
             AstNodeStmt::Assign { target, value, .. } => {
                 self.assign(target, value)?;
+            }
+            AstNodeStmt::FnDefinition {
+                fn_name,
+                args,
+                body,
+                flags,
+                id,
+            } => {
+                self.fn_def(fn_name, args, body, *flags, *id)?;
             }
         };
         Ok(())

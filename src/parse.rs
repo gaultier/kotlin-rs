@@ -88,6 +88,13 @@ pub enum AstNodeStmt {
         span: Span,
         op: TokenKind,
     },
+    FnDefinition {
+        fn_name: AstNode,
+        args: Vec<AstNode>,
+        id: NodeId,
+        flags: u16,
+        body: Box<AstNodeStmt>,
+    },
 }
 
 pub type Statements = Vec<AstNodeStmt>;
@@ -785,6 +792,23 @@ impl Parser<'_> {
     }
 
     fn fn_declaration(&mut self) -> Result<AstNodeStmt, Error> {
+        // TODO: type, etc
+        self.eat(TokenKind::KeywordFun)?;
+        self.skip_newlines()?;
+        let fn_name = self.primary()?;
+        self.skip_newlines()?;
+        self.eat(TokenKind::LeftParen)?;
+        self.eat(TokenKind::RightParen)?;
+        self.skip_newlines()?;
+        let body = match self.previous.unwrap().kind {
+            TokenKind::Equal => {
+                self.advance()?;
+                self.skip_newlines()?;
+                self.expression()
+            }
+            _ => unimplemented!(),
+        };
+
         unimplemented!()
     }
 
