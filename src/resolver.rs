@@ -26,6 +26,7 @@ struct Var {
 #[derive(Debug, Clone)]
 struct Scope<'a> {
     var_statuses: BTreeMap<&'a str, Var>,
+    fn_statuses: BTreeMap<&'a str, Var>,
     block_id: NodeId,
 }
 
@@ -34,6 +35,7 @@ impl<'a> Scope<'a> {
         Scope {
             block_id,
             var_statuses: BTreeMap::new(),
+            fn_statuses: BTreeMap::new(),
         }
     }
 }
@@ -76,14 +78,28 @@ impl<'a> Resolver<'a> {
         Some((scope, var, depth))
     }
 
+    fn find_fn(&self, identifier: &str) -> Option<(&Scope, &Var, usize)> {
+        let depth = self
+            .scopes
+            .iter()
+            .rev()
+            .position(|scope| scope.fn_statuses.contains_key(identifier))?;
+        let scope = self.scopes.iter().rev().nth(depth)?;
+        let var = scope.fn_statuses.get(identifier)?;
+        Some((scope, var, depth))
+    }
+
     fn var_ref(&mut self, span: &Span, id: NodeId) -> Result<(), Error> {
         let identifier = &self.lexer.src[span.start..span.end];
-        let (scope, var, depth) = self.find_var(identifier).ok_or_else(|| {
-            Error::new(
-                ErrorKind::UnknownIdentifier(identifier.to_string()),
-                self.lexer.span_location(span),
-            )
-        })?;
+        let (scope, var, depth) = self
+            .find_var(identifier)
+            .or_else(|| self.find_fn(identifier))
+            .ok_or_else(|| {
+                Error::new(
+                    ErrorKind::UnknownIdentifier(identifier.to_string()),
+                    self.lexer.span_location(span),
+                )
+            })?;
 
         let var_usage_ref = VarUsageRef {
             scope_depth: depth,
@@ -211,6 +227,7 @@ impl<'a> Resolver<'a> {
             _ => unreachable!(),
         };
 
+        // FIXME
         let (_, var, _) = self.find_var(identifier).unwrap();
         let flags = var.flags;
         if flags & VAR_DEFINITION_FLAG_VAL as u16 == 1 {
