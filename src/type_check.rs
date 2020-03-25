@@ -11,6 +11,12 @@ pub(crate) struct TypeChecker<'a> {
     types: BTreeMap<NodeId, Type>,
 }
 
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+enum ResolutionKind {
+    Var,
+    Function,
+}
+
 impl<'a> TypeChecker<'a> {
     pub fn new(lexer: &'a Lexer, resolution: &'a Resolution) -> TypeChecker<'a> {
         TypeChecker {
@@ -37,14 +43,14 @@ impl<'a> TypeChecker<'a> {
         block: &Block,
         cond_start_tok: &Token,
     ) -> Result<Type, Error> {
-        let cond_t = self.expr(cond)?;
+        let cond_t = self.expr(cond, ResolutionKind::Var)?;
         self.eq(&cond_t, &Type::Bool, &cond_start_tok.span)?;
         self.statements(block)?;
         Ok(Type::Unit)
     }
 
     fn var_def(&mut self, value: &AstNodeExpr, id: NodeId) -> Result<Type, Error> {
-        let t = self.expr(value)?;
+        let t = self.expr(value, ResolutionKind::Var)?;
         self.types.insert(id, t.clone());
 
         Ok(t)
@@ -56,15 +62,15 @@ impl<'a> TypeChecker<'a> {
         value: &AstNodeExpr,
         span: &Span,
     ) -> Result<Type, Error> {
-        let target_t = self.expr(target)?;
-        let value_t = self.expr(value)?;
+        let target_t = self.expr(target, ResolutionKind::Var)?;
+        let value_t = self.expr(value, ResolutionKind::Var)?;
         self.eq(&target_t, &value_t, span)?;
         Ok(Type::Unit)
     }
 
     fn statement(&mut self, statement: &AstNodeStmt) -> Result<Type, Error> {
         match statement {
-            AstNodeStmt::Expr(expr) => self.expr(expr),
+            AstNodeStmt::Expr(expr) => self.expr(expr, ResolutionKind::Var),
             AstNodeStmt::DoWhile {
                 cond,
                 cond_start_tok,
@@ -131,7 +137,7 @@ impl<'a> TypeChecker<'a> {
                 id,
                 ..
             } => {
-                let t = self.expr(right)?;
+                let t = self.expr(right, ResolutionKind::Var)?;
                 self.types.insert(*id, t.clone());
                 Ok(t)
             }
@@ -155,7 +161,7 @@ impl<'a> TypeChecker<'a> {
                 id,
                 ..
             } => {
-                let t = self.expr(right)?;
+                let t = self.expr(right, ResolutionKind::Var)?;
                 match t {
                     Type::Int
                     | Type::UInt
@@ -186,7 +192,7 @@ impl<'a> TypeChecker<'a> {
                 id,
                 ..
             } => {
-                let right_t = self.expr(right)?;
+                let right_t = self.expr(right, ResolutionKind::Var)?;
                 let t = self.coalesce_types(&Type::Bool, &right_t, tok)?;
                 self.types.insert(*id, t);
                 Ok(Type::Bool)
@@ -341,8 +347,8 @@ impl<'a> TypeChecker<'a> {
                 right,
                 id,
             } => {
-                let left_t = self.expr(left)?;
-                let right_t = self.expr(right)?;
+                let left_t = self.expr(left, ResolutionKind::Var)?;
+                let right_t = self.expr(right, ResolutionKind::Var)?;
 
                 self.eq(&left_t, &right_t, &op.span)?;
                 let t = match left_t {
@@ -415,8 +421,8 @@ impl<'a> TypeChecker<'a> {
                 right,
                 id,
             } => {
-                let left_t = self.expr(left)?;
-                let right_t = self.expr(right)?;
+                let left_t = self.expr(left, ResolutionKind::Var)?;
+                let right_t = self.expr(right, ResolutionKind::Var)?;
 
                 self.coalesce_types(&left_t, &right_t, &op)?;
 
@@ -430,8 +436,8 @@ impl<'a> TypeChecker<'a> {
                 right,
                 id,
             } => {
-                let left_t = self.expr(left)?;
-                let right_t = self.expr(right)?;
+                let left_t = self.expr(left, ResolutionKind::Var)?;
+                let right_t = self.expr(right, ResolutionKind::Var)?;
                 let t = self.coalesce_types(&left_t, &right_t, &op)?;
                 self.types.insert(*id, t.clone());
                 Ok(t)
@@ -463,7 +469,7 @@ impl<'a> TypeChecker<'a> {
             } => {
                 let subject_t = self.statement(subject)?;
                 for entry in entries.iter() {
-                    let cond_t = self.expr(&entry.cond)?;
+                    let cond_t = self.expr(&entry.cond, ResolutionKind::Var)?;
                     self.eq(&subject_t, &cond_t, &entry.cond_start_tok.span)?;
 
                     self.statements(&entry.body)?;
@@ -476,7 +482,7 @@ impl<'a> TypeChecker<'a> {
                 ..
             } => {
                 for entry in entries.iter() {
-                    let cond_t = self.expr(&entry.cond)?;
+                    let cond_t = self.expr(&entry.cond, ResolutionKind::Var)?;
                     self.eq(&cond_t, &Type::Bool, &entry.cond_start_tok.span)?;
                     self.statements(&entry.body)?;
                 }
@@ -496,7 +502,7 @@ impl<'a> TypeChecker<'a> {
                 else_body_tok,
                 id,
             } => {
-                let t = self.expr(cond)?;
+                let t = self.expr(cond, ResolutionKind::Var)?;
                 self.eq(&t, &Type::Bool, &cond_start_tok.span)?;
 
                 let if_body_t = self.block(if_body)?;
@@ -519,7 +525,7 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn var_ref(&mut self, id: NodeId) -> Result<Type, Error> {
+    fn var_ref(&mut self, id: NodeId, resolution_kind: ResolutionKind) -> Result<Type, Error> {
         let var_usage_ref = self.resolution.get(&id).unwrap();
         debug!("var ref: id={} var_usage_ref={:?}", id, &var_usage_ref);
         let t = self.types.get(&var_usage_ref.node_ref_id).unwrap().clone();
@@ -533,9 +539,9 @@ impl<'a> TypeChecker<'a> {
         args: &[AstNodeExpr],
         id: &NodeId,
     ) -> Result<Type, Error> {
-        self.expr(fn_name)?;
+        self.expr(fn_name, ResolutionKind::Function)?;
         for arg in args {
-            self.expr(arg)?;
+            self.expr(arg, ResolutionKind::Var)?;
         }
 
         // let fn_usage_ref = self.resolution.get(&id).unwrap();
@@ -556,7 +562,7 @@ impl<'a> TypeChecker<'a> {
     ) -> Result<Type, Error> {
         let args_t = args
             .iter()
-            .map(|arg| self.expr(arg))
+            .map(|arg| self.expr(arg, ResolutionKind::Function))
             .collect::<Result<Vec<_>, Error>>()?;
 
         let return_t = self.statement(body)?;
@@ -576,15 +582,15 @@ impl<'a> TypeChecker<'a> {
         Ok(t)
     }
 
-    fn expr(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
+    fn expr(&mut self, ast: &AstNodeExpr, resolution_kind: ResolutionKind) -> Result<Type, Error> {
         match ast {
             AstNodeExpr::Literal(..) => self.literal(ast),
             AstNodeExpr::Unary { .. } => self.unary(ast),
             AstNodeExpr::Binary { .. } => self.binary(ast),
-            AstNodeExpr::Grouping(expr, id) => self.expr(&(**expr)),
+            AstNodeExpr::Grouping(expr, _) => self.expr(expr, resolution_kind),
             AstNodeExpr::IfExpr { .. } => self.if_expr(ast),
             AstNodeExpr::WhenExpr { .. } => self.when_expr(ast),
-            AstNodeExpr::VarRef(_, id) => self.var_ref(*id),
+            AstNodeExpr::VarRef(_, id) => self.var_ref(*id, resolution_kind),
             AstNodeExpr::FnCall {
                 fn_name, args, id, ..
             } => self.fn_call(fn_name, args, id),
