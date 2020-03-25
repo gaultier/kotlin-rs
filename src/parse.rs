@@ -522,11 +522,29 @@ impl Parser<'_> {
         }
     }
 
+    fn postfix_unary_suffix(&mut self, acc: AstNode) -> Result<AstNode, Error> {
+        let previous = self.previous.unwrap();
+        debug!("postfix_unary_suffix: tok={:?} acc={:?}", previous, acc);
+        match previous.kind {
+            TokenKind::PlusPlus | TokenKind::MinusMinus | TokenKind::BangBang => {
+                self.advance()?;
+                let unary = AstNode {
+                    kind: AstNodeExpr::Unary(previous, Box::new(acc)),
+                    id: self.next_id(),
+                };
+
+                self.postfix_unary_suffix(unary)
+            }
+            _ => Ok(acc),
+        }
+    }
+
     fn postfix_unary_expr(&mut self) -> Result<AstNode, Error> {
         let prim = self.primary()?;
         match self.previous.unwrap().kind {
-            TokenKind::PlusPlus | TokenKind::MinusMinus | TokenKind::BangBang => unimplemented!(),
-            // TODO: more to come with postfix_unary_suffix+
+            TokenKind::PlusPlus | TokenKind::MinusMinus | TokenKind::BangBang => {
+                self.postfix_unary_suffix(prim)
+            }
             _ => Ok(prim),
         }
     }
