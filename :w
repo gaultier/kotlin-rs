@@ -599,17 +599,11 @@ impl<'a> TypeChecker<'a> {
         Ok(t)
     }
 
-    fn fn_call(&mut self, fn_name: &AstNode, args: &[AstNode], id: &NodeId) -> Result<Type, Error> {
+    fn fn_call(&mut self, fn_name: &AstNode, args: &[AstNode]) -> Result<Type, Error> {
         self.expr(fn_name)?;
         for arg in args {
             self.expr(arg)?;
         }
-
-        let fn_usage_ref = self.resolution.get(&id).unwrap();
-        debug!("fn ref: id={} fn_usage_ref={:?}", id, &fn_usage_ref);
-        // let t = self.types.get(&var_usage_ref.node_ref_id).unwrap().clone();
-        // let fn_t = self.types.get()
-
         Ok(Type::Unit)
     }
 
@@ -621,24 +615,16 @@ impl<'a> TypeChecker<'a> {
         flags: u16,
         id: NodeId,
     ) -> Result<Type, Error> {
-        let args_t = args
+        let args = args
             .iter()
             .map(|arg| self.expr(arg))
             .collect::<Result<Vec<_>, Error>>()?;
 
         let return_t = self.statement(body)?;
 
-        let t = Type::Function {
-            args: args_t,
-            return_t: Box::new(return_t),
-        };
+        let t = Type::Function { args, return_t:Box::new(return_t) };
 
         self.types.insert(id, t.clone());
-
-        debug!(
-            "fn def: fn_name={:?} args={:?} body={:?} flags={} id={} type={:?}",
-            fn_name, args, body, flags, id, t
-        );
 
         Ok(t)
     }
@@ -676,8 +662,8 @@ impl<'a> TypeChecker<'a> {
             } => self.var_ref(*id),
             AstNode {
                 kind: AstNodeExpr::FnCall { fn_name, args, .. },
-                id,
-            } => self.fn_call(fn_name, args, id),
+                ..
+            } => self.fn_call(fn_name, args),
         }
     }
 
