@@ -362,7 +362,12 @@ impl SexpEmitter<'_> {
         body: &AstNodeStmt,
         w: &mut W,
     ) -> Result<(), Error> {
-        unimplemented!()
+        write!(w, "(defn ").unwrap();
+        self.expr(fn_name, w)?;
+        write!(w, " [] ").unwrap();
+        self.statement(body, w)?;
+        writeln!(w, ")").unwrap();
+        Ok(())
     }
 
     fn when_expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {

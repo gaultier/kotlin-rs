@@ -615,7 +615,14 @@ impl<'a> TypeChecker<'a> {
         flags: u16,
         id: NodeId,
     ) -> Result<Type, Error> {
-        unimplemented!()
+        for arg in args {
+            self.expr(arg)?;
+        }
+
+        self.statement(body)?;
+
+        // FIXME
+        Ok(Type::Unit)
     }
 
     fn expr(&mut self, ast: &AstNode) -> Result<Type, Error> {
