@@ -519,8 +519,11 @@ impl Parser<'_> {
     }
 
     fn postfix_unary_expr(&mut self) -> Result<AstNode, Error> {
-        self.primary()
-        // TODO: postfix_unary_suffix+
+        let prim = self.primary()?;
+        match self.previous.unwrap().kind {
+            // TODO: more to come with postfix_unary_suffix+
+            _ => Ok(prim),
+        }
     }
 
     fn prefix_unary_expr(&mut self) -> Result<AstNode, Error> {
