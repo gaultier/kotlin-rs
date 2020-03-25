@@ -313,10 +313,10 @@ impl SexpEmitter<'_> {
     fn binary<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNode {
-                kind: AstNodeExpr::Binary(left, tok, right),
+                kind: AstNodeExpr::Binary { left, op, right },
                 ..
             } => {
-                write!(w, "({} ", binary_op(&tok.kind)).unwrap();
+                write!(w, "({} ", binary_op(&op.kind)).unwrap();
                 self.expr(left, w)?;
                 write!(w, " ").unwrap();
                 self.expr(right, w)?;
@@ -491,7 +491,7 @@ impl SexpEmitter<'_> {
                 ..
             } => self.unary(ast, w),
             AstNode {
-                kind: AstNodeExpr::Binary(..),
+                kind: AstNodeExpr::Binary { .. },
                 ..
             } => self.binary(ast, w),
             AstNode {

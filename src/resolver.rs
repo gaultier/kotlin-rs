@@ -122,7 +122,7 @@ impl<'a> Resolver<'a> {
             AstNodeExpr::Grouping(expr) | AstNodeExpr::Unary { expr, .. } => {
                 self.expr(&*expr)?;
             }
-            AstNodeExpr::Binary(left, _, right) => {
+            AstNodeExpr::Binary { left, right, .. } => {
                 self.expr(&*left)?;
                 self.expr(&*right)?;
             }

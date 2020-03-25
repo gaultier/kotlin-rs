@@ -135,7 +135,11 @@ pub enum UnaryKind {
 
 #[derive(Debug)]
 pub enum AstNodeExpr {
-    Binary(Box<AstNode>, Token, Box<AstNode>),
+    Binary {
+        left: Box<AstNode>,
+        op: Token,
+        right: Box<AstNode>,
+    },
     Unary {
         token: Token,
         expr: Box<AstNode>,
@@ -632,7 +636,11 @@ impl Parser<'_> {
                 self.skip_newlines()?;
                 let right = self.multiplication()?;
                 Ok(AstNode {
-                    kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
+                    kind: AstNodeExpr::Binary {
+                        left: Box::new(left),
+                        op: previous,
+                        right: Box::new(right),
+                    },
                     id: self.next_id(),
                 })
             }
@@ -649,7 +657,11 @@ impl Parser<'_> {
                 self.skip_newlines()?;
                 let right = self.addition()?;
                 Ok(AstNode {
-                    kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
+                    kind: AstNodeExpr::Binary {
+                        left: Box::new(left),
+                        op: previous,
+                        right: Box::new(right),
+                    },
                     id: self.next_id(),
                 })
             }
@@ -666,7 +678,11 @@ impl Parser<'_> {
                 let right = self.range()?;
 
                 Ok(AstNode {
-                    kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
+                    kind: AstNodeExpr::Binary {
+                        left: Box::new(left),
+                        op: previous,
+                        right: Box::new(right),
+                    },
                     id: self.next_id(),
                 })
             }
@@ -686,7 +702,11 @@ impl Parser<'_> {
                 self.skip_newlines()?;
                 let right = self.comparison()?;
                 Ok(AstNode {
-                    kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
+                    kind: AstNodeExpr::Binary {
+                        left: Box::new(left),
+                        op: previous,
+                        right: Box::new(right),
+                    },
                     id: self.next_id(),
                 })
             }
@@ -706,7 +726,11 @@ impl Parser<'_> {
                 self.skip_newlines()?;
                 let right = self.equality()?;
                 Ok(AstNode {
-                    kind: AstNodeExpr::Binary(Box::new(left), previous, Box::new(right)),
+                    kind: AstNodeExpr::Binary {
+                        left: Box::new(left),
+                        op: previous,
+                        right: Box::new(right),
+                    },
                     id: self.next_id(),
                 })
             }
@@ -724,7 +748,11 @@ impl Parser<'_> {
                 self.skip_newlines()?;
                 let right = self.conjunction()?;
                 Ok(AstNode {
-                    kind: AstNodeExpr::Binary(Box::new(left), tok, Box::new(right)),
+                    kind: AstNodeExpr::Binary {
+                        left: Box::new(left),
+                        op: tok,
+                        right: Box::new(right),
+                    },
                     id: self.next_id(),
                 })
             }
@@ -742,7 +770,11 @@ impl Parser<'_> {
                 self.skip_newlines()?;
                 let right = self.disjunction()?;
                 Ok(AstNode {
-                    kind: AstNodeExpr::Binary(Box::new(left), tok, Box::new(right)),
+                    kind: AstNodeExpr::Binary {
+                        left: Box::new(left),
+                        op: tok,
+                        right: Box::new(right),
+                    },
                     id: self.next_id(),
                 })
             }

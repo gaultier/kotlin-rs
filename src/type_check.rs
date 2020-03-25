@@ -312,83 +312,88 @@ impl<'a> TypeChecker<'a> {
         match ast {
             AstNode {
                 kind:
-                    AstNodeExpr::Binary(
+                    AstNodeExpr::Binary {
                         left,
-                        tok
-                        @
-                        Token {
-                            kind: TokenKind::BangEqual,
-                            ..
-                        },
+                        op:
+                            op
+                            @
+                            Token {
+                                kind: TokenKind::BangEqual,
+                                ..
+                            },
                         right,
-                    ),
+                    },
                 id,
                 ..
             }
             | AstNode {
                 kind:
-                    AstNodeExpr::Binary(
+                    AstNodeExpr::Binary {
                         left,
-                        tok
-                        @
-                        Token {
-                            kind: TokenKind::EqualEqual,
-                            ..
-                        },
+                        op:
+                            op
+                            @
+                            Token {
+                                kind: TokenKind::EqualEqual,
+                                ..
+                            },
                         right,
-                    ),
+                    },
                 id,
                 ..
             }
             | AstNode {
                 kind:
-                    AstNodeExpr::Binary(
+                    AstNodeExpr::Binary {
                         left,
-                        tok
-                        @
-                        Token {
-                            kind: TokenKind::BangEqualEqual,
-                            ..
-                        },
+                        op:
+                            op
+                            @
+                            Token {
+                                kind: TokenKind::BangEqualEqual,
+                                ..
+                            },
                         right,
-                    ),
+                    },
                 id,
                 ..
             }
             | AstNode {
                 kind:
-                    AstNodeExpr::Binary(
+                    AstNodeExpr::Binary {
                         left,
-                        tok
-                        @
-                        Token {
-                            kind: TokenKind::EqualEqualEqual,
-                            ..
-                        },
+                        op:
+                            op
+                            @
+                            Token {
+                                kind: TokenKind::EqualEqualEqual,
+                                ..
+                            },
                         right,
-                    ),
+                    },
                 id,
                 ..
             }
             | AstNode {
                 kind:
-                    AstNodeExpr::Binary(
+                    AstNodeExpr::Binary {
                         left,
-                        tok
-                        @
-                        Token {
-                            kind: TokenKind::DotDot,
-                            ..
-                        },
+                        op:
+                            op
+                            @
+                            Token {
+                                kind: TokenKind::DotDot,
+                                ..
+                            },
                         right,
-                    ),
+                    },
                 id,
                 ..
             } => {
                 let left_t = self.expr(left)?;
                 let right_t = self.expr(right)?;
 
-                self.eq(&left_t, &right_t, &tok.span)?;
+                self.eq(&left_t, &right_t, &op.span)?;
                 let t = match left_t {
                     Type::Int => Type::IntRange,
                     Type::UInt => Type::UIntRange,
@@ -402,7 +407,7 @@ impl<'a> TypeChecker<'a> {
                     _ => {
                         return Err(Error::new(
                             ErrorKind::InvalidRange(left_t),
-                            self.lexer.span_location(&tok.span),
+                            self.lexer.span_location(&op.span),
                         ));
                     }
                 };
@@ -412,81 +417,85 @@ impl<'a> TypeChecker<'a> {
             }
             AstNode {
                 kind:
-                    AstNodeExpr::Binary(
+                    AstNodeExpr::Binary {
                         left,
-                        tok
-                        @
-                        Token {
-                            kind: TokenKind::Lesser,
-                            ..
-                        },
+                        op:
+                            op
+                            @
+                            Token {
+                                kind: TokenKind::Lesser,
+                                ..
+                            },
                         right,
-                    ),
+                    },
                 id,
                 ..
             }
             | AstNode {
                 kind:
-                    AstNodeExpr::Binary(
+                    AstNodeExpr::Binary {
                         left,
-                        tok
-                        @
-                        Token {
-                            kind: TokenKind::LesserEqual,
-                            ..
-                        },
+                        op:
+                            op
+                            @
+                            Token {
+                                kind: TokenKind::LesserEqual,
+                                ..
+                            },
                         right,
-                    ),
+                    },
                 id,
                 ..
             }
             | AstNode {
                 kind:
-                    AstNodeExpr::Binary(
+                    AstNodeExpr::Binary {
                         left,
-                        tok
-                        @
-                        Token {
-                            kind: TokenKind::Greater,
-                            ..
-                        },
+                        op:
+                            op
+                            @
+                            Token {
+                                kind: TokenKind::Greater,
+                                ..
+                            },
                         right,
-                    ),
+                    },
                 id,
                 ..
             }
             | AstNode {
                 kind:
-                    AstNodeExpr::Binary(
+                    AstNodeExpr::Binary {
                         left,
-                        tok
-                        @
-                        Token {
-                            kind: TokenKind::GreaterEqual,
-                            ..
-                        },
+                        op:
+                            op
+                            @
+                            Token {
+                                kind: TokenKind::GreaterEqual,
+                                ..
+                            },
                         right,
-                    ),
+                    },
                 id,
                 ..
             } => {
                 let left_t = self.expr(left)?;
                 let right_t = self.expr(right)?;
 
-                self.coalesce_types(&left_t, &right_t, &tok)?;
+                self.coalesce_types(&left_t, &right_t, &op)?;
 
                 let t = Type::Bool;
                 self.types.insert(*id, t.clone());
                 Ok(t)
             }
             AstNode {
-                kind: AstNodeExpr::Binary(left, tok, right),
+                kind: AstNodeExpr::Binary { left, op, right },
                 id,
                 ..
             } => {
                 let left_t = self.expr(left)?;
                 let right_t = self.expr(right)?;
-                let t = self.coalesce_types(&left_t, &right_t, &tok)?;
+                let t = self.coalesce_types(&left_t, &right_t, &op)?;
                 self.types.insert(*id, t.clone());
                 Ok(t)
             }
@@ -605,8 +614,8 @@ impl<'a> TypeChecker<'a> {
             self.expr(arg)?;
         }
 
-        let fn_usage_ref = self.resolution.get(&id).unwrap();
-        debug!("fn ref: id={} fn_usage_ref={:?}", id, &fn_usage_ref);
+        // let fn_usage_ref = self.resolution.get(&id).unwrap();
+        // debug!("fn ref: id={} fn_usage_ref={:?}", id, &fn_usage_ref);
         // let t = self.types.get(&var_usage_ref.node_ref_id).unwrap().clone();
         // let fn_t = self.types.get()
 
@@ -654,7 +663,7 @@ impl<'a> TypeChecker<'a> {
                 ..
             } => self.unary(ast),
             AstNode {
-                kind: AstNodeExpr::Binary(..),
+                kind: AstNodeExpr::Binary { .. },
                 ..
             } => self.binary(ast),
             AstNode {
