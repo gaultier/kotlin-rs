@@ -140,15 +140,19 @@ impl<'a> Resolver<'a> {
             AstNodeExpr::VarRef(span) => {
                 self.var_ref(span, expr.id)?;
             }
-            AstNodeExpr::FnCall { .. } => {
-                self.fn_call()?;
+            AstNodeExpr::FnCall { name, args, .. } => {
+                self.fn_call(name, args)?;
             }
         };
         Ok(())
     }
 
-    fn fn_call(&mut self) -> Result<(), Error> {
-        unimplemented!()
+    fn fn_call(&mut self, fn_name: &AstNode, args: &[AstNode]) -> Result<(), Error> {
+        self.expr(fn_name)?;
+        for arg in args {
+            self.expr(arg)?;
+        }
+        Ok(())
     }
 
     fn var_decl(&mut self, identifier: &'a str, flags: u16, id: NodeId) -> Result<(), Error> {
