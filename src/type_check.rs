@@ -33,7 +33,7 @@ impl<'a> TypeChecker<'a> {
 
     fn while_stmt(
         &mut self,
-        cond: &AstNode,
+        cond: &AstNodeExpr,
         block: &Block,
         cond_start_tok: &Token,
     ) -> Result<Type, Error> {
@@ -43,14 +43,19 @@ impl<'a> TypeChecker<'a> {
         Ok(Type::Unit)
     }
 
-    fn var_def(&mut self, value: &AstNode, id: NodeId) -> Result<Type, Error> {
+    fn var_def(&mut self, value: &AstNodeExpr, id: NodeId) -> Result<Type, Error> {
         let t = self.expr(value)?;
         self.types.insert(id, t.clone());
 
         Ok(t)
     }
 
-    fn assign(&mut self, target: &AstNode, value: &AstNode, span: &Span) -> Result<Type, Error> {
+    fn assign(
+        &mut self,
+        target: &AstNodeExpr,
+        value: &AstNodeExpr,
+        span: &Span,
+    ) -> Result<Type, Error> {
         let target_t = self.expr(target)?;
         let value_t = self.expr(value)?;
         self.eq(&target_t, &value_t, span)?;
@@ -102,71 +107,47 @@ impl<'a> TypeChecker<'a> {
             .unwrap_or(Type::Unit))
     }
 
-    fn unary(&mut self, ast: &AstNode) -> Result<Type, Error> {
-        if let Some(t) = self.types.get(&ast.id) {
-            return Ok(t.clone());
-        }
-
+    fn unary(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
         match ast {
-            AstNode {
-                kind:
-                    AstNodeExpr::Unary {
-                        token:
-                            Token {
-                                kind: TokenKind::Minus,
-                                ..
-                            },
-                        expr: right,
+            AstNodeExpr::Unary {
+                token:
+                    Token {
+                        kind: TokenKind::Minus,
                         ..
                     },
+                expr: right,
                 id,
-                ..
             }
-            | AstNode {
-                kind:
-                    AstNodeExpr::Unary {
-                        token:
-                            Token {
-                                kind: TokenKind::Plus,
-                                ..
-                            },
-                        expr: right,
+            | AstNodeExpr::Unary {
+                token:
+                    Token {
+                        kind: TokenKind::Plus,
                         ..
                     },
+                expr: right,
                 id,
-                ..
             } => {
                 let t = self.expr(right)?;
                 self.types.insert(*id, t.clone());
                 Ok(t)
             }
-            AstNode {
-                kind:
-                    AstNodeExpr::Unary {
-                        token:
-                            Token {
-                                kind: TokenKind::PlusPlus,
-                                span,
-                            },
-                        expr: right,
-                        ..
+            AstNodeExpr::Unary {
+                token:
+                    Token {
+                        kind: TokenKind::PlusPlus,
+                        span,
                     },
+                expr: right,
                 id,
-                ..
             }
-            | AstNode {
-                kind:
-                    AstNodeExpr::Unary {
-                        token:
-                            Token {
-                                kind: TokenKind::MinusMinus,
-                                span,
-                            },
-                        expr: right,
-                        ..
+            | AstNodeExpr::Unary {
+                token:
+                    Token {
+                        kind: TokenKind::MinusMinus,
+                        span,
                     },
+                expr: right,
                 id,
-                ..
             } => {
                 let t = self.expr(right)?;
                 match t {
@@ -186,21 +167,17 @@ impl<'a> TypeChecker<'a> {
                     )),
                 }
             }
-            AstNode {
-                kind:
-                    AstNodeExpr::Unary {
-                        token:
-                            tok
-                            @
-                            Token {
-                                kind: TokenKind::Bang,
-                                ..
-                            },
-                        expr: right,
+
+            AstNodeExpr::Unary {
+                token:
+                    tok
+                    @
+                    Token {
+                        kind: TokenKind::Bang,
                         ..
                     },
+                expr: right,
                 id,
-                ..
             } => {
                 let right_t = self.expr(right)?;
                 let t = self.coalesce_types(&Type::Bool, &right_t, tok)?;
@@ -211,92 +188,83 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn literal(&mut self, ast: &AstNode) -> Result<Type, Error> {
-        if let Some(t) = self.types.get(&ast.id) {
-            return Ok(t.clone());
-        }
-
+    fn literal(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
         let t = match ast {
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::Int(_),
-                        ..
-                    }),
-                ..
-            } => Type::Int,
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::UInt(_),
-                        ..
-                    }),
-                ..
-            } => Type::UInt,
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::Long(_),
-                        ..
-                    }),
-                ..
-            } => Type::Long,
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::ULong(_),
-                        ..
-                    }),
-                ..
-            } => Type::ULong,
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::Float(_),
-                        ..
-                    }),
-                ..
-            } => Type::Float,
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::Double(_),
-                        ..
-                    }),
-                ..
-            } => Type::Double,
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::Null,
-                        ..
-                    }),
-                ..
-            } => Type::Null,
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::Bool(_),
-                        ..
-                    }),
-                ..
-            } => Type::Bool,
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::TString,
-                        ..
-                    }),
-                ..
-            } => Type::TString,
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::Char(_),
-                        ..
-                    }),
-                ..
-            } => Type::Char,
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::Int(_),
+                    ..
+                },
+                _,
+            ) => Type::Int,
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::UInt(_),
+                    ..
+                },
+                _,
+            ) => Type::UInt,
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::Long(_),
+                    ..
+                },
+                _,
+            ) => Type::Long,
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::ULong(_),
+                    ..
+                },
+                _,
+            ) => Type::ULong,
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::Float(_),
+                    ..
+                },
+                _,
+            ) => Type::Float,
+
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::Double(_),
+                    ..
+                },
+                _,
+            ) => Type::Double,
+
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::Null,
+                    ..
+                },
+                _,
+            ) => Type::Null,
+
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::Bool(_),
+                    ..
+                },
+                _,
+            ) => Type::Bool,
+
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::TString,
+                    ..
+                },
+                _,
+            ) => Type::TString,
+
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::Char(_),
+                    ..
+                },
+                _,
+            ) => Type::Char,
             _ => unreachable!(),
         };
 
@@ -304,91 +272,67 @@ impl<'a> TypeChecker<'a> {
         Ok(t)
     }
 
-    fn binary(&mut self, ast: &AstNode) -> Result<Type, Error> {
-        if let Some(t) = self.types.get(&ast.id) {
-            return Ok(t.clone());
-        }
-
+    fn binary(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
         match ast {
-            AstNode {
-                kind:
-                    AstNodeExpr::Binary {
-                        left,
-                        op:
-                            op
-                            @
-                            Token {
-                                kind: TokenKind::BangEqual,
-                                ..
-                            },
-                        right,
+            AstNodeExpr::Binary {
+                left,
+                op:
+                    op
+                    @
+                    Token {
+                        kind: TokenKind::BangEqual,
+                        ..
                     },
+                right,
                 id,
-                ..
             }
-            | AstNode {
-                kind:
-                    AstNodeExpr::Binary {
-                        left,
-                        op:
-                            op
-                            @
-                            Token {
-                                kind: TokenKind::EqualEqual,
-                                ..
-                            },
-                        right,
+            | AstNodeExpr::Binary {
+                left,
+                op:
+                    op
+                    @
+                    Token {
+                        kind: TokenKind::EqualEqual,
+                        ..
                     },
+                right,
                 id,
-                ..
             }
-            | AstNode {
-                kind:
-                    AstNodeExpr::Binary {
-                        left,
-                        op:
-                            op
-                            @
-                            Token {
-                                kind: TokenKind::BangEqualEqual,
-                                ..
-                            },
-                        right,
+            | AstNodeExpr::Binary {
+                left,
+                op:
+                    op
+                    @
+                    Token {
+                        kind: TokenKind::BangEqualEqual,
+                        ..
                     },
+                right,
                 id,
-                ..
             }
-            | AstNode {
-                kind:
-                    AstNodeExpr::Binary {
-                        left,
-                        op:
-                            op
-                            @
-                            Token {
-                                kind: TokenKind::EqualEqualEqual,
-                                ..
-                            },
-                        right,
+            | AstNodeExpr::Binary {
+                left,
+                op:
+                    op
+                    @
+                    Token {
+                        kind: TokenKind::EqualEqualEqual,
+                        ..
                     },
+                right,
                 id,
-                ..
             }
-            | AstNode {
-                kind:
-                    AstNodeExpr::Binary {
-                        left,
-                        op:
-                            op
-                            @
-                            Token {
-                                kind: TokenKind::DotDot,
-                                ..
-                            },
-                        right,
+            | AstNodeExpr::Binary {
+                left,
+                op:
+                    op
+                    @
+                    Token {
+                        kind: TokenKind::DotDot,
+                        ..
                     },
+                right,
                 id,
-                ..
             } => {
                 let left_t = self.expr(left)?;
                 let right_t = self.expr(right)?;
@@ -415,69 +359,54 @@ impl<'a> TypeChecker<'a> {
                 self.types.insert(*id, t.clone());
                 Ok(t)
             }
-            AstNode {
-                kind:
-                    AstNodeExpr::Binary {
-                        left,
-                        op:
-                            op
-                            @
-                            Token {
-                                kind: TokenKind::Lesser,
-                                ..
-                            },
-                        right,
+
+            AstNodeExpr::Binary {
+                left,
+                op:
+                    op
+                    @
+                    Token {
+                        kind: TokenKind::Lesser,
+                        ..
                     },
+                right,
                 id,
-                ..
             }
-            | AstNode {
-                kind:
-                    AstNodeExpr::Binary {
-                        left,
-                        op:
-                            op
-                            @
-                            Token {
-                                kind: TokenKind::LesserEqual,
-                                ..
-                            },
-                        right,
+            | AstNodeExpr::Binary {
+                left,
+                op:
+                    op
+                    @
+                    Token {
+                        kind: TokenKind::LesserEqual,
+                        ..
                     },
+                right,
                 id,
-                ..
             }
-            | AstNode {
-                kind:
-                    AstNodeExpr::Binary {
-                        left,
-                        op:
-                            op
-                            @
-                            Token {
-                                kind: TokenKind::Greater,
-                                ..
-                            },
-                        right,
+            | AstNodeExpr::Binary {
+                left,
+                op:
+                    op
+                    @
+                    Token {
+                        kind: TokenKind::Greater,
+                        ..
                     },
+                right,
                 id,
-                ..
             }
-            | AstNode {
-                kind:
-                    AstNodeExpr::Binary {
-                        left,
-                        op:
-                            op
-                            @
-                            Token {
-                                kind: TokenKind::GreaterEqual,
-                                ..
-                            },
-                        right,
+            | AstNodeExpr::Binary {
+                left,
+                op:
+                    op
+                    @
+                    Token {
+                        kind: TokenKind::GreaterEqual,
+                        ..
                     },
+                right,
                 id,
-                ..
             } => {
                 let left_t = self.expr(left)?;
                 let right_t = self.expr(right)?;
@@ -488,10 +417,11 @@ impl<'a> TypeChecker<'a> {
                 self.types.insert(*id, t.clone());
                 Ok(t)
             }
-            AstNode {
-                kind: AstNodeExpr::Binary { left, op, right },
+            AstNodeExpr::Binary {
+                left,
+                op,
+                right,
                 id,
-                ..
             } => {
                 let left_t = self.expr(left)?;
                 let right_t = self.expr(right)?;
@@ -515,7 +445,7 @@ impl<'a> TypeChecker<'a> {
         })
     }
 
-    fn when_expr(&mut self, ast: &AstNode) -> Result<Type, Error> {
+    fn when_expr(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
         if let Some(t) = self.types.get(&ast.id) {
             return Ok(t.clone());
         }
@@ -559,7 +489,7 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn if_expr(&mut self, ast: &AstNode) -> Result<Type, Error> {
+    fn if_expr(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
         if let Some(t) = self.types.get(&ast.id) {
             return Ok(t.clone());
         }
@@ -608,7 +538,12 @@ impl<'a> TypeChecker<'a> {
         Ok(t)
     }
 
-    fn fn_call(&mut self, fn_name: &AstNode, args: &[AstNode], id: &NodeId) -> Result<Type, Error> {
+    fn fn_call(
+        &mut self,
+        fn_name: &AstNodeExpr,
+        args: &[AstNodeExpr],
+        id: &NodeId,
+    ) -> Result<Type, Error> {
         self.expr(fn_name)?;
         for arg in args {
             self.expr(arg)?;
@@ -624,8 +559,8 @@ impl<'a> TypeChecker<'a> {
 
     fn fn_def(
         &mut self,
-        fn_name: &AstNode,
-        args: &[AstNode],
+        fn_name: &AstNodeExpr,
+        args: &[AstNodeExpr],
         body: &AstNodeStmt,
         flags: u16,
         id: NodeId,
@@ -652,7 +587,7 @@ impl<'a> TypeChecker<'a> {
         Ok(t)
     }
 
-    fn expr(&mut self, ast: &AstNode) -> Result<Type, Error> {
+    fn expr(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
         match ast {
             AstNode {
                 kind: AstNodeExpr::Literal(..),

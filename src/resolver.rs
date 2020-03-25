@@ -116,10 +116,10 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn expr(&mut self, expr: &AstNode) -> Result<(), Error> {
-        match &expr.kind {
-            AstNodeExpr::Literal(_) => (),
-            AstNodeExpr::Grouping(expr) | AstNodeExpr::Unary { expr, .. } => {
+    fn expr(&mut self, expr: &AstNodeExpr) -> Result<(), Error> {
+        match &expr {
+            AstNodeExpr::Literal(_, _) => (),
+            AstNodeExpr::Grouping(expr, _) | AstNodeExpr::Unary { expr, .. } => {
                 self.expr(&*expr)?;
             }
             AstNodeExpr::Binary { left, right, .. } => {
@@ -140,6 +140,7 @@ impl<'a> Resolver<'a> {
                 subject,
                 entries,
                 else_entry,
+                ..
             } => {
                 if let Some(subject) = subject {
                     self.statement(subject)?;
@@ -153,8 +154,8 @@ impl<'a> Resolver<'a> {
                     self.statement(else_entry)?;
                 }
             }
-            AstNodeExpr::VarRef(span) => {
-                self.var_ref(span, expr.id)?;
+            AstNodeExpr::VarRef(span, id) => {
+                self.var_ref(span, *id)?;
             }
             AstNodeExpr::FnCall { fn_name, args, .. } => {
                 self.fn_call(fn_name, args)?;
@@ -163,7 +164,7 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn fn_call(&mut self, fn_name: &AstNode, args: &[AstNode]) -> Result<(), Error> {
+    fn fn_call(&mut self, fn_name: &AstNodeExpr, args: &[AstNodeExpr]) -> Result<(), Error> {
         self.expr(fn_name)?;
         for arg in args {
             self.expr(arg)?;
@@ -188,10 +189,10 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn fn_name_def(&mut self, fn_name: &AstNode, flags: u16, id: NodeId) -> Result<(), Error> {
+    fn fn_name_def(&mut self, fn_name: &AstNodeExpr, flags: u16, id: NodeId) -> Result<(), Error> {
         let scope = self.scopes.last_mut().unwrap();
-        let identifier = match fn_name.kind {
-            AstNodeExpr::VarRef(span) => &self.lexer.src[span.start..span.end],
+        let identifier = match fn_name {
+            AstNodeExpr::VarRef(span, _) => &self.lexer.src[span.start..span.end],
             _ => unimplemented!(),
         };
 
@@ -237,15 +238,12 @@ impl<'a> Resolver<'a> {
         self.scopes.pop();
     }
 
-    fn assign(&mut self, target: &AstNode, value: &AstNode) -> Result<(), Error> {
+    fn assign(&mut self, target: &AstNodeExpr, value: &AstNodeExpr) -> Result<(), Error> {
         self.expr(target)?;
         self.expr(value)?;
 
         let (identifier, span) = match target {
-            AstNode {
-                kind: AstNodeExpr::VarRef(span),
-                ..
-            } => (&self.lexer.src[span.start..span.end], span),
+            AstNodeExpr::VarRef(span, _) => (&self.lexer.src[span.start..span.end], span),
             _ => unreachable!(),
         };
 
@@ -268,8 +266,8 @@ impl<'a> Resolver<'a> {
 
     fn fn_def(
         &mut self,
-        fn_name: &AstNode,
-        args: &[AstNode],
+        fn_name: &AstNodeExpr,
+        args: &[AstNodeExpr],
         body: &AstNodeStmt,
         flags: u16,
         id: NodeId,
