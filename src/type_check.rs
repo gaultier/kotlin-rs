@@ -103,25 +103,29 @@ impl<'a> TypeChecker<'a> {
         match ast {
             AstNode {
                 kind:
-                    AstNodeExpr::Unary(
-                        Token {
-                            kind: TokenKind::Minus,
-                            ..
-                        },
-                        right,
-                    ),
+                    AstNodeExpr::Unary {
+                        token:
+                            Token {
+                                kind: TokenKind::Minus,
+                                ..
+                            },
+                        expr: right,
+                        ..
+                    },
                 id,
                 ..
             }
             | AstNode {
                 kind:
-                    AstNodeExpr::Unary(
-                        Token {
-                            kind: TokenKind::Plus,
-                            ..
-                        },
-                        right,
-                    ),
+                    AstNodeExpr::Unary {
+                        token:
+                            Token {
+                                kind: TokenKind::Plus,
+                                ..
+                            },
+                        expr: right,
+                        ..
+                    },
                 id,
                 ..
             } => {
@@ -131,25 +135,29 @@ impl<'a> TypeChecker<'a> {
             }
             AstNode {
                 kind:
-                    AstNodeExpr::Unary(
-                        Token {
-                            kind: TokenKind::PlusPlus,
-                            span,
-                        },
-                        right,
-                    ),
+                    AstNodeExpr::Unary {
+                        token:
+                            Token {
+                                kind: TokenKind::PlusPlus,
+                                span,
+                            },
+                        expr: right,
+                        ..
+                    },
                 id,
                 ..
             }
             | AstNode {
                 kind:
-                    AstNodeExpr::Unary(
-                        Token {
-                            kind: TokenKind::MinusMinus,
-                            span,
-                        },
-                        right,
-                    ),
+                    AstNodeExpr::Unary {
+                        token:
+                            Token {
+                                kind: TokenKind::MinusMinus,
+                                span,
+                            },
+                        expr: right,
+                        ..
+                    },
                 id,
                 ..
             } => {
@@ -173,15 +181,17 @@ impl<'a> TypeChecker<'a> {
             }
             AstNode {
                 kind:
-                    AstNodeExpr::Unary(
-                        tok
-                        @
-                        Token {
-                            kind: TokenKind::Bang,
-                            ..
-                        },
-                        right,
-                    ),
+                    AstNodeExpr::Unary {
+                        token:
+                            tok
+                            @
+                            Token {
+                                kind: TokenKind::Bang,
+                                ..
+                            },
+                        expr: right,
+                        ..
+                    },
                 id,
                 ..
             } => {
@@ -589,7 +599,7 @@ impl<'a> TypeChecker<'a> {
                 ..
             } => self.literal(ast),
             AstNode {
-                kind: AstNodeExpr::Unary(..),
+                kind: AstNodeExpr::Unary { .. },
                 ..
             } => self.unary(ast),
             AstNode {

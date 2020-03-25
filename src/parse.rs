@@ -108,9 +108,19 @@ pub struct WhenEntry {
 }
 
 #[derive(Debug)]
+pub enum UnaryKind {
+    Prefix,
+    Postfix,
+}
+
+#[derive(Debug)]
 pub enum AstNodeExpr {
     Binary(Box<AstNode>, Token, Box<AstNode>),
-    Unary(Token, Box<AstNode>),
+    Unary {
+        token: Token,
+        expr: Box<AstNode>,
+        kind: UnaryKind,
+    },
     Literal(Token),
     Grouping(Box<AstNode>),
     IfExpr {
@@ -514,7 +524,11 @@ impl Parser<'_> {
                 self.skip_newlines()?;
                 let right = self.unary_prefix()?;
                 Ok(AstNode {
-                    kind: AstNodeExpr::Unary(previous, Box::new(right)),
+                    kind: AstNodeExpr::Unary {
+                        token: previous,
+                        expr: Box::new(right),
+                        kind: UnaryKind::Prefix,
+                    },
                     id: self.next_id(),
                 })
             }
@@ -529,7 +543,11 @@ impl Parser<'_> {
             TokenKind::PlusPlus | TokenKind::MinusMinus | TokenKind::BangBang => {
                 self.advance()?;
                 let unary = AstNode {
-                    kind: AstNodeExpr::Unary(previous, Box::new(acc)),
+                    kind: AstNodeExpr::Unary {
+                        token: previous,
+                        expr: Box::new(acc),
+                        kind: UnaryKind::Postfix,
+                    },
                     id: self.next_id(),
                 };
 

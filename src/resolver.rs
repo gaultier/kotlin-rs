@@ -103,7 +103,7 @@ impl<'a> Resolver<'a> {
     fn expr(&mut self, expr: &AstNode) -> Result<(), Error> {
         match &expr.kind {
             AstNodeExpr::Literal(_) => (),
-            AstNodeExpr::Grouping(expr) | AstNodeExpr::Unary(_, expr) => {
+            AstNodeExpr::Grouping(expr) | AstNodeExpr::Unary { expr, .. } => {
                 self.expr(&*expr)?;
             }
             AstNodeExpr::Binary(left, _, right) => {

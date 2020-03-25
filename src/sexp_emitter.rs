@@ -280,11 +280,11 @@ impl SexpEmitter<'_> {
     fn unary<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNode {
-                kind: AstNodeExpr::Unary(tok, right),
+                kind: AstNodeExpr::Unary { token, expr, kind },
                 ..
             } => {
-                write!(w, "({} ", unary_op(&tok.kind)).unwrap();
-                self.expr(right, w)?;
+                write!(w, "({} ", unary_op(&token.kind)).unwrap();
+                self.expr(expr, w)?;
                 write!(w, ")").unwrap();
                 Ok(())
             }
@@ -445,7 +445,7 @@ impl SexpEmitter<'_> {
                 ..
             } => self.literal(ast, w),
             AstNode {
-                kind: AstNodeExpr::Unary(..),
+                kind: AstNodeExpr::Unary { .. },
                 ..
             } => self.unary(ast, w),
             AstNode {
