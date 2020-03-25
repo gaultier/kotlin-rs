@@ -785,19 +785,23 @@ impl Parser<'_> {
     }
 
     fn statement(&mut self) -> Result<AstNodeStmt, Error> {
+        let cur_kind = self.current.unwrap().kind;
+
         match self.previous.unwrap().kind {
             TokenKind::KeywordWhile => self.while_stmt(),
             TokenKind::KeywordDo => self.do_while_stmt(),
             TokenKind::KeywordVal | TokenKind::KeywordVar => self.var_def(),
-            _ => match (self.previous.unwrap().kind, self.current.unwrap().kind) {
-                (TokenKind::Identifier, TokenKind::Equal)
-                | (TokenKind::Identifier, TokenKind::PlusEqual)
-                | (TokenKind::Identifier, TokenKind::MinusEqual)
-                | (TokenKind::Identifier, TokenKind::StarEqual)
-                | (TokenKind::Identifier, TokenKind::SlashEqual)
-                | (TokenKind::Identifier, TokenKind::PercentEqual) => self.assign(),
-                _ => Ok(AstNodeStmt::Expr(self.expression()?)),
-            },
+            TokenKind::Identifier
+                if cur_kind == TokenKind::Equal
+                    || cur_kind == TokenKind::MinusEqual
+                    || cur_kind == TokenKind::PlusEqual
+                    || cur_kind == TokenKind::StarEqual
+                    || cur_kind == TokenKind::SlashEqual
+                    || cur_kind == TokenKind::PercentEqual =>
+            {
+                self.assign()
+            }
+            _ => Ok(AstNodeStmt::Expr(self.expression()?)),
         }
     }
 
