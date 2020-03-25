@@ -78,32 +78,32 @@ pub(crate) const VAR_DEFINITION_FLAG_VAL: u8 = 1;
 
 #[derive(Debug)]
 pub enum AstNodeStmt {
-    Expr(AstNode),
+    Expr(AstNodeExpr),
     While {
-        cond: AstNode,
+        cond: AstNodeExpr,
         cond_start_tok: Token,
         body: Block,
     },
     DoWhile {
-        cond: AstNode,
+        cond: AstNodeExpr,
         cond_start_tok: Token,
         body: Block,
     },
     VarDefinition {
         identifier: Token,
-        value: AstNode,
+        value: AstNodeExpr,
         id: NodeId,
         flags: u8,
     },
     Assign {
-        target: AstNode,
-        value: AstNode,
+        target: AstNodeExpr,
+        value: AstNodeExpr,
         span: Span,
         op: TokenKind,
     },
     FnDefinition {
-        fn_name: AstNode,
-        args: Vec<AstNode>,
+        fn_name: AstNodeExpr,
+        args: Vec<AstNodeExpr>,
         id: NodeId,
         flags: u16,
         body: Box<AstNodeStmt>,
@@ -115,14 +115,8 @@ pub type StatementsSlice = [AstNodeStmt];
 pub type NodeId = usize;
 
 #[derive(Debug)]
-pub struct AstNode {
-    pub id: NodeId,
-    pub kind: AstNodeExpr,
-}
-
-#[derive(Debug)]
 pub struct WhenEntry {
-    pub cond: AstNode,
+    pub cond: AstNodeExpr,
     pub body: Block,
     pub cond_start_tok: Token,
 }
@@ -136,34 +130,38 @@ pub enum UnaryKind {
 #[derive(Debug)]
 pub enum AstNodeExpr {
     Binary {
-        left: Box<AstNode>,
+        left: Box<AstNodeExpr>,
         op: Token,
-        right: Box<AstNode>,
+        right: Box<AstNodeExpr>,
+        id: NodeId,
     },
     Unary {
         token: Token,
-        expr: Box<AstNode>,
+        expr: Box<AstNodeExpr>,
         kind: UnaryKind,
+        id: NodeId,
     },
-    Literal(Token),
-    Grouping(Box<AstNode>),
+    Literal(Token, NodeId),
+    Grouping(Box<AstNodeExpr>, NodeId),
     IfExpr {
-        cond: Box<AstNode>,
+        cond: Box<AstNodeExpr>,
         cond_start_tok: Token,
         if_body: Block,
-        // if_body_tok: Token,
         else_body: Block,
         else_body_tok: Token,
+        id: NodeId,
     },
     WhenExpr {
         subject: Option<Box<AstNodeStmt>>,
         entries: Vec<WhenEntry>,
         else_entry: Option<Block>,
+        id: NodeId,
     },
-    VarRef(Span),
+    VarRef(Span, NodeId),
     FnCall {
-        fn_name: Box<AstNode>,
-        args: Vec<AstNode>,
+        fn_name: Box<AstNodeExpr>,
+        args: Vec<AstNodeExpr>,
+        id: NodeId,
     },
 }
 
@@ -299,7 +297,7 @@ impl Parser<'_> {
         })
     }
 
-    fn when_cond(&mut self) -> Result<AstNode, Error> {
+    fn when_cond(&mut self) -> Result<AstNodeExpr, Error> {
         // TODO: allow range & type test here
         self.expression()
     }
@@ -402,7 +400,7 @@ impl Parser<'_> {
         }
     }
 
-    fn when_expr(&mut self) -> Result<AstNode, Error> {
+    fn when_expr(&mut self) -> Result<AstNodeExpr, Error> {
         self.eat(TokenKind::KeywordWhen)?;
         self.skip_newlines()?;
 
@@ -416,17 +414,15 @@ impl Parser<'_> {
         self.skip_newlines()?;
         self.eat(TokenKind::RightCurlyBracket)?;
 
-        Ok(AstNode {
-            kind: AstNodeExpr::WhenExpr {
-                entries,
-                subject,
-                else_entry,
-            },
+        Ok(AstNodeExpr::WhenExpr {
+            entries,
+            subject,
+            else_entry,
             id: self.next_id(),
         })
     }
 
-    fn if_expr(&mut self) -> Result<AstNode, Error> {
+    fn if_expr(&mut self) -> Result<AstNodeExpr, Error> {
         self.eat(TokenKind::KeywordIf)?;
         self.skip_newlines()?;
 
@@ -479,19 +475,17 @@ impl Parser<'_> {
             _ => self.control_structure_body()?,
         };
 
-        Ok(AstNode {
-            kind: AstNodeExpr::IfExpr {
-                cond: Box::new(cond),
-                cond_start_tok,
-                if_body,
-                else_body,
-                else_body_tok,
-            },
+        Ok(AstNodeExpr::IfExpr {
+            cond: Box::new(cond),
+            cond_start_tok,
+            if_body,
+            else_body,
+            else_body_tok,
             id: self.next_id(),
         })
     }
 
-    fn primary(&mut self) -> Result<AstNode, Error> {
+    fn primary(&mut self) -> Result<AstNodeExpr, Error> {
         let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::Int(_)
@@ -507,29 +501,20 @@ impl Parser<'_> {
                 self.advance()?;
                 self.skip_newlines()?;
                 // TODO: fill type info here right away
-                Ok(AstNode {
-                    kind: AstNodeExpr::Literal(previous),
-                    id: self.next_id(),
-                })
+                Ok(AstNodeExpr::Literal(previous, self.next_id()))
             }
             TokenKind::LeftParen => {
                 self.advance()?;
                 self.skip_newlines()?;
                 let expr = self.expression()?;
                 self.eat(TokenKind::RightParen)?;
-                Ok(AstNode {
-                    kind: AstNodeExpr::Grouping(Box::new(expr)),
-                    id: self.next_id(),
-                })
+                Ok(AstNodeExpr::Grouping(Box::new(expr), self.next_id()))
             }
             TokenKind::KeywordIf => self.if_expr(),
             TokenKind::KeywordWhen => self.when_expr(),
             TokenKind::Identifier => {
                 self.advance()?;
-                Ok(AstNode {
-                    kind: AstNodeExpr::VarRef(previous.span),
-                    id: self.next_id(),
-                })
+                Ok(AstNodeExpr::VarRef(previous.span, self.next_id()))
             }
             _ => Err(Error::new(
                 ErrorKind::ExpectedPrimary,
@@ -538,21 +523,19 @@ impl Parser<'_> {
         }
     }
 
-    fn call_suffix(&mut self, fn_name: AstNode) -> Result<AstNode, Error> {
+    fn call_suffix(&mut self, fn_name: AstNodeExpr) -> Result<AstNodeExpr, Error> {
         self.eat(TokenKind::LeftParen)?;
         self.skip_newlines()?;
         // TODO: args
         self.eat(TokenKind::RightParen)?;
-        Ok(AstNode {
-            kind: AstNodeExpr::FnCall {
-                fn_name: Box::new(fn_name),
-                args: vec![],
-            },
+        Ok(AstNodeExpr::FnCall {
+            fn_name: Box::new(fn_name),
+            args: vec![],
             id: self.next_id(),
         })
     }
 
-    fn unary_prefix(&mut self) -> Result<AstNode, Error> {
+    fn unary_prefix(&mut self) -> Result<AstNodeExpr, Error> {
         // TODO: annotation, label
 
         let previous = self.previous.unwrap();
@@ -565,12 +548,10 @@ impl Parser<'_> {
                 self.advance()?;
                 self.skip_newlines()?;
                 let right = self.unary_prefix()?;
-                Ok(AstNode {
-                    kind: AstNodeExpr::Unary {
-                        token: previous,
-                        expr: Box::new(right),
-                        kind: UnaryKind::Prefix,
-                    },
+                Ok(AstNodeExpr::Unary {
+                    token: previous,
+                    expr: Box::new(right),
+                    kind: UnaryKind::Prefix,
                     id: self.next_id(),
                 })
             }
@@ -578,18 +559,16 @@ impl Parser<'_> {
         }
     }
 
-    fn postfix_unary_suffix(&mut self, acc: AstNode) -> Result<AstNode, Error> {
+    fn postfix_unary_suffix(&mut self, acc: AstNodeExpr) -> Result<AstNodeExpr, Error> {
         let previous = self.previous.unwrap();
         debug!("postfix_unary_suffix: tok={:?} acc={:?}", previous, acc);
         match previous.kind {
             TokenKind::PlusPlus | TokenKind::MinusMinus | TokenKind::BangBang => {
                 self.advance()?;
-                let unary = AstNode {
-                    kind: AstNodeExpr::Unary {
-                        token: previous,
-                        expr: Box::new(acc),
-                        kind: UnaryKind::Postfix,
-                    },
+                let unary = AstNodeExpr::Unary {
+                    token: previous,
+                    expr: Box::new(acc),
+                    kind: UnaryKind::Postfix,
                     id: self.next_id(),
                 };
 
@@ -600,7 +579,7 @@ impl Parser<'_> {
         }
     }
 
-    fn postfix_unary_expr(&mut self) -> Result<AstNode, Error> {
+    fn postfix_unary_expr(&mut self) -> Result<AstNodeExpr, Error> {
         let prim = self.primary()?;
         match self.previous.unwrap().kind {
             TokenKind::LeftParen
@@ -611,7 +590,7 @@ impl Parser<'_> {
         }
     }
 
-    fn prefix_unary_expr(&mut self) -> Result<AstNode, Error> {
+    fn prefix_unary_expr(&mut self) -> Result<AstNodeExpr, Error> {
         match self.previous.unwrap().kind {
             TokenKind::PlusPlus
             | TokenKind::MinusMinus
@@ -622,12 +601,12 @@ impl Parser<'_> {
         }
     }
 
-    fn as_expr(&mut self) -> Result<AstNode, Error> {
+    fn as_expr(&mut self) -> Result<AstNodeExpr, Error> {
         // TODO: as
         self.prefix_unary_expr()
     }
 
-    fn multiplication(&mut self) -> Result<AstNode, Error> {
+    fn multiplication(&mut self) -> Result<AstNodeExpr, Error> {
         let left = self.as_expr()?;
         let previous = self.previous.unwrap();
         match previous.kind {
@@ -635,12 +614,10 @@ impl Parser<'_> {
                 self.advance()?;
                 self.skip_newlines()?;
                 let right = self.multiplication()?;
-                Ok(AstNode {
-                    kind: AstNodeExpr::Binary {
-                        left: Box::new(left),
-                        op: previous,
-                        right: Box::new(right),
-                    },
+                Ok(AstNodeExpr::Binary {
+                    left: Box::new(left),
+                    op: previous,
+                    right: Box::new(right),
                     id: self.next_id(),
                 })
             }
@@ -648,7 +625,7 @@ impl Parser<'_> {
         }
     }
 
-    fn addition(&mut self) -> Result<AstNode, Error> {
+    fn addition(&mut self) -> Result<AstNodeExpr, Error> {
         let left = self.multiplication()?;
         let previous = self.previous.unwrap();
         match previous.kind {
@@ -669,7 +646,7 @@ impl Parser<'_> {
         }
     }
 
-    fn range(&mut self) -> Result<AstNode, Error> {
+    fn range(&mut self) -> Result<AstNodeExpr, Error> {
         let left = self.addition()?;
         match self.previous.unwrap().kind {
             TokenKind::DotDot => {
@@ -677,12 +654,10 @@ impl Parser<'_> {
                 self.skip_newlines()?;
                 let right = self.range()?;
 
-                Ok(AstNode {
-                    kind: AstNodeExpr::Binary {
-                        left: Box::new(left),
-                        op: previous,
-                        right: Box::new(right),
-                    },
+                Ok(AstNodeExpr::Binary {
+                    left: Box::new(left),
+                    op: previous,
+                    right: Box::new(right),
                     id: self.next_id(),
                 })
             }
@@ -690,7 +665,7 @@ impl Parser<'_> {
         }
     }
 
-    fn comparison(&mut self) -> Result<AstNode, Error> {
+    fn comparison(&mut self) -> Result<AstNodeExpr, Error> {
         let left = self.range()?;
         let previous = self.previous.unwrap();
         match previous.kind {
@@ -701,12 +676,10 @@ impl Parser<'_> {
                 self.advance()?;
                 self.skip_newlines()?;
                 let right = self.comparison()?;
-                Ok(AstNode {
-                    kind: AstNodeExpr::Binary {
-                        left: Box::new(left),
-                        op: previous,
-                        right: Box::new(right),
-                    },
+                Ok(AstNodeExpr::Binary {
+                    left: Box::new(left),
+                    op: previous,
+                    right: Box::new(right),
                     id: self.next_id(),
                 })
             }
@@ -714,7 +687,7 @@ impl Parser<'_> {
         }
     }
 
-    fn equality(&mut self) -> Result<AstNode, Error> {
+    fn equality(&mut self) -> Result<AstNodeExpr, Error> {
         let left = self.comparison()?;
         let previous = self.previous.unwrap();
         match previous.kind {
@@ -725,12 +698,10 @@ impl Parser<'_> {
                 self.advance()?;
                 self.skip_newlines()?;
                 let right = self.equality()?;
-                Ok(AstNode {
-                    kind: AstNodeExpr::Binary {
-                        left: Box::new(left),
-                        op: previous,
-                        right: Box::new(right),
-                    },
+                Ok(AstNodeExpr::Binary {
+                    left: Box::new(left),
+                    op: previous,
+                    right: Box::new(right),
                     id: self.next_id(),
                 })
             }
@@ -738,7 +709,7 @@ impl Parser<'_> {
         }
     }
 
-    fn conjunction(&mut self) -> Result<AstNode, Error> {
+    fn conjunction(&mut self) -> Result<AstNodeExpr, Error> {
         let left = self.equality()?;
         self.skip_newlines()?;
 
@@ -747,12 +718,10 @@ impl Parser<'_> {
                 let tok = self.eat(TokenKind::AmpersandAmpersand)?;
                 self.skip_newlines()?;
                 let right = self.conjunction()?;
-                Ok(AstNode {
-                    kind: AstNodeExpr::Binary {
-                        left: Box::new(left),
-                        op: tok,
-                        right: Box::new(right),
-                    },
+                Ok(AstNodeExpr::Binary {
+                    left: Box::new(left),
+                    op: tok,
+                    right: Box::new(right),
                     id: self.next_id(),
                 })
             }
@@ -760,7 +729,7 @@ impl Parser<'_> {
         }
     }
 
-    fn disjunction(&mut self) -> Result<AstNode, Error> {
+    fn disjunction(&mut self) -> Result<AstNodeExpr, Error> {
         let left = self.conjunction()?;
         self.skip_newlines()?;
 
@@ -769,12 +738,10 @@ impl Parser<'_> {
                 let tok = self.eat(TokenKind::PipePipe)?;
                 self.skip_newlines()?;
                 let right = self.disjunction()?;
-                Ok(AstNode {
-                    kind: AstNodeExpr::Binary {
-                        left: Box::new(left),
-                        op: tok,
-                        right: Box::new(right),
-                    },
+                Ok(AstNodeExpr::Binary {
+                    left: Box::new(left),
+                    op: tok,
+                    right: Box::new(right),
                     id: self.next_id(),
                 })
             }
@@ -782,7 +749,7 @@ impl Parser<'_> {
         }
     }
 
-    fn expression(&mut self) -> Result<AstNode, Error> {
+    fn expression(&mut self) -> Result<AstNodeExpr, Error> {
         self.disjunction()
     }
 
