@@ -339,8 +339,21 @@ impl SexpEmitter<'_> {
         Ok(())
     }
 
-    fn fn_call<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
-        unimplemented!()
+    fn fn_call<W: std::io::Write>(
+        &self,
+        fn_name: &AstNode,
+        args: &[AstNode],
+        w: &mut W,
+    ) -> Result<(), Error> {
+        write!(w, "(apply ").unwrap();
+        self.expr(fn_name, w)?;
+        write!(w, " ").unwrap();
+        for arg in args {
+            self.expr(arg, w)?;
+        }
+        write!(w, ")").unwrap();
+
+        Ok(())
     }
 
     fn when_expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
@@ -484,9 +497,9 @@ impl SexpEmitter<'_> {
                 ..
             } => self.var_ref(span, w),
             AstNode {
-                kind: AstNodeExpr::FnCall { .. },
+                kind: AstNodeExpr::FnCall { fn_name, args, .. },
                 ..
-            } => self.fn_call(ast, w),
+            } => self.fn_call(fn_name, args, w),
         }
     }
 }

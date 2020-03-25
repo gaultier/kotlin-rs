@@ -592,7 +592,7 @@ impl<'a> TypeChecker<'a> {
         Ok(t)
     }
 
-    fn fn_call(&mut self, id: NodeId) -> Result<Type, Error> {
+    fn fn_call(&mut self, fn_name: &AstNode, args: &[AstNode], id: NodeId) -> Result<Type, Error> {
         unimplemented!()
     }
 
@@ -628,10 +628,10 @@ impl<'a> TypeChecker<'a> {
                 ..
             } => self.var_ref(*id),
             AstNode {
-                kind: AstNodeExpr::FnCall { .. },
+                kind: AstNodeExpr::FnCall { fn_name, args, .. },
                 id,
                 ..
-            } => self.fn_call(*id),
+            } => self.fn_call(fn_name, args, *id),
         }
     }
 

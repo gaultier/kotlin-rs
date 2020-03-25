@@ -140,8 +140,8 @@ impl<'a> Resolver<'a> {
             AstNodeExpr::VarRef(span) => {
                 self.var_ref(span, expr.id)?;
             }
-            AstNodeExpr::FnCall { name, args, .. } => {
-                self.fn_call(name, args)?;
+            AstNodeExpr::FnCall { fn_name, args, .. } => {
+                self.fn_call(fn_name, args)?;
             }
         };
         Ok(())

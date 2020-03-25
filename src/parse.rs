@@ -138,7 +138,7 @@ pub enum AstNodeExpr {
     },
     VarRef(Span),
     FnCall {
-        name: Box<AstNode>,
+        fn_name: Box<AstNode>,
         args: Vec<AstNode>,
     },
 }
@@ -521,7 +521,7 @@ impl Parser<'_> {
         self.eat(TokenKind::RightParen)?;
         Ok(AstNode {
             kind: AstNodeExpr::FnCall {
-                name: Box::new(fn_name),
+                fn_name: Box::new(fn_name),
                 args: vec![],
             },
             id: self.next_id(),
