@@ -531,7 +531,7 @@ impl<'a> TypeChecker<'a> {
         &mut self,
         fn_name: &AstNodeExpr,
         args: &[AstNodeExpr],
-        id: &NodeId,
+        id: NodeId,
     ) -> Result<Type, Error> {
         self.expr(fn_name)?;
         for arg in args {
@@ -587,7 +587,7 @@ impl<'a> TypeChecker<'a> {
             AstNodeExpr::VarRef(_, id) => self.var_ref(*id),
             AstNodeExpr::FnCall {
                 fn_name, args, id, ..
-            } => self.fn_call(fn_name, args, id),
+            } => self.fn_call(fn_name, args, *id),
         }
     }
 
