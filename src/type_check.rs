@@ -117,6 +117,7 @@ impl<'a> TypeChecker<'a> {
                     },
                 expr: right,
                 id,
+                ..
             }
             | AstNodeExpr::Unary {
                 token:
@@ -126,6 +127,7 @@ impl<'a> TypeChecker<'a> {
                     },
                 expr: right,
                 id,
+                ..
             } => {
                 let t = self.expr(right)?;
                 self.types.insert(*id, t.clone());
@@ -139,6 +141,7 @@ impl<'a> TypeChecker<'a> {
                     },
                 expr: right,
                 id,
+                ..
             }
             | AstNodeExpr::Unary {
                 token:
@@ -148,6 +151,7 @@ impl<'a> TypeChecker<'a> {
                     },
                 expr: right,
                 id,
+                ..
             } => {
                 let t = self.expr(right)?;
                 match t {
@@ -178,6 +182,7 @@ impl<'a> TypeChecker<'a> {
                     },
                 expr: right,
                 id,
+                ..
             } => {
                 let right_t = self.expr(right)?;
                 let t = self.coalesce_types(&Type::Bool, &right_t, tok)?;

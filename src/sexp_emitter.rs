@@ -171,113 +171,103 @@ impl SexpEmitter<'_> {
 
     fn literal<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::Int(n),
-                        ..
-                    }),
-                ..
-            } => {
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::Int(n),
+                    ..
+                },
+                _,
+            ) => {
                 write!(w, "{}", n).unwrap();
                 Ok(())
             }
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::UInt(n),
-                        ..
-                    }),
-                ..
-            } => {
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::UInt(n),
+                    ..
+                },
+                _,
+            ) => {
                 write!(w, "{}", n).unwrap();
                 Ok(())
             }
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::Long(n),
-                        ..
-                    }),
-                ..
-            } => {
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::Long(n),
+                    ..
+                },
+                _,
+            ) => {
                 write!(w, "{}", n).unwrap();
                 Ok(())
             }
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::ULong(n),
-                        ..
-                    }),
-                ..
-            } => {
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::ULong(n),
+                    ..
+                },
+                _,
+            ) => {
                 write!(w, "{}", n).unwrap();
                 Ok(())
             }
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::Float(n),
-                        ..
-                    }),
-                ..
-            } => {
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::Float(n),
+                    ..
+                },
+                _,
+            ) => {
                 write!(w, "{}", n).unwrap();
                 Ok(())
             }
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::Double(n),
-                        ..
-                    }),
-                ..
-            } => {
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::Double(n),
+                    ..
+                },
+                _,
+            ) => {
                 write!(w, "{}", n).unwrap();
                 Ok(())
             }
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::Bool(b),
-                        ..
-                    }),
-                ..
-            } => {
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::Bool(b),
+                    ..
+                },
+                _,
+            ) => {
                 write!(w, "{}", if *b { "true" } else { "false" }).unwrap();
                 Ok(())
             }
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::Char(c),
-                        ..
-                    }),
-                ..
-            } => {
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::Char(c),
+                    ..
+                },
+                _,
+            ) => {
                 write!(w, "'{}'", c).unwrap();
                 Ok(())
             }
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::TString,
-                        span,
-                    }),
-                ..
-            } => {
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::TString,
+                    span,
+                },
+                _,
+            ) => {
                 write!(w, "{}", &self.lexer.src[span.start..span.end]).unwrap();
                 Ok(())
             }
-            AstNode {
-                kind:
-                    AstNodeExpr::Literal(Token {
-                        kind: TokenKind::Null,
-                        ..
-                    }),
-                ..
-            } => {
+            AstNodeExpr::Literal(
+                Token {
+                    kind: TokenKind::Null,
+                    ..
+                },
+                _,
+            ) => {
                 write!(w, "nil").unwrap();
                 Ok(())
             }
@@ -287,9 +277,8 @@ impl SexpEmitter<'_> {
 
     fn unary<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNode {
-                kind: AstNodeExpr::Unary { token, expr, kind },
-                ..
+            AstNodeExpr::Unary {
+                token, expr, kind, ..
             } => {
                 write!(
                     w,
@@ -312,9 +301,8 @@ impl SexpEmitter<'_> {
 
     fn binary<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNode {
-                kind: AstNodeExpr::Binary { left, op, right },
-                ..
+            AstNodeExpr::Binary {
+                left, op, right, ..
             } => {
                 write!(w, "({} ", binary_op(&op.kind)).unwrap();
                 self.expr(left, w)?;
