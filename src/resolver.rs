@@ -166,6 +166,7 @@ impl<'a> Resolver<'a> {
 
     fn fn_call(&mut self, fn_name: &AstNodeExpr, args: &[AstNodeExpr]) -> Result<(), Error> {
         self.expr(fn_name)?;
+
         for arg in args {
             self.expr(arg)?;
         }
@@ -250,7 +251,7 @@ impl<'a> Resolver<'a> {
         // FIXME
         let (_, var, _) = self.find_var(identifier).unwrap();
         let flags = var.flags;
-        if flags & VAR_DEFINITION_FLAG_VAL as u16 == 1 {
+        if flags & FLAG_VAL as u16 == 1 {
             return Err(Error::new(
                 ErrorKind::CannotReassignVal(identifier.to_string()),
                 self.lexer.span_location(span),

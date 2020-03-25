@@ -73,8 +73,9 @@ pub struct Block {
     pub body: Statements,
 }
 
-pub(crate) const VAR_DEFINITION_FLAG_VAR: u8 = 0;
-pub(crate) const VAR_DEFINITION_FLAG_VAL: u8 = 1;
+pub(crate) const FLAG_VAR: u8 = 0;
+pub(crate) const FLAG_VAL: u8 = 1;
+pub(crate) const FLAG_FN: u8 = 2;
 
 #[derive(Debug)]
 pub enum AstNodeStmt {
@@ -405,7 +406,7 @@ impl Parser<'_> {
                         identifier,
                         value,
                         id: self.next_id(),
-                        flags: VAR_DEFINITION_FLAG_VAL,
+                        flags: FLAG_VAL,
                     })))
                 } else {
                     Ok(Some(Box::new(AstNodeStmt::Expr(value))))
@@ -770,11 +771,11 @@ impl Parser<'_> {
         let flags = match self.previous.unwrap().kind {
             TokenKind::KeywordVar => {
                 self.advance()?;
-                VAR_DEFINITION_FLAG_VAR
+                FLAG_VAR
             }
             TokenKind::KeywordVal => {
                 self.advance()?;
-                VAR_DEFINITION_FLAG_VAL
+                FLAG_VAL
             }
             _ => unreachable!(),
         };
@@ -839,7 +840,7 @@ impl Parser<'_> {
             args: vec![],
             body: Box::new(body),
             id: self.next_id(),
-            flags: 0,
+            flags: FLAG_FN as u16,
         })
     }
 
