@@ -615,15 +615,24 @@ impl<'a> TypeChecker<'a> {
         flags: u16,
         id: NodeId,
     ) -> Result<Type, Error> {
-        for arg in args {
-            self.expr(arg)?;
-        }
+        let args_t = args
+            .iter()
+            .map(|arg| self.expr(arg))
+            .collect::<Result<Vec<_>, Error>>()?;
 
-        self.statement(body)?;
+        let return_t = self.statement(body)?;
 
-        let t = Type::Unit;
+        let t = Type::Function {
+            args: args_t,
+            return_t: Box::new(return_t),
+        };
 
         self.types.insert(id, t.clone());
+
+        debug!(
+            "fn def: fn_name={:?} args={:?} body={:?} flags={} id={} type={:?}",
+            fn_name, args, body, flags, id, t
+        );
 
         Ok(t)
     }
