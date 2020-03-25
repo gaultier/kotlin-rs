@@ -283,7 +283,17 @@ impl SexpEmitter<'_> {
                 kind: AstNodeExpr::Unary { token, expr, kind },
                 ..
             } => {
-                write!(w, "({} ", unary_op(&token.kind)).unwrap();
+                write!(
+                    w,
+                    "({}-{} ",
+                    if *kind == UnaryKind::Postfix {
+                        "postfix"
+                    } else {
+                        ""
+                    },
+                    unary_op(&token.kind)
+                )
+                .unwrap();
                 self.expr(expr, w)?;
                 write!(w, ")").unwrap();
                 Ok(())

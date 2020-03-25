@@ -107,7 +107,7 @@ pub struct WhenEntry {
     pub cond_start_tok: Token,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum UnaryKind {
     Prefix,
     Postfix,
