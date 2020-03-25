@@ -165,6 +165,7 @@ impl<'a> TypeChecker<'a> {
                         Ok(t)
                     }
                     _ => Err(Error::new(
+                        // FIXME: should not be Int
                         ErrorKind::IncompatibleTypes(t, Type::Int),
                         self.lexer.span_location(span),
                     )),
