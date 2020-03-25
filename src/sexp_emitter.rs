@@ -102,8 +102,13 @@ impl SexpEmitter<'_> {
             } => {
                 self.assign(target, value, op, w)?;
             }
-            AstNodeStmt::FnDefinition { fn_name, body, .. } => {
-                self.fn_def(fn_name, body, w)?;
+            AstNodeStmt::FnDefinition {
+                fn_name,
+                args,
+                body,
+                ..
+            } => {
+                self.fn_def(fn_name, args, body, w)?;
             }
         };
         Ok(())
@@ -359,12 +364,20 @@ impl SexpEmitter<'_> {
     fn fn_def<W: std::io::Write>(
         &self,
         fn_name: &AstNode,
+        args: &[AstNode],
         body: &AstNodeStmt,
         w: &mut W,
     ) -> Result<(), Error> {
         write!(w, "(defn ").unwrap();
         self.expr(fn_name, w)?;
-        write!(w, " [] ").unwrap();
+
+        write!(w, " [").unwrap();
+        for arg in args {
+            self.expr(arg, w)?;
+            write!(w, " ").unwrap();
+        }
+        write!(w, "] ").unwrap();
+
         self.statement(body, w)?;
         writeln!(w, ")").unwrap();
         Ok(())
