@@ -274,9 +274,9 @@ impl<'a> Resolver<'a> {
         flags: u16,
         id: NodeId,
     ) -> Result<(), Error> {
-        self.enter_scope(id);
-
         self.fn_name_def(fn_name, flags, id)?;
+
+        self.enter_scope(id);
 
         for arg in args {
             self.expr(arg)?;
