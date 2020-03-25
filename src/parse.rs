@@ -514,12 +514,18 @@ impl Parser<'_> {
         }
     }
 
-    fn call_suffix(&mut self) -> Result<AstNode, Error> {
+    fn call_suffix(&mut self, fn_name: AstNode) -> Result<AstNode, Error> {
         self.eat(TokenKind::LeftParen)?;
         self.skip_newlines()?;
         // TODO: args
         self.eat(TokenKind::RightParen)?;
-        unimplemented!()
+        Ok(AstNode {
+            kind: AstNodeExpr::FnCall {
+                name: Box::new(fn_name),
+                args: vec![],
+            },
+            id: self.next_id(),
+        })
     }
 
     fn unary_prefix(&mut self) -> Result<AstNode, Error> {
@@ -544,7 +550,6 @@ impl Parser<'_> {
                     id: self.next_id(),
                 })
             }
-            TokenKind::LeftParen => self.call_suffix(),
             _ => self.primary(),
         }
     }
@@ -566,6 +571,7 @@ impl Parser<'_> {
 
                 self.postfix_unary_suffix(unary)
             }
+            TokenKind::LeftParen => self.call_suffix(acc),
             _ => Ok(acc),
         }
     }
@@ -573,17 +579,17 @@ impl Parser<'_> {
     fn postfix_unary_expr(&mut self) -> Result<AstNode, Error> {
         let prim = self.primary()?;
         match self.previous.unwrap().kind {
-            TokenKind::PlusPlus | TokenKind::MinusMinus | TokenKind::BangBang => {
-                self.postfix_unary_suffix(prim)
-            }
+            TokenKind::LeftParen
+            | TokenKind::PlusPlus
+            | TokenKind::MinusMinus
+            | TokenKind::BangBang => self.postfix_unary_suffix(prim),
             _ => Ok(prim),
         }
     }
 
     fn prefix_unary_expr(&mut self) -> Result<AstNode, Error> {
         match self.previous.unwrap().kind {
-            TokenKind::LeftParen
-            | TokenKind::PlusPlus
+            TokenKind::PlusPlus
             | TokenKind::MinusMinus
             | TokenKind::Plus
             | TokenKind::Bang
