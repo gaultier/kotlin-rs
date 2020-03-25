@@ -804,12 +804,18 @@ impl Parser<'_> {
             TokenKind::Equal => {
                 self.advance()?;
                 self.skip_newlines()?;
-                self.expression()
+                AstNodeStmt::Expr(self.expression()?)
             }
             _ => unimplemented!(),
         };
 
-        unimplemented!()
+        Ok(AstNodeStmt::FnDefinition {
+            fn_name,
+            args: vec![],
+            body: Box::new(body),
+            id: self.next_id(),
+            flags: 0,
+        })
     }
 
     fn declaration(&mut self) -> Result<AstNodeStmt, Error> {
