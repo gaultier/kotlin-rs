@@ -165,6 +165,21 @@ pub enum AstNodeExpr {
     },
 }
 
+impl AstNodeExpr {
+    pub(crate) fn id(&self) -> NodeId {
+        match self {
+            AstNodeExpr::Binary { id, .. }
+            | AstNodeExpr::Unary { id, .. }
+            | AstNodeExpr::IfExpr { id, .. }
+            | AstNodeExpr::Literal(_, id)
+            | AstNodeExpr::WhenExpr { id, .. }
+            | AstNodeExpr::VarRef(_, id)
+            | AstNodeExpr::FnCall { id, .. }
+            | AstNodeExpr::Grouping(_, id) => *id,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Parser<'a> {
     previous: Option<Token>,
@@ -633,12 +648,10 @@ impl Parser<'_> {
                 self.advance()?;
                 self.skip_newlines()?;
                 let right = self.addition()?;
-                Ok(AstNode {
-                    kind: AstNodeExpr::Binary {
-                        left: Box::new(left),
-                        op: previous,
-                        right: Box::new(right),
-                    },
+                Ok(AstNodeExpr::Binary {
+                    left: Box::new(left),
+                    op: previous,
+                    right: Box::new(right),
                     id: self.next_id(),
                 })
             }

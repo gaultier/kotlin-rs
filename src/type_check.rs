@@ -101,7 +101,9 @@ impl<'a> TypeChecker<'a> {
             .body
             .last()
             .map(|stmt| match stmt {
-                AstNodeStmt::Expr(expr) => self.types.get(&expr.id).unwrap_or(&Type::Unit).clone(),
+                AstNodeStmt::Expr(expr) => {
+                    self.types.get(&expr.id()).unwrap_or(&Type::Unit).clone()
+                }
                 _ => Type::Unit,
             })
             .unwrap_or(Type::Unit))
@@ -273,7 +275,7 @@ impl<'a> TypeChecker<'a> {
             _ => unreachable!(),
         };
 
-        self.types.insert(ast.id, t.clone());
+        self.types.insert(ast.id(), t.clone());
         Ok(t)
     }
 
@@ -443,9 +445,11 @@ impl<'a> TypeChecker<'a> {
             self.statement(stmt)?;
         }
         Ok(match block.body.last() {
-            Some(AstNodeStmt::Expr(stmt_expr)) => {
-                self.types.get(&stmt_expr.id).unwrap_or(&Type::Unit).clone()
-            }
+            Some(AstNodeStmt::Expr(stmt_expr)) => self
+                .types
+                .get(&stmt_expr.id())
+                .unwrap_or(&Type::Unit)
+                .clone(),
             _ => Type::Unit,
         })
     }
