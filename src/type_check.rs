@@ -621,8 +621,11 @@ impl<'a> TypeChecker<'a> {
 
         self.statement(body)?;
 
-        // FIXME
-        Ok(Type::Unit)
+        let t = Type::Unit;
+
+        self.types.insert(id, t);
+
+        Ok(t)
     }
 
     fn expr(&mut self, ast: &AstNode) -> Result<Type, Error> {
