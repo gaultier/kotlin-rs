@@ -343,11 +343,12 @@ impl SexpEmitter<'_> {
     ) -> Result<(), Error> {
         write!(w, "(apply ").unwrap();
         self.expr(fn_name, w)?;
-        write!(w, " ").unwrap();
+        write!(w, " '(").unwrap();
         for arg in args {
             self.expr(arg, w)?;
+            write!(w, " ").unwrap();
         }
-        write!(w, ")").unwrap();
+        write!(w, "))").unwrap();
 
         Ok(())
     }
