@@ -446,18 +446,10 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn when_expr(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
-        if let Some(t) = self.types.get(&ast.id) {
-            return Ok(t.clone());
-        }
-
         match ast {
-            AstNode {
-                kind:
-                    AstNodeExpr::WhenExpr {
-                        subject: Some(subject),
-                        entries,
-                        ..
-                    },
+            AstNodeExpr::WhenExpr {
+                subject: Some(subject),
+                entries,
                 ..
             } => {
                 let subject_t = self.statement(subject)?;
@@ -469,13 +461,9 @@ impl<'a> TypeChecker<'a> {
                 }
                 Ok(Type::Unit)
             }
-            AstNode {
-                kind:
-                    AstNodeExpr::WhenExpr {
-                        subject: None,
-                        entries,
-                        ..
-                    },
+            AstNodeExpr::WhenExpr {
+                subject: None,
+                entries,
                 ..
             } => {
                 for entry in entries.iter() {
@@ -490,22 +478,14 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn if_expr(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
-        if let Some(t) = self.types.get(&ast.id) {
-            return Ok(t.clone());
-        }
-
         match ast {
-            AstNode {
-                kind:
-                    AstNodeExpr::IfExpr {
-                        cond,
-                        cond_start_tok,
-                        if_body,
-                        else_body,
-                        else_body_tok,
-                    },
+            AstNodeExpr::IfExpr {
+                cond,
+                cond_start_tok,
+                if_body,
+                else_body,
+                else_body_tok,
                 id,
-                ..
             } => {
                 let t = self.expr(cond)?;
                 self.eq(&t, &Type::Bool, &cond_start_tok.span)?;
@@ -589,38 +569,15 @@ impl<'a> TypeChecker<'a> {
 
     fn expr(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
         match ast {
-            AstNode {
-                kind: AstNodeExpr::Literal(..),
-                ..
-            } => self.literal(ast),
-            AstNode {
-                kind: AstNodeExpr::Unary { .. },
-                ..
-            } => self.unary(ast),
-            AstNode {
-                kind: AstNodeExpr::Binary { .. },
-                ..
-            } => self.binary(ast),
-            AstNode {
-                kind: AstNodeExpr::Grouping(expr),
-                ..
-            } => self.expr(&(**expr)),
-            AstNode {
-                kind: AstNodeExpr::IfExpr { .. },
-                ..
-            } => self.if_expr(ast),
-            AstNode {
-                kind: AstNodeExpr::WhenExpr { .. },
-                ..
-            } => self.when_expr(ast),
-            AstNode {
-                kind: AstNodeExpr::VarRef(_),
-                id,
-                ..
-            } => self.var_ref(*id),
-            AstNode {
-                kind: AstNodeExpr::FnCall { fn_name, args, .. },
-                id,
+            AstNodeExpr::Literal(..) => self.literal(ast),
+            AstNodeExpr::Unary { .. } => self.unary(ast),
+            AstNodeExpr::Binary { .. } => self.binary(ast),
+            AstNodeExpr::Grouping(expr, id) => self.expr(&(**expr)),
+            AstNodeExpr::IfExpr { .. } => self.if_expr(ast),
+            AstNodeExpr::WhenExpr { .. } => self.when_expr(ast),
+            AstNodeExpr::VarRef(_, id) => self.var_ref(*id),
+            AstNodeExpr::FnCall {
+                fn_name, args, id, ..
             } => self.fn_call(fn_name, args, id),
         }
     }

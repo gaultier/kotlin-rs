@@ -61,8 +61,8 @@ impl SexpEmitter<'_> {
 
     fn assign<W: std::io::Write>(
         &self,
-        target: &AstNode,
-        value: &AstNode,
+        target: &AstNodeExpr,
+        value: &AstNodeExpr,
         op: &TokenKind,
         w: &mut W,
     ) -> Result<(), Error> {
@@ -169,7 +169,7 @@ impl SexpEmitter<'_> {
         }
     }
 
-    fn literal<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
+    fn literal<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNode {
                 kind:
@@ -285,7 +285,7 @@ impl SexpEmitter<'_> {
         }
     }
 
-    fn unary<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
+    fn unary<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNode {
                 kind: AstNodeExpr::Unary { token, expr, kind },
@@ -310,7 +310,7 @@ impl SexpEmitter<'_> {
         }
     }
 
-    fn binary<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
+    fn binary<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNode {
                 kind: AstNodeExpr::Binary { left, op, right },
@@ -345,8 +345,8 @@ impl SexpEmitter<'_> {
 
     fn fn_call<W: std::io::Write>(
         &self,
-        fn_name: &AstNode,
-        args: &[AstNode],
+        fn_name: &AstNodeExpr,
+        args: &[AstNodeExpr],
         w: &mut W,
     ) -> Result<(), Error> {
         write!(w, "(apply ").unwrap();
@@ -363,8 +363,8 @@ impl SexpEmitter<'_> {
 
     fn fn_def<W: std::io::Write>(
         &self,
-        fn_name: &AstNode,
-        args: &[AstNode],
+        fn_name: &AstNodeExpr,
+        args: &[AstNodeExpr],
         body: &AstNodeStmt,
         w: &mut W,
     ) -> Result<(), Error> {
@@ -383,15 +383,12 @@ impl SexpEmitter<'_> {
         Ok(())
     }
 
-    fn when_expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
+    fn when_expr<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNode {
-                kind:
-                    AstNodeExpr::WhenExpr {
-                        entries,
-                        else_entry,
-                        subject: Some(subject),
-                    },
+            AstNodeExpr::WhenExpr {
+                entries,
+                else_entry,
+                subject: Some(subject),
                 ..
             } => {
                 write!(w, "(case ").unwrap();
@@ -413,13 +410,10 @@ impl SexpEmitter<'_> {
                 write!(w, ")").unwrap();
                 Ok(())
             }
-            AstNode {
-                kind:
-                    AstNodeExpr::WhenExpr {
-                        entries,
-                        else_entry,
-                        subject: None,
-                    },
+            AstNodeExpr::WhenExpr {
+                entries,
+                else_entry,
+                subject: None,
                 ..
             } => {
                 write!(w, "(cond ").unwrap();
@@ -444,16 +438,12 @@ impl SexpEmitter<'_> {
         }
     }
 
-    fn if_expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
+    fn if_expr<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNode {
-                kind:
-                    AstNodeExpr::IfExpr {
-                        cond,
-                        if_body,
-                        else_body,
-                        ..
-                    },
+            AstNodeExpr::IfExpr {
+                cond,
+                if_body,
+                else_body,
                 ..
             } => {
                 write!(w, "(if ").unwrap();
@@ -476,45 +466,21 @@ impl SexpEmitter<'_> {
         Ok(())
     }
 
-    pub fn expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
+    pub fn expr<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNode {
-                kind: AstNodeExpr::WhenExpr { .. },
-                ..
-            } => self.when_expr(ast, w),
-            AstNode {
-                kind: AstNodeExpr::Literal(..),
-                ..
-            } => self.literal(ast, w),
-            AstNode {
-                kind: AstNodeExpr::Unary { .. },
-                ..
-            } => self.unary(ast, w),
-            AstNode {
-                kind: AstNodeExpr::Binary { .. },
-                ..
-            } => self.binary(ast, w),
-            AstNode {
-                kind: AstNodeExpr::Grouping(expr),
-                ..
-            } => {
+            AstNodeExpr::WhenExpr { .. } => self.when_expr(ast, w),
+            AstNodeExpr::Literal(..) => self.literal(ast, w),
+            AstNodeExpr::Unary { .. } => self.unary(ast, w),
+            AstNodeExpr::Binary { .. } => self.binary(ast, w),
+            AstNodeExpr::Grouping(expr, _) => {
                 write!(w, "(").unwrap();
                 self.expr(expr, w)?;
                 write!(w, ")").unwrap();
                 Ok(())
             }
-            AstNode {
-                kind: AstNodeExpr::IfExpr { .. },
-                ..
-            } => self.if_expr(ast, w),
-            AstNode {
-                kind: AstNodeExpr::VarRef(span),
-                ..
-            } => self.var_ref(span, w),
-            AstNode {
-                kind: AstNodeExpr::FnCall { fn_name, args, .. },
-                ..
-            } => self.fn_call(fn_name, args, w),
+            AstNodeExpr::IfExpr { .. } => self.if_expr(ast, w),
+            AstNodeExpr::VarRef(span, _) => self.var_ref(span, w),
+            AstNodeExpr::FnCall { fn_name, args, .. } => self.fn_call(fn_name, args, w),
         }
     }
 }
