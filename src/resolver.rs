@@ -188,6 +188,28 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
+    fn fn_name_def(&mut self, fn_name: &AstNode, flags: u16, id: NodeId) -> Result<(), Error> {
+        let scope = self.scopes.last_mut().unwrap();
+        let identifier = match fn_name.kind {
+            AstNodeExpr::VarRef(span) => &self.lexer.src[span.start..span.end],
+            _ => unimplemented!(),
+        };
+
+        scope.fn_statuses.insert(
+            identifier,
+            Var {
+                id,
+                status: VarStatus::Defined,
+                flags,
+            },
+        );
+        debug!(
+            "fn declaration: identifier=`{}` scope_id={} id={}",
+            identifier, scope.block_id, id
+        );
+        Ok(())
+    }
+
     fn var_def(&mut self, identifier: &'a str, flags: u16, id: NodeId) -> Result<(), Error> {
         let scope = self.scopes.last_mut().unwrap();
         scope.var_statuses.insert(
@@ -252,7 +274,18 @@ impl<'a> Resolver<'a> {
         flags: u16,
         id: NodeId,
     ) -> Result<(), Error> {
-        unimplemented!()
+        self.enter_scope(id);
+
+        self.fn_name_def(fn_name, flags, id)?;
+
+        for arg in args {
+            self.expr(arg)?;
+        }
+
+        self.statement(body)?;
+
+        self.exit_scope();
+        Ok(())
     }
 
     fn statement(&mut self, statement: &AstNodeStmt) -> Result<(), Error> {
