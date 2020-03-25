@@ -592,6 +592,10 @@ impl<'a> TypeChecker<'a> {
         Ok(t)
     }
 
+    fn fn_call(&mut self, id: NodeId) -> Result<Type, Error> {
+        unimplemented!()
+    }
+
     fn expr(&mut self, ast: &AstNode) -> Result<Type, Error> {
         match ast {
             AstNode {
@@ -623,6 +627,11 @@ impl<'a> TypeChecker<'a> {
                 id,
                 ..
             } => self.var_ref(*id),
+            AstNode {
+                kind: AstNodeExpr::FnCall { .. },
+                id,
+                ..
+            } => self.fn_call(*id),
         }
     }
 

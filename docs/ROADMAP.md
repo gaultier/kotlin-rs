@@ -50,7 +50,7 @@
 - [ ] Do while with binding e.g `do {val a = 1} while (a < 10)`
 - [ ] Explicit types e.g `val a: Long = 1`
 - [x] Prefix increment/decrement operators e.g `--a; ++a;`
-- [ ] Postfix increment/decrement operators e.g `a--; a++;`
+- [x] Postfix increment/decrement operators e.g `a--; a++;`
 - [x] Variable assignement
 - [ ] For
 - [ ] Simple inline functions declaration e.g `fun add(a: Int, b: Int): Int = a + b`

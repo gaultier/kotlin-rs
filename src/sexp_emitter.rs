@@ -285,9 +285,9 @@ impl SexpEmitter<'_> {
             } => {
                 write!(
                     w,
-                    "({}-{} ",
+                    "({}{} ",
                     if *kind == UnaryKind::Postfix {
-                        "postfix"
+                        "postfix-"
                     } else {
                         ""
                     },
@@ -337,6 +337,10 @@ impl SexpEmitter<'_> {
             write!(w, ")").unwrap();
         }
         Ok(())
+    }
+
+    fn fn_call<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
+        unimplemented!()
     }
 
     fn when_expr<W: std::io::Write>(&self, ast: &AstNode, w: &mut W) -> Result<(), Error> {
@@ -479,6 +483,10 @@ impl SexpEmitter<'_> {
                 kind: AstNodeExpr::VarRef(span),
                 ..
             } => self.var_ref(span, w),
+            AstNode {
+                kind: AstNodeExpr::FnCall { .. },
+                ..
+            } => self.fn_call(ast, w),
         }
     }
 }

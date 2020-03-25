@@ -137,6 +137,10 @@ pub enum AstNodeExpr {
         else_entry: Option<Block>,
     },
     VarRef(Span),
+    FnCall {
+        name: Box<AstNode>,
+        args: Vec<AstNode>,
+    },
 }
 
 #[derive(Debug)]
@@ -510,6 +514,14 @@ impl Parser<'_> {
         }
     }
 
+    fn call_suffix(&mut self) -> Result<AstNode, Error> {
+        self.eat(TokenKind::LeftParen)?;
+        self.skip_newlines()?;
+        // TODO: args
+        self.eat(TokenKind::RightParen)?;
+        unimplemented!()
+    }
+
     fn unary_prefix(&mut self) -> Result<AstNode, Error> {
         // TODO: annotation, label
 
@@ -532,6 +544,7 @@ impl Parser<'_> {
                     id: self.next_id(),
                 })
             }
+            TokenKind::LeftParen => self.call_suffix(),
             _ => self.primary(),
         }
     }
@@ -569,7 +582,8 @@ impl Parser<'_> {
 
     fn prefix_unary_expr(&mut self) -> Result<AstNode, Error> {
         match self.previous.unwrap().kind {
-            TokenKind::PlusPlus
+            TokenKind::LeftParen
+            | TokenKind::PlusPlus
             | TokenKind::MinusMinus
             | TokenKind::Plus
             | TokenKind::Bang
