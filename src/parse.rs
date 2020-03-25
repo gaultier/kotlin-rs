@@ -3,7 +3,7 @@ use crate::lex::*;
 use log::debug;
 use std::fmt;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
     Bool,
     Int,
@@ -25,6 +25,10 @@ pub enum Type {
     TStringRange,
     CharRange,
     BoolRange,
+    Function {
+        args: Vec<Type>,
+        return_t: Box<Type>,
+    },
 }
 
 impl fmt::Display for Type {
@@ -50,6 +54,15 @@ impl fmt::Display for Type {
             Type::DoubleRange => write!(f, "DoubleRange"),
             Type::CharRange => write!(f, "CharRange"),
             Type::TStringRange => write!(f, "StringRange"),
+            Type::Function { args, return_t } => {
+                write!(f, "(")?;
+                for arg in args {
+                    arg.fmt(f)?;
+                    write!(f, ", ")?;
+                }
+                write!(f, ") -> ")?;
+                return_t.fmt(f)
+            }
         }
     }
 }

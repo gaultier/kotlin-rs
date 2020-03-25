@@ -20,10 +20,10 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn eq(&self, left: Type, right: Type, span: &Span) -> Result<(), Error> {
+    fn eq(&self, left: &Type, right: &Type, span: &Span) -> Result<(), Error> {
         if left != right {
             Err(Error::new(
-                ErrorKind::IncompatibleTypes(left, right),
+                ErrorKind::IncompatibleTypes(left.clone(), right.clone()),
                 self.lexer.span_location(&span),
             ))
         } else {
@@ -38,14 +38,14 @@ impl<'a> TypeChecker<'a> {
         cond_start_tok: &Token,
     ) -> Result<Type, Error> {
         let cond_t = self.expr(cond)?;
-        self.eq(cond_t, Type::Bool, &cond_start_tok.span)?;
+        self.eq(&cond_t, &Type::Bool, &cond_start_tok.span)?;
         self.statements(block)?;
         Ok(Type::Unit)
     }
 
     fn var_def(&mut self, value: &AstNode, id: NodeId) -> Result<Type, Error> {
         let t = self.expr(value)?;
-        self.types.insert(id, t);
+        self.types.insert(id, t.clone());
 
         Ok(t)
     }
@@ -53,7 +53,7 @@ impl<'a> TypeChecker<'a> {
     fn assign(&mut self, target: &AstNode, value: &AstNode, span: &Span) -> Result<Type, Error> {
         let target_t = self.expr(target)?;
         let value_t = self.expr(value)?;
-        self.eq(target_t, value_t, span)?;
+        self.eq(&target_t, &value_t, span)?;
         Ok(Type::Unit)
     }
 
@@ -96,7 +96,7 @@ impl<'a> TypeChecker<'a> {
             .body
             .last()
             .map(|stmt| match stmt {
-                AstNodeStmt::Expr(expr) => *self.types.get(&expr.id).unwrap_or(&Type::Unit),
+                AstNodeStmt::Expr(expr) => self.types.get(&expr.id).unwrap_or(&Type::Unit).clone(),
                 _ => Type::Unit,
             })
             .unwrap_or(Type::Unit))
@@ -104,7 +104,7 @@ impl<'a> TypeChecker<'a> {
 
     fn unary(&mut self, ast: &AstNode) -> Result<Type, Error> {
         if let Some(t) = self.types.get(&ast.id) {
-            return Ok(*t);
+            return Ok(t.clone());
         }
 
         match ast {
@@ -137,7 +137,7 @@ impl<'a> TypeChecker<'a> {
                 ..
             } => {
                 let t = self.expr(right)?;
-                self.types.insert(*id, t);
+                self.types.insert(*id, t.clone());
                 Ok(t)
             }
             AstNode {
@@ -176,7 +176,7 @@ impl<'a> TypeChecker<'a> {
                     | Type::ULong
                     | Type::Float
                     | Type::Double => {
-                        self.types.insert(*id, t);
+                        self.types.insert(*id, t.clone());
                         Ok(t)
                     }
                     _ => Err(Error::new(
@@ -203,7 +203,7 @@ impl<'a> TypeChecker<'a> {
                 ..
             } => {
                 let right_t = self.expr(right)?;
-                let t = self.coalesce_types(Type::Bool, right_t, tok)?;
+                let t = self.coalesce_types(&Type::Bool, &right_t, tok)?;
                 self.types.insert(*id, t);
                 Ok(Type::Bool)
             }
@@ -213,7 +213,7 @@ impl<'a> TypeChecker<'a> {
 
     fn literal(&mut self, ast: &AstNode) -> Result<Type, Error> {
         if let Some(t) = self.types.get(&ast.id) {
-            return Ok(*t);
+            return Ok(t.clone());
         }
 
         let t = match ast {
@@ -300,13 +300,13 @@ impl<'a> TypeChecker<'a> {
             _ => unreachable!(),
         };
 
-        self.types.insert(ast.id, t);
+        self.types.insert(ast.id, t.clone());
         Ok(t)
     }
 
     fn binary(&mut self, ast: &AstNode) -> Result<Type, Error> {
         if let Some(t) = self.types.get(&ast.id) {
-            return Ok(*t);
+            return Ok(t.clone());
         }
 
         match ast {
@@ -388,7 +388,7 @@ impl<'a> TypeChecker<'a> {
                 let left_t = self.expr(left)?;
                 let right_t = self.expr(right)?;
 
-                self.eq(left_t, right_t, &tok.span)?;
+                self.eq(&left_t, &right_t, &tok.span)?;
                 let t = match left_t {
                     Type::Int => Type::IntRange,
                     Type::UInt => Type::UIntRange,
@@ -407,7 +407,7 @@ impl<'a> TypeChecker<'a> {
                     }
                 };
 
-                self.types.insert(*id, t);
+                self.types.insert(*id, t.clone());
                 Ok(t)
             }
             AstNode {
@@ -473,10 +473,10 @@ impl<'a> TypeChecker<'a> {
                 let left_t = self.expr(left)?;
                 let right_t = self.expr(right)?;
 
-                self.coalesce_types(left_t, right_t, &tok)?;
+                self.coalesce_types(&left_t, &right_t, &tok)?;
 
                 let t = Type::Bool;
-                self.types.insert(*id, t);
+                self.types.insert(*id, t.clone());
                 Ok(t)
             }
             AstNode {
@@ -486,8 +486,8 @@ impl<'a> TypeChecker<'a> {
             } => {
                 let left_t = self.expr(left)?;
                 let right_t = self.expr(right)?;
-                let t = self.coalesce_types(left_t, right_t, &tok)?;
-                self.types.insert(*id, t);
+                let t = self.coalesce_types(&left_t, &right_t, &tok)?;
+                self.types.insert(*id, t.clone());
                 Ok(t)
             }
             _ => unreachable!(),
@@ -500,7 +500,7 @@ impl<'a> TypeChecker<'a> {
         }
         Ok(match block.body.last() {
             Some(AstNodeStmt::Expr(stmt_expr)) => {
-                *self.types.get(&stmt_expr.id).unwrap_or(&Type::Unit)
+                self.types.get(&stmt_expr.id).unwrap_or(&Type::Unit).clone()
             }
             _ => Type::Unit,
         })
@@ -508,7 +508,7 @@ impl<'a> TypeChecker<'a> {
 
     fn when_expr(&mut self, ast: &AstNode) -> Result<Type, Error> {
         if let Some(t) = self.types.get(&ast.id) {
-            return Ok(*t);
+            return Ok(t.clone());
         }
 
         match ast {
@@ -524,7 +524,7 @@ impl<'a> TypeChecker<'a> {
                 let subject_t = self.statement(subject)?;
                 for entry in entries.iter() {
                     let cond_t = self.expr(&entry.cond)?;
-                    self.eq(subject_t, cond_t, &entry.cond_start_tok.span)?;
+                    self.eq(&subject_t, &cond_t, &entry.cond_start_tok.span)?;
 
                     self.statements(&entry.body)?;
                 }
@@ -541,7 +541,7 @@ impl<'a> TypeChecker<'a> {
             } => {
                 for entry in entries.iter() {
                     let cond_t = self.expr(&entry.cond)?;
-                    self.eq(cond_t, Type::Bool, &entry.cond_start_tok.span)?;
+                    self.eq(&cond_t, &Type::Bool, &entry.cond_start_tok.span)?;
                     self.statements(&entry.body)?;
                 }
                 Ok(Type::Unit)
@@ -552,7 +552,7 @@ impl<'a> TypeChecker<'a> {
 
     fn if_expr(&mut self, ast: &AstNode) -> Result<Type, Error> {
         if let Some(t) = self.types.get(&ast.id) {
-            return Ok(*t);
+            return Ok(t.clone());
         }
 
         match ast {
@@ -569,7 +569,7 @@ impl<'a> TypeChecker<'a> {
                 ..
             } => {
                 let t = self.expr(cond)?;
-                self.eq(t, Type::Bool, &cond_start_tok.span)?;
+                self.eq(&t, &Type::Bool, &cond_start_tok.span)?;
 
                 let if_body_t = self.block(if_body)?;
                 let else_body_t = self.block(else_body)?;
@@ -583,8 +583,8 @@ impl<'a> TypeChecker<'a> {
                     return Ok(Type::Unit);
                 }
 
-                let t = self.coalesce_types(if_body_t, else_body_t, &else_body_tok)?;
-                self.types.insert(*id, t);
+                let t = self.coalesce_types(&if_body_t, &else_body_t, &else_body_tok)?;
+                self.types.insert(*id, t.clone());
                 Ok(t)
             }
             _ => unreachable!(),
@@ -594,8 +594,8 @@ impl<'a> TypeChecker<'a> {
     fn var_ref(&mut self, id: NodeId) -> Result<Type, Error> {
         let var_usage_ref = self.resolution.get(&id).unwrap();
         debug!("var ref: id={} var_usage_ref={:?}", id, &var_usage_ref);
-        let t = *(self.types.get(&var_usage_ref.node_ref_id).unwrap());
-        self.types.insert(id, t);
+        let t = self.types.get(&var_usage_ref.node_ref_id).unwrap().clone();
+        self.types.insert(id, t.clone());
         Ok(t)
     }
 
@@ -623,7 +623,7 @@ impl<'a> TypeChecker<'a> {
 
         let t = Type::Unit;
 
-        self.types.insert(id, t);
+        self.types.insert(id, t.clone());
 
         Ok(t)
     }
@@ -666,7 +666,7 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn coalesce_types(&self, left: Type, right: Type, token: &Token) -> Result<Type, Error> {
+    fn coalesce_types(&self, left: &Type, right: &Type, token: &Token) -> Result<Type, Error> {
         match (left, right) {
             (Type::Char, Type::Char) => Ok(Type::Char),
             (Type::Bool, Type::Bool) => Ok(Type::Bool),
@@ -720,7 +720,7 @@ impl<'a> TypeChecker<'a> {
             // Asymetrical
             (Type::Char, Type::Int) if token.kind == TokenKind::Minus => Ok(Type::Char),
             _ => Err(Error::new(
-                ErrorKind::IncompatibleTypes(left, right),
+                ErrorKind::IncompatibleTypes(left.clone(), right.clone()),
                 self.lexer.span_location(&token.span))),
         }
     }
