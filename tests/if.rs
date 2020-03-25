@@ -10,7 +10,7 @@ fn simple_if_expr() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) 'o' 'x')\n"
+        &"(if (< 1 2) 'o'  'x' )\n"
     );
 }
 
@@ -22,7 +22,7 @@ fn multi_if_expr() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) 'o' 'x')(if true 42 99)\n"
+        &"(if (< 1 2) 'o'  'x' )(if true 42  99 )\n"
     );
 }
 
@@ -34,7 +34,7 @@ fn nested_if_expr() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) (if (< 99 100) 'a' 'b') 'c')\n"
+        &"(if (< 1 2) (if (< 99 100) 'a'  'b' )  'c' )\n"
     );
 }
 
@@ -46,7 +46,7 @@ fn if_body_block() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) (do 'a' 1 true 'b') (do (* 1 3) 'c'))\n"
+        &"(if (< 1 2) (do 'a' 1 true 'b' ) (do (* 1 3) 'c' ))\n"
     );
 }
 
@@ -58,7 +58,7 @@ fn if_with_empty_else_block() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) (do 'a' 1 true 'b') (do ))\n"
+        &"(if (< 1 2) (do 'a' 1 true 'b' ) (do ))\n"
     );
 }
 
@@ -70,7 +70,7 @@ fn if_with_empty_if_body_block() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) (do ) (do 'a' 1 true 'b'))\n"
+        &"(if (< 1 2) (do ) (do 'a' 1 true 'b' ))\n"
     );
 }
 
@@ -82,7 +82,7 @@ fn if_with_no_if_body_block() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) (do ) (do 'a' 1 true 'b'))\n"
+        &"(if (< 1 2) (do ) (do 'a' 1 true 'b' ))\n"
     );
 }
 
@@ -94,7 +94,7 @@ fn if_with_no_else_block() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) (do 'a' 1 true 'b') (do ))\n"
+        &"(if (< 1 2) (do 'a' 1 true 'b' ) (do ))\n"
     );
 }
 
@@ -128,7 +128,7 @@ fn check_both_branches_types_match_unit_when_empty_else() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) 'a' (do ))\n"
+        &"(if (< 1 2) 'a'  (do ))\n"
     );
 }
 
@@ -140,7 +140,7 @@ fn check_both_branches_types_match_unit_when_empty_if() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) (do ) 42)\n"
+        &"(if (< 1 2) (do ) 42 )\n"
     );
 }
 
@@ -152,6 +152,6 @@ fn check_types_coalesce() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) 99 99)\n"
+        &"(if (< 1 2) 99  99 )\n"
     );
 }

@@ -324,13 +324,9 @@ impl SexpEmitter<'_> {
             write!(w, "(do ").unwrap();
         }
 
-        // Akin to ast.map(...).join(" ")
-        if let Some((last, rest)) = block.body.split_last() {
-            for stmt in rest {
-                self.statement(stmt, w)?;
-                write!(w, " ").unwrap();
-            }
-            self.statement(last, w)?;
+        for stmt in block.body.iter() {
+            self.statement(&stmt, w)?;
+            write!(w, " ").unwrap();
         }
 
         if block.body.len() != 1 {
@@ -371,16 +367,11 @@ impl SexpEmitter<'_> {
                 self.statement(&subject, w)?;
                 write!(w, " ").unwrap();
 
-                if let Some((last, entries)) = entries.split_last() {
-                    for entry in entries {
-                        self.expr(&entry.cond, w)?;
-                        write!(w, " ").unwrap();
-                        self.block(&entry.body, w)?;
-                        write!(w, " ").unwrap();
-                    }
-                    self.expr(&last.cond, w)?;
+                for entry in entries {
+                    self.expr(&entry.cond, w)?;
                     write!(w, " ").unwrap();
-                    self.block(&last.body, w)?;
+                    self.block(&entry.body, w)?;
+                    write!(w, " ").unwrap();
                 }
 
                 if let Some(else_entry) = else_entry {
@@ -402,19 +393,12 @@ impl SexpEmitter<'_> {
             } => {
                 write!(w, "(cond ").unwrap();
 
-                if let Some((last, entries)) = entries.split_last() {
-                    for entry in entries {
-                        write!(w, "(").unwrap();
-                        self.expr(&entry.cond, w)?;
-                        write!(w, " ").unwrap();
-                        self.block(&entry.body, w)?;
-                        write!(w, ") ").unwrap();
-                    }
+                for entry in entries {
                     write!(w, "(").unwrap();
-                    self.expr(&last.cond, w)?;
+                    self.expr(&entry.cond, w)?;
                     write!(w, " ").unwrap();
-                    self.block(&last.body, w)?;
-                    write!(w, ")").unwrap();
+                    self.block(&entry.body, w)?;
+                    write!(w, ") ").unwrap();
                 }
 
                 if let Some(else_entry) = else_entry {

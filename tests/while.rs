@@ -10,7 +10,7 @@ fn while_with_body() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(while (< 1 10) 'c')\n\n"
+        &"(while (< 1 10) 'c' )\n\n"
     );
 }
 

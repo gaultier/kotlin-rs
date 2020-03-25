@@ -10,7 +10,7 @@ fn simple_when_expr() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(cond (true 1) (false 0))\n"
+        &"(cond (true 1 ) (false 0 ) )\n"
     );
 }
 
@@ -31,7 +31,7 @@ fn when_with_else() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(cond (true 1) (false 0) :else 42)\n"
+        &"(cond (true 1 ) (false 0 )  :else 42 )\n"
     );
 }
 
@@ -43,7 +43,7 @@ fn when_with_boolean_exprs() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(cond ((or true false) 1) (false 0) :else 42)\n"
+        &"(cond ((or true false) 1 ) (false 0 )  :else 42 )\n"
     );
 }
 
@@ -55,7 +55,7 @@ fn when_with_subject() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(case 5 1 2 2 4 3 6 4 8 5 10 :else 42)\n"
+        &"(case 5 1 2  2 4  3 6  4 8  5 10   :else 42 )\n"
     );
 }
 
@@ -81,7 +81,7 @@ fn when_with_val_subject() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(case (def a 5)\n 1 2 2 4 3 6 4 8 5 10 :else (* a 2))\n"
+        &"(case (def a 5)\n 1 2  2 4  3 6  4 8  5 10   :else (* a 2) )\n"
     );
 }
 
