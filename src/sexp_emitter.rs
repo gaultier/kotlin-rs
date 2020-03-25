@@ -11,6 +11,8 @@ fn unary_op(kind: &TokenKind) -> &'static str {
         TokenKind::Bang => "not",
         TokenKind::Plus => "+",
         TokenKind::Minus => "-",
+        TokenKind::PlusPlus => "inc",
+        TokenKind::MinusMinus => "dec",
         _ => unreachable!(),
     }
 }

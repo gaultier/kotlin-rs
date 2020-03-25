@@ -132,6 +132,47 @@ impl<'a> TypeChecker<'a> {
             AstNode {
                 kind:
                     AstNodeExpr::Unary(
+                        Token {
+                            kind: TokenKind::PlusPlus,
+                            span,
+                        },
+                        right,
+                    ),
+                id,
+                ..
+            }
+            | AstNode {
+                kind:
+                    AstNodeExpr::Unary(
+                        Token {
+                            kind: TokenKind::MinusMinus,
+                            span,
+                        },
+                        right,
+                    ),
+                id,
+                ..
+            } => {
+                let t = self.expr(right)?;
+                match t {
+                    Type::Int
+                    | Type::UInt
+                    | Type::Long
+                    | Type::ULong
+                    | Type::Float
+                    | Type::Double => {
+                        self.types.insert(*id, t);
+                        Ok(t)
+                    }
+                    _ => Err(Error::new(
+                        ErrorKind::IncompatibleTypes(t, Type::Int),
+                        self.lexer.span_location(span),
+                    )),
+                }
+            }
+            AstNode {
+                kind:
+                    AstNodeExpr::Unary(
                         tok
                         @
                         Token {

@@ -505,7 +505,11 @@ impl Parser<'_> {
 
         let previous = self.previous.unwrap();
         match previous.kind {
-            TokenKind::Plus | TokenKind::Bang | TokenKind::Minus => {
+            TokenKind::PlusPlus
+            | TokenKind::MinusMinus
+            | TokenKind::Plus
+            | TokenKind::Bang
+            | TokenKind::Minus => {
                 self.advance()?;
                 self.skip_newlines()?;
                 let right = self.unary_prefix()?;
@@ -528,7 +532,11 @@ impl Parser<'_> {
 
     fn prefix_unary_expr(&mut self) -> Result<AstNode, Error> {
         match self.previous.unwrap().kind {
-            TokenKind::Plus | TokenKind::Bang | TokenKind::Minus => self.unary_prefix(),
+            TokenKind::PlusPlus
+            | TokenKind::MinusMinus
+            | TokenKind::Plus
+            | TokenKind::Bang
+            | TokenKind::Minus => self.unary_prefix(),
             _ => self.postfix_unary_expr(),
         }
     }
