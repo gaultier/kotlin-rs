@@ -109,8 +109,8 @@ impl<'a> Resolver<'a> {
         };
 
         debug!(
-            "var_ref: identifier={} id={} depth={} scope_id={}",
-            identifier, id, depth, scope.block_id
+            "var_ref: identifier={} id={} depth={} scope_id={} node_ref_id={}",
+            identifier, id, depth, scope.block_id, var.id
         );
         self.resolution.insert(id, var_usage_ref);
         Ok(())

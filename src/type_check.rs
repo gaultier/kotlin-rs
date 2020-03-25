@@ -521,8 +521,11 @@ impl<'a> TypeChecker<'a> {
 
     fn var_ref(&mut self, id: NodeId) -> Result<Type, Error> {
         let var_usage_ref = self.resolution.get(&id).unwrap();
-        debug!("var ref: id={} var_usage_ref={:?}", id, &var_usage_ref);
         let t = self.types.get(&var_usage_ref.node_ref_id).unwrap().clone();
+        debug!(
+            "var ref: id={} var_usage_ref={:?} type={}",
+            id, &var_usage_ref, t
+        );
         self.types.insert(id, t.clone());
         Ok(t)
     }
@@ -533,17 +536,14 @@ impl<'a> TypeChecker<'a> {
         args: &[AstNodeExpr],
         id: NodeId,
     ) -> Result<Type, Error> {
-        self.expr(fn_name)?;
+        let t = self.expr(fn_name)?;
         for arg in args {
             self.expr(arg)?;
         }
 
-        // let fn_usage_ref = self.resolution.get(&id).unwrap();
-        debug!("fn ref: id={}", id);
-        // let t = self.types.get(&var_usage_ref.node_ref_id).unwrap().clone();
-        // let fn_t = self.types.get()
+        debug!("fn ref: id={} t={}", id, t);
 
-        Ok(Type::Unit)
+        Ok(t)
     }
 
     fn fn_def(
