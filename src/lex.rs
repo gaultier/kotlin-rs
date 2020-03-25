@@ -48,6 +48,7 @@ pub enum TokenKind {
     AmpersandAmpersand,
     PipePipe,
     Bang,
+    BangBang,
     BangEqual,
     BangEqualEqual,
     Colon,
@@ -197,6 +198,7 @@ enum CursorTokenKind {
     Dollar,
     Semicolon,
     Bang,
+    BangBang,
     Lesser,
     LesserEqual,
     Greater,
@@ -368,6 +370,7 @@ impl Cursor<'_> {
                     CursorTokenKind::BangEqual
                 }
             }
+            '!' if self.match_char('!') => CursorTokenKind::BangBang,
             '!' => CursorTokenKind::Bang,
             '<' if self.match_char('=') => CursorTokenKind::LesserEqual,
             '<' => CursorTokenKind::Lesser,
@@ -1084,6 +1087,7 @@ impl Lexer {
             CursorTokenKind::EqualEqualEqual => Ok(TokenKind::EqualEqualEqual),
             CursorTokenKind::Whitespace => Ok(TokenKind::Whitespace),
             CursorTokenKind::Bang => Ok(TokenKind::Bang),
+            CursorTokenKind::BangBang => Ok(TokenKind::BangBang),
             CursorTokenKind::BangEqual => Ok(TokenKind::BangEqual),
             CursorTokenKind::BangEqualEqual => Ok(TokenKind::BangEqualEqual),
             CursorTokenKind::Percent => Ok(TokenKind::Percent),
