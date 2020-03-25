@@ -784,6 +784,17 @@ impl Parser<'_> {
         })
     }
 
+    fn fn_declaration(&mut self) -> Result<AstNodeStmt, Error> {
+        unimplemented!()
+    }
+
+    fn declaration(&mut self) -> Result<AstNodeStmt, Error> {
+        match self.previous.unwrap().kind {
+            TokenKind::KeywordFun => self.fn_declaration(),
+            _ => unimplemented!(),
+        }
+    }
+
     fn statement(&mut self) -> Result<AstNodeStmt, Error> {
         let cur_kind = self.current.unwrap().kind;
 
@@ -801,6 +812,7 @@ impl Parser<'_> {
             {
                 self.assign()
             }
+            TokenKind::KeywordFun => self.declaration(),
             _ => Ok(AstNodeStmt::Expr(self.expression()?)),
         }
     }
