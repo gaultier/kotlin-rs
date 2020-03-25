@@ -348,3 +348,74 @@ fn add_null_null() {
         &"(+ nil nil)\n"
     );
 }
+
+#[test]
+fn plus_plus() {
+    let src = String::from(r##"++1;"##);
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(inc 1)\n");
+}
+
+#[test]
+fn minus_minus() {
+    let src = String::from(r##"--1;"##);
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(dec 1)\n");
+}
+
+#[test]
+fn multi_prefix_operators() {
+    let src = String::from(r##"- + -- ++ 1;"##);
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_ref().unwrap(),
+        &"(- (+ (dec (inc 1))))\n"
+    );
+}
+#[test]
+fn plus_plus_not_a_number() -> Result<(), String> {
+    let src = String::from(r##"++true;"##);
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::IncompatibleTypes(Type::Bool, _),
+            location:
+                Location {
+                    start_line: 1,
+                    start_column: 1,
+                    end_line: 1,
+                    end_column: 3,
+                    ..
+                },
+        }) => Ok(()),
+        _ => Err("Should fail type checking".to_string()),
+    }
+}
+
+#[test]
+fn minus_minus_not_a_number() -> Result<(), String> {
+    let src = String::from(r##"--true;"##);
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::IncompatibleTypes(Type::Bool, _),
+            location:
+                Location {
+                    start_line: 1,
+                    start_column: 1,
+                    end_line: 1,
+                    end_column: 3,
+                    ..
+                },
+        }) => Ok(()),
+        _ => Err("Should fail type checking".to_string()),
+    }
+}
