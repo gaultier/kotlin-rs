@@ -500,13 +500,15 @@ impl Parser<'_> {
         }
     }
 
-    fn unary(&mut self) -> Result<AstNode, Error> {
+    fn unary_prefix(&mut self) -> Result<AstNode, Error> {
+        // TODO: annotation, label
+
         let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::Plus | TokenKind::Bang | TokenKind::Minus => {
                 self.advance()?;
                 self.skip_newlines()?;
-                let right = self.unary()?;
+                let right = self.unary_prefix()?;
                 Ok(AstNode {
                     kind: AstNodeExpr::Unary(previous, Box::new(right)),
                     id: self.next_id(),
@@ -516,8 +518,21 @@ impl Parser<'_> {
         }
     }
 
+    fn postfix_unary_expr(&mut self) -> Result<AstNode, Error> {
+        self.primary()
+        // TODO: postfix_unary_suffix+
+    }
+
+    fn prefix_unary_expr(&mut self) -> Result<AstNode, Error> {
+        match self.previous.unwrap().kind {
+            TokenKind::Plus | TokenKind::Bang | TokenKind::Minus => self.unary_prefix(),
+            _ => self.postfix_unary_expr(),
+        }
+    }
+
     fn as_expr(&mut self) -> Result<AstNode, Error> {
-        self.unary()
+        // TODO: as
+        self.prefix_unary_expr()
     }
 
     fn multiplication(&mut self) -> Result<AstNode, Error> {
