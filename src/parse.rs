@@ -161,6 +161,7 @@ pub enum AstNodeExpr {
     VarRef(Span, NodeId),
     FnCall {
         fn_name: Box<AstNodeExpr>,
+        call_span: Span,
         args: Vec<AstNodeExpr>,
         id: NodeId,
     },
@@ -540,12 +541,13 @@ impl Parser<'_> {
     }
 
     fn call_suffix(&mut self, fn_name: AstNodeExpr) -> Result<AstNodeExpr, Error> {
-        self.eat(TokenKind::LeftParen)?;
+        let call_span = self.eat(TokenKind::LeftParen)?.span;
         self.skip_newlines()?;
         // TODO: args
         self.eat(TokenKind::RightParen)?;
         Ok(AstNodeExpr::FnCall {
             fn_name: Box::new(fn_name),
+            call_span,
             args: vec![],
             id: self.next_id(),
         })

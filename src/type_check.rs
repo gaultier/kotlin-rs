@@ -533,6 +533,7 @@ impl<'a> TypeChecker<'a> {
     fn fn_call(
         &mut self,
         fn_name: &AstNodeExpr,
+        call_span: &Span,
         args: &[AstNodeExpr],
         id: NodeId,
     ) -> Result<Type, Error> {
@@ -543,11 +544,13 @@ impl<'a> TypeChecker<'a> {
 
         debug!("fn ref: id={} t={}", id, t);
 
-        let return_t = match t {
-            Type::Function { return_t, .. } => return_t,
-            _ => unreachable!(),
-        };
-        Ok(*return_t)
+        match t {
+            Type::Function { return_t, .. } => Ok(*return_t),
+            _ => Err(Error::new(
+                ErrorKind::NotACallable(t),
+                self.lexer.span_location(call_span),
+            )),
+        }
     }
 
     fn fn_def(
@@ -590,8 +593,12 @@ impl<'a> TypeChecker<'a> {
             AstNodeExpr::WhenExpr { .. } => self.when_expr(ast),
             AstNodeExpr::VarRef(_, id) => self.var_ref(*id),
             AstNodeExpr::FnCall {
-                fn_name, args, id, ..
-            } => self.fn_call(fn_name, args, *id),
+                fn_name,
+                args,
+                call_span,
+                id,
+                ..
+            } => self.fn_call(fn_name, call_span, args, *id),
         }
     }
 

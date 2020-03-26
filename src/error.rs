@@ -37,6 +37,7 @@ pub enum ErrorKind {
     UnknownIdentifier(String),
     ExpectedToken,
     CannotReassignVal(String),
+    NotACallable(Type),
 }
 
 impl fmt::Display for ErrorKind {
@@ -76,6 +77,7 @@ impl fmt::Display for ErrorKind {
                 "Cannot reassign variable {} declared with `val`",
                 identifier
             ),
+            ErrorKind::NotACallable(t) => write!(f, "`{}` cannot be called as a function", t),
         }
     }
 }
