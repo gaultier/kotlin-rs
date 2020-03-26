@@ -543,7 +543,11 @@ impl<'a> TypeChecker<'a> {
 
         debug!("fn ref: id={} t={}", id, t);
 
-        Ok(t)
+        let return_t = match t {
+            Type::Function { return_t, .. } => return_t,
+            _ => unreachable!(),
+        };
+        Ok(*return_t)
     }
 
     fn fn_def(
