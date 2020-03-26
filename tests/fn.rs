@@ -1,10 +1,9 @@
 use kotlin::compile::compile;
-// use kotlin::error::*;
-// use kotlin::parse::Type;
+use kotlin::error::*;
+use kotlin::parse::Type;
 
 #[test]
 fn simple_call() {
-    // FIXME
     let src = String::from("fun a() = 10; a();");
     let mut out: Vec<u8> = Vec::new();
 
@@ -17,7 +16,6 @@ fn simple_call() {
 
 #[test]
 fn assign_to_call_expr() {
-    // FIXME
     let src = String::from("var a = 1; fun foo() = 99; a = foo();");
     let mut out: Vec<u8> = Vec::new();
 
@@ -26,4 +24,32 @@ fn assign_to_call_expr() {
         std::str::from_utf8(&out).as_ref().unwrap(),
         &"(def a 1)\n(defn foo [] 99)\n(set! a (apply foo '()))\n\n"
     );
+}
+
+#[test]
+fn call_expr_wrong_type() -> Result<(), String> {
+    let src = String::from("var a = \"hello\"; fun foo() = 99; a = foo();");
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::IncompatibleTypes(Type::TString, Type::Int),
+            ..
+        }) => Ok(()),
+        other => Err(format!("Should be a type error: {:?}", other)),
+    }
+}
+
+#[test]
+fn not_a_callable() -> Result<(), String> {
+    let src = String::from("var a = \"hello\"; a();");
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::NotACallable(Type::TString),
+            ..
+        }) => Ok(()),
+        other => Err(format!("Should be a type error: {:?}", other)),
+    }
 }
