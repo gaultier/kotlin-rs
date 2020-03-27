@@ -355,7 +355,7 @@ fn plus_plus() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(inc 1)\n");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(add1 1)\n");
 }
 
 #[test]
@@ -364,7 +364,7 @@ fn minus_minus() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(dec 1)\n");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(sub1 1)\n");
 }
 
 #[test]
@@ -375,7 +375,7 @@ fn multi_prefix_operators() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(- (+ (dec (inc 1))))\n"
+        &"(- (+ (sub1 (add1 1))))\n"
     );
 }
 #[test]

@@ -366,7 +366,7 @@ impl<'a> SexpEmitter<'a> {
         body: &AstNodeStmt,
         w: &mut W,
     ) -> Result<(), Error> {
-        write!(w, "(defn ").unwrap();
+        write!(w, "(define ").unwrap();
         self.expr(fn_name, w)?;
 
         write!(w, " [").unwrap();

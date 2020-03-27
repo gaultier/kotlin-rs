@@ -10,7 +10,7 @@ fn simple_call() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(defn a [] 10)\n(apply a '())\n"
+        &"(define a [] 10)\n(apply a '())\n"
     );
 }
 
@@ -22,7 +22,7 @@ fn assign_to_call_expr() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(def a 1)\n(defn foo [] 99)\n(set! a (apply foo '()))\n\n"
+        &"(define a 1)\n(define foo [] 99)\n(set! a (apply foo '()))\n\n"
     );
 }
 
@@ -62,7 +62,7 @@ fn fn_body_block() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(defn a [] (do 1 2 'a' true 10 ))\n(def b (apply a '()))\n\n"
+        &"(define a [] (begin 1 2 'a' true 10 ))\n(define b (apply a '()))\n\n"
     );
 }
 
