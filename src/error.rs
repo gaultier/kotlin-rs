@@ -36,7 +36,7 @@ pub enum ErrorKind {
     UnterminatedChar,
     InvalidRange(Type),
     UnknownIdentifier(String),
-    ExpectedToken,
+    ExpectedToken(TokenKind, String),
     CannotReassignVal(String),
     NotACallable(Type),
     UnexpectedToken(TokenKind, String),
@@ -69,7 +69,7 @@ impl fmt::Display for ErrorKind {
             ErrorKind::InvalidNumberSuffix(suffix) => {
                 write!(f, "Invalid number suffix `{}`", suffix)
             }
-            ErrorKind::ExpectedToken => write!(f, "Expected token"),
+            ErrorKind::ExpectedToken(_, s) => write!(f, "Expected token: `{}`", s),
             ErrorKind::InvalidRange(t) => write!(f, "Invalid range of type {}", t),
             ErrorKind::UnknownIdentifier(identifier) => {
                 write!(f, "Unknown identifier {}", identifier)

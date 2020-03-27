@@ -224,14 +224,18 @@ impl Parser<'_> {
     }
 
     fn eat(&mut self, kind: TokenKind) -> Result<Token, Error> {
-        match self.previous {
-            Some(tok @ Token { .. }) if tok.kind == kind => {
+        let previous = self.previous.unwrap();
+        match previous {
+            Token { kind: k, .. } if k == kind => {
                 self.advance()?;
-                Ok(tok)
+                Ok(previous)
             }
             _ => Err(Error::new(
-                ErrorKind::ExpectedToken,
-                self.lexer.span_location(&self.previous.unwrap().span),
+                ErrorKind::ExpectedToken(
+                    kind,
+                    self.lexer.src[previous.span.start..previous.span.end].to_string(),
+                ),
+                self.lexer.span_location(&previous.span),
             )),
         }
     }
