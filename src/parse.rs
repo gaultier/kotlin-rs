@@ -819,7 +819,7 @@ impl Parser<'_> {
         })
     }
 
-    fn fn_declaration(&mut self) -> Result<AstNodeStmt, Error> {
+    fn fn_def(&mut self) -> Result<AstNodeStmt, Error> {
         // TODO: type, etc
         self.eat(TokenKind::KeywordFun)?;
         self.skip_newlines()?;
@@ -848,7 +848,7 @@ impl Parser<'_> {
 
     fn declaration(&mut self) -> Result<AstNodeStmt, Error> {
         match self.previous.unwrap().kind {
-            TokenKind::KeywordFun => self.fn_declaration(),
+            TokenKind::KeywordFun => self.fn_def(),
             _ => unimplemented!(),
         }
     }
