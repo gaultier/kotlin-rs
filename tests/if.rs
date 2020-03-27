@@ -145,13 +145,15 @@ fn check_both_branches_types_match_unit_when_empty_if() {
 }
 
 #[test]
-fn check_types_coalesce() {
+fn check_types_coalesce() -> Result<(), String> {
     let src = String::from("if (1<2) 99U else 99UL \n");
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
-    assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(if (< 1 2) 99  99 )\n"
-    );
+    match compile(src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::IncompatibleTypes(Type::UInt, Type::ULong),
+            ..
+        }) => Ok(()),
+        other => Err(format!("Should be a type error: {:?}", other)),
+    }
 }
