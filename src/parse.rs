@@ -545,7 +545,7 @@ impl Parser<'_> {
 
     fn simple_identifier(&mut self) -> Result<AstNodeExpr, Error> {
         let tok = self.eat(TokenKind::Identifier)?;
-        Ok(AstNodeExpr::Literal(tok, self.next_id()))
+        Ok(AstNodeExpr::VarRef(tok.span, self.next_id()))
     }
 
     fn fn_call_args(&mut self, args: &mut Vec<AstNodeExpr>) -> Result<(), Error> {
@@ -909,7 +909,7 @@ impl Parser<'_> {
 
         Ok(AstNodeStmt::FnDefinition {
             fn_name,
-            args: vec![],
+            args,
             body: Box::new(body),
             id: self.next_id(),
             flags: FLAG_FN as u16,

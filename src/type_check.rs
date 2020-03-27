@@ -519,6 +519,7 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn var_ref(&mut self, id: NodeId) -> Result<Type, Error> {
+        dbg!(&self.resolution, id);
         let var_usage_ref = self.resolution.get(&id).unwrap();
         let t = self.types.get(&var_usage_ref.node_ref_id).unwrap().clone();
         debug!(
@@ -564,6 +565,7 @@ impl<'a> TypeChecker<'a> {
             .iter()
             .map(|arg| self.expr(arg))
             .collect::<Result<Vec<_>, Error>>()?;
+        debug!("fn_def: args_t={:?} args={:?}", args_t, args);
 
         let return_t = self.statement(body)?;
 

@@ -170,6 +170,7 @@ impl<'a> Resolver<'a> {
         for arg in args {
             self.expr(arg)?;
         }
+        debug!("fn_call: fn_name={:?} args={:?}", fn_name, args);
         Ok(())
     }
 
@@ -278,7 +279,14 @@ impl<'a> Resolver<'a> {
         self.enter_scope(id);
 
         for arg in args {
-            self.expr(arg)?;
+            match arg {
+                AstNodeExpr::VarRef(span, id) => {
+                    let identifier = &self.lexer.src[span.start..span.end];
+                    self.var_decl(identifier, 0, *id)?;
+                    self.var_def(identifier, 0, *id)?;
+                }
+                _ => unreachable!(),
+            }
         }
 
         self.statement(body)?;
