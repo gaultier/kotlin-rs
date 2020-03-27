@@ -53,3 +53,15 @@ fn not_a_callable() -> Result<(), String> {
         other => Err(format!("Should be a type error: {:?}", other)),
     }
 }
+
+#[test]
+fn fn_body_block() {
+    let src = String::from("fun a() {1; 2; 'a'; true; 10;} var b = a();");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_ref().unwrap(),
+        &"(defn a [] (do 1 2 'a' true 10 ))\n(def b (apply a '()))\n\n"
+    );
+}
