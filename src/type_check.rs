@@ -513,7 +513,7 @@ impl<'a> TypeChecker<'a> {
                 cond_start_tok,
                 if_body,
                 else_body,
-                else_body_tok,
+                else_body_tok_span,
                 id,
             } => {
                 let t = self.expr(cond)?;
@@ -531,9 +531,9 @@ impl<'a> TypeChecker<'a> {
                     return Ok(Type::Unit);
                 }
 
-                let t = self.coalesce_types(&if_body_t, &else_body_t, &else_body_tok)?;
-                self.types.insert(*id, t.clone());
-                Ok(t)
+                self.eq(&if_body_t, &else_body_t, &else_body_tok_span)?;
+                self.types.insert(*id, if_body_t.clone());
+                Ok(if_body_t)
             }
             _ => unreachable!(),
         }

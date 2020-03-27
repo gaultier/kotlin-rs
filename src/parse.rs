@@ -151,7 +151,7 @@ pub enum AstNodeExpr {
         cond_start_tok: Token,
         if_body: Block,
         else_body: Block,
-        else_body_tok: Token,
+        else_body_tok_span: Span,
         id: NodeId,
     },
     WhenExpr {
@@ -476,7 +476,7 @@ impl Parser<'_> {
         };
         self.skip_newlines()?;
 
-        let else_body_tok = self.eat(TokenKind::KeywordElse)?;
+        let else_body_tok_span = self.eat(TokenKind::KeywordElse)?.span;
         self.skip_newlines()?;
 
         let else_body = match self.previous {
@@ -499,7 +499,7 @@ impl Parser<'_> {
             cond_start_tok,
             if_body,
             else_body,
-            else_body_tok,
+            else_body_tok_span,
             id: self.next_id(),
         })
     }
