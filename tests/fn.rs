@@ -65,3 +65,17 @@ fn fn_body_block() {
         &"(defn a [] (do 1 2 'a' true 10 ))\n(def b (apply a '()))\n\n"
     );
 }
+
+#[test]
+fn fn_body_block_no_return_type() -> Result<(), String> {
+    let src = String::from("fun a() {1} var b= a(); b+=1;");
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::IncompatibleTypes(Type::Unit, Type::Int),
+            ..
+        }) => Ok(()),
+        other => Err(format!("Should be a type error: {:?}", other)),
+    }
+}
