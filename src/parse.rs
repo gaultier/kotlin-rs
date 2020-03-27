@@ -543,36 +543,34 @@ impl Parser<'_> {
         }
     }
 
+    fn simple_identifier(&mut self) -> Result<AstNodeExpr, Error> {
+        let tok = self.eat(TokenKind::Identifier)?;
+        Ok(AstNodeExpr::Literal(tok, self.next_id()))
+    }
+
     fn fn_call_args(&mut self, args: &mut Vec<AstNodeExpr>) -> Result<(), Error> {
         let previous = self.previous.unwrap();
 
-        match previous.kind {
-            TokenKind::RightParen => {
-                self.advance()?;
-                Ok(())
-            }
-            // Last argument without trailing comma
-            _ => {
-                args.push(self.expr()?);
+        if previous.kind == TokenKind::RightParen {
+            self.advance()?;
+            return Ok(());
+        }
 
-                match self.previous.unwrap().kind {
-                    TokenKind::Comma => {
-                        self.advance()?;
-                        self.fn_call_args(args)
-                    }
-                    TokenKind::RightParen => {
-                        self.advance()?;
-                        Ok(())
-                    }
-                    _ => Err(Error::new(
-                        ErrorKind::UnexpectedToken(
-                            previous.kind,
-                            self.lexer.src[previous.span.start..previous.span.end].to_string(),
-                        ),
-                        self.lexer.span_location(&previous.span),
-                    )),
-                }
+        args.push(self.expr()?);
+
+        match self.previous.unwrap().kind {
+            TokenKind::Comma => {
+                self.advance()?;
+                self.fn_call_args(args)
             }
+            TokenKind::RightParen => self.fn_call_args(args),
+            _ => Err(Error::new(
+                ErrorKind::UnexpectedToken(
+                    previous.kind,
+                    self.lexer.src[previous.span.start..previous.span.end].to_string(),
+                ),
+                self.lexer.span_location(&previous.span),
+            )),
         }
     }
 
@@ -867,12 +865,12 @@ impl Parser<'_> {
             }
             // Last argument without trailing comma
             TokenKind::Identifier if self.current.unwrap().kind == TokenKind::RightParen => {
-                args.push(self.expr()?);
+                args.push(self.simple_identifier()?);
                 self.advance()?;
                 Ok(())
             }
             TokenKind::Identifier => {
-                args.push(self.expr()?);
+                args.push(self.simple_identifier()?);
                 self.eat(TokenKind::Comma)?;
                 self.fn_def_args(args)
             }
