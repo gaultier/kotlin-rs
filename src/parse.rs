@@ -148,7 +148,7 @@ pub enum AstNodeExpr {
     Grouping(Box<AstNodeExpr>, NodeId),
     IfExpr {
         cond: Box<AstNodeExpr>,
-        cond_start_tok: Token,
+        cond_span: Span,
         if_body: Block,
         else_body: Block,
         else_body_span: Span,
@@ -445,7 +445,7 @@ impl Parser<'_> {
         self.eat(TokenKind::KeywordIf)?;
         self.skip_newlines()?;
 
-        let cond_start_tok = self.eat(TokenKind::LeftParen)?;
+        let cond_span = self.eat(TokenKind::LeftParen)?.span;
         self.skip_newlines()?;
 
         let cond = self.expr()?;
@@ -496,7 +496,7 @@ impl Parser<'_> {
 
         Ok(AstNodeExpr::IfExpr {
             cond: Box::new(cond),
-            cond_start_tok,
+            cond_span,
             if_body,
             else_body,
             else_body_span,

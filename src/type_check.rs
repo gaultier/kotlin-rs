@@ -510,14 +510,14 @@ impl<'a> TypeChecker<'a> {
         match ast {
             AstNodeExpr::IfExpr {
                 cond,
-                cond_start_tok,
+                cond_span,
                 if_body,
                 else_body,
                 else_body_span,
                 id,
             } => {
                 let t = self.expr(cond)?;
-                self.eq(&t, &Type::Bool, &cond_start_tok.span)?;
+                self.eq(&t, &Type::Bool, &cond_span)?;
 
                 let if_body_t = self.block(if_body)?;
                 let else_body_t = self.block(else_body)?;

@@ -16,10 +16,7 @@ impl MirTransformer {
         let mut new_body = body.body;
         new_body.push(AstNodeStmt::Expr(AstNodeExpr::IfExpr {
             cond: Box::new(cond),
-            cond_start_tok: Token {
-                kind: TokenKind::LeftParen,
-                span: Span::new(0, 0),
-            },
+            cond_span: Span::new(0, 0),
             if_body: Block {
                 id: 0,
                 body: vec![],
