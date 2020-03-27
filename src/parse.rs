@@ -552,23 +552,27 @@ impl Parser<'_> {
                 Ok(())
             }
             // Last argument without trailing comma
-            TokenKind::Identifier if self.current.unwrap().kind == TokenKind::RightParen => {
+            _ => {
                 args.push(self.expr()?);
-                self.advance()?;
-                Ok(())
+
+                match self.previous.unwrap().kind {
+                    TokenKind::Comma => {
+                        self.advance()?;
+                        self.fn_call_args(args)
+                    }
+                    TokenKind::RightParen => {
+                        self.advance()?;
+                        Ok(())
+                    }
+                    _ => Err(Error::new(
+                        ErrorKind::UnexpectedToken(
+                            previous.kind,
+                            self.lexer.src[previous.span.start..previous.span.end].to_string(),
+                        ),
+                        self.lexer.span_location(&previous.span),
+                    )),
+                }
             }
-            TokenKind::Identifier => {
-                args.push(self.expr()?);
-                self.eat(TokenKind::Comma)?;
-                self.fn_def_args(args)
-            }
-            _ => Err(Error::new(
-                ErrorKind::UnexpectedToken(
-                    previous.kind,
-                    self.lexer.src[previous.span.start..previous.span.end].to_string(),
-                ),
-                self.lexer.span_location(&previous.span),
-            )),
         }
     }
 
