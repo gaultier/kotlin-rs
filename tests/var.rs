@@ -8,8 +8,8 @@ fn simple_var() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(define a 1)\n\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(define a 1)"
     );
 }
 
@@ -20,8 +20,8 @@ fn var_with_math_expr() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(define a (* 5 10))\n\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(define a (* 5 10))"
     );
 }
 
@@ -46,8 +46,8 @@ fn ref_var() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(define a 1)\n(define b (* a 2))\n(if (< b 4) (begin ) (begin ))\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(define a 1)\n(define b (* a 2))\n(if (< b 4) (begin ) (begin )"
     )
 }
 
@@ -58,8 +58,8 @@ fn simple_val() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(define a 1)\n\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(define a 1)"
     );
 }
 
@@ -70,8 +70,8 @@ fn val_with_math_expr() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(define a (* 5 10))\n\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(define a (* 5 10))"
     );
 }
 
@@ -96,8 +96,8 @@ fn ref_val() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(define a 1)\n(define b (* a 2))\n(if (< b 4) (begin ) (begin ))\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(define a 1)\n(define b (* a 2))\n(if (< b 4) (begin ) (begin )"
     )
 }
 
@@ -108,20 +108,20 @@ fn simple_var_assign() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(define a 1)\n(set! a 4)\n\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(define a 1)\n(set! a 4)"
     );
 }
 
 #[test]
 fn var_assign_with_math_expr() {
-    let src = String::from("var a = 5*10; a = a * 2;\n\n");
+    let src = String::from("var a = 5*10; a = a * 2;");
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(define a (* 5 10))\n(set! a (* a 2))\n\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(define a (* 5 10))\n(set! a (* a 2))"
     );
 }
 
@@ -141,12 +141,12 @@ fn val_reassign() -> Result<(), String> {
 
 #[test]
 fn var_assign_other_ops() {
-    let src = String::from("var a = 5*10; a -=\n 1; a%=2; a/=3; a*=4 \n\n");
+    let src = String::from("var a = 5*10; a -=\n 1; a%=2; a/=3; a*=4 ");
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(define a (* 5 10))\n(set! a (-= 1))\n(set! a (%= 2))\n(set! a (/= 3))\n(set! a (*= 4))\n\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(define a (* 5 10))\n(set! a (-= 1))\n(set! a (%= 2))\n(set! a (/= 3))\n(set! a (*= 4))"
     );
 }
