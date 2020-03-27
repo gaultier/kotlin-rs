@@ -36,12 +36,12 @@ impl<'a> TypeChecker<'a> {
     fn while_stmt(
         &mut self,
         cond: &AstNodeExpr,
-        block: &Block,
+        block: &AstNodeStmt,
         cond_start_tok: &Token,
     ) -> Result<Type, Error> {
         let cond_t = self.expr(cond)?;
         self.eq(&cond_t, &Type::Bool, &cond_start_tok.span)?;
-        self.statements(block)?;
+        self.statement(block)?;
         Ok(Type::Unit)
     }
 
@@ -99,7 +99,7 @@ impl<'a> TypeChecker<'a> {
                 flags,
                 id,
             } => self.fn_def(fn_name, args, body, *flags, *id),
-            AstNodeStmt::Block { body, .. } => self.fn_block(body),
+            AstNodeStmt::Block { body, .. } => self.block(body),
             AstNodeStmt::Println(expr) => {
                 self.expr(expr)?;
                 Ok(Type::Unit)
@@ -107,26 +107,13 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    pub fn check_types(&mut self, statements: &Block) -> Result<Types, Error> {
+    pub fn check_types(&mut self, statements: &AstNodeStmt) -> Result<Types, Error> {
         self.statements(statements)?;
         Ok(self.types.clone())
     }
 
-    fn statements(&mut self, statements: &Block) -> Result<Type, Error> {
-        for stmt in statements.body.iter() {
-            self.statement(stmt)?;
-        }
-
-        Ok(statements
-            .body
-            .last()
-            .map(|stmt| match stmt {
-                AstNodeStmt::Expr(expr) => {
-                    self.types.get(&expr.id()).unwrap_or(&Type::Unit).clone()
-                }
-                _ => Type::Unit,
-            })
-            .unwrap_or(Type::Unit))
+    fn statements(&mut self, statements: &AstNodeStmt) -> Result<Type, Error> {
+        self.statement(statements)
     }
 
     fn unary(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
@@ -460,11 +447,11 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn block(&mut self, block: &Block) -> Result<Type, Error> {
-        for stmt in &block.body {
+    fn block(&mut self, block: &[AstNodeStmt]) -> Result<Type, Error> {
+        for stmt in block {
             self.statement(stmt)?;
         }
-        Ok(match block.body.last() {
+        Ok(match block.last() {
             Some(AstNodeStmt::Expr(stmt_expr)) => self
                 .types
                 .get(&stmt_expr.id())
@@ -519,8 +506,8 @@ impl<'a> TypeChecker<'a> {
                 let t = self.expr(cond)?;
                 self.eq(&t, &Type::Bool, &cond_span)?;
 
-                let if_body_t = self.block(if_body)?;
-                let else_body_t = self.block(else_body)?;
+                let if_body_t = self.statement(if_body)?;
+                let else_body_t = self.statement(else_body)?;
 
                 /* Kotlinc(tm) actually does not check that, the type is Any
                  which leads to weird, unchecked code like this that does not
