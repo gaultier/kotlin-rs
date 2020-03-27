@@ -5,7 +5,7 @@ use crate::type_check::Types;
 
 pub(crate) struct SexpEmitter<'a> {
     lexer: &'a Lexer,
-    types: &'a Types,
+    _types: &'a Types,
 }
 
 fn unary_op(kind: &TokenKind) -> &'static str {
@@ -57,8 +57,8 @@ fn assign_op(kind: &TokenKind) -> &'static str {
 }
 
 impl<'a> SexpEmitter<'a> {
-    pub(crate) fn new(lexer: &'a Lexer, types: &'a Types) -> SexpEmitter<'a> {
-        SexpEmitter { lexer, types }
+    pub(crate) fn new(lexer: &'a Lexer, _types: &'a Types) -> SexpEmitter<'a> {
+        SexpEmitter { lexer, _types }
     }
 
     fn assign<W: std::io::Write>(
