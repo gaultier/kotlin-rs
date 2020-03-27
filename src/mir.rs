@@ -12,19 +12,22 @@ impl MirTransformer {
         MirTransformer { current_id }
     }
 
-    fn do_while(&mut self, cond: AstNodeExpr, body: Block) -> AstNodeStmt {
-        let mut new_body = body.body;
-        new_body.push(AstNodeStmt::Expr(AstNodeExpr::IfExpr {
+    fn do_while(&mut self, cond: AstNodeExpr, body: AstNodeStmt) -> AstNodeStmt {
+        let (mut body, id) = match body {
+            AstNodeStmt::Block { body, id } => (body, id),
+            _ => unreachable!(),
+        };
+        body.push(AstNodeStmt::Expr(AstNodeExpr::IfExpr {
             cond: Box::new(cond),
             cond_span: Span::new(0, 0),
-            if_body: Block {
+            if_body: Box::new(AstNodeStmt::Block {
                 id: self.next_id(),
                 body: vec![],
-            },
-            else_body: Block {
+            }),
+            else_body: Box::new(AstNodeStmt::Block {
                 id: self.next_id(),
                 body: vec![], // TODO: break;
-            },
+            }),
             else_body_span: Span::new(0, 0),
             id: self.next_id(),
         }));
@@ -41,16 +44,20 @@ impl MirTransformer {
                 kind: TokenKind::LeftParen,
                 span: Span::new(0, 0),
             },
-            body: Block {
-                id: body.id,
-                body: new_body,
-            },
+            body: Box::new(AstNodeStmt::Block { id, body }),
         }
     }
 
     fn statement(&mut self, statement: AstNodeStmt) -> AstNodeStmt {
         match statement {
-            AstNodeStmt::DoWhile { cond, body, .. } => self.do_while(cond, body),
+            AstNodeStmt::DoWhile { cond, body, .. } => self.do_while(cond, *body),
+            AstNodeStmt::Block { body, id } => AstNodeStmt::Block {
+                id,
+                body: body
+                    .into_iter()
+                    .map(|stmt| self.statement(stmt))
+                    .collect::<Vec<_>>(),
+            },
             _ => statement,
         }
     }
@@ -63,14 +70,7 @@ impl MirTransformer {
         self.current_id
     }
 
-    pub(crate) fn statements(&mut self, block: Block) -> Block {
-        let id = block.id;
-        let body = block
-            .body
-            .into_iter()
-            .map(|stmt| self.statement(stmt))
-            .collect::<Vec<_>>();
-
-        Block { id, body }
+    pub(crate) fn statements(&mut self, block: AstNodeStmt) -> AstNodeStmt {
+        self.statement(block)
     }
 }

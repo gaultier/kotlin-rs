@@ -150,7 +150,7 @@ impl<'a> Resolver<'a> {
                     self.when_entry(entry)?;
                 }
 
-                if let Some([else_entry]) = else_entry.as_ref().map(|b| b.body.as_slice()) {
+                if let Some(else_entry) = else_entry {
                     self.statement(else_entry)?;
                 }
             }
@@ -287,8 +287,8 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn fn_block(&mut self, block: &Block) -> Result<(), Error> {
-        for stmt in &block.body {
+    fn fn_block(&mut self, body: &[AstNodeStmt]) -> Result<(), Error> {
+        for stmt in body {
             self.statement(stmt)?;
         }
         Ok(())
@@ -326,7 +326,7 @@ impl<'a> Resolver<'a> {
             } => {
                 self.fn_def(fn_name, args, body, *flags, *id)?;
             }
-            AstNodeStmt::Block(block) => self.fn_block(block)?,
+            AstNodeStmt::Block { body, .. } => self.fn_block(body)?,
             AstNodeStmt::Println(expr) => {
                 self.expr(expr)?;
             }
@@ -334,12 +334,17 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    pub(crate) fn statements(&mut self, block: &Block) -> Result<Resolution, Error> {
-        self.enter_scope(block.id);
-        for stmt in &block.body {
-            self.statement(&stmt)?;
+    pub(crate) fn statements(&mut self, block: &AstNodeStmt) -> Result<Resolution, Error> {
+        match block {
+            AstNodeStmt::Block { id, body } => {
+                self.enter_scope(*id);
+                for stmt in body {
+                    self.statement(&stmt)?;
+                }
+                self.exit_scope();
+                Ok(self.resolution.clone())
+            }
+            _ => unreachable!(),
         }
-        self.exit_scope();
-        Ok(self.resolution.clone())
     }
 }

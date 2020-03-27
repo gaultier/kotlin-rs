@@ -67,12 +67,6 @@ impl fmt::Display for Type {
     }
 }
 
-#[derive(Debug)]
-pub struct Block {
-    pub id: NodeId,
-    pub body: Statements,
-}
-
 pub(crate) const FLAG_VAR: u8 = 0;
 pub(crate) const FLAG_VAL: u8 = 1;
 pub(crate) const FLAG_FN: u8 = 2;
@@ -83,12 +77,12 @@ pub enum AstNodeStmt {
     While {
         cond: AstNodeExpr,
         cond_start_tok: Token,
-        body: Block,
+        body: Box<AstNodeStmt>, // Block
     },
     DoWhile {
         cond: AstNodeExpr,
         cond_start_tok: Token,
-        body: Block,
+        body: Box<AstNodeStmt>, // Block
     },
     VarDefinition {
         identifier: Token,
@@ -109,7 +103,10 @@ pub enum AstNodeStmt {
         flags: u16,
         body: Box<AstNodeStmt>,
     },
-    Block(Block),
+    Block {
+        body: Statements,
+        id: NodeId,
+    },
     Println(AstNodeExpr),
 }
 
@@ -120,7 +117,7 @@ pub type NodeId = usize;
 #[derive(Debug)]
 pub struct WhenEntry {
     pub cond: AstNodeExpr,
-    pub body: Block,
+    pub body: AstNodeStmt, // Block
     pub cond_start_tok: Token,
 }
 
@@ -149,15 +146,15 @@ pub enum AstNodeExpr {
     IfExpr {
         cond: Box<AstNodeExpr>,
         cond_span: Span,
-        if_body: Block,
-        else_body: Block,
+        if_body: Box<AstNodeStmt>,   // Block
+        else_body: Box<AstNodeStmt>, // Block
         else_body_span: Span,
         id: NodeId,
     },
     WhenExpr {
         subject: Option<Box<AstNodeStmt>>,
         entries: Vec<WhenEntry>,
-        else_entry: Option<Block>,
+        else_entry: Option<Box<AstNodeStmt>>, // Block
         id: NodeId,
     },
     VarRef(Span, NodeId),
@@ -249,7 +246,7 @@ impl Parser<'_> {
         }
     }
 
-    fn block(&mut self) -> Result<Block, Error> {
+    fn block(&mut self) -> Result<AstNodeStmt, Error> {
         self.eat(TokenKind::LeftCurlyBracket)?;
         self.skip_newlines()?;
         let stmts = self.block_statements()?;
@@ -259,10 +256,10 @@ impl Parser<'_> {
     }
 
     // if-body. for-body, etc
-    fn control_structure_body(&mut self) -> Result<Block, Error> {
+    fn control_structure_body(&mut self) -> Result<AstNodeStmt, Error> {
         match self.previous {
             Some(Token { kind: k, .. }) if k == TokenKind::LeftCurlyBracket => self.block(),
-            _ => Ok(Block {
+            _ => Ok(AstNodeStmt::Block {
                 id: self.next_id(),
                 body: vec![self.statement()?],
             }),
@@ -278,7 +275,7 @@ impl Parser<'_> {
         self.skip_newlines()?;
 
         let body = match self.previous.unwrap().kind {
-            TokenKind::Semicolon => Block {
+            TokenKind::Semicolon => AstNodeStmt::Block {
                 id: self.next_id(),
                 body: vec![],
             },
@@ -288,7 +285,7 @@ impl Parser<'_> {
         Ok(AstNodeStmt::While {
             cond,
             cond_start_tok,
-            body,
+            body: Box::new(body),
         })
     }
 
@@ -297,7 +294,7 @@ impl Parser<'_> {
         self.skip_newlines()?;
 
         let body = match self.previous.unwrap().kind {
-            TokenKind::KeywordWhile => Block {
+            TokenKind::KeywordWhile => AstNodeStmt::Block {
                 id: self.next_id(),
                 body: vec![],
             },
@@ -312,7 +309,7 @@ impl Parser<'_> {
         Ok(AstNodeStmt::DoWhile {
             cond,
             cond_start_tok,
-            body,
+            body: Box::new(body),
         })
     }
 
@@ -339,7 +336,7 @@ impl Parser<'_> {
         })
     }
 
-    fn when_entries(&mut self) -> Result<(Vec<WhenEntry>, Option<Block>), Error> {
+    fn when_entries(&mut self) -> Result<(Vec<WhenEntry>, Option<AstNodeStmt>), Error> {
         let mut entries = Vec::new();
 
         loop {
@@ -436,7 +433,7 @@ impl Parser<'_> {
         Ok(AstNodeExpr::WhenExpr {
             entries,
             subject,
-            else_entry,
+            else_entry: else_entry.map(|x| Box::new(x)),
             id: self.next_id(),
         })
     }
@@ -460,7 +457,7 @@ impl Parser<'_> {
                 ..
             }) => {
                 self.advance()?;
-                Block {
+                AstNodeStmt::Block {
                     id: self.next_id(),
                     body: vec![],
                 }
@@ -468,7 +465,7 @@ impl Parser<'_> {
             Some(Token {
                 kind: TokenKind::KeywordElse,
                 ..
-            }) => Block {
+            }) => AstNodeStmt::Block {
                 id: self.next_id(),
                 body: vec![],
             },
@@ -487,7 +484,7 @@ impl Parser<'_> {
             | Some(Token {
                 kind: TokenKind::Semicolon,
                 ..
-            }) => Block {
+            }) => AstNodeStmt::Block {
                 id: self.next_id(),
                 body: vec![],
             },
@@ -497,8 +494,8 @@ impl Parser<'_> {
         Ok(AstNodeExpr::IfExpr {
             cond: Box::new(cond),
             cond_span,
-            if_body,
-            else_body,
+            if_body: Box::new(if_body),
+            else_body: Box::new(else_body),
             else_body_span,
             id: self.next_id(),
         })
@@ -836,7 +833,10 @@ impl Parser<'_> {
                 self.skip_newlines()?;
                 AstNodeStmt::Expr(self.expr()?)
             }
-            _ => AstNodeStmt::Block(self.control_structure_body()?),
+            _ => AstNodeStmt::Block {
+                id: self.next_id(),
+                body: vec![self.control_structure_body()?],
+            },
         };
 
         Ok(AstNodeStmt::FnDefinition {
@@ -884,7 +884,7 @@ impl Parser<'_> {
         }
     }
 
-    fn block_statements(&mut self) -> Result<Block, Error> {
+    fn block_statements(&mut self) -> Result<AstNodeStmt, Error> {
         let mut body = Vec::new();
 
         while let Some(tok) = &self.previous {
@@ -900,13 +900,13 @@ impl Parser<'_> {
                 }
             }
         }
-        Ok(Block {
+        Ok(AstNodeStmt::Block {
             id: self.next_id(),
             body,
         })
     }
 
-    fn statements(&mut self) -> Result<Block, Error> {
+    fn statements(&mut self) -> Result<AstNodeStmt, Error> {
         let mut body = Vec::new();
 
         while let Some(tok) = &self.previous {
@@ -946,7 +946,7 @@ impl Parser<'_> {
         self.current_id
     }
 
-    pub fn parse(&mut self) -> Result<Block, Error> {
+    pub fn parse(&mut self) -> Result<AstNodeStmt, Error> {
         self.advance()?;
         self.skip_newlines()?;
         self.advance()?;

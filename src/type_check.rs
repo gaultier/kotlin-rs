@@ -64,8 +64,8 @@ impl<'a> TypeChecker<'a> {
         Ok(Type::Unit)
     }
 
-    fn fn_block(&mut self, block: &Block) -> Result<Type, Error> {
-        for stmt in &block.body {
+    fn fn_block(&mut self, block: &[AstNodeStmt]) -> Result<Type, Error> {
+        for stmt in block {
             self.statement(stmt)?;
         }
         // TODO: different type if return present
@@ -99,7 +99,7 @@ impl<'a> TypeChecker<'a> {
                 flags,
                 id,
             } => self.fn_def(fn_name, args, body, *flags, *id),
-            AstNodeStmt::Block(block) => self.fn_block(block),
+            AstNodeStmt::Block { body, .. } => self.fn_block(body),
             AstNodeStmt::Println(expr) => {
                 self.expr(expr)?;
                 Ok(Type::Unit)
