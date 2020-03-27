@@ -112,8 +112,8 @@ impl<'a> SexpEmitter<'a> {
             } => {
                 self.fn_def(fn_name, args, body, w)?;
             }
-            AstNodeStmt::Block { block, .. } => {
-                self.block(block, w)?;
+            AstNodeStmt::Block { body, .. } => {
+                self.block(body, w)?;
             }
             AstNodeStmt::Println(expr) => {
                 write!(w, "(display ").unwrap();
@@ -157,7 +157,7 @@ impl<'a> SexpEmitter<'a> {
         match ast {
             AstNodeStmt::DoWhile { cond, body, .. } => {
                 write!(w, "(loop [] ").unwrap();
-                self.block(body, w)?;
+                self.statement(body, w)?;
                 write!(w, " (if ").unwrap();
                 self.expr(cond, w)?;
                 writeln!(w, " (recur)))").unwrap();
@@ -173,7 +173,7 @@ impl<'a> SexpEmitter<'a> {
                 write!(w, "(while ").unwrap();
                 self.expr(cond, w)?;
                 write!(w, " ").unwrap();
-                self.block(body, w)?;
+                self.statement(body, w)?;
                 writeln!(w, ")").unwrap();
                 Ok(())
             }
@@ -368,15 +368,15 @@ impl<'a> SexpEmitter<'a> {
         body: &AstNodeStmt,
         w: &mut W,
     ) -> Result<(), Error> {
-        write!(w, "(define ").unwrap();
+        write!(w, "(define (").unwrap();
         self.expr(fn_name, w)?;
+        write!(w, " ").unwrap();
 
-        write!(w, " [").unwrap();
         for arg in args {
             self.expr(arg, w)?;
             write!(w, " ").unwrap();
         }
-        write!(w, "] ").unwrap();
+        write!(w, ") ").unwrap();
 
         self.statement(body, w)?;
         writeln!(w, ")").unwrap();
@@ -398,13 +398,13 @@ impl<'a> SexpEmitter<'a> {
                 for entry in entries {
                     self.expr(&entry.cond, w)?;
                     write!(w, " ").unwrap();
-                    self.block(&entry.body, w)?;
+                    self.statement(&entry.body, w)?;
                     write!(w, " ").unwrap();
                 }
 
                 if let Some(else_entry) = else_entry {
                     write!(w, " :else ").unwrap();
-                    self.block(&else_entry, w)?;
+                    self.statement(&else_entry, w)?;
                 }
 
                 write!(w, ")").unwrap();
@@ -422,13 +422,13 @@ impl<'a> SexpEmitter<'a> {
                     write!(w, "(").unwrap();
                     self.expr(&entry.cond, w)?;
                     write!(w, " ").unwrap();
-                    self.block(&entry.body, w)?;
+                    self.statement(&entry.body, w)?;
                     write!(w, ") ").unwrap();
                 }
 
                 if let Some(else_entry) = else_entry {
                     write!(w, " :else ").unwrap();
-                    self.block(&else_entry, w)?;
+                    self.statement(&else_entry, w)?;
                 }
 
                 write!(w, ")").unwrap();
@@ -449,9 +449,9 @@ impl<'a> SexpEmitter<'a> {
                 write!(w, "(if ").unwrap();
                 self.expr(cond, w)?;
                 write!(w, " ").unwrap();
-                self.block(if_body, w)?;
+                self.statement(&*if_body, w)?;
                 write!(w, " ").unwrap();
-                self.block(else_body, w)?;
+                self.statement(&*else_body, w)?;
                 write!(w, ")").unwrap();
 
                 Ok(())

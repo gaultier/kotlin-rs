@@ -10,7 +10,7 @@ fn simple_call() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(define a [] 10)\n(apply a '())\n"
+        &"(begin (define (a ) 10)\n (apply a '()) )\n"
     );
 }
 

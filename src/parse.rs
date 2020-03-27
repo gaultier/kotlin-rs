@@ -923,7 +923,7 @@ impl Parser<'_> {
                 }
             }
         }
-        Ok(Block {
+        Ok(AstNodeStmt::Block {
             id: self.next_id(),
             body,
         })
