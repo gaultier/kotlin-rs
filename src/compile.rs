@@ -10,7 +10,7 @@ use std::io;
 pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
     let mut lexer = Lexer::new(src);
     let mut parser = Parser::new(&mut lexer);
-    let mut stmts = parser.parse()?;
+    let stmts = parser.parse()?;
 
     let mut resolver = Resolver::new(&lexer);
     let resolution = resolver.statements(&stmts)?;
@@ -19,7 +19,7 @@ pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
     let types = type_checker.check_types(&stmts)?;
 
     let mir_transformer = MirTransformer::new();
-    mir_transformer.statements(&mut stmts);
+    let stmts = mir_transformer.statements(stmts);
 
     let emitter = SexpEmitter::new(&lexer, &types);
     emitter.statements(&stmts, w)
