@@ -11,8 +11,8 @@ fn unary_op(kind: &TokenKind) -> &'static str {
         TokenKind::Bang => "not",
         TokenKind::Plus => "+",
         TokenKind::Minus => "-",
-        TokenKind::PlusPlus => "inc",
-        TokenKind::MinusMinus => "dec",
+        TokenKind::PlusPlus => "add1",
+        TokenKind::MinusMinus => "sub1",
         _ => unreachable!(),
     }
 }
@@ -114,7 +114,7 @@ impl SexpEmitter<'_> {
                 self.block(block, w)?;
             }
             AstNodeStmt::Println(expr) => {
-                write!(w, "(println ").unwrap();
+                write!(w, "(display ").unwrap();
                 self.expr(expr, w)?;
                 writeln!(w, ")").unwrap();
             }
@@ -137,7 +137,7 @@ impl SexpEmitter<'_> {
             } => {
                 write!(
                     w,
-                    "(def {} ",
+                    "(define {} ",
                     &self.lexer.src[identifier.span.start..identifier.span.end]
                 )
                 .unwrap();
@@ -325,7 +325,7 @@ impl SexpEmitter<'_> {
 
     fn block<W: std::io::Write>(&self, block: &Block, w: &mut W) -> Result<(), Error> {
         if block.body.len() != 1 {
-            write!(w, "(do ").unwrap();
+            write!(w, "(begin ").unwrap();
         }
 
         for stmt in block.body.iter() {

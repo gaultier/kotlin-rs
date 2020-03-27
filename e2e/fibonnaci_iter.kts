@@ -8,5 +8,4 @@ while (++i < 20) {
     a = tmp
 }
 
-// println(b)
-b
+println(b)
