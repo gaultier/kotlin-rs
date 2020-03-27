@@ -539,20 +539,32 @@ impl Parser<'_> {
         }
     }
 
-    fn fn_call_arguments(&mut self) -> Result<Vec<AstNodeExpr>, Error> {
-        self.skip_newlines()?;
+    fn fn_call_args(&mut self, args: &mut Vec<AstNodeExpr>) -> Result<(), Error> {
+        let previous = self.previous.unwrap();
 
-        let mut args = Vec::new();
-        loop {
-            let arg = self.expr()?;
-            self.eat_opt(TokenKind::Comma)?;
-            self.skip_newlines()?;
-            args.push(arg);
-
-            if self.previous.unwrap().kind == TokenKind::RightParen {
+        match previous.kind {
+            TokenKind::RightParen => {
                 self.advance()?;
-                return Ok(args);
+                Ok(())
             }
+            // Last argument without trailing comma
+            TokenKind::Identifier if self.current.unwrap().kind == TokenKind::RightParen => {
+                args.push(self.expr()?);
+                self.advance()?;
+                Ok(())
+            }
+            TokenKind::Identifier => {
+                args.push(self.expr()?);
+                self.eat(TokenKind::Comma)?;
+                self.fn_def_args(args)
+            }
+            _ => Err(Error::new(
+                ErrorKind::UnexpectedToken(
+                    previous.kind,
+                    self.lexer.src[previous.span.start..previous.span.end].to_string(),
+                ),
+                self.lexer.span_location(&previous.span),
+            )),
         }
     }
 
@@ -560,13 +572,8 @@ impl Parser<'_> {
         let call_span = self.eat(TokenKind::LeftParen)?.span;
         self.skip_newlines()?;
 
-        let args = match self.previous.unwrap().kind {
-            TokenKind::RightParen => {
-                self.advance()?;
-                vec![]
-            }
-            _ => self.fn_call_arguments()?,
-        };
+        let mut args = Vec::new();
+        self.fn_call_args(&mut args)?;
         self.skip_newlines()?;
 
         Ok(AstNodeExpr::FnCall {
@@ -844,7 +851,8 @@ impl Parser<'_> {
     }
 
     fn fn_def_args(&mut self, args: &mut Vec<AstNodeExpr>) -> Result<(), Error> {
-        match self.previous.unwrap().kind {
+        let previous = self.previous.unwrap();
+        match previous.kind {
             TokenKind::RightParen => {
                 self.advance()?;
                 Ok(())
@@ -860,7 +868,13 @@ impl Parser<'_> {
                 self.eat(TokenKind::Comma)?;
                 self.fn_def_args(args)
             }
-            _ => unreachable!(),
+            _ => Err(Error::new(
+                ErrorKind::UnexpectedToken(
+                    previous.kind,
+                    self.lexer.src[previous.span.start..previous.span.end].to_string(),
+                ),
+                self.lexer.span_location(&previous.span),
+            )),
         }
     }
 

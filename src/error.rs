@@ -1,3 +1,4 @@
+use crate::lex::TokenKind;
 use crate::parse::Type;
 use log::debug;
 use std::fmt;
@@ -38,6 +39,7 @@ pub enum ErrorKind {
     ExpectedToken,
     CannotReassignVal(String),
     NotACallable(Type),
+    UnexpectedToken(TokenKind, String),
 }
 
 impl fmt::Display for ErrorKind {
@@ -78,6 +80,7 @@ impl fmt::Display for ErrorKind {
                 identifier
             ),
             ErrorKind::NotACallable(t) => write!(f, "`{}` cannot be called as a function", t),
+            ErrorKind::UnexpectedToken(_, s) => write!(f, "Unexpected token: `{}`", s),
         }
     }
 }
