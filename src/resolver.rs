@@ -287,6 +287,13 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
+    fn fn_block(&mut self, block: &Block) -> Result<(), Error> {
+        for stmt in &block.body {
+            self.statement(stmt)?;
+        }
+        Ok(())
+    }
+
     fn statement(&mut self, statement: &AstNodeStmt) -> Result<(), Error> {
         match statement {
             AstNodeStmt::Expr(expr) => {
@@ -319,7 +326,7 @@ impl<'a> Resolver<'a> {
             } => {
                 self.fn_def(fn_name, args, body, *flags, *id)?;
             }
-            AstNodeStmt::Block(_block) => unimplemented!(),
+            AstNodeStmt::Block(block) => self.fn_block(block)?,
         };
         Ok(())
     }
