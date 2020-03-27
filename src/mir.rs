@@ -28,7 +28,7 @@ impl MirTransformer {
                 id: 0,
                 body: vec![], // TODO: break;
             },
-            else_body_tok_span: Span::new(0, 0),
+            else_body_span: Span::new(0, 0),
             id: 0,
         }));
 
