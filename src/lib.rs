@@ -3,6 +3,7 @@ pub mod compile;
 mod cursor;
 pub mod error;
 pub mod lex;
+pub mod mir;
 pub mod parse;
 pub mod resolver;
 pub mod sexp_emitter;
