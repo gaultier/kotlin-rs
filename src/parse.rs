@@ -273,7 +273,7 @@ impl Parser<'_> {
         self.eat(TokenKind::KeywordWhile)?;
         self.skip_newlines()?;
         let cond_start_tok = self.eat(TokenKind::LeftParen)?;
-        let cond = self.expression()?;
+        let cond = self.expr()?;
         self.eat(TokenKind::RightParen)?;
         self.skip_newlines()?;
 
@@ -306,7 +306,7 @@ impl Parser<'_> {
         self.eat(TokenKind::KeywordWhile)?;
         self.skip_newlines()?;
         let cond_start_tok = self.eat(TokenKind::LeftParen)?;
-        let cond = self.expression()?;
+        let cond = self.expr()?;
         self.eat(TokenKind::RightParen)?;
 
         Ok(AstNodeStmt::DoWhile {
@@ -318,7 +318,7 @@ impl Parser<'_> {
 
     fn when_cond(&mut self) -> Result<AstNodeExpr, Error> {
         // TODO: allow range & type test here
-        self.expression()
+        self.expr()
     }
 
     fn when_entry(&mut self) -> Result<WhenEntry, Error> {
@@ -400,7 +400,7 @@ impl Parser<'_> {
                     }
                 };
 
-                let value = self.expression()?;
+                let value = self.expr()?;
                 self.eat(TokenKind::RightParen)?;
 
                 if let Some(identifier) = identifier {
@@ -448,7 +448,7 @@ impl Parser<'_> {
         let cond_start_tok = self.eat(TokenKind::LeftParen)?;
         self.skip_newlines()?;
 
-        let cond = self.expression()?;
+        let cond = self.expr()?;
         self.skip_newlines()?;
 
         self.eat(TokenKind::RightParen)?;
@@ -525,7 +525,7 @@ impl Parser<'_> {
             TokenKind::LeftParen => {
                 self.advance()?;
                 self.skip_newlines()?;
-                let expr = self.expression()?;
+                let expr = self.expr()?;
                 self.eat(TokenKind::RightParen)?;
                 Ok(AstNodeExpr::Grouping(Box::new(expr), self.next_id()))
             }
@@ -767,7 +767,7 @@ impl Parser<'_> {
         }
     }
 
-    fn expression(&mut self) -> Result<AstNodeExpr, Error> {
+    fn expr(&mut self) -> Result<AstNodeExpr, Error> {
         self.disjunction()
     }
 
@@ -789,7 +789,7 @@ impl Parser<'_> {
         self.skip_newlines()?;
         self.eat(TokenKind::Equal)?;
         self.skip_newlines()?;
-        let value = self.expression()?;
+        let value = self.expr()?;
         self.skip_newlines()?;
         self.eat_opt(TokenKind::Semicolon)?;
         self.skip_newlines()?;
@@ -812,7 +812,7 @@ impl Parser<'_> {
 
         self.skip_newlines()?;
         debug!("assignement");
-        let value = self.expression()?;
+        let value = self.expr()?;
         Ok(AstNodeStmt::Assign {
             target,
             value,
@@ -834,7 +834,7 @@ impl Parser<'_> {
             TokenKind::Equal => {
                 self.advance()?;
                 self.skip_newlines()?;
-                AstNodeStmt::Expr(self.expression()?)
+                AstNodeStmt::Expr(self.expr()?)
             }
             _ => AstNodeStmt::Block(self.control_structure_body()?),
         };
@@ -865,7 +865,7 @@ impl Parser<'_> {
             TokenKind::KeywordPrintln => {
                 self.advance()?;
                 self.eat(TokenKind::LeftParen)?;
-                let expr = self.expression()?;
+                let expr = self.expr()?;
                 self.eat(TokenKind::RightParen)?;
                 Ok(AstNodeStmt::Println(expr))
             }
@@ -880,7 +880,7 @@ impl Parser<'_> {
                 self.assign()
             }
             TokenKind::KeywordFun => self.declaration(),
-            _ => Ok(AstNodeStmt::Expr(self.expression()?)),
+            _ => Ok(AstNodeStmt::Expr(self.expr()?)),
         }
     }
 
