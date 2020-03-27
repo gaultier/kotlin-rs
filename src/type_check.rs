@@ -5,10 +5,12 @@ use crate::resolver::Resolution;
 use log::debug;
 use std::collections::BTreeMap;
 
+pub(crate) type Types = BTreeMap<NodeId, Type>;
+
 pub(crate) struct TypeChecker<'a> {
     lexer: &'a Lexer,
     resolution: &'a Resolution,
-    types: BTreeMap<NodeId, Type>,
+    types: Types,
 }
 
 impl<'a> TypeChecker<'a> {
@@ -105,7 +107,12 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    pub fn statements(&mut self, statements: &Block) -> Result<Type, Error> {
+    pub fn check_types(&mut self, statements: &Block) -> Result<Types, Error> {
+        self.statements(statements)?;
+        Ok(self.types.clone())
+    }
+
+    fn statements(&mut self, statements: &Block) -> Result<Type, Error> {
         for stmt in statements.body.iter() {
             self.statement(stmt)?;
         }

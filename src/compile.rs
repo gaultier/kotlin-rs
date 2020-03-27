@@ -15,9 +15,9 @@ pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
     let resolution = resolver.statements(&stmts)?;
 
     let mut type_checker = TypeChecker::new(&lexer, &resolution);
-    type_checker.statements(&stmts)?;
+    let types = type_checker.check_types(&stmts)?;
 
-    let emitter = SexpEmitter::new(&lexer);
+    let emitter = SexpEmitter::new(&lexer, &types);
     emitter.statements(&stmts, w)
 }
 

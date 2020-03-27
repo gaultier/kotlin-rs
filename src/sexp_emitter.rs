@@ -1,9 +1,11 @@
 use crate::error::*;
 use crate::lex::{Lexer, Span, Token, TokenKind};
 use crate::parse::*;
+use crate::type_check::Types;
 
 pub(crate) struct SexpEmitter<'a> {
     lexer: &'a Lexer,
+    types: &'a Types,
 }
 
 fn unary_op(kind: &TokenKind) -> &'static str {
@@ -54,9 +56,9 @@ fn assign_op(kind: &TokenKind) -> &'static str {
     }
 }
 
-impl SexpEmitter<'_> {
-    pub(crate) fn new(lexer: &Lexer) -> SexpEmitter {
-        SexpEmitter { lexer }
+impl<'a> SexpEmitter<'a> {
+    pub(crate) fn new(lexer: &'a Lexer, types: &'a Types) -> SexpEmitter<'a> {
+        SexpEmitter { lexer, types }
     }
 
     fn assign<W: std::io::Write>(
