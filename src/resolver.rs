@@ -319,6 +319,7 @@ impl<'a> Resolver<'a> {
             } => {
                 self.fn_def(fn_name, args, body, *flags, *id)?;
             }
+            AstNodeStmt::Block(_block) => unimplemented!(),
         };
         Ok(())
     }

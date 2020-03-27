@@ -110,6 +110,7 @@ impl SexpEmitter<'_> {
             } => {
                 self.fn_def(fn_name, args, body, w)?;
             }
+            AstNodeStmt::Block(_block) => unimplemented!(),
         };
         Ok(())
     }

@@ -109,6 +109,7 @@ pub enum AstNodeStmt {
         flags: u16,
         body: Box<AstNodeStmt>,
     },
+    Block(Block),
 }
 
 pub type Statements = Vec<AstNodeStmt>;
@@ -834,7 +835,7 @@ impl Parser<'_> {
                 self.skip_newlines()?;
                 AstNodeStmt::Expr(self.expression()?)
             }
-            _ => unimplemented!(),
+            _ => AstNodeStmt::Block(self.control_structure_body()?),
         };
 
         Ok(AstNodeStmt::FnDefinition {

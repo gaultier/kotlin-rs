@@ -89,6 +89,7 @@ impl<'a> TypeChecker<'a> {
                 flags,
                 id,
             } => self.fn_def(fn_name, args, body, *flags, *id),
+            AstNodeStmt::Block(_block) => unimplemented!(),
         }
     }
 
