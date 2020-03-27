@@ -540,7 +540,20 @@ impl Parser<'_> {
     }
 
     fn fn_call_arguments(&mut self) -> Result<Vec<AstNodeExpr>, Error> {
-        Ok(vec![])
+        self.skip_newlines()?;
+
+        let mut args = Vec::new();
+        loop {
+            let arg = self.expr()?;
+            self.eat_opt(TokenKind::Comma)?;
+            self.skip_newlines()?;
+            args.push(arg);
+
+            if self.previous.unwrap().kind == TokenKind::RightParen {
+                self.advance()?;
+                return Ok(args);
+            }
+        }
     }
 
     fn call_suffix(&mut self, fn_name: AstNodeExpr) -> Result<AstNodeExpr, Error> {
@@ -554,6 +567,8 @@ impl Parser<'_> {
             }
             _ => self.fn_call_arguments()?,
         };
+        self.skip_newlines()?;
+
         Ok(AstNodeExpr::FnCall {
             fn_name: Box::new(fn_name),
             call_span,
