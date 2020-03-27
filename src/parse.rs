@@ -844,26 +844,23 @@ impl Parser<'_> {
     }
 
     fn fn_def_args(&mut self, args: &mut Vec<AstNodeExpr>) -> Result<(), Error> {
-            match self.previous.unwrap().kind {
-                // Allow trailing commas
-                // TokenKind::Comma if self.current.unwrap().kind == TokenKind::RightParen => {
-                //     self.advance()?;
-                // }
-                TokenKind::RightParen => {
-                    self.advance()?;
-                     Ok()
-                }
-                // Allow `(a)` sequence
-                TokenKind::Identifier {
-                    args.push(self.expr()?);
-                    self.eat(TokenKind::Comma)?;
-                    fn_def_args(&mut args)
-                }
-                _ => {
-                    let arg = self.expr()?;
-                    self.eat(TokenKind::Comma)?;
-                    args.push(arg);
-                }
+        match self.previous.unwrap().kind {
+            TokenKind::RightParen => {
+                self.advance()?;
+                Ok(())
+            }
+            // Last argument without trailing comma
+            TokenKind::Identifier if self.current.unwrap().kind == TokenKind::RightParen => {
+                args.push(self.expr()?);
+                self.advance()?;
+                Ok(())
+            }
+            TokenKind::Identifier => {
+                args.push(self.expr()?);
+                self.eat(TokenKind::Comma)?;
+                self.fn_def_args(args)
+            }
+            _ => unreachable!(),
         }
     }
 
@@ -876,7 +873,7 @@ impl Parser<'_> {
 
         self.eat(TokenKind::LeftParen)?;
         let mut args = Vec::new();
-         self.fn_def_args(&mut args)?;
+        self.fn_def_args(&mut args)?;
         self.skip_newlines()?;
         let body = match self.previous.unwrap().kind {
             TokenKind::Equal => {
