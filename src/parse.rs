@@ -539,15 +539,25 @@ impl Parser<'_> {
         }
     }
 
+    fn fn_call_arguments(&mut self) -> Result<Vec<AstNodeExpr>, Error> {
+        Ok(vec![])
+    }
+
     fn call_suffix(&mut self, fn_name: AstNodeExpr) -> Result<AstNodeExpr, Error> {
         let call_span = self.eat(TokenKind::LeftParen)?.span;
         self.skip_newlines()?;
-        // TODO: args
-        self.eat(TokenKind::RightParen)?;
+
+        let args = match self.previous.unwrap().kind {
+            TokenKind::RightParen => {
+                self.advance()?;
+                vec![]
+            }
+            _ => self.fn_call_arguments()?,
+        };
         Ok(AstNodeExpr::FnCall {
             fn_name: Box::new(fn_name),
             call_span,
-            args: vec![],
+            args,
             id: self.next_id(),
         })
     }
