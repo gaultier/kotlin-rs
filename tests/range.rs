@@ -9,8 +9,8 @@ fn simple_range() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(range 1 5)\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(range 1 5)"
     );
 }
 

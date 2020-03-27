@@ -8,8 +8,8 @@ fn int_equality() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(= 171 171)\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(= 171 171)"
     );
 }
 
@@ -20,8 +20,8 @@ fn uint_equality() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(= 171 171)\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(= 171 171)"
     );
 }
 
@@ -32,8 +32,8 @@ fn uint_long_equality() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(= 171 171)\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(= 171 171)"
     );
 }
 
@@ -44,8 +44,8 @@ fn float_equality() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(= 0.3 (+ 0.2 0.1))\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(= 0.3 (+ 0.2 0.1))"
     );
 }
 
@@ -56,8 +56,8 @@ fn double_equality() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(= 100 100)\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(= 100 100)"
     );
 }
 
@@ -68,8 +68,8 @@ fn long_equality() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(= 171 171)\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(= 171 171)"
     );
 }
 
@@ -164,8 +164,8 @@ fn comparison_gte() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(>= 171 171)\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(>= 171 171)"
     );
 }
 

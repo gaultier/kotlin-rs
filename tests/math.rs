@@ -8,7 +8,10 @@ fn add_int_int() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(+ 1 2)\n");
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(+ 1 2)"
+    );
 }
 
 #[test]
@@ -17,7 +20,10 @@ fn add_int_long() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(+ 1 2)\n");
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(+ 1 2)"
+    );
 }
 
 #[test]
@@ -26,7 +32,10 @@ fn add_long_long() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(+ 1 2)\n");
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(+ 1 2)"
+    );
 }
 
 #[test]
@@ -35,7 +44,10 @@ fn add_uint_uint() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(+ 1 2)\n");
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(+ 1 2)"
+    );
 }
 
 #[test]
@@ -44,7 +56,10 @@ fn add_uint_ulong() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(+ 1 2)\n");
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(+ 1 2)"
+    );
 }
 
 #[test]
@@ -53,7 +68,10 @@ fn add_ulong_uint() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(+ 1 2)\n");
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(+ 1 2)"
+    );
 }
 
 #[test]
@@ -62,7 +80,10 @@ fn add_ulong_ulong() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(+ 1 2)\n");
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(+ 1 2)"
+    );
 }
 
 #[test]
@@ -71,7 +92,10 @@ fn add_float_float() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(+ 1 2)\n");
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(+ 1 2)"
+    );
 }
 
 #[test]
@@ -80,7 +104,10 @@ fn add_float_double() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(+ 1 200)\n");
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(+ 1 200)"
+    );
 }
 
 #[test]
@@ -89,7 +116,10 @@ fn add_double_float() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(+ 100 2)\n");
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(+ 100 2)"
+    );
 }
 
 #[test]
@@ -99,8 +129,8 @@ fn add_double_double() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(+ 1.5 2.3)\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(+ 1.5 2.3)"
     );
 }
 
@@ -110,7 +140,10 @@ fn add_int_double() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(+ 1 2.3)\n");
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(+ 1 2.3)"
+    );
 }
 
 #[test]
@@ -119,7 +152,10 @@ fn add_double_int() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(+ 1.5 2)\n");
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(+ 1.5 2)"
+    );
 }
 
 #[test]
@@ -129,8 +165,8 @@ fn complex_math() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(+ (/ (- 1.5) 2) (* 5 3))\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(+ (/ (- 1.5) 2) (* 5 3))"
     );
 }
 
@@ -141,9 +177,8 @@ fn add_string_string() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ "abc" "def")
-"##
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(+ "abc" "def")"##
     );
 }
 
@@ -154,9 +189,8 @@ fn add_string_int() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ "abc" 2)
-"##
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(+ "abc" 2)"##
     );
 }
 
@@ -167,9 +201,8 @@ fn add_int_string() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ 2 "abc")
-"##
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(+ 2 "abc")"##
     );
 }
 
@@ -180,9 +213,8 @@ fn add_string_long() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ "abc" 2)
-"##
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(+ "abc" 2)"##
     );
 }
 
@@ -193,9 +225,8 @@ fn add_long_string() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ 2 "abc")
-"##
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(+ 2 "abc")"##
     );
 }
 
@@ -206,9 +237,8 @@ fn add_string_uint() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ "abc" 2)
-"##
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(+ "abc" 2)"##
     );
 }
 
@@ -219,9 +249,8 @@ fn add_uint_string() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ 2 "abc")
-"##
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(+ 2 "abc")"##
     );
 }
 
@@ -232,9 +261,8 @@ fn add_string_ulong() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ "abc" 2)
-"##
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(+ "abc" 2)"##
     );
 }
 
@@ -245,9 +273,8 @@ fn add_ulong_string() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ 2 "abc")
-"##
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(+ 2 "abc")"##
     );
 }
 
@@ -258,9 +285,8 @@ fn add_string_float() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ "abc" 2)
-"##
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(+ "abc" 2)"##
     );
 }
 
@@ -271,9 +297,8 @@ fn add_string_double() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ "abc" 2)
-"##
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(+ "abc" 2)"##
     );
 }
 
@@ -284,9 +309,8 @@ fn add_string_bool() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ "abc" true)
-"##
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(+ "abc" true)"##
     );
 }
 
@@ -318,9 +342,8 @@ fn add_string_null() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ "abc" nil)
-"##
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(+ "abc" nil)"##
     );
 }
 
@@ -331,9 +354,8 @@ fn add_null_string() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &r##"(+ nil "abc")
-"##
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(+ nil "abc")"##
     );
 }
 
@@ -344,8 +366,8 @@ fn add_null_null() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(+ nil nil)\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(+ nil nil)"
     );
 }
 
@@ -355,7 +377,10 @@ fn plus_plus() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(add1 1)\n");
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(add1 1)"
+    );
 }
 
 #[test]
@@ -364,7 +389,10 @@ fn minus_minus() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(sub1 1)\n");
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(sub1 1)"
+    );
 }
 
 #[test]
@@ -374,8 +402,8 @@ fn multi_prefix_operators() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(- (+ (sub1 (add1 1))))\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(- (+ (sub1 (add1 1))))"
     );
 }
 #[test]
