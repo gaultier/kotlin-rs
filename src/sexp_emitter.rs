@@ -112,7 +112,7 @@ impl<'a> SexpEmitter<'a> {
             } => {
                 self.fn_def(fn_name, args, body, w)?;
             }
-            AstNodeStmt::Block(block) => {
+            AstNodeStmt::Block { block, .. } => {
                 self.block(block, w)?;
             }
             AstNodeStmt::Println(expr) => {
@@ -124,10 +124,12 @@ impl<'a> SexpEmitter<'a> {
         Ok(())
     }
 
-    pub fn statements<W: std::io::Write>(&self, block: &Block, w: &mut W) -> Result<(), Error> {
-        for stmt in &block.body {
-            self.statement(&stmt, w)?;
-        }
+    pub fn statements<W: std::io::Write>(
+        &self,
+        block: &AstNodeStmt,
+        w: &mut W,
+    ) -> Result<(), Error> {
+        self.statement(&block, w)?;
         writeln!(w).unwrap();
         Ok(())
     }
@@ -325,17 +327,17 @@ impl<'a> SexpEmitter<'a> {
         }
     }
 
-    fn block<W: std::io::Write>(&self, block: &Block, w: &mut W) -> Result<(), Error> {
-        if block.body.len() != 1 {
+    fn block<W: std::io::Write>(&self, block: &[AstNodeStmt], w: &mut W) -> Result<(), Error> {
+        if block.len() != 1 {
             write!(w, "(begin ").unwrap();
         }
 
-        for stmt in block.body.iter() {
+        for stmt in block.iter() {
             self.statement(&stmt, w)?;
             write!(w, " ").unwrap();
         }
 
-        if block.body.len() != 1 {
+        if block.len() != 1 {
             write!(w, ")").unwrap();
         }
         Ok(())
