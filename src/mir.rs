@@ -13,8 +13,6 @@ impl MirTransformer {
     }
 
     fn do_while(&mut self, cond: AstNodeExpr, body: Block) -> AstNodeStmt {
-        // FIXME
-
         let mut new_body = body.body;
         new_body.push(AstNodeStmt::Expr(AstNodeExpr::IfExpr {
             cond: Box::new(cond),
