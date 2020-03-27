@@ -110,6 +110,7 @@ pub enum AstNodeStmt {
         body: Box<AstNodeStmt>,
     },
     Block(Block),
+    Println(AstNodeExpr),
 }
 
 pub type Statements = Vec<AstNodeStmt>;
@@ -861,6 +862,13 @@ impl Parser<'_> {
             TokenKind::KeywordWhile => self.while_stmt(),
             TokenKind::KeywordDo => self.do_while_stmt(),
             TokenKind::KeywordVal | TokenKind::KeywordVar => self.var_def(),
+            TokenKind::KeywordPrintln => {
+                self.advance()?;
+                self.eat(TokenKind::LeftParen)?;
+                let expr = self.expression()?;
+                self.eat(TokenKind::RightParen)?;
+                Ok(AstNodeStmt::Println(expr))
+            }
             TokenKind::Identifier
                 if cur_kind == TokenKind::Equal
                     || cur_kind == TokenKind::MinusEqual

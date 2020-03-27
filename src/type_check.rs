@@ -98,6 +98,10 @@ impl<'a> TypeChecker<'a> {
                 id,
             } => self.fn_def(fn_name, args, body, *flags, *id),
             AstNodeStmt::Block(block) => self.fn_block(block),
+            AstNodeStmt::Println(expr) => {
+                self.expr(expr)?;
+                Ok(Type::Unit)
+            }
         }
     }
 

@@ -113,6 +113,11 @@ impl SexpEmitter<'_> {
             AstNodeStmt::Block(block) => {
                 self.block(block, w)?;
             }
+            AstNodeStmt::Println(expr) => {
+                write!(w, "(println ").unwrap();
+                self.expr(expr, w)?;
+                writeln!(w, ")").unwrap();
+            }
         };
         Ok(())
     }
