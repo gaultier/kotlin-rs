@@ -189,7 +189,7 @@ pub struct Parser<'a> {
     previous: Option<Token>,
     current: Option<Token>,
     lexer: &'a mut Lexer,
-    current_id: usize,
+    pub(crate) current_id: usize,
 }
 
 impl Parser<'_> {

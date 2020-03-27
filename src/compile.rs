@@ -11,6 +11,7 @@ pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
     let mut lexer = Lexer::new(src);
     let mut parser = Parser::new(&mut lexer);
     let stmts = parser.parse()?;
+    let current_id = parser.current_id;
 
     let mut resolver = Resolver::new(&lexer);
     let resolution = resolver.statements(&stmts)?;
@@ -18,7 +19,7 @@ pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
     let mut type_checker = TypeChecker::new(&lexer, &resolution);
     let types = type_checker.check_types(&stmts)?;
 
-    let mir_transformer = MirTransformer::new();
+    let mut mir_transformer = MirTransformer::new(current_id);
     let stmts = mir_transformer.statements(stmts);
 
     let emitter = SexpEmitter::new(&lexer, &types);
