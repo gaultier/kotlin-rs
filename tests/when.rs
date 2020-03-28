@@ -9,8 +9,8 @@ fn simple_when_expr() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(cond (#t 1 ) (#f 0 ) ) \n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(cond (#t 1 ) (#f 0 ) )"
     );
 }
 
@@ -20,7 +20,10 @@ fn empty_when_body() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(cond ) \n");
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(cond )"
+    );
 }
 
 #[test]
@@ -30,8 +33,8 @@ fn when_with_else() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(cond (#t 1 ) (#f 0 )  :else 42 )\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(cond (#t 1 ) (#f 0 )  :else 42 )"
     );
 }
 
@@ -42,8 +45,8 @@ fn when_with_boolean_exprs() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(cond ((or #t #f) 1 ) (#f 0 )  :else 42 )\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(cond ((or #t #f) 1 ) (#f 0 )  :else 42 )"
     );
 }
 
@@ -54,8 +57,8 @@ fn when_with_subject() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(case 5 1 2  2 4  3 6  4 8  5 10   :else 42 )\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(case 5 1 2  2 4  3 6  4 8  5 10   :else 42 )"
     );
 }
 
@@ -80,8 +83,8 @@ fn when_with_val_subject() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(case (define a 5)\n 1 2  2 4  3 6  4 8  5 10   :else (* a 2) )\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(case (define a 5)\n 1 2  2 4  3 6  4 8  5 10   :else (* a 2) )"
     );
 }
 

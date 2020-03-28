@@ -250,7 +250,7 @@ impl<'a> SexpEmitter<'a> {
                 },
                 _,
             ) => {
-                write!(w, "{}", if *b { "#t" } else { "#t" }).unwrap();
+                write!(w, "{}", if *b { "#t" } else { "#f" }).unwrap();
                 Ok(())
             }
             AstNodeExpr::Literal(
