@@ -9,8 +9,8 @@ fn while_with_body() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(while (< 1 10) 'c' )\n\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(while (< 1 10) 'c' )"
     );
 }
 
@@ -21,8 +21,8 @@ fn while_with_empty_body() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(while (< 1 10) (begin ))\n\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(while (< 1 10) (begin ))"
     );
 }
 
@@ -33,8 +33,8 @@ fn while_without_body() {
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
-        std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(while (< 1 10) (begin ))\n\n"
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(while (< 1 10) (begin ))"
     );
 }
 
