@@ -250,7 +250,7 @@ impl<'a> SexpEmitter<'a> {
                 },
                 _,
             ) => {
-                write!(w, "{}", if *b { "true" } else { "false" }).unwrap();
+                write!(w, "{}", if *b { "#t" } else { "#t" }).unwrap();
                 Ok(())
             }
             AstNodeExpr::Literal(
@@ -280,7 +280,7 @@ impl<'a> SexpEmitter<'a> {
                 },
                 _,
             ) => {
-                write!(w, "nil").unwrap();
+                write!(w, "'nil").unwrap();
                 Ok(())
             }
             _ => unreachable!(),

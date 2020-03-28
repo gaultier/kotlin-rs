@@ -62,7 +62,7 @@ fn fn_body_block() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(begin (define (a ) (begin 1 2 'a' true 10 ) )\n (define b (apply a '()))\n )\n"
+        &"(begin (define (a ) (begin 1 2 'a' #t 10 ) )\n (define b (apply a '()))\n )\n"
     );
 }
 

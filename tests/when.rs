@@ -10,7 +10,7 @@ fn simple_when_expr() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(cond (true 1 ) (false 0 ) )\n"
+        &"(cond (true 1 ) (false 0 ) ) \n"
     );
 }
 
@@ -20,7 +20,7 @@ fn empty_when_body() {
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
-    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(cond )\n");
+    assert_eq!(std::str::from_utf8(&out).as_ref().unwrap(), &"(cond ) \n");
 }
 
 #[test]
