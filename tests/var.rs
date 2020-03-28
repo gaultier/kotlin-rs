@@ -121,7 +121,7 @@ fn var_assign_with_math_expr() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(define a (* 5 10))\n(set! a (* a 2))"
+        "(begin (define a (* 5 10))\n (set! a (* a 2))\n )"
     );
 }
 
@@ -147,6 +147,6 @@ fn var_assign_other_ops() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(define a (* 5 10))\n(set! a (-= 1))\n(set! a (%= 2))\n(set! a (/= 3))\n(set! a (*= 4))"
+        "(begin (define a (* 5 10))\n (set! a (-= 1))\n (set! a (%= 2))\n (set! a (/= 3))\n (set! a (*= 4))\n )"
     );
 }
