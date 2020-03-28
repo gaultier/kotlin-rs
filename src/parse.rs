@@ -863,15 +863,6 @@ impl Parser<'_> {
                 self.advance()?;
                 Ok(())
             }
-            // Last argument without trailing comma
-            TokenKind::Identifier if self.current.unwrap().kind == TokenKind::RightParen => {
-                args.push(self.simple_identifier()?);
-                self.eat(TokenKind::Colon)?;
-                let t = self.simple_identifier()?;
-                debug!("fn_def: arg={:?} t={:?}", args.last().unwrap(), t);
-                self.eat(TokenKind::RightParen)?;
-                Ok(())
-            }
             TokenKind::Identifier => {
                 args.push(self.simple_identifier()?);
                 self.skip_newlines()?;
@@ -882,8 +873,10 @@ impl Parser<'_> {
                 debug!("fn_def: arg={:?} t={:?}", args.last().unwrap(), t);
 
                 self.skip_newlines()?;
-                self.eat(TokenKind::Comma)?;
-                self.skip_newlines()?;
+                if self.previous.unwrap().kind != TokenKind::RightParen {
+                    self.eat(TokenKind::Comma)?;
+                    self.skip_newlines()?;
+                }
                 self.fn_def_args(args)
             }
             _ => Err(Error::new(
