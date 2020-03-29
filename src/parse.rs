@@ -91,24 +91,6 @@ impl Token {
             _ => unreachable!(),
         }
     }
-
-    pub(crate) fn simple_identifier_type(&self, src: &str) -> Type {
-        assert_eq!(self.kind, TokenKind::Identifier);
-        let identifier = &src[self.span.start..self.span.end];
-        match identifier {
-            "Int" => Type::Int,
-            "Long" => Type::Long,
-            "UInt" => Type::UInt,
-            "ULong" => Type::ULong,
-            "Float" => Type::Float,
-            "Double" => Type::Double,
-            "Bool" => Type::Bool,
-            "String" => Type::TString,
-            "Char" => Type::Char,
-            "Unit" => Type::Unit,
-            _ => unreachable!(),
-        }
-    }
 }
 
 pub(crate) const FLAG_VAR: u8 = 0;
@@ -236,6 +218,27 @@ pub struct Parser<'a> {
 }
 
 impl Parser<'_> {
+    fn simple_identifier_type(&self, token: &Token) -> Result<Type, Error> {
+        assert_eq!(token.kind, TokenKind::Identifier);
+        let identifier = &self.lexer.src[token.span.start..token.span.end];
+        match identifier {
+            "Int" => Ok(Type::Int),
+            "Long" => Ok(Type::Long),
+            "UInt" => Ok(Type::UInt),
+            "ULong" => Ok(Type::ULong),
+            "Float" => Ok(Type::Float),
+            "Double" => Ok(Type::Double),
+            "Bool" => Ok(Type::Bool),
+            "String" => Ok(Type::TString),
+            "Char" => Ok(Type::Char),
+            "Unit" => Ok(Type::Unit),
+            _ => Err(Error::new(
+                ErrorKind::UnknownIdentifier(identifier.to_string()),
+                self.lexer.span_location(&token.span),
+            )),
+        }
+    }
+
     /// Skip over unsignificant tokens
     fn next_parse_token(&mut self) -> Result<Token, Error> {
         loop {
@@ -879,7 +882,7 @@ impl Parser<'_> {
             let type_literal_tok = self.previous.unwrap();
             self.simple_identifier()?;
 
-            let t = type_literal_tok.simple_identifier_type(&self.lexer.src);
+            let t = self.simple_identifier_type(&type_literal_tok)?;
             debug!("var_def: id={} t={}", id, &t);
             self.types.insert(id, t);
 
@@ -940,7 +943,7 @@ impl Parser<'_> {
                 let type_literal_tok = self.previous.unwrap();
                 let type_literal_expr = self.simple_identifier()?;
                 let id = args.last().unwrap().id();
-                let arg_t = type_literal_tok.simple_identifier_type(&self.lexer.src);
+                let arg_t = self.simple_identifier_type(&type_literal_tok)?;
                 args_t.push(arg_t.clone());
 
                 self.types.insert(id, arg_t);
@@ -988,7 +991,7 @@ impl Parser<'_> {
                 return_t_span = self.previous.unwrap().span;
                 self.simple_identifier()?;
 
-                let t = type_literal_tok.simple_identifier_type(&self.lexer.src);
+                let t = self.simple_identifier_type(&type_literal_tok)?;
                 Some(t)
             }
             TokenKind::Equal => None,
