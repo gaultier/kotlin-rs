@@ -5,6 +5,7 @@ use crate::parse::Parser;
 use crate::resolver::Resolver;
 use crate::sexp_emitter::SexpEmitter;
 use crate::type_check::TypeChecker;
+use std::collections::BTreeMap;
 use std::io;
 
 pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
@@ -16,7 +17,8 @@ pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
     let mut resolver = Resolver::new(&lexer);
     let resolution = resolver.statements(&stmts)?;
 
-    let mut type_checker = TypeChecker::new(&lexer, &resolution);
+    let mut types = BTreeMap::new();
+    let mut type_checker = TypeChecker::new(&lexer, &resolution, &mut types);
     let types = type_checker.check_types(&stmts)?;
 
     let mut mir_transformer = MirTransformer::new(current_id);

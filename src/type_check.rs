@@ -3,20 +3,23 @@ use crate::lex::{Lexer, Span, Token, TokenKind};
 use crate::parse::*;
 use crate::resolver::Resolution;
 use log::debug;
-use std::collections::BTreeMap;
 
 pub(crate) struct TypeChecker<'a> {
     lexer: &'a Lexer,
     resolution: &'a Resolution,
-    types: Types,
+    types: &'a mut Types,
 }
 
 impl<'a> TypeChecker<'a> {
-    pub fn new(lexer: &'a Lexer, resolution: &'a Resolution) -> TypeChecker<'a> {
+    pub fn new(
+        lexer: &'a Lexer,
+        resolution: &'a Resolution,
+        types: &'a mut Types,
+    ) -> TypeChecker<'a> {
         TypeChecker {
             lexer,
             resolution,
-            types: BTreeMap::new(),
+            types,
         }
     }
 
