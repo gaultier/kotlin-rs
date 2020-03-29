@@ -120,3 +120,17 @@ fn fn_with_wrong_return_type() -> Result<(), String> {
         other => Err(format!("Should be a type error: {:?}", other)),
     }
 }
+
+#[test]
+fn fn_with_unknown_identifier_for_return_type() -> Result<(), String> {
+    let src = String::from("fun foo(a:Int, b:Long): Null = a * b;");
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::UnknownIdentifier(identifier),
+            ..
+        }) if identifier == "Null" => Ok(()),
+        other => Err(format!("Should be a type error: {:?}", other)),
+    }
+}
