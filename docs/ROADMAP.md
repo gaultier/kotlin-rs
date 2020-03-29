@@ -81,7 +81,6 @@
 - [x] Type check boolean logic
 - [x] Type inference (hard)
 
-
 ## Name resolution
 
 - [x] Variable
