@@ -32,8 +32,6 @@ pub enum Type {
     },
 }
 
-pub(crate) type Types = BTreeMap<NodeId, Type>;
-
 impl fmt::Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -66,6 +64,26 @@ impl fmt::Display for Type {
                 write!(f, ") -> ")?;
                 return_t.fmt(f)
             }
+        }
+    }
+}
+
+pub(crate) type Types = BTreeMap<NodeId, Type>;
+
+impl Token {
+    pub(crate) fn literal_type(&self) -> Type {
+        match self.kind {
+            TokenKind::Int(_) => Type::Int,
+            TokenKind::Long(_) => Type::Long,
+            TokenKind::UInt(_) => Type::UInt,
+            TokenKind::ULong(_) => Type::ULong,
+            TokenKind::Float(_) => Type::Float,
+            TokenKind::Double(_) => Type::Double,
+            TokenKind::Bool(_) => Type::Bool,
+            TokenKind::TString => Type::TString,
+            TokenKind::Char(_) => Type::Char,
+            TokenKind::Null => Type::Null,
+            _ => unreachable!(),
         }
     }
 }
@@ -524,8 +542,9 @@ impl Parser<'_> {
             | TokenKind::Null => {
                 self.advance()?;
                 self.skip_newlines()?;
-                // TODO: fill type info here right away
-                Ok(AstNodeExpr::Literal(previous, self.next_id()))
+                let id = self.next_id();
+                self.types.insert(id, previous.literal_type());
+                Ok(AstNodeExpr::Literal(previous, id))
             }
             TokenKind::LeftParen => {
                 self.advance()?;
