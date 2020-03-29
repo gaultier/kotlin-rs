@@ -107,6 +107,10 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn unary(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
+        if let Some(t) = self.types.get(&ast.id()) {
+            return Ok(t.clone());
+        }
+
         match ast {
             AstNodeExpr::Unary {
                 token:
@@ -193,6 +197,10 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn literal(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
+        if let Some(t) = self.types.get(&ast.id()) {
+            return Ok(t.clone());
+        }
+
         let t = match ast {
             AstNodeExpr::Literal(
                 Token {
@@ -277,6 +285,10 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn binary(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
+        if let Some(t) = self.types.get(&ast.id()) {
+            return Ok(t.clone());
+        }
+
         match ast {
             AstNodeExpr::Binary {
                 left,
@@ -452,6 +464,10 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn when_expr(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
+        if let Some(t) = self.types.get(&ast.id()) {
+            return Ok(t.clone());
+        }
+
         match ast {
             AstNodeExpr::WhenExpr {
                 subject: Some(subject),
@@ -484,6 +500,10 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn if_expr(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
+        if let Some(t) = self.types.get(&ast.id()) {
+            return Ok(t.clone());
+        }
+
         match ast {
             AstNodeExpr::IfExpr {
                 cond,
@@ -517,6 +537,10 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn var_ref(&mut self, id: NodeId) -> Result<Type, Error> {
+        if let Some(t) = self.types.get(&id) {
+            return Ok(t.clone());
+        }
+
         dbg!(&self.resolution, id);
         let var_usage_ref = self.resolution.get(&id).unwrap();
         let t = self.types.get(&var_usage_ref.node_ref_id).unwrap().clone();
@@ -535,6 +559,10 @@ impl<'a> TypeChecker<'a> {
         args: &[AstNodeExpr],
         id: NodeId,
     ) -> Result<Type, Error> {
+        if let Some(t) = self.types.get(&id) {
+            return Ok(t.clone());
+        }
+
         let t = self.expr(fn_name)?;
         for arg in args {
             self.expr(arg)?;
@@ -559,6 +587,10 @@ impl<'a> TypeChecker<'a> {
         flags: u16,
         id: NodeId,
     ) -> Result<Type, Error> {
+        if let Some(t) = self.types.get(&id) {
+            return Ok(t.clone());
+        }
+
         let args_t = args
             .iter()
             .map(|arg| self.expr(arg))
