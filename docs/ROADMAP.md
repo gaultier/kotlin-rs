@@ -59,7 +59,7 @@
 - [x] Simple inline functions declaration e.g `fun add(a: Int, b: Int): Int = a + b`
 - [x] Simple C-like functions declaration e.g `fun add(a: Int, b: Int): Unit { a + b; }`
 - [x] Function call e.g `add(1, 5)`
-- [ ] Return in function
+- [ ] Return in function e.g `fun add(a: Int, b: Int): Int { return a + b; }`
 - [ ] Variadic functions
 - [ ] Class
 - [ ] Enum
