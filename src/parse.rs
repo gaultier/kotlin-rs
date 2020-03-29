@@ -26,9 +26,10 @@ pub enum Type {
     TStringRange,
     CharRange,
     BoolRange,
+    Any,
     Function {
         args: Vec<Type>,
-        return_t: Box<Type>,
+        return_t: Box<Option<Type>>,
     },
 }
 
@@ -55,6 +56,7 @@ impl fmt::Display for Type {
             Type::DoubleRange => write!(f, "DoubleRange"),
             Type::CharRange => write!(f, "CharRange"),
             Type::TStringRange => write!(f, "StringRange"),
+            Type::Any => write!(f, "Any"),
             Type::Function { args, return_t } => {
                 write!(f, "(")?;
                 if let Some((last, rest)) = args.split_last() {
@@ -65,7 +67,7 @@ impl fmt::Display for Type {
                     last.fmt(f)?;
                 }
                 write!(f, ") -> ")?;
-                return_t.fmt(f)
+                return_t.clone().unwrap_or(Type::Any).fmt(f)
             }
         }
     }
@@ -996,7 +998,7 @@ impl Parser<'_> {
 
         let id = self.next_id();
         let fn_t = Type::Function {
-            return_t: Box::new(return_t.unwrap()), // FIXME
+            return_t: Box::new(return_t),
             args: args_t,
         };
 

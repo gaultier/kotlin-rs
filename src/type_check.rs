@@ -513,7 +513,7 @@ impl<'a> TypeChecker<'a> {
                     let found_arg_t = self.expr(arg)?;
                     self.eq(&found_arg_t, &expected_arg_t, call_span)?;
                 }
-                Ok(*return_t)
+                Ok(return_t.unwrap_or(Type::Any))
             }
             _ => Err(Error::new(
                 ErrorKind::NotACallable(t),
@@ -530,8 +530,19 @@ impl<'a> TypeChecker<'a> {
         flags: u16,
         id: NodeId,
     ) -> Result<Type, Error> {
-        if let Some(t) = self.types.get(&id) {
-            return Ok(t.clone());
+        let found_return_t = self.statement(body)?;
+
+        match self.types.get(&id) {
+            Some(Type::Function { return_t, .. }) if return_t.is_some() => {
+                let expected_return_t = return_t.clone().unwrap();
+
+                let dummy_span = Span::new(0, 0);
+                self.eq(&found_return_t, &expected_return_t, &dummy_span)?;
+            }
+            Some(Type::Function { .. }) => {
+                // Noop
+            }
+            Some(_) | None => unreachable!(),
         }
 
         let args_t = args
@@ -540,11 +551,9 @@ impl<'a> TypeChecker<'a> {
             .collect::<Result<Vec<_>, Error>>()?;
         debug!("fn_def: args_t={:?} args={:?}", args_t, args);
 
-        let return_t = self.statement(body)?;
-
         let t = Type::Function {
             args: args_t,
-            return_t: Box::new(return_t),
+            return_t: Box::new(Some(found_return_t)),
         };
 
         self.types.insert(id, t.clone());
