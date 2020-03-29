@@ -865,15 +865,17 @@ impl Parser<'_> {
         let identifier = self.eat(TokenKind::Identifier)?;
         self.skip_newlines()?;
 
+        let id = self.next_id();
+
         match self.previous.unwrap().kind {
             TokenKind::Colon => {
                 self.eat(TokenKind::Colon)?;
                 self.skip_newlines()?;
                 let type_literal_tok = self.previous.unwrap();
-                let type_literal_expr = self.simple_identifier()?;
-                let id = type_literal_expr.id();
+                self.simple_identifier()?;
+
                 let t = type_literal_tok.simple_identifier_type(&self.lexer.src);
-                debug!("var_def: t={}", &t);
+                debug!("var_def: id={} t={}", id, &t);
                 self.types.insert(id, t);
 
                 self.skip_newlines()?;
@@ -891,7 +893,7 @@ impl Parser<'_> {
         Ok(AstNodeStmt::VarDefinition {
             identifier,
             value,
-            id: self.next_id(),
+            id,
             flags,
         })
     }

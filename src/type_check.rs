@@ -46,11 +46,20 @@ impl<'a> TypeChecker<'a> {
         Ok(Type::Unit)
     }
 
-    fn var_def(&mut self, value: &AstNodeExpr, id: NodeId) -> Result<Type, Error> {
-        let t = self.expr(value)?;
-        self.types.insert(id, t.clone());
+    fn var_def(
+        &mut self,
+        value: &AstNodeExpr,
+        identifier: &Token,
+        id: NodeId,
+    ) -> Result<Type, Error> {
+        let value_t = self.expr(value)?;
+        if let Some(t) = self.types.get(&id) {
+            self.eq(t, &value_t, &identifier.span)?;
+        } else {
+            self.types.insert(id, value_t.clone());
+        }
 
-        Ok(t)
+        Ok(value_t)
     }
 
     fn assign(
@@ -78,7 +87,12 @@ impl<'a> TypeChecker<'a> {
                 cond_start_tok,
                 body,
             } => self.while_stmt(cond, body, &cond_start_tok),
-            AstNodeStmt::VarDefinition { value, id, .. } => self.var_def(value, *id),
+            AstNodeStmt::VarDefinition {
+                value,
+                id,
+                identifier,
+                ..
+            } => self.var_def(value, identifier, *id),
             AstNodeStmt::Assign {
                 target,
                 value,
