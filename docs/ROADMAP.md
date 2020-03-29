@@ -56,9 +56,9 @@
 - [x] Simple inline functions declaration without arguments e.g `fun add(): Int = a + b`
 - [x] Simple C-like functions declaration without arguments e.g `fun add(): Int { a + b; }`
 - [x] Function call without arguments e.g `add()`
-- [ ] Simple inline functions declaration e.g `fun add(a: Int, b: Int): Int = a + b`
-- [ ] Simple C-like functions declaration e.g `fun add(a: Int, b: Int): Unit { a + b; }`
-- [ ] Function call e.g `add(1, 5)`
+- [x] Simple inline functions declaration e.g `fun add(a: Int, b: Int): Int = a + b`
+- [x] Simple C-like functions declaration e.g `fun add(a: Int, b: Int): Unit { a + b; }`
+- [x] Function call e.g `add(1, 5)`
 - [ ] Return in function
 - [ ] Variadic functions
 - [ ] Class
