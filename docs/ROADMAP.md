@@ -110,7 +110,7 @@
 - [ ] Write one example in another language (C? Python? Java with JNI?) -> simple stats, kotlinfmt, remove unused, loc count
 
 ## Research
-- [ ] Type inference
+- [x] Type inference
 - [ ] Generics
 - [ ] Java Byte Code
 - [ ] Varargs
@@ -121,5 +121,6 @@
 ## Code emitting
 
 - [ ] IR (?)
+- [x] Lisp
 - [ ] Jar
 
