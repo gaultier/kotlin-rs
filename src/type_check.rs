@@ -108,7 +108,8 @@ impl<'a> TypeChecker<'a> {
                 body,
                 flags,
                 id,
-            } => self.fn_def(fn_name, args, body, *flags, *id),
+                return_t_span,
+            } => self.fn_def(fn_name, args, body, *flags, return_t_span, *id),
             AstNodeStmt::Block { body, .. } => self.block(body),
             AstNodeStmt::Println(expr) => {
                 self.expr(expr)?;
@@ -528,6 +529,7 @@ impl<'a> TypeChecker<'a> {
         args: &[AstNodeExpr],
         body: &AstNodeStmt,
         flags: u16,
+        return_t_span: &Span,
         id: NodeId,
     ) -> Result<Type, Error> {
         let found_return_t = self.statement(body)?;
@@ -536,8 +538,7 @@ impl<'a> TypeChecker<'a> {
             Some(Type::Function { return_t, .. }) if return_t.is_some() => {
                 let expected_return_t = return_t.clone().unwrap();
 
-                let dummy_span = Span::new(0, 0);
-                self.eq(&found_return_t, &expected_return_t, &dummy_span)?;
+                self.eq(&found_return_t, &expected_return_t, &return_t_span)?;
             }
             Some(Type::Function { .. }) => {
                 // Noop

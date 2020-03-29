@@ -148,6 +148,7 @@ pub enum AstNodeStmt {
         id: NodeId,
         flags: u16,
         body: Box<AstNodeStmt>,
+        return_t_span: Span,
     },
     Block {
         body: Statements,
@@ -983,10 +984,12 @@ impl Parser<'_> {
         self.fn_def_args(&mut args, &mut args_t)?;
         self.skip_newlines()?;
 
+        let mut return_t_span = self.previous.unwrap().span;
         let return_t = match self.previous.unwrap().kind {
             TokenKind::Colon => {
                 self.advance()?;
                 let type_literal_tok = self.previous.unwrap();
+                return_t_span = self.previous.unwrap().span;
                 self.simple_identifier()?;
 
                 let t = type_literal_tok.simple_identifier_type(&self.lexer.src);
@@ -1022,6 +1025,7 @@ impl Parser<'_> {
             body: Box::new(body),
             id,
             flags: FLAG_FN as u16,
+            return_t_span,
         })
     }
 

@@ -331,6 +331,7 @@ impl<'a> Resolver<'a> {
                 body,
                 flags,
                 id,
+                ..
             } => {
                 self.fn_def(fn_name, args, body, *flags, *id)?;
             }
