@@ -92,3 +92,17 @@ fn fn_with_args() {
         "(begin (define (foo a b ) (* a b))\n (apply foo '(1 2 )) )"
     );
 }
+
+#[test]
+fn fn_with_wrong_arg_type() -> Result<(), String> {
+    let src = String::from("fun foo(a:Int, b:Long) = a * b; foo(1, true);");
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::IncompatibleTypes(Type::Bool, Type::Long),
+            ..
+        }) => Ok(()),
+        other => Err(format!("Should be a type error: {:?}", other)),
+    }
+}
