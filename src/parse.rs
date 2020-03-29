@@ -103,6 +103,7 @@ impl Token {
             &"Bool" => Type::Bool,
             &"String" => Type::TString,
             &"Char" => Type::Char,
+            &"Unit" => Type::Unit,
             // FIXME
             &"Null" => Type::Null,
             _ => unreachable!(),
