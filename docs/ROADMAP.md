@@ -88,7 +88,7 @@
 - [x] Function call
 - [ ] Class loader (hard)
 - [ ] Warning on shadowing
-- [ ] Warining on unused
+- [ ] Warning on unused
 
 ## CLI
 
