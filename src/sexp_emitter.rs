@@ -1,7 +1,6 @@
 use crate::error::*;
 use crate::lex::{Lexer, Span, Token, TokenKind};
 use crate::parse::*;
-use crate::type_check::Types;
 
 pub(crate) struct SexpEmitter<'a> {
     lexer: &'a Lexer,

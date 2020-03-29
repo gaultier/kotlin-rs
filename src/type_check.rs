@@ -5,8 +5,6 @@ use crate::resolver::Resolution;
 use log::debug;
 use std::collections::BTreeMap;
 
-pub(crate) type Types = BTreeMap<NodeId, Type>;
-
 pub(crate) struct TypeChecker<'a> {
     lexer: &'a Lexer,
     resolution: &'a Resolution,

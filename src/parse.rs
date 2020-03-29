@@ -1,6 +1,7 @@
 use crate::error::*;
 use crate::lex::*;
 use log::debug;
+use std::collections::BTreeMap;
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -30,6 +31,8 @@ pub enum Type {
         return_t: Box<Type>,
     },
 }
+
+pub(crate) type Types = BTreeMap<NodeId, Type>;
 
 impl fmt::Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
