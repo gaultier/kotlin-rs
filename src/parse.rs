@@ -95,19 +95,19 @@ impl Token {
     pub(crate) fn simple_identifier_type(&self, src: &str) -> Type {
         assert_eq!(self.kind, TokenKind::Identifier);
         let identifier = &src[self.span.start..self.span.end];
-        match &identifier {
-            &"Int" => Type::Int,
-            &"Long" => Type::Long,
-            &"UInt" => Type::UInt,
-            &"ULong" => Type::ULong,
-            &"Float" => Type::Float,
-            &"Double" => Type::Double,
-            &"Bool" => Type::Bool,
-            &"String" => Type::TString,
-            &"Char" => Type::Char,
-            &"Unit" => Type::Unit,
+        match identifier {
+            "Int" => Type::Int,
+            "Long" => Type::Long,
+            "UInt" => Type::UInt,
+            "ULong" => Type::ULong,
+            "Float" => Type::Float,
+            "Double" => Type::Double,
+            "Bool" => Type::Bool,
+            "String" => Type::TString,
+            "Char" => Type::Char,
+            "Unit" => Type::Unit,
             // FIXME
-            &"Null" => Type::Null,
+            "Null" => Type::Null,
             _ => unreachable!(),
         }
     }
@@ -485,7 +485,7 @@ impl Parser<'_> {
         Ok(AstNodeExpr::WhenExpr {
             entries,
             subject,
-            else_entry: else_entry.map(|x| Box::new(x)),
+            else_entry: else_entry.map(Box::new),
             id: self.next_id(),
         })
     }
@@ -874,20 +874,18 @@ impl Parser<'_> {
 
         let id = self.next_id();
 
-        match self.previous.unwrap().kind {
-            TokenKind::Colon => {
-                self.eat(TokenKind::Colon)?;
-                self.skip_newlines()?;
-                let type_literal_tok = self.previous.unwrap();
-                self.simple_identifier()?;
+        // Optional explicit type
+        if self.previous.unwrap().kind == TokenKind::Colon {
+            self.eat(TokenKind::Colon)?;
+            self.skip_newlines()?;
+            let type_literal_tok = self.previous.unwrap();
+            self.simple_identifier()?;
 
-                let t = type_literal_tok.simple_identifier_type(&self.lexer.src);
-                debug!("var_def: id={} t={}", id, &t);
-                self.types.insert(id, t);
+            let t = type_literal_tok.simple_identifier_type(&self.lexer.src);
+            debug!("var_def: id={} t={}", id, &t);
+            self.types.insert(id, t);
 
-                self.skip_newlines()?;
-            }
-            _ => {}
+            self.skip_newlines()?;
         }
 
         self.eat(TokenKind::Equal)?;
