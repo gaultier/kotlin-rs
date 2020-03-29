@@ -1,5 +1,6 @@
 use kotlin::compile::compile;
 use kotlin::error::*;
+use kotlin::parse::Type;
 
 #[test]
 fn simple_var() {
@@ -161,4 +162,18 @@ fn vars_with_type() {
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
         "(begin (define a (* 5 10))\n (define b 'b')\n )"
     );
+}
+
+#[test]
+fn val_wrong_explicit_type() -> Result<(), String> {
+    let src = String::from("val a: Int = 4L");
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::IncompatibleTypes(Type::Int, Type::Long),
+            ..
+        }) => Ok(()),
+        other => Err(format!("Should be an error: {:?}", other)),
+    }
 }
