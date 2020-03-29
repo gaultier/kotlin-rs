@@ -57,9 +57,12 @@ impl fmt::Display for Type {
             Type::TStringRange => write!(f, "StringRange"),
             Type::Function { args, return_t } => {
                 write!(f, "(")?;
-                for arg in args {
-                    arg.fmt(f)?;
-                    write!(f, ", ")?;
+                if let Some((last, rest)) = args.split_last() {
+                    for arg in rest {
+                        arg.fmt(f)?;
+                        write!(f, ", ")?;
+                    }
+                    last.fmt(f)?;
                 }
                 write!(f, ") -> ")?;
                 return_t.fmt(f)
