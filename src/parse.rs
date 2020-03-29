@@ -932,7 +932,7 @@ impl Parser<'_> {
                 self.skip_newlines()?;
                 let type_literal_tok = self.previous.unwrap();
                 let type_literal_expr = self.simple_identifier()?;
-                let id = type_literal_expr.id();
+                let id = args.last().unwrap().id();
                 self.types
                     .insert(id, type_literal_tok.simple_identifier_type(&self.lexer.src));
                 debug!(
