@@ -150,3 +150,15 @@ fn var_assign_other_ops() {
         "(begin (define a (* 5 10))\n (set! a (-= 1))\n (set! a (%= 2))\n (set! a (/= 3))\n (set! a (*= 4))\n )"
     );
 }
+
+#[test]
+fn vars_with_type() {
+    let src = String::from("var a:Int = 5*10; val b: Char = 'b';");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(begin (define a (* 5 10))\n (define b 'b')\n )"
+    );
+}
