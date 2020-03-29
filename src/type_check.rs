@@ -54,8 +54,11 @@ impl<'a> TypeChecker<'a> {
     ) -> Result<Type, Error> {
         let value_t = self.expr(value)?;
         if let Some(t) = self.types.get(&id) {
+            // If a type was specified explicitely, check that it matches the implicit type of the
+            // value
             self.eq(t, &value_t, &identifier.span)?;
         } else {
+            // Otherwise infer the type
             self.types.insert(id, value_t.clone());
         }
 
