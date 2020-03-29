@@ -86,6 +86,25 @@ impl Token {
             _ => unreachable!(),
         }
     }
+
+    pub(crate) fn simple_identifier_type(&self, src: &str) -> Type {
+        assert_eq!(self.kind, TokenKind::Identifier);
+        let identifier = &src[self.span.start..self.span.end];
+        match &identifier {
+            &"Int" => Type::Int,
+            &"Long" => Type::Long,
+            &"UInt" => Type::UInt,
+            &"ULong" => Type::ULong,
+            &"Float" => Type::Float,
+            &"Double" => Type::Double,
+            &"Bool" => Type::Bool,
+            &"String" => Type::TString,
+            &"Char" => Type::Char,
+            // FIXME
+            &"Null" => Type::Null,
+            _ => unreachable!(),
+        }
+    }
 }
 
 pub(crate) const FLAG_VAR: u8 = 0;
@@ -892,7 +911,11 @@ impl Parser<'_> {
 
                 self.eat(TokenKind::Colon)?;
                 self.skip_newlines()?;
+                let type_literal = self.previous.unwrap();
                 let t = self.simple_identifier()?;
+                let id = t.id();
+                self.types
+                    .insert(id, type_literal.simple_identifier_type(&self.lexer.src));
                 debug!("fn_def: arg={:?} t={:?}", args.last().unwrap(), t);
 
                 self.skip_newlines()?;
