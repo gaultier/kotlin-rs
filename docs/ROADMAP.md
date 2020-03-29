@@ -67,6 +67,7 @@
 - [ ] Import
 - [ ] Package declaration
 - [ ] Try-catch
+- [ ] Annotations
 
 ## Type checker
 
