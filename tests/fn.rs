@@ -79,3 +79,16 @@ fn fn_body_block_no_return_type() -> Result<(), String> {
         other => Err(format!("Should be a type error: {:?}", other)),
     }
 }
+
+#[test]
+fn fn_with_args() {
+    let src = String::from("fun foo(a:Int, b:Long) = a * b; foo(1, 2L);");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(begin (define (foo a b ) (* a b))\n (apply foo '(1 2 )) )"
+    );
+}
