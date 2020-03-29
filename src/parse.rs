@@ -189,6 +189,7 @@ pub struct Parser<'a> {
     previous: Option<Token>,
     current: Option<Token>,
     lexer: &'a mut Lexer,
+    pub(crate) types: Types,
     pub(crate) current_id: usize,
 }
 
@@ -1010,6 +1011,7 @@ impl Parser<'_> {
             previous: None,
             current: None,
             lexer,
+            types: BTreeMap::new(),
             current_id: 0,
         }
     }
