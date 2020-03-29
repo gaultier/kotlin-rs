@@ -501,14 +501,20 @@ impl<'a> TypeChecker<'a> {
         }
 
         let t = self.expr(fn_name)?;
-        for arg in args {
-            self.expr(arg)?;
-        }
 
         debug!("fn ref: id={} t={}", id, t);
 
         match t {
-            Type::Function { return_t, .. } => Ok(*return_t),
+            Type::Function {
+                return_t,
+                args: args_t,
+            } => {
+                for (arg, expected_arg_t) in args.iter().zip(args_t) {
+                    let found_arg_t = self.expr(arg)?;
+                    self.eq(&found_arg_t, &expected_arg_t, call_span)?;
+                }
+                Ok(*return_t)
+            }
             _ => Err(Error::new(
                 ErrorKind::NotACallable(t),
                 self.lexer.span_location(call_span),
