@@ -9,4 +9,4 @@ while (++i < 20) {
     a = tmp
 }
 
-println(b)
+println(b) // 6765
