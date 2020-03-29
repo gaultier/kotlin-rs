@@ -85,7 +85,7 @@
 ## Name resolution
 
 - [x] Variable
-- [ ] Function call
+- [x] Function call
 - [ ] Class loader (hard)
 - [ ] Warning on shadowing
 - [ ] Warining on unused
