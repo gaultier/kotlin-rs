@@ -96,9 +96,9 @@
 
 ## Errors
 
-- [ ] Error production: Ternary operator
-- [ ] Error production: Missing parentheses around if, while, for, when clause
-- [ ] Error production: variations of a unicode literal `'\u{abcde}'` or `\uabcde`
+- [ ] Ternary operator
+- [x] Missing parentheses around if, while, for, when clause
+- [ ] Variations of a unicode literal `'\u{abcde}'` or `\uabcde`
 - [ ] Show hints on error
 - [x] Show full line of source code on error
 - [x] Show the exact location on the line of the error with description
