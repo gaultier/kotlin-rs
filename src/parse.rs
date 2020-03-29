@@ -106,8 +106,6 @@ impl Token {
             "String" => Type::TString,
             "Char" => Type::Char,
             "Unit" => Type::Unit,
-            // FIXME
-            "Null" => Type::Null,
             _ => unreachable!(),
         }
     }
