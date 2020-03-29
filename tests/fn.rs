@@ -10,7 +10,7 @@ fn simple_call() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(begin (define (a ) 10)\n (apply a '()) )\n"
+        &"(begin (define (a ) 10)\n (apply a (list )) )\n"
     );
 }
 
@@ -22,7 +22,7 @@ fn assign_to_call_expr() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(begin (define a 1)\n (define (foo ) 99)\n (set! a (apply foo '()))\n )\n"
+        &"(begin (define a 1)\n (define (foo ) 99)\n (set! a (apply foo (list )))\n )\n"
     );
 }
 
@@ -62,7 +62,7 @@ fn fn_body_block() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(begin (define (a ) (begin 1 2 'a' #t 10 ) )\n (define b (apply a '()))\n )\n"
+        &"(begin (define (a ) (begin 1 2 'a' #t 10 ) )\n (define b (apply a (list )))\n )\n"
     );
 }
 
@@ -89,7 +89,7 @@ fn fn_with_args() {
 
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(begin (define (foo a b ) (* a b))\n (apply foo '(1 2 )) )"
+        "(begin (define (foo a b ) (* a b))\n (apply foo (list 1 2 )) )"
     );
 }
 

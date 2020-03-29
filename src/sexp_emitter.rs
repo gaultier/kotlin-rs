@@ -350,7 +350,7 @@ impl<'a> SexpEmitter<'a> {
     ) -> Result<(), Error> {
         write!(w, "(apply ").unwrap();
         self.expr(fn_name, w)?;
-        write!(w, " '(").unwrap();
+        write!(w, " (list ").unwrap();
         for arg in args {
             self.expr(arg, w)?;
             write!(w, " ").unwrap();
