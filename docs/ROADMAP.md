@@ -75,9 +75,11 @@
 - [ ] `UShort` type
 - [ ] `Byte` type
 - [ ] `UByte` type
+- [ ] `Nothing` type
+- [ ] `Any` type
 - [x] Type check math
 - [x] Type check boolean logic
-- [ ] Type inference (hard)
+- [x] Type inference (hard)
 
 
 ## Name resolution
