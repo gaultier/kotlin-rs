@@ -94,8 +94,12 @@
 - [x] Variable
 - [x] Function call
 - [ ] Class loader (hard)
+
+## Lint
+
 - [ ] Warning on shadowing
 - [ ] Warning on unused
+- [ ] Too many function arguments (255 for the JVM)
 
 ## CLI
 
