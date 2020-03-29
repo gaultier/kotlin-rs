@@ -920,7 +920,11 @@ impl Parser<'_> {
         })
     }
 
-    fn fn_def_args(&mut self, args: &mut Vec<AstNodeExpr>) -> Result<(), Error> {
+    fn fn_def_args(
+        &mut self,
+        args: &mut Vec<AstNodeExpr>,
+        args_t: &mut Vec<Type>,
+    ) -> Result<(), Error> {
         let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::RightParen => {
@@ -936,8 +940,10 @@ impl Parser<'_> {
                 let type_literal_tok = self.previous.unwrap();
                 let type_literal_expr = self.simple_identifier()?;
                 let id = args.last().unwrap().id();
-                self.types
-                    .insert(id, type_literal_tok.simple_identifier_type(&self.lexer.src));
+                let arg_t = type_literal_tok.simple_identifier_type(&self.lexer.src);
+                args_t.push(arg_t.clone());
+
+                self.types.insert(id, arg_t);
                 debug!(
                     "fn_def: arg={:?} t={:?}",
                     args.last().unwrap(),
@@ -949,7 +955,7 @@ impl Parser<'_> {
                     self.eat(TokenKind::Comma)?;
                     self.skip_newlines()?;
                 }
-                self.fn_def_args(args)
+                self.fn_def_args(args, args_t)
             }
             _ => Err(Error::new(
                 ErrorKind::UnexpectedToken(
@@ -970,8 +976,31 @@ impl Parser<'_> {
 
         self.eat(TokenKind::LeftParen)?;
         let mut args = Vec::new();
-        self.fn_def_args(&mut args)?;
+        let mut args_t = Vec::new();
+        self.fn_def_args(&mut args, &mut args_t)?;
         self.skip_newlines()?;
+
+        let return_t = match self.previous.unwrap().kind {
+            TokenKind::Colon => {
+                self.advance()?;
+                let type_literal_tok = self.previous.unwrap();
+                self.simple_identifier()?;
+
+                let t = type_literal_tok.simple_identifier_type(&self.lexer.src);
+                Some(t)
+            }
+            TokenKind::Equal => None,
+            _ => Some(Type::Unit),
+        };
+
+        let id = self.next_id();
+        let fn_t = Type::Function {
+            return_t: Box::new(return_t.unwrap()), // FIXME
+            args: args_t,
+        };
+
+        self.types.insert(id, fn_t);
+
         let body = match self.previous.unwrap().kind {
             TokenKind::Equal => {
                 self.advance()?;
@@ -988,7 +1017,7 @@ impl Parser<'_> {
             fn_name,
             args,
             body: Box::new(body),
-            id: self.next_id(),
+            id,
             flags: FLAG_FN as u16,
         })
     }
