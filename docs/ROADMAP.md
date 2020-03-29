@@ -53,6 +53,8 @@
 - [x] Postfix increment/decrement operators e.g `a--; a++;`
 - [x] Variable assignement
 - [ ] For
+- [ ] Break
+- [ ] Continue
 - [x] Simple inline functions declaration without arguments e.g `fun add(): Int = a + b`
 - [x] Simple C-like functions declaration without arguments e.g `fun add(): Int { a + b; }`
 - [x] Function call without arguments e.g `add()`
@@ -60,6 +62,10 @@
 - [x] Simple C-like functions declaration e.g `fun add(a: Int, b: Int): Unit { a + b; }`
 - [x] Function call e.g `add(1, 5)`
 - [ ] Return in function e.g `fun add(a: Int, b: Int): Int { return a + b; }`
+- [ ] Default value for parameter in function
+- [ ] Call function with named parameter
+- [ ] Explicit type for function with block body (except Unit)
+- [ ] Tailrec function
 - [ ] Variadic functions
 - [ ] Class
 - [ ] Enum
@@ -69,6 +75,7 @@
 - [ ] Try-catch
 - [ ] Finally
 - [ ] Annotations
+- [ ] Infix function
 
 ## Type checker
 
