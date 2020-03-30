@@ -554,6 +554,17 @@ impl Parser<'_> {
         })
     }
 
+    fn jump_expr(&mut self) -> Result<AstNodeExpr, Error> {
+        let previous = self.previous.unwrap();
+        match previous.kind {
+            TokenKind::KeywordBreak
+            | TokenKind::KeywordContinue
+            | TokenKind::KeywordReturn
+            | TokenKind::KeywordThrow => unimplemented!(),
+            _ => unreachable!(),
+        }
+    }
+
     fn primary(&mut self) -> Result<AstNodeExpr, Error> {
         let previous = self.previous.unwrap();
         match previous.kind {
@@ -586,6 +597,10 @@ impl Parser<'_> {
                 self.advance()?;
                 Ok(AstNodeExpr::VarRef(previous.span, self.next_id()))
             }
+            TokenKind::KeywordBreak
+            | TokenKind::KeywordContinue
+            | TokenKind::KeywordReturn
+            | TokenKind::KeywordThrow => self.jump_expr(),
             _ => Err(Error::new(
                 ErrorKind::ExpectedPrimary,
                 self.lexer.span_location(&previous.span),
