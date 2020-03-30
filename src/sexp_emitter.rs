@@ -465,6 +465,16 @@ impl<'a> SexpEmitter<'a> {
         Ok(())
     }
 
+    fn jump_expr<W: std::io::Write>(&self, kind: &JumpKind, w: &mut W) -> Result<(), Error> {
+        match kind {
+            JumpKind::Break => write!(w, "(break)").unwrap(),
+            JumpKind::Continue => write!(w, "(continue)").unwrap(),
+            JumpKind::Return => unimplemented!(),
+            JumpKind::Throw => unimplemented!(),
+        }
+        Ok(())
+    }
+
     pub fn expr<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeExpr::WhenExpr { .. } => self.when_expr(ast, w),
@@ -480,7 +490,7 @@ impl<'a> SexpEmitter<'a> {
             AstNodeExpr::IfExpr { .. } => self.if_expr(ast, w),
             AstNodeExpr::VarRef(span, _) => self.var_ref(span, w),
             AstNodeExpr::FnCall { fn_name, args, .. } => self.fn_call(fn_name, args, w),
-            AstNodeExpr::Jump { .. } => unimplemented!(),
+            AstNodeExpr::Jump { kind, .. } => self.jump_expr(kind, w),
         }
     }
 }

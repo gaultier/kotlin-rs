@@ -161,6 +161,7 @@ pub enum JumpKind {
     Return,
     Break,
     Continue,
+    Throw,
 }
 
 #[derive(Debug)]
