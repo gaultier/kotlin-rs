@@ -582,11 +582,13 @@ impl Parser<'_> {
             TokenKind::KeywordThrow => unimplemented!(),
             _ => unreachable!(),
         };
+        let id = self.next_id();
+        self.types.insert(id, Type::Nothing);
 
         Ok(AstNodeExpr::Jump {
             kind,
             span: previous.span,
-            id: self.next_id(),
+            id,
         })
     }
 

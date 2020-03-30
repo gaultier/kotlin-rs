@@ -583,7 +583,7 @@ impl<'a> TypeChecker<'a> {
                 id,
                 ..
             } => self.fn_call(fn_name, call_span, args, *id),
-            AstNodeExpr::Jump { .. } => Ok(Type::Nothing),
+            AstNodeExpr::Jump { id, .. } => Ok(self.types.get(id).cloned().unwrap()),
         }
     }
 
