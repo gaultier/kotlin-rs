@@ -50,8 +50,8 @@
 - [x] Prefix increment/decrement operators e.g `--a; ++a;`
 - [x] Postfix increment/decrement operators e.g `a--; a++;`
 - [x] Variable assignement
-- [ ] Break
-- [ ] Continue
+- [x] Break
+- [x] Continue
 - [x] Simple inline functions declaration without arguments e.g `fun add(): Int = a + b`
 - [x] Simple C-like functions declaration without arguments e.g `fun add(): Int { a + b; }`
 - [x] Function call without arguments e.g `add()`
