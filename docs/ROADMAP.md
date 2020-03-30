@@ -76,6 +76,7 @@
 - [ ] For
 - [ ] Type test in when entry e.g `when {4 is Int -> true else false}`
 - [ ] As expression
+- [ ] Jump expression with label e.g `return@loop; break@foo; continue@bar;`
 
 ## Type checker
 
