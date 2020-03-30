@@ -432,26 +432,21 @@ impl Parser<'_> {
                 ..
             }) => {
                 self.eat(TokenKind::LeftParen)?;
+                self.skip_newlines()?;
 
-                let identifier = loop {
-                    match self.previous.unwrap().kind {
-                        TokenKind::Newline => {
-                            self.advance()?;
-                        }
-                        TokenKind::KeywordVal => {
-                            self.advance()?;
-                            self.skip_newlines()?;
-                            let identifier = self.eat(TokenKind::Identifier)?;
-                            self.skip_newlines()?;
-                            self.eat(TokenKind::Equal)?;
-                            self.skip_newlines()?;
-                            break Some(identifier);
-                        }
-                        _ => {
-                            break None;
-                        }
+                let identifier = match self.previous.unwrap().kind {
+                    TokenKind::KeywordVal => {
+                        self.advance()?;
+                        self.skip_newlines()?;
+                        let identifier = self.eat(TokenKind::Identifier)?;
+                        self.skip_newlines()?;
+                        self.eat(TokenKind::Equal)?;
+                        self.skip_newlines()?;
+                        Some(identifier)
                     }
+                    _ => None,
                 };
+                self.skip_newlines()?;
 
                 let value = self.expr()?;
                 self.eat(TokenKind::RightParen)?;
