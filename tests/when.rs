@@ -103,3 +103,30 @@ fn when_with_val_subject_type_err() -> Result<(), String> {
         other => Err(format!("Should be a type error: {:?}", other)),
     }
 }
+
+#[test]
+fn when_with_val_subject_with_type() {
+    let src =
+        String::from("when (val a: Int = 5) {1 -> 2; 2->4; 3->6; 4->8; 5->10; else -> a * 2\n}\n");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(case (define a 5)\n 1 2  2 4  3 6  4 8  5 10   :else (* a 2) )"
+    );
+}
+
+#[test]
+fn when_with_val_subject_with_type_type_err() -> Result<(), String> {
+    let src = String::from("when (\nval \n\na: Char \n\n =\n\n 5) {1 -> 2; else -> 42\n}\n");
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::IncompatibleTypes(Type::Char, Type::Int),
+            ..
+        }) => Ok(()),
+        other => Err(format!("Should be a type error: {:?}", other)),
+    }
+}

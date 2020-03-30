@@ -434,12 +434,14 @@ impl Parser<'_> {
                 self.eat(TokenKind::LeftParen)?;
                 self.skip_newlines()?;
 
+                let id = self.next_id();
                 let identifier = match self.previous.unwrap().kind {
                     TokenKind::KeywordVal => {
                         self.advance()?;
                         self.skip_newlines()?;
                         let identifier = self.eat(TokenKind::Identifier)?;
                         self.skip_newlines()?;
+                        self.var_def_optional_explicit_type(id)?;
                         self.eat(TokenKind::Equal)?;
                         self.skip_newlines()?;
                         Some(identifier)
@@ -456,7 +458,7 @@ impl Parser<'_> {
                     Ok(Some(Box::new(AstNodeStmt::VarDefinition {
                         identifier,
                         value,
-                        id: self.next_id(),
+                        id,
                         flags: FLAG_VAL,
                     })))
                 } else {
@@ -854,6 +856,23 @@ impl Parser<'_> {
         self.disjunction()
     }
 
+    fn var_def_optional_explicit_type(&mut self, id: NodeId) -> Result<(), Error> {
+        // Optional explicit type
+        if self.previous.unwrap().kind == TokenKind::Colon {
+            self.eat(TokenKind::Colon)?;
+            self.skip_newlines()?;
+            let type_literal_tok = self.previous.unwrap();
+            self.simple_identifier()?;
+
+            let t = self.simple_identifier_type(&type_literal_tok)?;
+            debug!("var_def: id={} t={}", id, &t);
+            self.types.insert(id, t);
+
+            self.skip_newlines()?;
+        }
+        Ok(())
+    }
+
     fn var_def(&mut self) -> Result<AstNodeStmt, Error> {
         let flags = match self.previous.unwrap().kind {
             TokenKind::KeywordVar => {
@@ -873,20 +892,7 @@ impl Parser<'_> {
 
         let id = self.next_id();
 
-        // Optional explicit type
-        if self.previous.unwrap().kind == TokenKind::Colon {
-            self.eat(TokenKind::Colon)?;
-            self.skip_newlines()?;
-            let type_literal_tok = self.previous.unwrap();
-            self.simple_identifier()?;
-
-            let t = self.simple_identifier_type(&type_literal_tok)?;
-            debug!("var_def: id={} t={}", id, &t);
-            self.types.insert(id, t);
-
-            self.skip_newlines()?;
-        }
-
+        self.var_def_optional_explicit_type(id)?;
         self.eat(TokenKind::Equal)?;
         self.skip_newlines()?;
         let value = self.expr()?;
