@@ -38,10 +38,8 @@
 - [x] If
 - [x] When
 - [x] When with subject
-- [ ] Type test in when entry e.g `when {4 is Int -> true else false}`
 - [ ] Range test in when entry e.g `when {4 in 1..5 -> 99 else 0}`
 - [ ] Elvis operator
-- [ ] As expression
 - [x] While
 - [x] Do while
 - [x] Val declaration e.g `val a = 1`
@@ -52,7 +50,6 @@
 - [x] Prefix increment/decrement operators e.g `--a; ++a;`
 - [x] Postfix increment/decrement operators e.g `a--; a++;`
 - [x] Variable assignement
-- [ ] For
 - [ ] Break
 - [ ] Continue
 - [x] Simple inline functions declaration without arguments e.g `fun add(): Int = a + b`
@@ -76,6 +73,9 @@
 - [ ] Finally
 - [ ] Annotations
 - [ ] Infix function
+- [ ] For
+- [ ] Type test in when entry e.g `when {4 is Int -> true else false}`
+- [ ] As expression
 
 ## Type checker
 

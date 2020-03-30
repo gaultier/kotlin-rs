@@ -27,6 +27,7 @@ pub enum Type {
     CharRange,
     BoolRange,
     Any,
+    Nothing,
     Function {
         args: Vec<Type>,
         return_t: Box<Option<Type>>,
@@ -57,6 +58,7 @@ impl fmt::Display for Type {
             Type::CharRange => write!(f, "CharRange"),
             Type::TStringRange => write!(f, "StringRange"),
             Type::Any => write!(f, "Any"),
+            Type::Nothing => write!(f, "Nothing"),
             Type::Function { args, return_t } => {
                 write!(f, "(")?;
                 if let Some((last, rest)) = args.split_last() {
@@ -232,6 +234,7 @@ impl Parser<'_> {
             "String" => Ok(Type::TString),
             "Char" => Ok(Type::Char),
             "Unit" => Ok(Type::Unit),
+            "Nothing" => Ok(Type::Nothing),
             _ => Err(Error::new(
                 ErrorKind::UnknownIdentifier(identifier.to_string()),
                 self.lexer.span_location(&token.span),
