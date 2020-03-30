@@ -93,3 +93,14 @@ fn while_jumps() {
         "(while (< 1 10) (if #t (break)  (continue) ) )"
     );
 }
+
+#[test]
+fn jump_not_in_loop() -> Result<(), String> {
+    let src = String::from("if (true) break else continue");
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(src, &mut out) {
+        Err(Error { .. }) => Ok(()),
+        other => Err(format!("Should be an error: {:?}", other)),
+    }
+}
