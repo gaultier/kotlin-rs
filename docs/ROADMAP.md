@@ -85,6 +85,7 @@
 - [ ] `UByte` type
 - [ ] `Nothing` type
 - [ ] `Any` type
+- [ ] Smart casts
 - [x] Type check math
 - [x] Type check boolean logic
 - [x] Type inference (hard)
