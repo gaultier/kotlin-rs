@@ -1,6 +1,6 @@
 use kotlin::compile::compile;
 use kotlin::error::*;
-use kotlin::parse::Type;
+use kotlin::parse::{JumpKind, Type};
 
 #[test]
 fn while_with_body() {
@@ -95,12 +95,29 @@ fn while_jumps() {
 }
 
 #[test]
-fn jump_not_in_loop() -> Result<(), String> {
-    let src = String::from("if (true) break else continue");
+fn break_not_in_loop() -> Result<(), String> {
+    let src = String::from("if (true) break else 1");
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
-        Err(Error { .. }) => Ok(()),
+        Err(Error {
+            kind: ErrorKind::JumpNotInALoop(JumpKind::Break),
+            ..
+        }) => Ok(()),
+        other => Err(format!("Should be an error: {:?}", other)),
+    }
+}
+
+#[test]
+fn continue_not_in_loop() -> Result<(), String> {
+    let src = String::from("if (true) 2 else continue");
+    let mut out: Vec<u8> = Vec::new();
+
+    match compile(src, &mut out) {
+        Err(Error {
+            kind: ErrorKind::JumpNotInALoop(JumpKind::Continue),
+            ..
+        }) => Ok(()),
         other => Err(format!("Should be an error: {:?}", other)),
     }
 }
