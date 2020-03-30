@@ -81,3 +81,15 @@ fn while_bad_body_type() -> Result<(), String> {
         other => Err(format!("Should be a type error: {:?}", other)),
     }
 }
+
+#[test]
+fn while_jumps() {
+    let src = String::from("while (1 < 10) {if (true) break else continue}");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(while (< 1 10) (if #t (break)  (continue) ) )"
+    );
+}
