@@ -1,5 +1,5 @@
 use crate::lex::TokenKind;
-use crate::parse::Type;
+use crate::parse::{JumpKind, Type};
 use log::debug;
 use std::fmt;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
@@ -40,6 +40,7 @@ pub enum ErrorKind {
     CannotReassignVal(String),
     NotACallable(Type),
     UnexpectedToken(TokenKind, String),
+    JumpNotInALoop(JumpKind),
 }
 
 impl fmt::Display for ErrorKind {
@@ -81,6 +82,15 @@ impl fmt::Display for ErrorKind {
             ),
             ErrorKind::NotACallable(t) => write!(f, "`{}` cannot be called as a function", t),
             ErrorKind::UnexpectedToken(_, s) => write!(f, "Unexpected token: `{}`", s),
+            ErrorKind::JumpNotInALoop(kind) => write!(
+                f,
+                "`{}` not in a loop",
+                if *kind == JumpKind::Break {
+                    "break"
+                } else {
+                    "continue"
+                }
+            ),
         }
     }
 }

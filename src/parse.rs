@@ -156,7 +156,7 @@ pub enum UnaryKind {
     Postfix,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum JumpKind {
     Return,
     Break,

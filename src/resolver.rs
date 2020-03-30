@@ -4,7 +4,7 @@ use crate::parse::*;
 use log::debug;
 use std::collections::BTreeMap;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum Context {
     Loop,
     Function,
@@ -168,7 +168,31 @@ impl<'a> Resolver<'a> {
             AstNodeExpr::FnCall { fn_name, args, .. } => {
                 self.fn_call(fn_name, args)?;
             }
-            AstNodeExpr::Jump { .. } => {}
+            AstNodeExpr::Jump {
+                kind: k @ JumpKind::Break,
+                span,
+                ..
+            }
+            | AstNodeExpr::Jump {
+                kind: k @ JumpKind::Continue,
+                span,
+                ..
+            } => {
+                if self.context != Some(Context::Loop) {
+                    return Err(Error::new(
+                        ErrorKind::JumpNotInALoop(*k),
+                        self.lexer.span_location(span),
+                    ));
+                }
+            }
+            AstNodeExpr::Jump {
+                kind: JumpKind::Return,
+                ..
+            }
+            | AstNodeExpr::Jump {
+                kind: JumpKind::Throw,
+                ..
+            } => unimplemented!(),
         };
         Ok(())
     }
@@ -317,8 +341,10 @@ impl<'a> Resolver<'a> {
                 self.expr(expr)?;
             }
             AstNodeStmt::While { cond, body, .. } | AstNodeStmt::DoWhile { cond, body, .. } => {
+                self.context = Some(Context::Loop);
                 self.expr(cond)?;
                 self.statements(body)?;
+                self.context = None;
             }
             AstNodeStmt::VarDefinition {
                 identifier,
