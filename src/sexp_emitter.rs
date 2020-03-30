@@ -480,6 +480,7 @@ impl<'a> SexpEmitter<'a> {
             AstNodeExpr::IfExpr { .. } => self.if_expr(ast, w),
             AstNodeExpr::VarRef(span, _) => self.var_ref(span, w),
             AstNodeExpr::FnCall { fn_name, args, .. } => self.fn_call(fn_name, args, w),
+            AstNodeExpr::Jump { .. } => unimplemented!(),
         }
     }
 }

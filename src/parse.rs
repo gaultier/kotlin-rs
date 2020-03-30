@@ -157,6 +157,13 @@ pub enum UnaryKind {
 }
 
 #[derive(Debug)]
+pub enum JumpKind {
+    Return,
+    Break,
+    Continue,
+}
+
+#[derive(Debug)]
 pub enum AstNodeExpr {
     Binary {
         left: Box<AstNodeExpr>,
@@ -193,6 +200,11 @@ pub enum AstNodeExpr {
         args: Vec<AstNodeExpr>,
         id: NodeId,
     },
+    Jump {
+        span: Span,
+        kind: JumpKind,
+        id: NodeId,
+    },
 }
 
 impl AstNodeExpr {
@@ -205,7 +217,8 @@ impl AstNodeExpr {
             | AstNodeExpr::WhenExpr { id, .. }
             | AstNodeExpr::VarRef(_, id)
             | AstNodeExpr::FnCall { id, .. }
-            | AstNodeExpr::Grouping(_, id) => *id,
+            | AstNodeExpr::Grouping(_, id)
+            | AstNodeExpr::Jump { id, .. } => *id,
         }
     }
 }
@@ -556,13 +569,25 @@ impl Parser<'_> {
 
     fn jump_expr(&mut self) -> Result<AstNodeExpr, Error> {
         let previous = self.previous.unwrap();
-        match previous.kind {
-            TokenKind::KeywordBreak
-            | TokenKind::KeywordContinue
-            | TokenKind::KeywordReturn
-            | TokenKind::KeywordThrow => unimplemented!(),
+        let kind = match previous.kind {
+            TokenKind::KeywordBreak => {
+                self.advance()?;
+                JumpKind::Break
+            }
+            TokenKind::KeywordContinue => {
+                self.advance()?;
+                JumpKind::Continue
+            }
+            TokenKind::KeywordReturn => unimplemented!(),
+            TokenKind::KeywordThrow => unimplemented!(),
             _ => unreachable!(),
-        }
+        };
+
+        Ok(AstNodeExpr::Jump {
+            kind,
+            span: previous.span,
+            id: self.next_id(),
+        })
     }
 
     fn primary(&mut self) -> Result<AstNodeExpr, Error> {

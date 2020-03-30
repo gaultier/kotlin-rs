@@ -160,6 +160,7 @@ impl<'a> Resolver<'a> {
             AstNodeExpr::FnCall { fn_name, args, .. } => {
                 self.fn_call(fn_name, args)?;
             }
+            AstNodeExpr::Jump { .. } => {}
         };
         Ok(())
     }
