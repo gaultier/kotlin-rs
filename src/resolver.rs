@@ -4,10 +4,17 @@ use crate::parse::*;
 use log::debug;
 use std::collections::BTreeMap;
 
+#[derive(Debug, Copy, Clone)]
+enum Context {
+    Loop,
+    Function,
+}
+
 pub(crate) struct Resolver<'a> {
     lexer: &'a Lexer,
     resolution: Resolution,
     scopes: Scopes<'a>,
+    context: Option<Context>,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -58,6 +65,7 @@ impl<'a> Resolver<'a> {
             lexer,
             resolution: Resolution::new(),
             scopes: Vec::new(),
+            context: None,
         }
     }
 
