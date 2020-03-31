@@ -78,7 +78,7 @@ impl fmt::Display for ErrorKind {
             ErrorKind::InvalidCharLiteral => write!(f, "Invalid char literal"),
             ErrorKind::ExpectedPrimary => write!(f, "Expected primary"),
             ErrorKind::IncompatibleTypes(left, right) => {
-                write!(f, "Incompatible types: {} and {}", left, right)
+                write!(f, "Incompatible types: found {}, expected {}", left, right)
             }
             ErrorKind::EmitError(err) => write!(f, "Emit error: {}", err),
             ErrorKind::UnterminatedStatement => write!(f, "Unterminated statement"),
