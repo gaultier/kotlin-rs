@@ -11,7 +11,7 @@ const LEXICAL_CONTEXT_FUNCTION: u8 = 0b010;
 const LEXICAL_CONTEXT_LOOP_IN_FUNCTION: u8 = 0b011;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct LexicalContext(u8);
+pub struct LexicalContext(pub u8);
 
 impl LexicalContext {
     fn is_in_loop(&self) -> bool {
@@ -212,7 +212,7 @@ impl<'a> Resolver<'a> {
             } => {
                 if !self.context.is_in_loop() {
                     return Err(Error::new(
-                        ErrorKind::JumpInInvalidLexicalContextKind {
+                        ErrorKind::JumpInInvalidContext {
                             jump_kind: *k,
                             expected_context: LexicalContext(LEXICAL_CONTEXT_LOOP),
                             found_context: self.context,
@@ -229,7 +229,7 @@ impl<'a> Resolver<'a> {
             } => {
                 if !self.context.is_in_function() {
                     return Err(Error::new(
-                        ErrorKind::JumpInInvalidLexicalContextKind {
+                        ErrorKind::JumpInInvalidContext {
                             jump_kind: *k,
                             expected_context: LexicalContext(LEXICAL_CONTEXT_FUNCTION),
                             found_context: self.context,

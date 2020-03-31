@@ -175,8 +175,8 @@ fn return_not_in_fn() -> Result<(), String> {
             kind:
                 ErrorKind::JumpInInvalidContext {
                     jump_kind: JumpKind::Return,
-                    expected_context: LEXICAL_CONTEXT_FUNCTION,
-                    found_context: LEXICAL_CONTEXT_LOOP,
+                    expected_context: LexicalContext(2), // Function
+                    found_context: LexicalContext(1),    // Loop
                 },
             ..
         }) => Ok(()),

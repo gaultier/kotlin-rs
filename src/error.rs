@@ -41,7 +41,7 @@ pub enum ErrorKind {
     CannotReassignVal(String),
     NotACallable(Type),
     UnexpectedToken(TokenKind, String),
-    JumpInInvalidLexicalContextKind {
+    JumpInInvalidContext {
         jump_kind: JumpKind,
         expected_context: LexicalContext,
         found_context: LexicalContext,
@@ -98,7 +98,7 @@ impl fmt::Display for ErrorKind {
             ),
             ErrorKind::NotACallable(t) => write!(f, "`{}` cannot be called as a function", t),
             ErrorKind::UnexpectedToken(_, s) => write!(f, "Unexpected token: `{}`", s),
-            ErrorKind::JumpInInvalidLexicalContextKind {
+            ErrorKind::JumpInInvalidContext {
                 jump_kind,
                 expected_context,
                 found_context,

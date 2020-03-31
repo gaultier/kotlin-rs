@@ -1,7 +1,7 @@
 use kotlin::compile::compile;
 use kotlin::error::*;
 use kotlin::parse::{JumpKind, Type};
-use kotlin::resolver::Context;
+use kotlin::resolver::LexicalContext;
 
 #[test]
 fn while_with_body() {
@@ -105,8 +105,8 @@ fn break_not_in_loop() -> Result<(), String> {
             kind:
                 ErrorKind::JumpInInvalidContext {
                     jump_kind: JumpKind::Break,
-                    expected_context: Context::Loop,
-                    found_context: Context::TopLevel,
+                    expected_context: LexicalContext(1), // Loop
+                    found_context: LexicalContext(0),    // Top level
                 },
             ..
         }) => Ok(()),
@@ -124,8 +124,8 @@ fn continue_not_in_loop() -> Result<(), String> {
             kind:
                 ErrorKind::JumpInInvalidContext {
                     jump_kind: JumpKind::Continue,
-                    expected_context: Context::Loop,
-                    found_context: Context::TopLevel,
+                    expected_context: LexicalContext(1), // Loop
+                    found_context: LexicalContext(0),    // Top level
                 },
             ..
         }) => Ok(()),
