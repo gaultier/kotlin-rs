@@ -124,14 +124,14 @@ fn fn_with_expr_return_body() {
 
 #[test]
 fn fn_with_expr_return() {
-    let src = String::from("fun foo(a:Int, b:Long): Boolean = if (a < b) true else false; val a: Boolean = foo(1, 2L);");
+    let src = String::from("fun foo(a:Int, b:Long): Boolean = if (a < b) return true else return false; val a: Boolean = foo(1, 2L);");
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
 
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(begin (define (foo a b ) (if (< a b) #t  #f ))\n (define a (apply foo (list 1 2 )))\n )"
+        "(begin (define (foo a b ) (if (< a b) (return #t)  (return #f) ))\n (define a (apply foo (list 1 2 )))\n )"
     );
 }
 
