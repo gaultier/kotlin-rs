@@ -609,11 +609,10 @@ impl<'a> TypeChecker<'a> {
                 };
                 self.types.insert(*id, return_t.clone());
 
-                if let Some(current_fn_id) = self.current_fn_id {
-                    if let Some(fn_t) = self.types.get(&current_fn_id) {
-                        if let Some(prior_return_t) = fn_t.fn_return_t() {
-                            self.eq(&return_t, &prior_return_t, span)?;
-                        }
+                let current_fn_id = self.current_fn_id.unwrap();
+                if let Some(fn_t) = self.types.get(&current_fn_id) {
+                    if let Some(prior_return_t) = fn_t.fn_return_t() {
+                        self.eq(&return_t, &prior_return_t, span)?;
                     }
                 }
 
