@@ -204,6 +204,7 @@ pub enum AstNodeExpr {
     Jump {
         span: Span,
         kind: JumpKind,
+        expr: Option<Box<AstNodeExpr>>,
         id: NodeId,
     },
 }
@@ -570,30 +571,47 @@ impl Parser<'_> {
 
     fn jump_expr(&mut self) -> Result<AstNodeExpr, Error> {
         let previous = self.previous.unwrap();
-        let kind = match previous.kind {
+        let id = self.next_id();
+        match previous.kind {
             TokenKind::KeywordBreak => {
                 self.advance()?;
-                JumpKind::Break
+                self.types.insert(id, Type::Nothing);
+                Ok(AstNodeExpr::Jump {
+                    kind: JumpKind::Break,
+                    span: previous.span,
+                    expr: None,
+                    id,
+                })
             }
             TokenKind::KeywordContinue => {
                 self.advance()?;
-                JumpKind::Continue
+                self.types.insert(id, Type::Nothing);
+                Ok(AstNodeExpr::Jump {
+                    kind: JumpKind::Continue,
+                    span: previous.span,
+                    expr: None,
+                    id,
+                })
             }
             TokenKind::KeywordReturn => {
                 self.advance()?;
-                JumpKind::Return
+                let expr = match self.previous.unwrap().kind {
+                    TokenKind::Newline | TokenKind::Semicolon | TokenKind::RightCurlyBracket => {
+                        None
+                    }
+                    _ => Some(Box::new(self.expr()?)),
+                };
+
+                Ok(AstNodeExpr::Jump {
+                    kind: JumpKind::Return,
+                    span: previous.span,
+                    expr,
+                    id,
+                })
             }
             TokenKind::KeywordThrow => unimplemented!(),
             _ => unreachable!(),
-        };
-        let id = self.next_id();
-        self.types.insert(id, Type::Nothing);
-
-        Ok(AstNodeExpr::Jump {
-            kind,
-            span: previous.span,
-            id,
-        })
+        }
     }
 
     fn primary(&mut self) -> Result<AstNodeExpr, Error> {

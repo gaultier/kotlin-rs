@@ -583,6 +583,20 @@ impl<'a> TypeChecker<'a> {
                 id,
                 ..
             } => self.fn_call(fn_name, call_span, args, *id),
+            AstNodeExpr::Jump {
+                id,
+                kind: JumpKind::Return,
+                expr,
+                ..
+            } => {
+                let return_t = if let Some(expr) = expr {
+                    self.expr(expr)?
+                } else {
+                    Type::Unit
+                };
+                self.types.insert(*id, return_t.clone());
+                Ok(return_t)
+            }
             AstNodeExpr::Jump { id, .. } => Ok(self.types.get(id).cloned().unwrap()),
         }
     }

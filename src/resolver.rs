@@ -193,6 +193,7 @@ impl<'a> Resolver<'a> {
             AstNodeExpr::Jump {
                 kind: k @ JumpKind::Return,
                 span,
+                expr,
                 ..
             } => {
                 if self.context != Context::Function {
@@ -204,6 +205,10 @@ impl<'a> Resolver<'a> {
                         },
                         self.lexer.span_location(span),
                     ));
+                }
+
+                if let Some(expr) = expr {
+                    self.expr(expr)?;
                 }
             }
             AstNodeExpr::Jump {
@@ -339,7 +344,10 @@ impl<'a> Resolver<'a> {
             }
         }
 
+        let ctx = self.context;
+        self.context = Context::Function;
         self.statement(body)?;
+        self.context = ctx;
 
         self.exit_scope();
         Ok(())
