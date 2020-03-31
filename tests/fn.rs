@@ -258,3 +258,17 @@ fn fn_with_function_definition_in_loop() {
  )"##
     );
 }
+
+#[test]
+fn nested_fn() {
+    let src = String::from("fun a(): Long {fun b(): Int {return 42} return 99L * b();}");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(define (a ) (begin (define (b ) (return 42)  )
+ (return (* 99 (apply b (list )))) ) )"##
+    );
+}
