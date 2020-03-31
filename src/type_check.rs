@@ -543,7 +543,15 @@ impl<'a> TypeChecker<'a> {
     ) -> Result<Type, Error> {
         let current_fn_id = self.current_fn_id;
         self.current_fn_id = Some(id);
-        let found_return_t = self.statement(body)?;
+        let mut found_return_t = self.statement(body)?;
+        if found_return_t == Type::Unit {
+            found_return_t = self
+                .types
+                .get(&id)
+                .unwrap_or(&Type::Unit)
+                .fn_return_t()
+                .unwrap_or(Type::Unit);
+        }
 
         match self.types.get(&id) {
             Some(Type::Function { return_t, .. }) if return_t.is_some() => {
@@ -609,11 +617,23 @@ impl<'a> TypeChecker<'a> {
                 };
                 self.types.insert(*id, return_t.clone());
 
+                // Safe because of the resolver checks
                 let current_fn_id = self.current_fn_id.unwrap();
+
+                // Is the function type fully known?
                 if let Some(fn_t) = self.types.get(&current_fn_id) {
+                    // If at that point the return type of the function is known (either declared
+                    // or inferred), check that this type and the type of the return expression
+                    // match
                     if let Some(prior_return_t) = fn_t.fn_return_t() {
                         self.eq(&return_t, &prior_return_t, span)?;
+                    } else {
+                        // Fill the inferred return type
+                        let new_fn_t = fn_t.clone();
+                        self.types
+                            .insert(current_fn_id, new_fn_t.with_fn_return_t(&return_t));
                     }
+                } else {
                 }
 
                 Ok(return_t)
