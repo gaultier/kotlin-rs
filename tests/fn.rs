@@ -118,7 +118,7 @@ fn fn_with_expr_return() {
 
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(begin (define (foo a b ) (if (< a b) #t #f)\n (define a (apply foo (list 1 2 )) )))"
+        "(begin (define (foo a b ) (return (if (< a b) #t  #f ))  )\n (define a (apply foo (list 1 2 )))\n )"
     );
 }
 
