@@ -40,7 +40,7 @@ fn nested_if_expr() {
 
 #[test]
 fn if_body_block() {
-    let src = String::from("if (1<2) {'a'; 1\n\n true;; 'b'} else {1*3; 'c'}\n");
+    let src = String::from("if (1<2) {'a'; 1\n\n true; 'b'} else {1*3; 'c'}\n");
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -52,7 +52,7 @@ fn if_body_block() {
 
 #[test]
 fn if_with_empty_else_block() {
-    let src = String::from("if (1<2) {'a'; 1\n\n true;; 'b'} else {}\n");
+    let src = String::from("if (1<2) {'a'; 1\n\n true; 'b'} else {}\n");
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -64,7 +64,7 @@ fn if_with_empty_else_block() {
 
 #[test]
 fn if_with_empty_if_body_block() {
-    let src = String::from("if (1<2) {} else {'a'; 1\n\n true;; 'b'}\n");
+    let src = String::from("if (1<2) {} else {'a'; 1\n\n true; 'b'}\n");
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -88,7 +88,7 @@ fn if_with_no_if_body_block() {
 
 #[test]
 fn if_with_no_else_block() {
-    let src = String::from("if (1==2) {'a'; 1\n\n true;; 'b'} else ; \n");
+    let src = String::from("if (1==2) {'a'; 1\n\n true; 'b'} else ; \n");
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
