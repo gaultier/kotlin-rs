@@ -46,7 +46,7 @@ fn while_bad_cond_type() -> Result<(), String> {
 
     match compile(src, &mut out) {
         Err(Error {
-            kind: ErrorKind::IncompatibleTypes(Type::Char, Type::Bool),
+            kind: ErrorKind::IncompatibleTypes(Type::Char, Type::Boolean),
             location:
                 Location {
                     start_pos: 7,

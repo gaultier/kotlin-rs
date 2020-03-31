@@ -41,7 +41,7 @@ impl<'a> TypeChecker<'a> {
         cond_start_tok: &Token,
     ) -> Result<Type, Error> {
         let cond_t = self.expr(cond)?;
-        self.eq(&cond_t, &Type::Bool, &cond_start_tok.span)?;
+        self.eq(&cond_t, &Type::Boolean, &cond_start_tok.span)?;
         self.statement(block)?;
         Ok(Type::Unit)
     }
@@ -209,9 +209,9 @@ impl<'a> TypeChecker<'a> {
                 ..
             } => {
                 let right_t = self.expr(right)?;
-                let t = self.coalesce_types(&Type::Bool, &right_t, tok)?;
+                let t = self.coalesce_types(&Type::Boolean, &right_t, tok)?;
                 self.types.insert(*id, t);
-                Ok(Type::Bool)
+                Ok(Type::Boolean)
             }
             _ => unreachable!(),
         }
@@ -281,8 +281,8 @@ impl<'a> TypeChecker<'a> {
 
                 self.eq(&left_t, &right_t, &op.span)?;
 
-                self.types.insert(*id, Type::Bool);
-                Ok(Type::Bool)
+                self.types.insert(*id, Type::Boolean);
+                Ok(Type::Boolean)
             }
             AstNodeExpr::Binary {
                 left,
@@ -309,7 +309,7 @@ impl<'a> TypeChecker<'a> {
                     Type::Double => Type::DoubleRange,
                     Type::TString => Type::TStringRange,
                     Type::Char => Type::CharRange,
-                    Type::Bool => Type::BoolRange,
+                    Type::Boolean => Type::BooleanRange,
                     _ => {
                         return Err(Error::new(
                             ErrorKind::InvalidRange(left_t),
@@ -375,7 +375,7 @@ impl<'a> TypeChecker<'a> {
 
                 self.coalesce_types(&left_t, &right_t, &op)?;
 
-                let t = Type::Bool;
+                let t = Type::Boolean;
                 self.types.insert(*id, t.clone());
                 Ok(t)
             }
@@ -436,7 +436,7 @@ impl<'a> TypeChecker<'a> {
             } => {
                 for entry in entries.iter() {
                     let cond_t = self.expr(&entry.cond)?;
-                    self.eq(&cond_t, &Type::Bool, &entry.cond_start_tok.span)?;
+                    self.eq(&cond_t, &Type::Boolean, &entry.cond_start_tok.span)?;
                     self.statements(&entry.body)?;
                 }
                 Ok(Type::Unit)
@@ -460,7 +460,7 @@ impl<'a> TypeChecker<'a> {
                 id,
             } => {
                 let t = self.expr(cond)?;
-                self.eq(&t, &Type::Bool, &cond_span)?;
+                self.eq(&t, &Type::Boolean, &cond_span)?;
 
                 let if_body_t = self.statement(if_body)?;
                 let else_body_t = self.statement(else_body)?;
@@ -611,7 +611,7 @@ impl<'a> TypeChecker<'a> {
     fn coalesce_types(&self, left: &Type, right: &Type, token: &Token) -> Result<Type, Error> {
         match (left, right) {
             (Type::Char, Type::Char) => Ok(Type::Char),
-            (Type::Bool, Type::Bool) => Ok(Type::Bool),
+            (Type::Boolean, Type::Boolean) => Ok(Type::Boolean),
             (Type::Int, Type::Int) => Ok(Type::Int),
             (Type::UInt, Type::UInt) => Ok(Type::UInt),
             (Type::Long, Type::Long) | (Type::Long, Type::Int) | (Type::Int, Type::Long) => {
@@ -652,7 +652,7 @@ impl<'a> TypeChecker<'a> {
             | (Type::TString, Type::Char)
             | (Type::Char, Type::TString)
             // Asymetrical
-            | (Type::TString, Type::Bool)
+            | (Type::TString, Type::Boolean)
                 if token.kind == TokenKind::Plus =>
             {
                 Ok(Type::TString)

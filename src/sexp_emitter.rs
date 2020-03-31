@@ -245,7 +245,7 @@ impl<'a> SexpEmitter<'a> {
             }
             AstNodeExpr::Literal(
                 Token {
-                    kind: TokenKind::Bool(b),
+                    kind: TokenKind::Boolean(b),
                     ..
                 },
                 _,

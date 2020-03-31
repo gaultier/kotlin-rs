@@ -111,7 +111,7 @@ fn fn_with_empty_return() {
 
 // #[test]
 // fn fn_with_expr_return() {
-//     let src = String::from("fun foo(a:Int, b:Long): Bool {return if (a < b) true else false }; val a: Bool = foo(1, 2L);");
+//     let src = String::from("fun foo(a:Int, b:Long): Boolean {return if (a < b) true else false }; val a: Boolean = foo(1, 2L);");
 //     let mut out: Vec<u8> = Vec::new();
 
 //     assert!(compile(src, &mut out).is_ok());
@@ -129,7 +129,7 @@ fn fn_with_wrong_arg_type() -> Result<(), String> {
 
     match compile(src, &mut out) {
         Err(Error {
-            kind: ErrorKind::IncompatibleTypes(Type::Bool, Type::Long),
+            kind: ErrorKind::IncompatibleTypes(Type::Boolean, Type::Long),
             ..
         }) => Ok(()),
         other => Err(format!("Should be a type error: {:?}", other)),

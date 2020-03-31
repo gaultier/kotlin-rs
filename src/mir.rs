@@ -35,7 +35,7 @@ impl MirTransformer {
         AstNodeStmt::While {
             cond: AstNodeExpr::Literal(
                 Token {
-                    kind: TokenKind::Bool(true),
+                    kind: TokenKind::Boolean(true),
                     span: Span::new(0, 0),
                 },
                 self._next_id(),

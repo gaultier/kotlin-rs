@@ -89,7 +89,7 @@ pub enum TokenKind {
     Shebang,
     Comment,
     TString,
-    Bool(bool),
+    Boolean(bool),
     Null,
     KeywordAbstract,
     KeywordActual,
@@ -233,7 +233,7 @@ impl fmt::Display for TokenKind {
             TokenKind::Shebang => write!(f, "#"),
             TokenKind::Comment => write!(f, "//"),
             TokenKind::TString => write!(f, ""),
-            TokenKind::Bool(_) => write!(f, ""),
+            TokenKind::Boolean(_) => write!(f, ""),
             TokenKind::Null => write!(f, "null"),
             TokenKind::KeywordAbstract => write!(f, "abstract"),
             TokenKind::KeywordActual => write!(f, "actual"),
@@ -935,8 +935,8 @@ impl Lexer {
         let s = &self.src[span.start..span.end];
 
         match s {
-            "true" => TokenKind::Bool(true),
-            "false" => TokenKind::Bool(false),
+            "true" => TokenKind::Boolean(true),
+            "false" => TokenKind::Boolean(false),
             "null" => TokenKind::Null,
             "break" => TokenKind::KeywordBreak,
             "abstract" => TokenKind::KeywordAbstract,
@@ -2333,7 +2333,7 @@ mod tests {
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, TokenKind::Bool(true));
+        assert_eq!(tok.kind, TokenKind::Boolean(true));
         assert_eq!(&lexer.src[tok.span.start..tok.span.end], "true");
     }
 
@@ -2346,7 +2346,7 @@ mod tests {
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
-        assert_eq!(tok.kind, TokenKind::Bool(false));
+        assert_eq!(tok.kind, TokenKind::Boolean(false));
         assert_eq!(&lexer.src[tok.span.start..tok.span.end], "false");
     }
 

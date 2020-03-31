@@ -321,7 +321,7 @@ fn add_bool_string() -> Result<(), String> {
 
     match compile(src, &mut out) {
         Err(Error {
-            kind: ErrorKind::IncompatibleTypes(Type::Bool, Type::TString),
+            kind: ErrorKind::IncompatibleTypes(Type::Boolean, Type::TString),
             location:
                 Location {
                     start_line: 1,
@@ -413,7 +413,7 @@ fn plus_plus_not_a_number() -> Result<(), String> {
 
     match compile(src, &mut out) {
         Err(Error {
-            kind: ErrorKind::IncompatibleTypes(Type::Bool, _),
+            kind: ErrorKind::IncompatibleTypes(Type::Boolean, _),
             location:
                 Location {
                     start_line: 1,
@@ -434,7 +434,7 @@ fn minus_minus_not_a_number() -> Result<(), String> {
 
     match compile(src, &mut out) {
         Err(Error {
-            kind: ErrorKind::IncompatibleTypes(Type::Bool, _),
+            kind: ErrorKind::IncompatibleTypes(Type::Boolean, _),
             location:
                 Location {
                     start_line: 1,

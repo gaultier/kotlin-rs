@@ -6,7 +6,7 @@ use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
-    Bool,
+    Boolean,
     Int,
     UInt,
     Long,
@@ -25,7 +25,7 @@ pub enum Type {
     DoubleRange,
     TStringRange,
     CharRange,
-    BoolRange,
+    BooleanRange,
     Any,
     Nothing,
     Function {
@@ -37,7 +37,7 @@ pub enum Type {
 impl fmt::Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Type::Bool => write!(f, "Bool"),
+            Type::Boolean => write!(f, "Boolean"),
             Type::Int => write!(f, "Int"),
             Type::UInt => write!(f, "UInt"),
             Type::Long => write!(f, "Long"),
@@ -48,7 +48,7 @@ impl fmt::Display for Type {
             Type::Char => write!(f, "Char"),
             Type::TString => write!(f, "String"),
             Type::Unit => write!(f, "Unit"),
-            Type::BoolRange => write!(f, "BoolRange"),
+            Type::BooleanRange => write!(f, "BooleanRange"),
             Type::IntRange => write!(f, "IntRange"),
             Type::UIntRange => write!(f, "UIntRange"),
             Type::LongRange => write!(f, "LongRange"),
@@ -86,7 +86,7 @@ impl Token {
             TokenKind::ULong(_) => Type::ULong,
             TokenKind::Float(_) => Type::Float,
             TokenKind::Double(_) => Type::Double,
-            TokenKind::Bool(_) => Type::Bool,
+            TokenKind::Boolean(_) => Type::Boolean,
             TokenKind::TString => Type::TString,
             TokenKind::Char(_) => Type::Char,
             TokenKind::Null => Type::Null,
@@ -245,7 +245,7 @@ impl Parser<'_> {
             "ULong" => Ok(Type::ULong),
             "Float" => Ok(Type::Float),
             "Double" => Ok(Type::Double),
-            "Bool" => Ok(Type::Bool),
+            "Boolean" => Ok(Type::Boolean),
             "String" => Ok(Type::TString),
             "Char" => Ok(Type::Char),
             "Unit" => Ok(Type::Unit),
@@ -626,7 +626,7 @@ impl Parser<'_> {
             | TokenKind::ULong(_)
             | TokenKind::Float(_)
             | TokenKind::Double(_)
-            | TokenKind::Bool(_)
+            | TokenKind::Boolean(_)
             | TokenKind::TString
             | TokenKind::Char(_)
             | TokenKind::Null => {
