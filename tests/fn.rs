@@ -1,7 +1,7 @@
 use kotlin::compile::compile;
 use kotlin::error::*;
 use kotlin::parse::{JumpKind, Type};
-use kotlin::resolver::Context;
+use kotlin::resolver::*;
 
 #[test]
 fn simple_call() {
@@ -95,17 +95,32 @@ fn fn_with_args() {
 }
 
 #[test]
-fn fn_with_return() {
-    let src = String::from("fun foo(a:Int, b:Long): Bool {return if (a < b) true else false }; val a: Bool = foo(1, 2L);");
+fn fn_with_empty_return() {
+    let src = String::from(
+        "fun foo(a:Int, b:Long){ if (a< b) return else ;}; val x : Unit = foo(1, 2L);",
+    );
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
 
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(begin (define (foo a b ) (if (< a b) #t #f)\n (define a (apply foo (list 1 2 )) )))"
+        "(begin (define (foo a b ) (if (< a b) )\n (define x (apply foo (list 1 2 )) )))"
     );
 }
+
+// #[test]
+// fn fn_with_expr_return() {
+//     let src = String::from("fun foo(a:Int, b:Long): Bool {return if (a < b) true else false }; val a: Bool = foo(1, 2L);");
+//     let mut out: Vec<u8> = Vec::new();
+
+//     assert!(compile(src, &mut out).is_ok());
+
+//     assert_eq!(
+//         std::str::from_utf8(&out).as_mut().unwrap().trim(),
+//         "(begin (define (foo a b ) (if (< a b) #t #f)\n (define a (apply foo (list 1 2 )) )))"
+//     );
+// }
 
 #[test]
 fn fn_with_wrong_arg_type() -> Result<(), String> {
@@ -151,7 +166,8 @@ fn fn_with_unknown_identifier_for_return_type() -> Result<(), String> {
 
 #[test]
 fn return_not_in_fn() -> Result<(), String> {
-    let src = String::from("fun foo(a:Int, b:Long): Int {} while(true) {return}");
+    let src =
+        String::from("fun foo(a:Int, b:Long): Unit { while(true) {break}} while (true) {return}");
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -159,11 +175,12 @@ fn return_not_in_fn() -> Result<(), String> {
             kind:
                 ErrorKind::JumpInInvalidContext {
                     jump_kind: JumpKind::Return,
-                    expected_context: Context::Function,
-                    found_context: Context::Loop,
+                    expected_context: LEXICAL_CONTEXT_FUNCTION,
+                    found_context: LEXICAL_CONTEXT_LOOP,
                 },
             ..
         }) => Ok(()),
         other => Err(format!("Should be an error: {:?}", other)),
     }
 }
+//  var a =1; while (a < 10)  {fun display(x: Int):Int {println(x); return x}; display(a++); if (a==5) break;}

@@ -3,19 +3,50 @@ use crate::lex::{Lexer, Span};
 use crate::parse::*;
 use log::debug;
 use std::collections::BTreeMap;
+use std::fmt;
+
+const LEXICAL_CONTEXT_TOP_LEVEL: u8 = 0;
+const LEXICAL_CONTEXT_LOOP: u8 = 0b001;
+const LEXICAL_CONTEXT_FUNCTION: u8 = 0b010;
+const LEXICAL_CONTEXT_LOOP_IN_FUNCTION: u8 = 0b011;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Context {
-    TopLevel,
-    Loop,
-    Function,
+pub struct LexicalContext(u8);
+
+impl LexicalContext {
+    fn is_in_loop(&self) -> bool {
+        self.0 & LEXICAL_CONTEXT_LOOP != 0
+    }
+
+    fn is_in_function(&self) -> bool {
+        self.0 & LEXICAL_CONTEXT_FUNCTION != 0
+    }
+
+    fn enter_loop(&mut self) {
+        self.0 &= LEXICAL_CONTEXT_LOOP;
+    }
+
+    fn enter_function(&mut self) {
+        self.0 &= LEXICAL_CONTEXT_FUNCTION;
+    }
+}
+
+impl fmt::Display for LexicalContext {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            LEXICAL_CONTEXT_TOP_LEVEL => write!(f, "top level"),
+            LEXICAL_CONTEXT_FUNCTION => write!(f, "function"),
+            LEXICAL_CONTEXT_LOOP | LEXICAL_CONTEXT_LOOP_IN_FUNCTION => write!(f, "loop"),
+            _ => unreachable!(),
+        }
+    }
 }
 
 pub(crate) struct Resolver<'a> {
     lexer: &'a Lexer,
     resolution: Resolution,
     scopes: Scopes<'a>,
-    context: Context,
+    context: LexicalContext,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -66,7 +97,7 @@ impl<'a> Resolver<'a> {
             lexer,
             resolution: Resolution::new(),
             scopes: Vec::new(),
-            context: Context::TopLevel,
+            context: LexicalContext(LEXICAL_CONTEXT_TOP_LEVEL),
         }
     }
 
@@ -179,11 +210,11 @@ impl<'a> Resolver<'a> {
                 span,
                 ..
             } => {
-                if self.context != Context::Loop {
+                if !self.context.is_in_loop() {
                     return Err(Error::new(
-                        ErrorKind::JumpInInvalidContext {
+                        ErrorKind::JumpInInvalidLexicalContextKind {
                             jump_kind: *k,
-                            expected_context: Context::Loop,
+                            expected_context: LexicalContext(LEXICAL_CONTEXT_LOOP),
                             found_context: self.context,
                         },
                         self.lexer.span_location(span),
@@ -196,11 +227,11 @@ impl<'a> Resolver<'a> {
                 expr,
                 ..
             } => {
-                if self.context != Context::Function {
+                if !self.context.is_in_function() {
                     return Err(Error::new(
-                        ErrorKind::JumpInInvalidContext {
+                        ErrorKind::JumpInInvalidLexicalContextKind {
                             jump_kind: *k,
-                            expected_context: Context::Function,
+                            expected_context: LexicalContext(LEXICAL_CONTEXT_FUNCTION),
                             found_context: self.context,
                         },
                         self.lexer.span_location(span),
@@ -304,7 +335,6 @@ impl<'a> Resolver<'a> {
             _ => unreachable!(),
         };
 
-        // FIXME
         let (_, var, _) = self.find_var(identifier).unwrap();
         let flags = var.flags;
         if flags & FLAG_VAL as u16 == 1 {
@@ -345,7 +375,7 @@ impl<'a> Resolver<'a> {
         }
 
         let ctx = self.context;
-        self.context = Context::Function;
+        self.context.enter_function();
         self.statement(body)?;
         self.context = ctx;
 
@@ -367,7 +397,7 @@ impl<'a> Resolver<'a> {
             }
             AstNodeStmt::While { cond, body, .. } | AstNodeStmt::DoWhile { cond, body, .. } => {
                 let ctx = self.context;
-                self.context = Context::Loop;
+                self.context.enter_loop();
                 self.expr(cond)?;
                 self.statements(body)?;
                 self.context = ctx;

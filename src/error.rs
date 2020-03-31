@@ -1,6 +1,6 @@
 use crate::lex::TokenKind;
 use crate::parse::{JumpKind, Type};
-use crate::resolver::Context;
+use crate::resolver::LexicalContext;
 use log::debug;
 use std::fmt;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
@@ -41,10 +41,10 @@ pub enum ErrorKind {
     CannotReassignVal(String),
     NotACallable(Type),
     UnexpectedToken(TokenKind, String),
-    JumpInInvalidContext {
+    JumpInInvalidLexicalContextKind {
         jump_kind: JumpKind,
-        expected_context: Context,
-        found_context: Context,
+        expected_context: LexicalContext,
+        found_context: LexicalContext,
     },
 }
 
@@ -55,16 +55,6 @@ impl fmt::Display for JumpKind {
             JumpKind::Continue => write!(f, "continue"),
             JumpKind::Return => write!(f, "return"),
             JumpKind::Throw => write!(f, "throw"),
-        }
-    }
-}
-
-impl fmt::Display for Context {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Context::TopLevel => write!(f, "top level"),
-            Context::Function => write!(f, "function"),
-            Context::Loop => write!(f, "loop"),
         }
     }
 }
@@ -108,7 +98,7 @@ impl fmt::Display for ErrorKind {
             ),
             ErrorKind::NotACallable(t) => write!(f, "`{}` cannot be called as a function", t),
             ErrorKind::UnexpectedToken(_, s) => write!(f, "Unexpected token: `{}`", s),
-            ErrorKind::JumpInInvalidContext {
+            ErrorKind::JumpInInvalidLexicalContextKind {
                 jump_kind,
                 expected_context,
                 found_context,
