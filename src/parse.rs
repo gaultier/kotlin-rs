@@ -1167,6 +1167,25 @@ impl Parser<'_> {
                 }
                 _ => {
                     body.push(self.statement()?);
+
+                    match self.previous.unwrap().kind {
+                        TokenKind::Semicolon | TokenKind::Newline => {
+                            self.advance()?;
+                        }
+                        TokenKind::RightCurlyBracket | TokenKind::Eof => {
+                            break;
+                        }
+                        _ => {
+                            let span = &self.previous.unwrap().span;
+                            return Err(Error::new(
+                                ErrorKind::ExpectedToken(
+                                    TokenKind::Semicolon,
+                                    self.lexer.src[span.start..span.end].to_string(),
+                                ),
+                                self.lexer.span_location(&span),
+                            ));
+                        }
+                    }
                 }
             }
         }
@@ -1190,6 +1209,25 @@ impl Parser<'_> {
                 }
                 _ => {
                     body.push(self.statement()?);
+
+                    match self.previous.unwrap().kind {
+                        TokenKind::Semicolon | TokenKind::Newline => {
+                            self.advance()?;
+                        }
+                        TokenKind::Eof => {
+                            break;
+                        }
+                        _ => {
+                            let span = &self.previous.unwrap().span;
+                            return Err(Error::new(
+                                ErrorKind::ExpectedToken(
+                                    TokenKind::Semicolon,
+                                    self.lexer.src[span.start..span.end].to_string(),
+                                ),
+                                self.lexer.span_location(&span),
+                            ));
+                        }
+                    }
                 }
             }
         }
