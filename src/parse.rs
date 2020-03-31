@@ -649,7 +649,6 @@ impl Parser<'_> {
             | TokenKind::Char(_)
             | TokenKind::Null => {
                 self.advance()?;
-                self.skip_newlines()?;
                 let id = self.next_id();
                 self.types.insert(id, previous.literal_type());
                 Ok(AstNodeExpr::Literal(previous, id))
@@ -900,7 +899,6 @@ impl Parser<'_> {
 
     fn conjunction(&mut self) -> Result<AstNodeExpr, Error> {
         let left = self.equality()?;
-        self.skip_newlines()?;
 
         match self.previous.unwrap().kind {
             TokenKind::AmpersandAmpersand => {
@@ -920,7 +918,6 @@ impl Parser<'_> {
 
     fn disjunction(&mut self) -> Result<AstNodeExpr, Error> {
         let left = self.conjunction()?;
-        self.skip_newlines()?;
 
         match self.previous.unwrap().kind {
             TokenKind::PipePipe => {
@@ -1162,7 +1159,7 @@ impl Parser<'_> {
                 TokenKind::RightCurlyBracket => {
                     break;
                 }
-                TokenKind::Semicolon | TokenKind::Newline => {
+                TokenKind::Newline => {
                     self.advance()?;
                 }
                 _ => {
@@ -1172,7 +1169,7 @@ impl Parser<'_> {
                         TokenKind::Semicolon | TokenKind::Newline => {
                             self.advance()?;
                         }
-                        TokenKind::RightCurlyBracket | TokenKind::Eof => {
+                        TokenKind::RightCurlyBracket => {
                             break;
                         }
                         _ => {
@@ -1204,30 +1201,11 @@ impl Parser<'_> {
                 TokenKind::Eof => {
                     break;
                 }
-                TokenKind::Semicolon | TokenKind::Newline => {
+                TokenKind::Newline => {
                     self.advance()?;
                 }
                 _ => {
                     body.push(self.statement()?);
-
-                    match self.previous.unwrap().kind {
-                        TokenKind::Semicolon | TokenKind::Newline => {
-                            self.advance()?;
-                        }
-                        TokenKind::Eof => {
-                            break;
-                        }
-                        _ => {
-                            let span = &self.previous.unwrap().span;
-                            return Err(Error::new(
-                                ErrorKind::ExpectedToken(
-                                    TokenKind::Semicolon,
-                                    self.lexer.src[span.start..span.end].to_string(),
-                                ),
-                                self.lexer.span_location(&span),
-                            ));
-                        }
-                    }
                 }
             }
         }
@@ -1257,9 +1235,7 @@ impl Parser<'_> {
 
     pub fn parse(&mut self) -> Result<AstNodeStmt, Error> {
         self.advance()?;
-        self.skip_newlines()?;
         self.advance()?;
-        self.skip_newlines()?;
         self.statements()
     }
 }
