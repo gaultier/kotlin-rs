@@ -596,9 +596,11 @@ impl Parser<'_> {
             TokenKind::KeywordReturn => {
                 self.advance()?;
                 let expr = match self.previous.unwrap().kind {
-                    TokenKind::Newline | TokenKind::Semicolon | TokenKind::RightCurlyBracket => {
-                        None
-                    }
+                    // FIXME
+                    TokenKind::Newline
+                    | TokenKind::Semicolon
+                    | TokenKind::RightCurlyBracket
+                    | TokenKind::KeywordElse => None,
                     _ => Some(Box::new(self.expr()?)),
                 };
 

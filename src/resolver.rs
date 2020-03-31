@@ -23,11 +23,11 @@ impl LexicalContext {
     }
 
     fn enter_loop(&mut self) {
-        self.0 &= LEXICAL_CONTEXT_LOOP;
+        self.0 |= LEXICAL_CONTEXT_LOOP;
     }
 
     fn enter_function(&mut self) {
-        self.0 &= LEXICAL_CONTEXT_FUNCTION;
+        self.0 |= LEXICAL_CONTEXT_FUNCTION;
     }
 }
 
