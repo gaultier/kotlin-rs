@@ -1,5 +1,6 @@
 use crate::lex::TokenKind;
 use crate::parse::{JumpKind, Type};
+use crate::resolver::Context;
 use log::debug;
 use std::fmt;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
@@ -40,7 +41,32 @@ pub enum ErrorKind {
     CannotReassignVal(String),
     NotACallable(Type),
     UnexpectedToken(TokenKind, String),
-    JumpNotInALoop(JumpKind),
+    JumpInInvalidContext {
+        jump_kind: JumpKind,
+        expected_context: Context,
+        found_context: Context,
+    },
+}
+
+impl fmt::Display for JumpKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            JumpKind::Break => write!(f, "break"),
+            JumpKind::Continue => write!(f, "continue"),
+            JumpKind::Return => write!(f, "return"),
+            JumpKind::Throw => write!(f, "throw"),
+        }
+    }
+}
+
+impl fmt::Display for Context {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Context::TopLevel => write!(f, "top level"),
+            Context::Function => write!(f, "function"),
+            Context::Loop => write!(f, "loop"),
+        }
+    }
 }
 
 impl fmt::Display for ErrorKind {
@@ -82,14 +108,14 @@ impl fmt::Display for ErrorKind {
             ),
             ErrorKind::NotACallable(t) => write!(f, "`{}` cannot be called as a function", t),
             ErrorKind::UnexpectedToken(_, s) => write!(f, "Unexpected token: `{}`", s),
-            ErrorKind::JumpNotInALoop(kind) => write!(
+            ErrorKind::JumpInInvalidContext {
+                jump_kind,
+                expected_context,
+                found_context,
+            } => write!(
                 f,
-                "`{}` not in a loop",
-                if *kind == JumpKind::Break {
-                    "break"
-                } else {
-                    "continue"
-                }
+                "`{}` should be inside a {}, found it inside a {}",
+                *jump_kind, *expected_context, *found_context,
             ),
         }
     }

@@ -579,7 +579,10 @@ impl Parser<'_> {
                 self.advance()?;
                 JumpKind::Continue
             }
-            TokenKind::KeywordReturn => unimplemented!(),
+            TokenKind::KeywordReturn => {
+                self.advance()?;
+                JumpKind::Return
+            }
             TokenKind::KeywordThrow => unimplemented!(),
             _ => unreachable!(),
         };

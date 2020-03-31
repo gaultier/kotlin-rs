@@ -5,7 +5,8 @@ use log::debug;
 use std::collections::BTreeMap;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-enum Context {
+pub enum Context {
+    TopLevel,
     Loop,
     Function,
 }
@@ -14,7 +15,7 @@ pub(crate) struct Resolver<'a> {
     lexer: &'a Lexer,
     resolution: Resolution,
     scopes: Scopes<'a>,
-    context: Option<Context>,
+    context: Context,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -65,7 +66,7 @@ impl<'a> Resolver<'a> {
             lexer,
             resolution: Resolution::new(),
             scopes: Vec::new(),
-            context: None,
+            context: Context::TopLevel,
         }
     }
 
@@ -178,18 +179,34 @@ impl<'a> Resolver<'a> {
                 span,
                 ..
             } => {
-                if self.context != Some(Context::Loop) {
+                if self.context != Context::Loop {
                     return Err(Error::new(
-                        ErrorKind::JumpNotInALoop(*k),
+                        ErrorKind::JumpInInvalidContext {
+                            jump_kind: *k,
+                            expected_context: Context::Loop,
+                            found_context: self.context,
+                        },
                         self.lexer.span_location(span),
                     ));
                 }
             }
             AstNodeExpr::Jump {
-                kind: JumpKind::Return,
+                kind: k @ JumpKind::Return,
+                span,
                 ..
+            } => {
+                if self.context != Context::Function {
+                    return Err(Error::new(
+                        ErrorKind::JumpInInvalidContext {
+                            jump_kind: *k,
+                            expected_context: Context::Function,
+                            found_context: self.context,
+                        },
+                        self.lexer.span_location(span),
+                    ));
+                }
             }
-            | AstNodeExpr::Jump {
+            AstNodeExpr::Jump {
                 kind: JumpKind::Throw,
                 ..
             } => unimplemented!(),
@@ -341,10 +358,11 @@ impl<'a> Resolver<'a> {
                 self.expr(expr)?;
             }
             AstNodeStmt::While { cond, body, .. } | AstNodeStmt::DoWhile { cond, body, .. } => {
-                self.context = Some(Context::Loop);
+                let ctx = self.context;
+                self.context = Context::Loop;
                 self.expr(cond)?;
                 self.statements(body)?;
-                self.context = None;
+                self.context = ctx;
             }
             AstNodeStmt::VarDefinition {
                 identifier,
