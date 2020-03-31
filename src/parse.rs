@@ -1201,7 +1201,7 @@ impl Parser<'_> {
                 TokenKind::Eof => {
                     break;
                 }
-                TokenKind::Newline => {
+                TokenKind::Semicolon | TokenKind::Newline => {
                     self.advance()?;
                 }
                 _ => {
