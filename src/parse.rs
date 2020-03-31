@@ -979,9 +979,7 @@ impl Parser<'_> {
         self.eat(TokenKind::Equal)?;
         self.skip_newlines()?;
         let value = self.expr()?;
-        self.skip_newlines()?;
         self.eat_opt(TokenKind::Semicolon)?;
-        self.skip_newlines()?;
 
         Ok(AstNodeStmt::VarDefinition {
             identifier,
