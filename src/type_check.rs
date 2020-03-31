@@ -487,7 +487,6 @@ impl<'a> TypeChecker<'a> {
             return Ok(t.clone());
         }
 
-        dbg!(&self.resolution, id);
         let var_usage_ref = self.resolution.get(&id).unwrap();
         let t = self.types.get(&var_usage_ref.node_ref_id).unwrap().clone();
         debug!(

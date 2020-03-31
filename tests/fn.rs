@@ -187,9 +187,18 @@ fn return_not_in_fn() -> Result<(), String> {
 #[test]
 fn fn_with_function_definition_in_loop() {
     let src = String::from(
-"var a =1; while (a < 10)  {fun display(x: Int) {println(x); return }; display(a++); if (a==5) break; else ;"
+"var a =1; while (a < 10)  {fun show(x: Int) {println(x); return }; show(a++); if (a==5) break; else ;}"
     );
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
+
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(begin (define a 1)
+ (while (< a 10) (begin (define (show x ) (begin (display x)
+ (return ) ) )
+ (apply show (list (postfix-add1 a) )) (if (== a 5) (break)  (begin )) ))
+ )"##
+    );
 }
