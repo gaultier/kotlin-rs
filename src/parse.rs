@@ -823,6 +823,7 @@ impl Parser<'_> {
                 let previous = self.eat(TokenKind::DotDot)?;
                 self.skip_newlines()?;
                 let right = self.range()?;
+                debug!("range: {:?}{}{:?}", left, previous.kind, right);
 
                 Ok(AstNodeExpr::Binary {
                     left: Box::new(left),
