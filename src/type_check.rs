@@ -275,8 +275,16 @@ impl<'a> TypeChecker<'a> {
                     },
                 right,
                 id,
+            } => {
+                let left_t = self.expr(left)?;
+                let right_t = self.expr(right)?;
+
+                self.eq(&left_t, &right_t, &op.span)?;
+
+                self.types.insert(*id, Type::Bool);
+                Ok(Type::Bool)
             }
-            | AstNodeExpr::Binary {
+            AstNodeExpr::Binary {
                 left,
                 op:
                     op
