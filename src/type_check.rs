@@ -615,7 +615,7 @@ impl<'a> TypeChecker<'a> {
                 } else {
                     Type::Unit
                 };
-                self.types.insert(*id, return_t.clone());
+                self.types.insert(*id, Type::Nothing);
 
                 // Safe because of the resolver checks
                 let current_fn_id = self.current_fn_id.unwrap();
@@ -636,7 +636,7 @@ impl<'a> TypeChecker<'a> {
                 } else {
                 }
 
-                Ok(return_t)
+                Ok(Type::Nothing)
             }
             AstNodeExpr::Jump { id, .. } => Ok(self.types.get(id).cloned().unwrap()),
         }
