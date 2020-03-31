@@ -61,7 +61,7 @@
 - [x] Return in function e.g `fun add(a: Int, b: Int): Int { return a + b; }`
 - [ ] Default value for parameter in function
 - [ ] Call function with named parameter
-- [ ] Explicit type for function with block body (except Unit)
+- [x] Explicit type for function with block body (except Unit)
 - [ ] Tailrec function
 - [ ] Variadic functions
 - [ ] Class
