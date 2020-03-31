@@ -8,6 +8,7 @@ pub(crate) struct TypeChecker<'a> {
     lexer: &'a Lexer,
     resolution: &'a Resolution,
     types: &'a mut Types,
+    current_fn_id: Option<NodeId>,
 }
 
 impl<'a> TypeChecker<'a> {
@@ -20,6 +21,7 @@ impl<'a> TypeChecker<'a> {
             lexer,
             resolution,
             types,
+            current_fn_id: None,
         }
     }
 
@@ -539,6 +541,8 @@ impl<'a> TypeChecker<'a> {
         return_t_span: &Span,
         id: NodeId,
     ) -> Result<Type, Error> {
+        let current_fn_id = self.current_fn_id;
+        self.current_fn_id = Some(id);
         let found_return_t = self.statement(body)?;
 
         match self.types.get(&id) {
@@ -571,6 +575,8 @@ impl<'a> TypeChecker<'a> {
             fn_name, args, body, flags, id, t
         );
 
+        self.current_fn_id = current_fn_id;
+
         Ok(t)
     }
 
@@ -594,7 +600,7 @@ impl<'a> TypeChecker<'a> {
                 id,
                 kind: JumpKind::Return,
                 expr,
-                ..
+                span,
             } => {
                 let return_t = if let Some(expr) = expr {
                     self.expr(expr)?
@@ -602,6 +608,15 @@ impl<'a> TypeChecker<'a> {
                     Type::Unit
                 };
                 self.types.insert(*id, return_t.clone());
+
+                if let Some(current_fn_id) = self.current_fn_id {
+                    if let Some(fn_t) = self.types.get(&current_fn_id) {
+                        if let Some(prior_return_t) = fn_t.fn_return_t() {
+                            self.eq(&return_t, &prior_return_t, span)?;
+                        }
+                    }
+                }
+
                 Ok(return_t)
             }
             AstNodeExpr::Jump { id, .. } => Ok(self.types.get(id).cloned().unwrap()),

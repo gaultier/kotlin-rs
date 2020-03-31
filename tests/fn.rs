@@ -109,18 +109,18 @@ fn fn_with_empty_return() {
     );
 }
 
-// #[test]
-// fn fn_with_expr_return() {
-//     let src = String::from("fun foo(a:Int, b:Long): Boolean {return if (a < b) true else false }; val a: Boolean = foo(1, 2L);");
-//     let mut out: Vec<u8> = Vec::new();
+#[test]
+fn fn_with_expr_return() {
+    let src = String::from("fun foo(a:Int, b:Long): Boolean {return if (a < b) true else false }; val a: Boolean = foo(1, 2L);");
+    let mut out: Vec<u8> = Vec::new();
 
-//     assert!(compile(src, &mut out).is_ok());
+    assert!(compile(src, &mut out).is_ok());
 
-//     assert_eq!(
-//         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-//         "(begin (define (foo a b ) (if (< a b) #t #f)\n (define a (apply foo (list 1 2 )) )))"
-//     );
-// }
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(begin (define (foo a b ) (if (< a b) #t #f)\n (define a (apply foo (list 1 2 )) )))"
+    );
+}
 
 #[test]
 fn fn_with_wrong_arg_type() -> Result<(), String> {

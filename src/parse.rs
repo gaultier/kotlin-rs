@@ -75,6 +75,15 @@ impl fmt::Display for Type {
     }
 }
 
+impl Type {
+    pub(crate) fn fn_return_t(&self) -> Option<Type> {
+        match self {
+            Type::Function { return_t, .. } => *(return_t.clone()),
+            _ => unreachable!(),
+        }
+    }
+}
+
 pub(crate) type Types = BTreeMap<NodeId, Type>;
 
 impl Token {
