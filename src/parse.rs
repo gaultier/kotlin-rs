@@ -540,6 +540,7 @@ impl Parser<'_> {
             _ => self.control_structure_body()?,
         };
         self.skip_newlines()?;
+        self.eat_opt(TokenKind::Semicolon)?;
 
         let else_body_span = self.eat(TokenKind::KeywordElse)?.span;
         self.skip_newlines()?;

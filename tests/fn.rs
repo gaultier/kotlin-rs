@@ -183,4 +183,13 @@ fn return_not_in_fn() -> Result<(), String> {
         other => Err(format!("Should be an error: {:?}", other)),
     }
 }
-//  var a =1; while (a < 10)  {fun display(x: Int):Int {println(x); return x}; display(a++); if (a==5) break;}
+
+#[test]
+fn fn_with_function_definition_in_loop() {
+    let src = String::from(
+"var a =1; while (a < 10)  {fun display(x: Int) {println(x); return }; display(a++); if (a==5) break; else ;"
+    );
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+}
