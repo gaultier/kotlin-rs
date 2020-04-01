@@ -791,8 +791,28 @@ impl Parser<'_> {
     }
 
     fn as_expr(&mut self) -> Result<AstNodeExpr, Error> {
-        // TODO: as
-        self.prefix_unary_expr()
+        let left = self.prefix_unary_expr()?;
+        self.skip_newlines()?;
+        let previous = self.previous.unwrap();
+
+        match previous.kind {
+            TokenKind::KeywordAs(_) => {
+                self.advance()?;
+                let safe = self.eat_opt(TokenKind::QuestionMark)?;
+                self.skip_newlines()?;
+                let right = self.simple_identifier()?;
+                Ok(AstNodeExpr::Binary {
+                    left: Box::new(left),
+                    op: Token {
+                        kind: TokenKind::KeywordAs(safe),
+                        ..previous
+                    },
+                    right: Box::new(right),
+                    id: self.next_id(),
+                })
+            }
+            _ => Ok(left),
+        }
     }
 
     fn multiplication(&mut self) -> Result<AstNodeExpr, Error> {
