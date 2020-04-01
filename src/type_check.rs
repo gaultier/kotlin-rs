@@ -411,10 +411,11 @@ impl<'a> TypeChecker<'a> {
             return Ok(t.clone());
         }
 
-        let entries = match ast {
+        let else_entry = match ast {
             AstNodeExpr::WhenExpr {
                 subject: Some(subject),
                 entries,
+                else_entry,
                 ..
             } => {
                 let subject_t = self.statement(subject)?;
@@ -430,11 +431,12 @@ impl<'a> TypeChecker<'a> {
                     let t = self.statements(&entry.body)?;
                     self.types.insert(entry.id, t);
                 }
-                entries
+                else_entry
             }
             AstNodeExpr::WhenExpr {
                 subject: None,
                 entries,
+                else_entry,
                 ..
             } => {
                 for entry in entries.iter() {
@@ -443,18 +445,18 @@ impl<'a> TypeChecker<'a> {
                     let t = self.statements(&entry.body)?;
                     self.types.insert(entry.id, t);
                 }
-                entries
+                else_entry
             }
             _ => unreachable!(),
         };
 
-        let t = entries
-            .last()
-            .map(|e| self.types.get(&e.id))
-            .flatten()
-            .unwrap_or(&Type::Unit)
-            .clone();
-        self.types.insert(id, t.clone());
+        let t = if let Some(else_entry) = else_entry {
+            let t = self.statement(&*else_entry)?;
+            self.types.insert(id, t.clone());
+            t
+        } else {
+            Type::Unit
+        };
         Ok(t)
     }
 

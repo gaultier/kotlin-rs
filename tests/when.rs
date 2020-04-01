@@ -156,3 +156,15 @@ fn when_type_2() {
         "(define a (case (* 1 5) (not (in (range 0 10))) 1  5 0   'else 42 ))"
     );
 }
+
+#[test]
+fn when_type_3() {
+    let src = String::from("val a : Long = when {else -> 42L\n}\n");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(define a (cond  'else 42 ))"
+    );
+}
