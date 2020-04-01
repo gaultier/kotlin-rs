@@ -26,6 +26,9 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn eq(&self, left: &Type, right: &Type, span: &Span) -> Result<(), Error> {
+        if right == &Type::Any {
+            return Ok(());
+        }
         if left != right {
             Err(Error::new(
                 ErrorKind::IncompatibleTypes(left.clone(), right.clone()),
@@ -57,8 +60,8 @@ impl<'a> TypeChecker<'a> {
         let value_t = self.expr(value)?;
         if let Some(t) = self.types.get(&id) {
             // If a type was specified explicitely, check that it matches the implicit type of the
-            // value
-            self.eq(t, &value_t, &identifier.span)?;
+            // value.
+            self.eq(&value_t, t, &identifier.span)?;
         } else {
             // Otherwise infer the type
             self.types.insert(id, value_t.clone());
