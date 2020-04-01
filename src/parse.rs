@@ -467,7 +467,19 @@ impl Parser<'_> {
                     id,
                 })
             }
-            (TokenKind::KeywordIn, _) => unimplemented!(),
+            (TokenKind::KeywordIn, _) => {
+                let span = previous.span;
+                self.advance()?;
+                self.skip_newlines()?;
+
+                let id = self.next_id();
+                Ok(AstNodeExpr::RangeTest {
+                    span,
+                    range: Box::new(self.expr()?),
+                    cond: true,
+                    id,
+                })
+            }
             (TokenKind::Bang, TokenKind::KeywordIs) => unimplemented!(),
             (TokenKind::KeywordIs, _) => unimplemented!(),
             _ => self.expr(),
