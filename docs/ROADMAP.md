@@ -40,6 +40,7 @@
 - [x] When with subject
 - [ ] Range test in when entry e.g `when {4 in 1..5 -> 99 else 0}`
 - [ ] Elvis operator
+- [x] As expression
 - [x] While
 - [x] Do while
 - [x] Val declaration e.g `val a = 1`
