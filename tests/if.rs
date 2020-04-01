@@ -178,6 +178,6 @@ fn any_2() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(begin (define x 3) (define y (if (< 1 2) x 42 ))"
+        "(begin (define x 3)\n (define y (if (< 1 2) x  42 ))\n )"
     );
 }

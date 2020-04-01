@@ -171,7 +171,7 @@ fn val_wrong_explicit_type() -> Result<(), String> {
 
     match compile(src, &mut out) {
         Err(Error {
-            kind: ErrorKind::IncompatibleTypes(Type::Int, Type::Long),
+            kind: ErrorKind::IncompatibleTypes(Type::Long, Type::Int),
             ..
         }) => Ok(()),
         other => Err(format!("Should be an error: {:?}", other)),

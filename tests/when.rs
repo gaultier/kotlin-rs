@@ -124,7 +124,7 @@ fn when_with_val_subject_with_type_type_err() -> Result<(), String> {
 
     match compile(src, &mut out) {
         Err(Error {
-            kind: ErrorKind::IncompatibleTypes(Type::Char, Type::Int),
+            kind: ErrorKind::IncompatibleTypes(Type::Int, Type::Char),
             ..
         }) => Ok(()),
         other => Err(format!("Should be a type error: {:?}", other)),
