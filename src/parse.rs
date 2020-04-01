@@ -725,30 +725,6 @@ impl Parser<'_> {
         })
     }
 
-    fn unary_prefix(&mut self) -> Result<AstNodeExpr, Error> {
-        // TODO: annotation, label
-
-        let previous = self.previous.unwrap();
-        match previous.kind {
-            TokenKind::PlusPlus
-            | TokenKind::MinusMinus
-            | TokenKind::Plus
-            | TokenKind::Bang
-            | TokenKind::Minus => {
-                self.advance()?;
-                self.skip_newlines()?;
-                let right = self.unary_prefix()?;
-                Ok(AstNodeExpr::Unary {
-                    token: previous,
-                    expr: Box::new(right),
-                    kind: UnaryKind::Prefix,
-                    id: self.next_id(),
-                })
-            }
-            _ => self.primary(),
-        }
-    }
-
     fn postfix_unary_suffix(&mut self, acc: AstNodeExpr) -> Result<AstNodeExpr, Error> {
         let previous = self.previous.unwrap();
         debug!("postfix_unary_suffix: tok={:?} acc={:?}", previous, acc);
@@ -786,14 +762,24 @@ impl Parser<'_> {
             | TokenKind::MinusMinus
             | TokenKind::Plus
             | TokenKind::Bang
-            | TokenKind::Minus => self.unary_prefix(),
+            | TokenKind::Minus => {
+                let token = self.previous.unwrap();
+                self.advance()?;
+                let right = self.prefix_unary_expr()?;
+                Ok(AstNodeExpr::Unary {
+                    token,
+                    id: self.next_id(),
+                    expr: Box::new(right),
+                    kind: UnaryKind::Prefix,
+                })
+            }
             _ => self.postfix_unary_expr(),
         }
     }
 
     fn as_expr(&mut self) -> Result<AstNodeExpr, Error> {
         let left = self.prefix_unary_expr()?;
-        self.skip_newlines()?;
+        // self.skip_newlines()?; FIXME
         let previous = self.previous.unwrap();
 
         match previous.kind {
