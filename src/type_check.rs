@@ -450,6 +450,7 @@ impl<'a> TypeChecker<'a> {
             _ => unreachable!(),
         };
 
+        // TODO: should we save the (id, type) in `types` ?
         let t = if let Some(else_entry) = else_entry {
             let t = self.statement(&*else_entry)?;
             self.types.insert(id, t.clone());
