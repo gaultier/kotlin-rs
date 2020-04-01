@@ -467,18 +467,22 @@ impl<'a> TypeChecker<'a> {
                 let if_body_t = self.statement(if_body)?;
                 let else_body_t = self.statement(else_body)?;
 
-                /* Kotlinc(tm) actually does not check that, the type is Any
+                /* Kotlinc(tm) actually does not check that the type is Any
                  which leads to weird, unchecked code like this that does not
                  raise any compile-time error: `(if (1<2) "foo" else false) as String`,
                 but will potentially raise a runtime error.
                 */
-                if if_body_t == Type::Unit || else_body_t == Type::Unit {
-                    return Ok(Type::Unit);
-                }
+                let t = if if_body_t == Type::Unit || else_body_t == Type::Unit {
+                    Type::Unit
+                } else if if_body_t == Type::Any || else_body_t == Type::Any {
+                    Type::Any
+                } else {
+                    self.eq(&if_body_t, &else_body_t, &else_body_span)?;
+                    if_body_t
+                };
 
-                self.eq(&if_body_t, &else_body_t, &else_body_span)?;
-                self.types.insert(*id, if_body_t.clone());
-                Ok(if_body_t)
+                self.types.insert(*id, t.clone());
+                Ok(t)
             }
             _ => unreachable!(),
         }
