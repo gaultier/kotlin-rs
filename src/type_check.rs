@@ -427,7 +427,8 @@ impl<'a> TypeChecker<'a> {
                         _ => self.is_type(&cond_t, &subject_t, &entry.span)?,
                     }
 
-                    self.statements(&entry.body)?;
+                    let t = self.statements(&entry.body)?;
+                    self.types.insert(entry.id, t);
                 }
                 entries
             }
@@ -439,7 +440,8 @@ impl<'a> TypeChecker<'a> {
                 for entry in entries.iter() {
                     let cond_t = self.expr(&entry.cond)?;
                     self.is_type(&cond_t, &Type::Boolean, &entry.span)?;
-                    self.statements(&entry.body)?;
+                    let t = self.statements(&entry.body)?;
+                    self.types.insert(entry.id, t);
                 }
                 entries
             }

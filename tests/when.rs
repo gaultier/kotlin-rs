@@ -130,3 +130,16 @@ fn when_with_val_subject_with_type_type_err() -> Result<(), String> {
         other => Err(format!("Should be a type error: {:?}", other)),
     }
 }
+
+#[test]
+fn when_type() {
+    let src =
+        String::from("val a : Int = when {true || false -> 1\n false -> 0\n\n else -> 42\n}\n");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(define a (cond ((or #t #f) 1 ) (#f 0 )  'else 42 ))"
+    );
+}
