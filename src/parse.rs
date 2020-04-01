@@ -180,7 +180,7 @@ pub type NodeId = usize;
 pub struct WhenEntry {
     pub cond: AstNodeExpr,
     pub body: AstNodeStmt, // Block
-    pub cond_start_tok: Token,
+    pub span: Span,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -455,18 +455,14 @@ impl Parser<'_> {
         let cond = self.when_cond()?;
         self.skip_newlines()?;
 
-        let cond_start_tok = self.eat(TokenKind::Arrow)?;
+        let span = self.eat(TokenKind::Arrow)?.span;
         self.skip_newlines()?;
 
         let body = self.control_structure_body()?;
 
         self.eat_opt(TokenKind::Semicolon)?;
 
-        Ok(WhenEntry {
-            cond,
-            body,
-            cond_start_tok,
-        })
+        Ok(WhenEntry { cond, body, span })
     }
 
     fn when_entries(&mut self) -> Result<(Vec<WhenEntry>, Option<AstNodeStmt>), Error> {

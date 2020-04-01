@@ -431,9 +431,9 @@ impl<'a> TypeChecker<'a> {
                     let cond_t = self.expr(&entry.cond)?;
                     match entry.cond {
                         AstNodeExpr::RangeTest { .. } => {
-                            self.is_type(&cond_t, &Type::Boolean, &entry.cond_start_tok.span)?
+                            self.is_type(&cond_t, &Type::Boolean, &entry.span)?
                         }
-                        _ => self.is_type(&cond_t, &subject_t, &entry.cond_start_tok.span)?,
+                        _ => self.is_type(&cond_t, &subject_t, &entry.span)?,
                     }
 
                     self.statements(&entry.body)?;
@@ -447,7 +447,7 @@ impl<'a> TypeChecker<'a> {
             } => {
                 for entry in entries.iter() {
                     let cond_t = self.expr(&entry.cond)?;
-                    self.is_type(&cond_t, &Type::Boolean, &entry.cond_start_tok.span)?;
+                    self.is_type(&cond_t, &Type::Boolean, &entry.span)?;
                     self.statements(&entry.body)?;
                 }
                 Ok(Type::Unit)
