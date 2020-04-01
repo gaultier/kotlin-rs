@@ -459,12 +459,11 @@ impl Parser<'_> {
                 self.advance()?;
                 self.skip_newlines()?;
 
-                let id = self.next_id();
                 Ok(AstNodeExpr::RangeTest {
                     span: Span::new(span_start, span_end),
                     range: Box::new(self.expr()?),
                     cond: false,
-                    id,
+                    id: self.next_id(),
                 })
             }
             (TokenKind::KeywordIn, _) => {
@@ -472,12 +471,11 @@ impl Parser<'_> {
                 self.advance()?;
                 self.skip_newlines()?;
 
-                let id = self.next_id();
                 Ok(AstNodeExpr::RangeTest {
                     span,
                     range: Box::new(self.expr()?),
                     cond: true,
-                    id,
+                    id: self.next_id(),
                 })
             }
             (TokenKind::Bang, TokenKind::KeywordIs) => unimplemented!(),
