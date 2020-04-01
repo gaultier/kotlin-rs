@@ -44,10 +44,10 @@ impl<'a> TypeChecker<'a> {
         &mut self,
         cond: &AstNodeExpr,
         block: &AstNodeStmt,
-        cond_start_tok: &Token,
+        span: &Span,
     ) -> Result<Type, Error> {
         let cond_t = self.expr(cond)?;
-        self.is_type(&cond_t, &Type::Boolean, &cond_start_tok.span)?;
+        self.is_type(&cond_t, &Type::Boolean, &span)?;
         self.statement(block)?;
         Ok(Type::Unit)
     }
@@ -86,16 +86,9 @@ impl<'a> TypeChecker<'a> {
     fn statement(&mut self, statement: &AstNodeStmt) -> Result<Type, Error> {
         match statement {
             AstNodeStmt::Expr(expr) => self.expr(expr),
-            AstNodeStmt::DoWhile {
-                cond,
-                cond_start_tok,
-                body,
+            AstNodeStmt::DoWhile { cond, span, body } | AstNodeStmt::While { cond, span, body } => {
+                self.while_stmt(cond, body, span)
             }
-            | AstNodeStmt::While {
-                cond,
-                cond_start_tok,
-                body,
-            } => self.while_stmt(cond, body, &cond_start_tok),
             AstNodeStmt::VarDefinition {
                 value,
                 id,

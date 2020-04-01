@@ -137,12 +137,12 @@ pub enum AstNodeStmt {
     Expr(AstNodeExpr),
     While {
         cond: AstNodeExpr,
-        cond_start_tok: Token,
+        span: Span,
         body: Box<AstNodeStmt>, // Block
     },
     DoWhile {
         cond: AstNodeExpr,
-        cond_start_tok: Token,
+        span: Span,
         body: Box<AstNodeStmt>, // Block
     },
     VarDefinition {
@@ -381,7 +381,7 @@ impl Parser<'_> {
     fn while_stmt(&mut self) -> Result<AstNodeStmt, Error> {
         self.eat(TokenKind::KeywordWhile)?;
         self.skip_newlines()?;
-        let cond_start_tok = self.eat(TokenKind::LeftParen)?;
+        let span = self.eat(TokenKind::LeftParen)?.span;
         let cond = self.expr()?;
         self.eat(TokenKind::RightParen)?;
         self.skip_newlines()?;
@@ -396,7 +396,7 @@ impl Parser<'_> {
 
         Ok(AstNodeStmt::While {
             cond,
-            cond_start_tok,
+            span,
             body: Box::new(body),
         })
     }
@@ -414,13 +414,13 @@ impl Parser<'_> {
         };
         self.eat(TokenKind::KeywordWhile)?;
         self.skip_newlines()?;
-        let cond_start_tok = self.eat(TokenKind::LeftParen)?;
+        let span = self.eat(TokenKind::LeftParen)?.span;
         let cond = self.expr()?;
         self.eat(TokenKind::RightParen)?;
 
         Ok(AstNodeStmt::DoWhile {
             cond,
-            cond_start_tok,
+            span,
             body: Box::new(body),
         })
     }
