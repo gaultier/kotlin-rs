@@ -230,7 +230,7 @@ pub enum AstNodeExpr {
     VarRef(Span, NodeId),
     FnCall {
         fn_name: Box<AstNodeExpr>,
-        call_span: Span,
+        span: Span,
         args: Vec<AstNodeExpr>,
         id: NodeId,
     },
@@ -272,10 +272,14 @@ impl AstNodeExpr {
             AstNodeExpr::Literal(token, _) => token.span,
             AstNodeExpr::Unary { expr, .. } => expr.span(),
             AstNodeExpr::VarRef(span, _) => *span,
-            AstNodeExpr::IfExpr { id, .. }
-            | AstNodeExpr::WhenExpr { id, .. }
+            AstNodeExpr::Grouping(expr, _) => expr.span(),
+            AstNodeExpr::IfExpr {
+                cond_span,
+                else_body_span,
+                ..
+            } => Span::from_spans(cond_span, else_body_span),
+            AstNodeExpr::WhenExpr { id, .. }
             | AstNodeExpr::FnCall { id, .. }
-            | AstNodeExpr::Grouping(_, id)
             | AstNodeExpr::RangeTest { id, .. }
             | AstNodeExpr::Jump { id, .. } => unimplemented!(),
         }
@@ -739,12 +743,13 @@ impl Parser<'_> {
         Ok(AstNodeExpr::VarRef(tok.span, self.next_id()))
     }
 
-    fn fn_call_args(&mut self, args: &mut Vec<AstNodeExpr>) -> Result<(), Error> {
+    fn fn_call_args(&mut self, args: &mut Vec<AstNodeExpr>) -> Result<Span, Error> {
         let previous = self.previous.unwrap();
 
         if previous.kind == TokenKind::RightParen {
+            let end_span = previous.span;
             self.advance()?;
-            return Ok(());
+            return Ok(end_span);
         }
 
         args.push(self.expr()?);
@@ -766,16 +771,18 @@ impl Parser<'_> {
     }
 
     fn call_suffix(&mut self, fn_name: AstNodeExpr) -> Result<AstNodeExpr, Error> {
-        let call_span = self.eat(TokenKind::LeftParen)?.span;
+        self.eat(TokenKind::LeftParen)?;
         self.skip_newlines()?;
 
         let mut args = Vec::new();
-        self.fn_call_args(&mut args)?;
+        let end_span = self.fn_call_args(&mut args)?;
         self.skip_newlines()?;
+
+        let start_span = fn_name.span();
 
         Ok(AstNodeExpr::FnCall {
             fn_name: Box::new(fn_name),
-            call_span,
+            span: Span::from_spans(&start_span, &end_span),
             args,
             id: self.next_id(),
         })

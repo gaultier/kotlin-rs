@@ -506,7 +506,7 @@ impl<'a> TypeChecker<'a> {
     fn fn_call(
         &mut self,
         fn_name: &AstNodeExpr,
-        call_span: &Span,
+        span: &Span,
         args: &[AstNodeExpr],
         id: NodeId,
     ) -> Result<Type, Error> {
@@ -525,13 +525,13 @@ impl<'a> TypeChecker<'a> {
             } => {
                 for (arg, expected_arg_t) in args.iter().zip(args_t) {
                     let found_arg_t = self.expr(arg)?;
-                    self.is_type(&found_arg_t, &expected_arg_t, call_span)?;
+                    self.is_type(&found_arg_t, &expected_arg_t, span)?;
                 }
                 Ok(return_t.unwrap_or(Type::Any))
             }
             _ => Err(Error::new(
                 ErrorKind::NotACallable(t),
-                self.lexer.span_location(call_span),
+                self.lexer.span_location(span),
             )),
         }
     }
@@ -617,10 +617,10 @@ impl<'a> TypeChecker<'a> {
             AstNodeExpr::FnCall {
                 fn_name,
                 args,
-                call_span,
+                span,
                 id,
                 ..
-            } => self.fn_call(fn_name, call_span, args, *id),
+            } => self.fn_call(fn_name, span, args, *id),
             AstNodeExpr::Jump {
                 id,
                 kind: JumpKind::Return,
