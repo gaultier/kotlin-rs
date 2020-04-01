@@ -268,6 +268,7 @@ impl Parser<'_> {
             "Char" => Ok(Type::Char),
             "Unit" => Ok(Type::Unit),
             "Nothing" => Ok(Type::Nothing),
+            "Any" => Ok(Type::Any),
             _ => Err(Error::new(
                 ErrorKind::UnknownIdentifier(identifier.to_string()),
                 self.lexer.span_location(&token.span),
@@ -807,6 +808,7 @@ impl Parser<'_> {
                 let id = self.next_id();
                 debug!("as_expr: id={} t={}", id, &t);
                 self.types.insert(id, t);
+
                 Ok(AstNodeExpr::Binary {
                     left: Box::new(left),
                     op: Token {
