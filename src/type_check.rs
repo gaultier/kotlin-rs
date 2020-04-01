@@ -25,7 +25,8 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn eq(&self, left: &Type, right: &Type, span: &Span) -> Result<(), Error> {
+    // (left, right) can also be meant as (found, expected)
+    fn is_type(&self, left: &Type, right: &Type, span: &Span) -> Result<(), Error> {
         if right == &Type::Any {
             return Ok(());
         }
@@ -46,7 +47,7 @@ impl<'a> TypeChecker<'a> {
         cond_start_tok: &Token,
     ) -> Result<Type, Error> {
         let cond_t = self.expr(cond)?;
-        self.eq(&cond_t, &Type::Boolean, &cond_start_tok.span)?;
+        self.is_type(&cond_t, &Type::Boolean, &cond_start_tok.span)?;
         self.statement(block)?;
         Ok(Type::Unit)
     }
@@ -61,7 +62,7 @@ impl<'a> TypeChecker<'a> {
         if let Some(t) = self.types.get(&id) {
             // If a type was specified explicitely, check that it matches the implicit type of the
             // value.
-            self.eq(&value_t, t, &identifier.span)?;
+            self.is_type(&value_t, t, &identifier.span)?;
         } else {
             // Otherwise infer the type
             self.types.insert(id, value_t.clone());
@@ -78,7 +79,7 @@ impl<'a> TypeChecker<'a> {
     ) -> Result<Type, Error> {
         let target_t = self.expr(target)?;
         let value_t = self.expr(value)?;
-        self.eq(&target_t, &value_t, span)?;
+        self.is_type(&target_t, &value_t, span)?;
         Ok(Type::Unit)
     }
 
@@ -284,7 +285,7 @@ impl<'a> TypeChecker<'a> {
                 let left_t = self.expr(left)?;
                 let right_t = self.expr(right)?;
 
-                self.eq(&left_t, &right_t, &op.span)?;
+                self.is_type(&left_t, &right_t, &op.span)?;
 
                 self.types.insert(*id, Type::Boolean);
                 Ok(Type::Boolean)
@@ -304,7 +305,7 @@ impl<'a> TypeChecker<'a> {
                 let left_t = self.expr(left)?;
                 let right_t = self.expr(right)?;
 
-                self.eq(&left_t, &right_t, &op.span)?;
+                self.is_type(&left_t, &right_t, &op.span)?;
                 let t = match left_t {
                     Type::Int => Type::IntRange,
                     Type::UInt => Type::UIntRange,
@@ -428,7 +429,7 @@ impl<'a> TypeChecker<'a> {
                 let subject_t = self.statement(subject)?;
                 for entry in entries.iter() {
                     let cond_t = self.expr(&entry.cond)?;
-                    self.eq(&subject_t, &cond_t, &entry.cond_start_tok.span)?;
+                    self.is_type(&subject_t, &cond_t, &entry.cond_start_tok.span)?;
 
                     self.statements(&entry.body)?;
                 }
@@ -441,7 +442,7 @@ impl<'a> TypeChecker<'a> {
             } => {
                 for entry in entries.iter() {
                     let cond_t = self.expr(&entry.cond)?;
-                    self.eq(&cond_t, &Type::Boolean, &entry.cond_start_tok.span)?;
+                    self.is_type(&cond_t, &Type::Boolean, &entry.cond_start_tok.span)?;
                     self.statements(&entry.body)?;
                 }
                 Ok(Type::Unit)
@@ -465,7 +466,7 @@ impl<'a> TypeChecker<'a> {
                 id,
             } => {
                 let t = self.expr(cond)?;
-                self.eq(&t, &Type::Boolean, &cond_span)?;
+                self.is_type(&t, &Type::Boolean, &cond_span)?;
 
                 let if_body_t = self.statement(if_body)?;
                 let else_body_t = self.statement(else_body)?;
@@ -480,7 +481,7 @@ impl<'a> TypeChecker<'a> {
                 } else if if_body_t == Type::Any || else_body_t == Type::Any {
                     Type::Any
                 } else {
-                    self.eq(&if_body_t, &else_body_t, &else_body_span)?;
+                    self.is_type(&if_body_t, &else_body_t, &else_body_span)?;
                     if_body_t
                 };
 
@@ -528,7 +529,7 @@ impl<'a> TypeChecker<'a> {
             } => {
                 for (arg, expected_arg_t) in args.iter().zip(args_t) {
                     let found_arg_t = self.expr(arg)?;
-                    self.eq(&found_arg_t, &expected_arg_t, call_span)?;
+                    self.is_type(&found_arg_t, &expected_arg_t, call_span)?;
                 }
                 Ok(return_t.unwrap_or(Type::Any))
             }
@@ -564,7 +565,7 @@ impl<'a> TypeChecker<'a> {
             Some(Type::Function { return_t, .. }) if return_t.is_some() => {
                 let expected_return_t = return_t.clone().unwrap();
 
-                self.eq(&found_return_t, &expected_return_t, &return_t_span)?;
+                self.is_type(&found_return_t, &expected_return_t, &return_t_span)?;
             }
             Some(Type::Function { .. }) => {
                 // Noop
@@ -633,7 +634,7 @@ impl<'a> TypeChecker<'a> {
                     // or inferred), check that this type and the type of the return expression
                     // match
                     if let Some(prior_return_t) = fn_t.fn_return_t() {
-                        self.eq(&return_t, &prior_return_t, span)?;
+                        self.is_type(&return_t, &prior_return_t, span)?;
                     } else {
                         // Fill the inferred return type
                         let new_fn_t = fn_t.clone();
