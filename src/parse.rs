@@ -225,6 +225,11 @@ pub enum AstNodeExpr {
         expr: Option<Box<AstNodeExpr>>,
         id: NodeId,
     },
+    RangeTest {
+        span: Span,
+        range: Box<AstNodeExpr>,
+        id: NodeId,
+    },
 }
 
 impl AstNodeExpr {
@@ -404,8 +409,28 @@ impl Parser<'_> {
     }
 
     fn when_cond(&mut self) -> Result<AstNodeExpr, Error> {
-        // TODO: allow range & type test here
-        self.expr()
+        let previous = self.previous.unwrap();
+        let current = self.current.unwrap();
+        match (previous.kind, current.kind) {
+            (TokenKind::Bang, TokenKind::KeywordIn) => {
+                let span_start = previous.span.start;
+                let span_end = current.span.end;
+                self.advance()?;
+                self.advance()?;
+                self.skip_newlines()?;
+
+                let id = self.next_id();
+                Ok(AstNodeExpr::RangeTest {
+                    span: Span::new(span_start, span_end),
+                    range: Box::new(self.expr()?),
+                    id,
+                })
+            }
+            (TokenKind::KeywordIn, _) => unimplemented!(),
+            (TokenKind::Bang, TokenKind::KeywordIs) => unimplemented!(),
+            (TokenKind::KeywordIs, _) => unimplemented!(),
+            _ => self.expr(),
+        }
     }
 
     fn when_entry(&mut self) -> Result<WhenEntry, Error> {
