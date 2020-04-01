@@ -181,6 +181,7 @@ pub struct WhenEntry {
     pub cond: AstNodeExpr,
     pub body: AstNodeStmt, // Block
     pub span: Span,
+    pub id: NodeId,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -225,6 +226,7 @@ pub enum AstNodeExpr {
         subject: Option<Box<AstNodeStmt>>,
         entries: Vec<WhenEntry>,
         else_entry: Option<Box<AstNodeStmt>>, // Block
+        span: Span,
         id: NodeId,
     },
     VarRef(Span, NodeId),
@@ -271,17 +273,17 @@ impl AstNodeExpr {
             }
             AstNodeExpr::Literal(token, _) => token.span,
             AstNodeExpr::Unary { expr, .. } => expr.span(),
-            AstNodeExpr::VarRef(span, _) => *span,
             AstNodeExpr::Grouping(expr, _) => expr.span(),
             AstNodeExpr::IfExpr {
                 cond_span,
                 else_body_span,
                 ..
             } => Span::from_spans(cond_span, else_body_span),
-            AstNodeExpr::WhenExpr { id, .. }
-            | AstNodeExpr::FnCall { id, .. }
-            | AstNodeExpr::RangeTest { id, .. }
-            | AstNodeExpr::Jump { id, .. } => unimplemented!(),
+            AstNodeExpr::VarRef(span, _)
+            | AstNodeExpr::RangeTest { span, .. }
+            | AstNodeExpr::Jump { span, .. }
+            | AstNodeExpr::FnCall { span, .. }
+            | AstNodeExpr::WhenExpr { span, .. } => *span,
         }
     }
 }
@@ -483,7 +485,12 @@ impl Parser<'_> {
 
         self.eat_opt(TokenKind::Semicolon)?;
 
-        Ok(WhenEntry { cond, body, span })
+        Ok(WhenEntry {
+            cond,
+            body,
+            span,
+            id: self.next_id(),
+        })
     }
 
     fn when_entries(&mut self) -> Result<(Vec<WhenEntry>, Option<AstNodeStmt>), Error> {
@@ -564,6 +571,7 @@ impl Parser<'_> {
     }
 
     fn when_expr(&mut self) -> Result<AstNodeExpr, Error> {
+        let start_span = self.previous.unwrap().span;
         self.eat(TokenKind::KeywordWhen)?;
         self.skip_newlines()?;
 
@@ -575,12 +583,14 @@ impl Parser<'_> {
         let (entries, else_entry) = self.when_entries()?;
 
         self.skip_newlines()?;
+        let end_span = self.previous.unwrap().span;
         self.eat(TokenKind::RightCurlyBracket)?;
 
         Ok(AstNodeExpr::WhenExpr {
             entries,
             subject,
             else_entry: else_entry.map(Box::new),
+            span: Span::from_spans(&start_span, &end_span),
             id: self.next_id(),
         })
     }
