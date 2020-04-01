@@ -778,9 +778,10 @@ impl Parser<'_> {
         }
     }
 
+    // The grammar spec says `?` but the official implementation seems to do `*`
+    // We follow the grammar spec here
     fn as_expr(&mut self) -> Result<AstNodeExpr, Error> {
         let left = self.prefix_unary_expr()?;
-        // self.skip_newlines()?; FIXME
         let previous = self.previous.unwrap();
 
         match previous.kind {
