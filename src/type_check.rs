@@ -429,7 +429,12 @@ impl<'a> TypeChecker<'a> {
                 let subject_t = self.statement(subject)?;
                 for entry in entries.iter() {
                     let cond_t = self.expr(&entry.cond)?;
-                    self.is_type(&subject_t, &cond_t, &entry.cond_start_tok.span)?;
+                    match entry.cond {
+                        AstNodeExpr::RangeTest { .. } => {
+                            self.is_type(&cond_t, &Type::Boolean, &entry.cond_start_tok.span)?
+                        }
+                        _ => self.is_type(&cond_t, &subject_t, &entry.cond_start_tok.span)?,
+                    }
 
                     self.statements(&entry.body)?;
                 }
