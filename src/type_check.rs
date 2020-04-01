@@ -286,8 +286,6 @@ impl<'a> TypeChecker<'a> {
             AstNodeExpr::Binary {
                 left,
                 op:
-                    op
-                    @
                     Token {
                         kind: TokenKind::DotDot,
                         ..
@@ -298,7 +296,7 @@ impl<'a> TypeChecker<'a> {
                 let left_t = self.expr(left)?;
                 let right_t = self.expr(right)?;
 
-                self.is_type(&left_t, &right_t, &op.span)?;
+                self.is_type(&right_t, &left_t, &right.span())?;
                 let t = match left_t {
                     Type::Int => Type::IntRange,
                     Type::UInt => Type::UIntRange,
@@ -312,7 +310,7 @@ impl<'a> TypeChecker<'a> {
                     _ => {
                         return Err(Error::new(
                             ErrorKind::InvalidRange(left_t),
-                            self.lexer.span_location(&op.span),
+                            self.lexer.span_location(&ast.span()),
                         ));
                     }
                 };

@@ -263,6 +263,23 @@ impl AstNodeExpr {
             | AstNodeExpr::Jump { id, .. } => *id,
         }
     }
+
+    pub(crate) fn span(&self) -> Span {
+        match self {
+            AstNodeExpr::Binary { left, right, .. } => {
+                Span::from_spans(&left.span(), &right.span())
+            }
+            AstNodeExpr::Literal(token, _) => token.span,
+            AstNodeExpr::Unary { expr, .. } => expr.span(),
+            AstNodeExpr::VarRef(span, _) => *span,
+            AstNodeExpr::IfExpr { id, .. }
+            | AstNodeExpr::WhenExpr { id, .. }
+            | AstNodeExpr::FnCall { id, .. }
+            | AstNodeExpr::Grouping(_, id)
+            | AstNodeExpr::RangeTest { id, .. }
+            | AstNodeExpr::Jump { id, .. } => unimplemented!(),
+        }
+    }
 }
 
 #[derive(Debug)]

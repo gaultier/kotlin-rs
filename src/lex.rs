@@ -908,6 +908,13 @@ impl Span {
         Span { start, end }
     }
 
+    pub fn from_spans(left: &Span, right: &Span) -> Span {
+        Span {
+            start: left.start,
+            end: right.end,
+        }
+    }
+
     pub fn len(&self) -> usize {
         debug_assert!(self.end >= self.start);
         self.end - self.start
