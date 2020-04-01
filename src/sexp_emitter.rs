@@ -34,6 +34,13 @@ fn binary_op(kind: &TokenKind) -> &'static str {
         TokenKind::LesserEqual => "<=",
         TokenKind::Greater => ">",
         TokenKind::GreaterEqual => ">=",
+        TokenKind::KeywordAs(safe) => {
+            if *safe {
+                "as?"
+            } else {
+                "as"
+            }
+        }
         TokenKind::BangEqual | TokenKind::BangEqualEqual => "not=",
         _ => {
             dbg!(kind);

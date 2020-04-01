@@ -1,5 +1,5 @@
 use crate::error::*;
-use crate::lex::{Lexer, Span};
+use crate::lex::{Lexer, Span, Token, TokenKind};
 use crate::parse::*;
 use log::debug;
 use std::collections::BTreeMap;
@@ -161,6 +161,18 @@ impl<'a> Resolver<'a> {
             AstNodeExpr::Literal(_, _) => (),
             AstNodeExpr::Grouping(expr, _) | AstNodeExpr::Unary { expr, .. } => {
                 self.expr(&*expr)?;
+            }
+            AstNodeExpr::Binary {
+                left,
+                op:
+                    Token {
+                        kind: TokenKind::KeywordAs(_),
+                        ..
+                    },
+                ..
+            } => {
+                self.expr(&*left)?;
+                // No need to resolve the rifght part which is the type
             }
             AstNodeExpr::Binary { left, right, .. } => {
                 self.expr(&*left)?;

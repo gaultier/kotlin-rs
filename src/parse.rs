@@ -800,7 +800,13 @@ impl Parser<'_> {
                 self.advance()?;
                 let safe = self.eat_opt(TokenKind::QuestionMark)?;
                 self.skip_newlines()?;
+
+                let type_literal_tok = self.previous.unwrap();
                 let right = self.simple_identifier()?;
+                let t = self.simple_identifier_type(&type_literal_tok)?;
+                let id = self.next_id();
+                debug!("as_expr: id={} t={}", id, &t);
+                self.types.insert(id, t);
                 Ok(AstNodeExpr::Binary {
                     left: Box::new(left),
                     op: Token {
@@ -808,7 +814,7 @@ impl Parser<'_> {
                         ..previous
                     },
                     right: Box::new(right),
-                    id: self.next_id(),
+                    id,
                 })
             }
             _ => Ok(left),
