@@ -34,7 +34,7 @@ fn when_with_else() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(cond (#t 1 ) (#f 0 )  :else 42 )"
+        "(cond (#t 1 ) (#f 0 )  'else 42 )"
     );
 }
 
@@ -46,7 +46,7 @@ fn when_with_boolean_exprs() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(cond ((or #t #f) 1 ) (#f 0 )  :else 42 )"
+        "(cond ((or #t #f) 1 ) (#f 0 )  'else 42 )"
     );
 }
 
@@ -58,7 +58,7 @@ fn when_with_subject() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(case 5 1 2  2 4  3 6  4 8  5 10   :else 42 )"
+        "(case 5 1 2  2 4  3 6  4 8  5 10   'else 42 )"
     );
 }
 
@@ -69,7 +69,7 @@ fn when_with_subject_type_err() -> Result<(), String> {
 
     match compile(src, &mut out) {
         Err(Error {
-            kind: ErrorKind::IncompatibleTypes(Type::Int, Type::Char),
+            kind: ErrorKind::IncompatibleTypes(Type::Char, Type::Int),
             ..
         }) => Ok(()),
         other => Err(format!("Should be a type error: {:?}", other)),
@@ -84,7 +84,7 @@ fn when_with_val_subject() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(case (define a 5)\n 1 2  2 4  3 6  4 8  5 10   :else (* a 2) )"
+        "(case (define a 5)\n 1 2  2 4  3 6  4 8  5 10   'else (* a 2) )"
     );
 }
 
@@ -97,7 +97,7 @@ fn when_with_val_subject_type_err() -> Result<(), String> {
 
     match compile(src, &mut out) {
         Err(Error {
-            kind: ErrorKind::IncompatibleTypes(Type::Int, Type::Char),
+            kind: ErrorKind::IncompatibleTypes(Type::Char, Type::Int),
             ..
         }) => Ok(()),
         other => Err(format!("Should be a type error: {:?}", other)),
@@ -113,7 +113,7 @@ fn when_with_val_subject_with_type() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(case (define a 5)\n 1 2  2 4  3 6  4 8  5 10   :else (* a 2) )"
+        "(case (define a 5)\n 1 2  2 4  3 6  4 8  5 10   'else (* a 2) )"
     );
 }
 
