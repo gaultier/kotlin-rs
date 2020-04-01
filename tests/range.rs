@@ -21,16 +21,8 @@ fn check_both_types_match() -> Result<(), String> {
 
     match compile(src, &mut out) {
         Err(Error {
-            kind: ErrorKind::IncompatibleTypes(Type::UInt, Type::ULong),
-            location:
-                Location {
-                    start_pos: 2,
-                    start_line: 1,
-                    start_column: 3,
-                    end_pos: 4,
-                    end_line: 1,
-                    end_column: 5,
-                },
+            kind: ErrorKind::IncompatibleTypes(Type::ULong, Type::UInt),
+            ..
         }) => Ok(()),
         other => Err(format!("Should be a type error: {:?}", other)),
     }
@@ -44,15 +36,7 @@ fn reject_invalid_range_type() -> Result<(), String> {
     match compile(src, &mut out) {
         Err(Error {
             kind: ErrorKind::InvalidRange(Type::Null),
-            location:
-                Location {
-                    start_pos: 4,
-                    start_line: 1,
-                    start_column: 5,
-                    end_pos: 6,
-                    end_line: 1,
-                    end_column: 7,
-                },
+            ..
         }) => Ok(()),
         other => Err(format!("Should be a type error: {:?}", other)),
     }
