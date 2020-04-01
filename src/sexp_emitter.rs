@@ -529,6 +529,9 @@ impl<'a> SexpEmitter<'a> {
             AstNodeExpr::FnCall { fn_name, args, .. } => self.fn_call(fn_name, args, w),
             AstNodeExpr::Jump { kind, expr, .. } => self.jump_expr(kind, expr, w),
             AstNodeExpr::RangeTest { range, cond, .. } => self.range_test(range, *cond, w),
+            AstNodeExpr::TypeTest {
+                identifier, cond, ..
+            } => unimplemented!(),
         }
     }
 }

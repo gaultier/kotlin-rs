@@ -248,6 +248,12 @@ pub enum AstNodeExpr {
         cond: bool,
         id: NodeId,
     },
+    TypeTest {
+        span: Span,
+        identifier: Box<AstNodeExpr>,
+        cond: bool,
+        id: NodeId,
+    },
 }
 
 impl AstNodeExpr {
@@ -479,7 +485,18 @@ impl Parser<'_> {
                 })
             }
             (TokenKind::Bang, TokenKind::KeywordIs) => unimplemented!(),
-            (TokenKind::KeywordIs, _) => unimplemented!(),
+            (TokenKind::KeywordIs, _) => {
+                let span = previous.span;
+                self.advance()?;
+                self.skip_newlines()?;
+
+                Ok(AstNodeExpr::TypeTest {
+                    span,
+                    identifier: Box::new(self.simple_identifier()?),
+                    cond: true,
+                    id: self.next_id(),
+                })
+            }
             _ => self.expr(),
         }
     }

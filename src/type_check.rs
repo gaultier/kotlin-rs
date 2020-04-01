@@ -673,6 +673,12 @@ impl<'a> TypeChecker<'a> {
             AstNodeExpr::RangeTest {
                 range, span, id, ..
             } => self.range_test(range, span, *id),
+            AstNodeExpr::TypeTest {
+                identifier,
+                span,
+                id,
+                ..
+            } => unimplemented!(),
         }
     }
 
