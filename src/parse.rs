@@ -268,6 +268,7 @@ impl AstNodeExpr {
             | AstNodeExpr::FnCall { id, .. }
             | AstNodeExpr::Grouping(_, id)
             | AstNodeExpr::RangeTest { id, .. }
+            | AstNodeExpr::TypeTest { id, .. }
             | AstNodeExpr::Jump { id, .. } => *id,
         }
     }
@@ -287,6 +288,7 @@ impl AstNodeExpr {
             } => Span::from_spans(cond_span, else_body_span),
             AstNodeExpr::VarRef(span, _)
             | AstNodeExpr::RangeTest { span, .. }
+            | AstNodeExpr::TypeTest { span, .. }
             | AstNodeExpr::Jump { span, .. }
             | AstNodeExpr::FnCall { span, .. }
             | AstNodeExpr::WhenExpr { span, .. } => *span,
