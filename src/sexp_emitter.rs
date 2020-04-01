@@ -410,7 +410,7 @@ impl<'a> SexpEmitter<'a> {
                 }
 
                 if let Some(else_entry) = else_entry {
-                    write!(w, " :else ").unwrap();
+                    write!(w, " 'else ").unwrap();
                     self.statement(&else_entry, w)?;
                 }
 
@@ -434,7 +434,7 @@ impl<'a> SexpEmitter<'a> {
                 }
 
                 if let Some(else_entry) = else_entry {
-                    write!(w, " :else ").unwrap();
+                    write!(w, " 'else ").unwrap();
                     self.statement(&else_entry, w)?;
                 }
 
@@ -493,6 +493,25 @@ impl<'a> SexpEmitter<'a> {
         Ok(())
     }
 
+    fn range_test<W: std::io::Write>(
+        &self,
+        range: &AstNodeExpr,
+        cond: bool,
+        w: &mut W,
+    ) -> Result<(), Error> {
+        if !cond {
+            write!(w, "(not ").unwrap();
+        }
+        write!(w, "(in ").unwrap();
+        self.expr(range, w)?;
+        write!(w, ")").unwrap();
+
+        if !cond {
+            write!(w, ")").unwrap();
+        }
+        Ok(())
+    }
+
     pub fn expr<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeExpr::WhenExpr { .. } => self.when_expr(ast, w),
@@ -509,6 +528,7 @@ impl<'a> SexpEmitter<'a> {
             AstNodeExpr::VarRef(span, _) => self.var_ref(span, w),
             AstNodeExpr::FnCall { fn_name, args, .. } => self.fn_call(fn_name, args, w),
             AstNodeExpr::Jump { kind, expr, .. } => self.jump_expr(kind, expr, w),
+            AstNodeExpr::RangeTest { range, cond, .. } => self.range_test(range, *cond, w),
         }
     }
 }

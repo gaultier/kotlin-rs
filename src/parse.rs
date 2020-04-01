@@ -91,6 +91,21 @@ impl Type {
             _ => unreachable!(),
         }
     }
+
+    pub(crate) fn is_range(&self) -> bool {
+        match self {
+            Type::IntRange
+            | Type::UIntRange
+            | Type::LongRange
+            | Type::ULongRange
+            | Type::FloatRange
+            | Type::DoubleRange
+            | Type::TStringRange
+            | Type::CharRange
+            | Type::BooleanRange => true,
+            _ => false,
+        }
+    }
 }
 
 pub(crate) type Types = BTreeMap<NodeId, Type>;
@@ -228,6 +243,7 @@ pub enum AstNodeExpr {
     RangeTest {
         span: Span,
         range: Box<AstNodeExpr>,
+        cond: bool,
         id: NodeId,
     },
 }
@@ -243,6 +259,7 @@ impl AstNodeExpr {
             | AstNodeExpr::VarRef(_, id)
             | AstNodeExpr::FnCall { id, .. }
             | AstNodeExpr::Grouping(_, id)
+            | AstNodeExpr::RangeTest { id, .. }
             | AstNodeExpr::Jump { id, .. } => *id,
         }
     }
@@ -423,6 +440,7 @@ impl Parser<'_> {
                 Ok(AstNodeExpr::RangeTest {
                     span: Span::new(span_start, span_end),
                     range: Box::new(self.expr()?),
+                    cond: false,
                     id,
                 })
             }

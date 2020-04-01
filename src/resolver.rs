@@ -258,6 +258,9 @@ impl<'a> Resolver<'a> {
                 kind: JumpKind::Throw,
                 ..
             } => unimplemented!(),
+            AstNodeExpr::RangeTest { range, .. } => {
+                self.expr(range)?;
+            }
         };
         Ok(())
     }

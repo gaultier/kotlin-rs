@@ -596,6 +596,19 @@ impl<'a> TypeChecker<'a> {
         Ok(t)
     }
 
+    fn range_test(&mut self, range: &AstNodeExpr, span: &Span, id: NodeId) -> Result<Type, Error> {
+        let t = self.expr(range)?;
+        if t.is_range() {
+            self.types.insert(id, Type::Boolean);
+            Ok(Type::Boolean)
+        } else {
+            Err(Error::new(
+                ErrorKind::IncompatibleTypes(t.clone(), Type::IntRange), // FIXME
+                self.lexer.span_location(&span),
+            ))
+        }
+    }
+
     fn expr(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
         match ast {
             AstNodeExpr::Literal(..) => self.literal(ast),
@@ -647,6 +660,9 @@ impl<'a> TypeChecker<'a> {
                 Ok(Type::Nothing)
             }
             AstNodeExpr::Jump { id, .. } => Ok(self.types.get(id).cloned().unwrap()),
+            AstNodeExpr::RangeTest {
+                range, span, id, ..
+            } => self.range_test(range, span, *id),
         }
     }
 
