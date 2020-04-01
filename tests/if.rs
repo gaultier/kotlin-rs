@@ -157,3 +157,27 @@ fn check_types_coalesce() -> Result<(), String> {
         other => Err(format!("Should be a type error: {:?}", other)),
     }
 }
+
+#[test]
+fn any() {
+    let src = String::from("val x: Any = if (1<2) 99 as Any else 42 \n");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(define x (if (< 1 2) (as 99 Any)  42 ))"
+    );
+}
+
+#[test]
+fn any_2() {
+    let src = String::from("val x: Any = 3; val y: Any = if (1<2) x else 42 \n");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(begin (define x 3) (define y (if (< 1 2) x 42 ))"
+    );
+}
