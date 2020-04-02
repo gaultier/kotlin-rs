@@ -476,9 +476,12 @@ impl<'a> Resolver<'a> {
                     self.statement(&stmt)?;
                 }
                 self.exit_scope();
-                Ok(self.resolution.clone())
+            }
+            AstNodeStmt::Expr(expr) => {
+                self.expr(expr)?;
             }
             _ => unreachable!(),
         }
+        Ok(self.resolution.clone())
     }
 }
