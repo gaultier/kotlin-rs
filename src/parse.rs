@@ -403,10 +403,7 @@ impl Parser<'_> {
     fn control_structure_body(&mut self) -> Result<AstNodeStmt, Error> {
         match self.previous {
             Some(Token { kind: k, .. }) if k == TokenKind::LeftCurlyBracket => self.block(),
-            _ => Ok(AstNodeStmt::Block {
-                id: self.next_id(),
-                body: vec![self.statement()?],
-            }),
+            _ => self.statement(),
         }
     }
 

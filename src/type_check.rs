@@ -493,6 +493,10 @@ impl<'a> TypeChecker<'a> {
 
                 let if_body_t = self.statement(if_body)?;
                 let else_body_t = self.statement(else_body)?;
+                debug!(
+                    "if_expr: id={} if_body_t={} else_body_t={}",
+                    id, if_body_t, else_body_t
+                );
 
                 /* Kotlinc(tm) actually does not check that the type is Any
                  which leads to weird, unchecked code like this that does not
@@ -544,7 +548,7 @@ impl<'a> TypeChecker<'a> {
 
         let t = self.expr(fn_name)?;
 
-        debug!("fn ref: id={} t={}", id, t);
+        debug!("fn call: id={} t={}", id, t);
 
         match t {
             Type::Function {
