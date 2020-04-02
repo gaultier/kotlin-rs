@@ -575,25 +575,17 @@ impl<'a> TypeChecker<'a> {
         let current_fn_id = self.current_fn_id;
         self.current_fn_id = Some(id);
         let mut found_return_t = self.statement(body)?;
-        if found_return_t == Type::Unit {
-            found_return_t = self
-                .types
-                .get(&id)
-                .unwrap_or(&Type::Unit)
-                .fn_return_t()
-                .unwrap_or(Type::Unit);
-        }
-
-        match self.types.get(&id) {
-            Some(Type::Function { return_t, .. }) if return_t.is_some() => {
-                let expected_return_t = return_t.clone().unwrap();
-
-                self.is_type(&found_return_t, &expected_return_t, &return_t_span)?;
-            }
-            Some(Type::Function { .. }) => {
-                // Noop
-            }
-            Some(_) | None => unreachable!(),
+        debug!("fn_def: found_return_t={}", &found_return_t);
+        let explicit_type_t = self
+            .types
+            .get(&id)
+            .unwrap_or(&Type::Unit)
+            .fn_return_t()
+            .unwrap_or(Type::Unit);
+        if found_return_t != Type::Unit && explicit_type_t == Type::Unit {
+            found_return_t = Type::Unit;
+        } else {
+            self.is_type(&found_return_t, &explicit_type_t, &return_t_span)?;
         }
 
         let args_t = args

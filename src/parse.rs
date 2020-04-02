@@ -1240,10 +1240,7 @@ impl Parser<'_> {
                 self.skip_newlines()?;
                 AstNodeStmt::Expr(self.expr()?)
             }
-            _ => AstNodeStmt::Block {
-                id: self.next_id(),
-                body: vec![self.control_structure_body()?],
-            },
+            _ => self.control_structure_body()?,
         };
 
         Ok(AstNodeStmt::FnDefinition {
