@@ -592,9 +592,15 @@ impl<'a> TypeChecker<'a> {
                 let explicit_type_t = self
                     .types
                     .get(&id)
-                    .unwrap_or(&Type::Unit)
-                    .fn_return_t()
+                    .map(|t| t.fn_return_t())
+                    .flatten()
                     .unwrap_or(Type::Unit);
+
+                debug!(
+                    "fn_def long form: found_return_t={} explicit_type_t={}",
+                    &found_return_t, &explicit_type_t
+                );
+                // Small workaround to allow `fn foo(): Unit {1}`
                 if found_return_t != Type::Unit && explicit_type_t == Type::Unit {
                     found_return_t = Type::Unit;
                 } else {
