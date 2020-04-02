@@ -91,7 +91,7 @@ fn while_jumps() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(while (< 1 10) (if #t (break)  (continue) ) )"
+        "(while (< 1 10) (if #t (break) (continue)) )"
     );
 }
 
