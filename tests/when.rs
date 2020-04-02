@@ -140,7 +140,7 @@ fn when_type() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(define a (cond ((or #t #f) 1 ) (#f 0 )  'else 42 ))"
+        "(define a (cond ((or #t #f) 1) (#f 0) 'else 42 ))"
     );
 }
 
