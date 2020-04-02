@@ -317,15 +317,11 @@ impl<'a> Formatter<'a> {
         w: &mut W,
     ) -> Result<(), Error> {
         if !cond {
-            write!(w, "(not ").unwrap();
+            write!(w, "!").unwrap();
         }
-        write!(w, "(in ").unwrap();
+        write!(w, "in ").unwrap();
         self.expr(range, w)?;
-        write!(w, ")").unwrap();
 
-        if !cond {
-            write!(w, ")").unwrap();
-        }
         Ok(())
     }
 
@@ -336,15 +332,11 @@ impl<'a> Formatter<'a> {
         w: &mut W,
     ) -> Result<(), Error> {
         if !cond {
-            write!(w, "(not ").unwrap();
+            write!(w, "!").unwrap();
         }
-        write!(w, "(is ").unwrap();
+        write!(w, "is ").unwrap();
         self.expr(identifier, w)?;
-        write!(w, ")").unwrap();
 
-        if !cond {
-            write!(w, ")").unwrap();
-        }
         Ok(())
     }
 
