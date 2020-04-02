@@ -109,9 +109,11 @@ impl<'a> Formatter<'a> {
     ) -> Result<(), Error> {
         match ast {
             AstNodeStmt::DoWhile { cond, body, .. } => {
-                writeln!(w, "do ").unwrap();
+                writeln!(w, "do {{").unwrap();
                 self.statement(body, w)?;
-                write!(w, "\nwhile (").unwrap();
+                writeln!(w, "").unwrap();
+                self.ident(w);
+                write!(w, "}} while (").unwrap();
                 self.expr(cond, w)?;
                 writeln!(w, ")").unwrap();
                 Ok(())
@@ -123,7 +125,6 @@ impl<'a> Formatter<'a> {
     fn while_stmt<W: std::io::Write>(&mut self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeStmt::While { cond, body, .. } => {
-                self.ident(w);
                 write!(w, "while (").unwrap();
                 self.expr(cond, w)?;
                 writeln!(w, ") {{").unwrap();
