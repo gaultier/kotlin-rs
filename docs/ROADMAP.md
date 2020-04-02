@@ -65,8 +65,9 @@
 - [ ] Call function with named parameter
 - [ ] Default value for parameter in function
 - [ ] Tailrec function
-- [ ] Variadic functions
+- [ ] Variadic function
 - [ ] Class
+- [ ] Data class
 - [ ] Enum
 - [ ] Shebang
 - [ ] Import
@@ -76,8 +77,24 @@
 - [ ] Annotations
 - [ ] Infix function
 - [ ] For
+- [ ] Special syntax for last function call argument if it is a callable e.g `values.map { it * 2}`
 - [x] As expression
 - [ ] Jump expression with label e.g `return@loop; break@foo; continue@bar;`
+- [ ] Interface
+- [ ] Type alias
+- [ ] Visibility modifier
+- [ ] Generic
+- [ ] Contract
+- [ ] Generic constraint
+- [ ] Operator overloading
+- [ ] Extension function
+- [ ] Lambda
+- [ ] Sealed class
+- [ ] Inheritance
+- [ ] Object (i.e singleton)
+- [ ] Destructuring declaration
+- [ ] Delegation
+- [ ] Delegated properties
 
 ## Type checker
 
