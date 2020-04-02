@@ -233,8 +233,7 @@ impl<'a> Formatter<'a> {
         }
         write!(w, ") = ").unwrap();
 
-        self.statement(body, w)?;
-        writeln!(w, "").unwrap();
+        self.control_structure_body(body, w)?;
         Ok(())
     }
 
@@ -288,6 +287,7 @@ impl<'a> Formatter<'a> {
                     Ok(())
                 }
             },
+            AstNodeStmt::Expr(e) => self.expr(e, w),
             _ => unreachable!(),
         }
     }
