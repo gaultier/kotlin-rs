@@ -572,14 +572,15 @@ impl<'a> TypeChecker<'a> {
         return_t_span: &Span,
         id: NodeId,
     ) -> Result<Type, Error> {
-        let current_fn_id = self.current_fn_id;
-        self.current_fn_id = Some(id);
-
         let args_t = args
             .iter()
             .map(|arg| self.expr(arg))
             .collect::<Result<Vec<_>, Error>>()?;
-        debug!("fn_def: args_t={:?} args={:?}", args_t, args);
+
+        let current_fn_id = self.current_fn_id;
+        self.current_fn_id = Some(id);
+
+        debug!("fn_def: id={} args_t={:?} args={:?}", id, args_t, args);
 
         // We need to insert the type early even if partial because of the way `return` in the body
         // fill this type with more info.
@@ -684,20 +685,18 @@ impl<'a> TypeChecker<'a> {
 
                 // Safe because of the resolver checks
                 let current_fn_id = self.current_fn_id.unwrap();
+                let fn_t = self.types.get(&current_fn_id).unwrap();
 
-                // Is the function type fully known?
-                if let Some(fn_t) = self.types.get(&current_fn_id) {
-                    // If at that point the return type of the function is known (either declared
-                    // or inferred), check that this type and the type of the return expression
-                    // match
-                    if let Some(prior_return_t) = fn_t.fn_return_t() {
-                        self.is_type(&return_t, &prior_return_t, span)?;
-                    } else {
-                        // Fill the inferred return type
-                        let fn_t = fn_t.with_fn_return_t(&return_t);
-                        self.types.insert(current_fn_id, fn_t);
-                    }
+                // If at that point the return type of the function is known (either declared
+                // or inferred), check that this type and the type of the return expression
+                // match
+                // Otherwise fill the inferred return type
+                if let Some(prior_return_t) = fn_t.fn_return_t() {
+                    self.is_type(&return_t, &prior_return_t, span)?;
                 } else {
+                    let fn_t = fn_t.with_fn_return_t(&return_t);
+                    debug!("return: fn_t={} current_fn_id={}", fn_t, current_fn_id);
+                    self.types.insert(current_fn_id, fn_t);
                 }
 
                 Ok(Type::Nothing)
