@@ -198,7 +198,7 @@ impl<'a> Formatter<'a> {
 
     fn ident<W: std::io::Write>(&mut self, w: &mut W) {
         if self.ident > 0 {
-            write!(w, "{}", str::repeat("  ", self.ident as usize)).unwrap();
+            write!(w, "{}", str::repeat("    ", self.ident as usize)).unwrap();
         }
     }
 
@@ -287,6 +287,7 @@ impl<'a> Formatter<'a> {
                 }
 
                 self.ident -= 1;
+                self.ident(w);
                 write!(w, "}}").unwrap();
                 Ok(())
             }
@@ -332,14 +333,6 @@ impl<'a> Formatter<'a> {
                 write!(w, "= ").unwrap();
                 self.expr(e, w)?;
                 writeln!(w, "").unwrap();
-            }
-            AstNodeStmt::Expr(e) => {
-                writeln!(w, "{{").unwrap();
-                self.ident += 1;
-                self.ident(w);
-                self.expr(e, w)?;
-                self.ident -= 1;
-                writeln!(w, "\n}}").unwrap();
             }
             _ => unreachable!(),
         }
