@@ -10,7 +10,7 @@ fn simple_if_expr() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(if (< 1 2) 'o'  'x' )"
+        "(if (< 1 2) 'o' 'x')"
     );
 }
 
@@ -22,7 +22,7 @@ fn multi_if_expr() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(begin (if (< 1 2) 'o'  'x' ) (if #t 42  99 ) )"
+        "(begin (if (< 1 2) 'o' 'x') (if #t 42 99) )"
     );
 }
 
@@ -34,7 +34,7 @@ fn nested_if_expr() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(if (< 1 2) (if (< 99 100) 'a'  'b' )  'c' )"
+        "(if (< 1 2) (if (< 99 100) 'a' 'b') 'c')"
     );
 }
 
@@ -128,7 +128,7 @@ fn check_both_branches_types_match_unit_when_empty_else() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(if (< 1 2) 'a'  (begin ))"
+        "(if (< 1 2) 'a' (begin ))"
     );
 }
 
@@ -140,7 +140,7 @@ fn check_both_branches_types_match_unit_when_empty_if() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(if (< 1 2) (begin ) 42 )"
+        "(if (< 1 2) (begin ) 42)"
     );
 }
 
@@ -166,7 +166,7 @@ fn any() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(define x (if (< 1 2) (as 99 Any)  42 ))"
+        "(define x (if (< 1 2) (as 99 Any) 42))"
     );
 }
 
@@ -178,6 +178,6 @@ fn any_2() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(begin (define x 3)\n (define y (if (< 1 2) x  42 ))\n )"
+        "(begin (define x 3)\n (define y (if (< 1 2) x 42))\n )"
     );
 }

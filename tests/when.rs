@@ -10,7 +10,7 @@ fn simple_when_expr() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(cond (#t 1 ) (#f 0 ) )"
+        "(cond (#t 1) (#f 0) )"
     );
 }
 
@@ -34,7 +34,7 @@ fn when_with_else() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(cond (#t 1 ) (#f 0 )  'else 42 )"
+        "(cond (#t 1) (#f 0)  'else 42 )"
     );
 }
 
@@ -192,7 +192,7 @@ fn is() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(define a (case (* 1 5) (in (range 0 10)) 1  (is Int) 0   'else 42 ))"
+        "(define a (case (* 1 5) (in (range 0 10)) 1 (is Int) 0  'else 42))"
     );
 }
 
@@ -206,6 +206,6 @@ fn not_is() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(define a (case (* 1 5) (in (range 0 10)) 1  (not (is Int)) 0   'else 42 ))"
+        "(define a (case (* 1 5) (in (range 0 10)) 1 (not (is Int)) 0  'else 42))"
     );
 }

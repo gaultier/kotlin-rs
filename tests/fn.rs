@@ -105,7 +105,7 @@ fn fn_with_empty_return() {
 
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(begin (define (foo a b ) (if (< a b) (return )  (begin )) )\n (define x (apply foo (list 1 2 )))\n )"
+        "(begin (define (foo a b ) (if (< a b) (return ) (begin )) )\n (define x (apply foo (list 1 2 )))\n )"
     );
 }
 
@@ -118,7 +118,7 @@ fn fn_with_expr_return_body() {
 
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(begin (define (foo a b ) (return (if (< a b) #t  #f )) )\n (define a (apply foo (list 1 2 )))\n )"
+        "(begin (define (foo a b ) (return (if (< a b) #t #f)) )\n (define a (apply foo (list 1 2 )))\n )"
     );
 }
 
@@ -254,7 +254,7 @@ fn fn_with_function_definition_in_loop() {
         r##"(begin (define a 1)
  (while (< a 10) (begin (define (show x ) (begin (display x)
  (return ) ))
- (apply show (list (postfix-add1 a) )) (if (== a 5) (break)  (begin )) ))
+ (apply show (list (postfix-add1 a) )) (if (== a 5) (break) (begin )) ))
  )"##
     );
 }
@@ -282,6 +282,6 @@ fn sum() {
 
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(define (sum n acc ) (if (== n 0) acc (apply! sum (list (- n 1) (+ n acc)))))"
+        "(define (sum n acc ) (if (== n 0) acc (apply sum (list (- n 1) (+ n acc) ))))"
     );
 }
