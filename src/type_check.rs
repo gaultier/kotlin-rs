@@ -574,19 +574,30 @@ impl<'a> TypeChecker<'a> {
     ) -> Result<Type, Error> {
         let current_fn_id = self.current_fn_id;
         self.current_fn_id = Some(id);
-        let mut found_return_t = self.statement(body)?;
-        debug!("fn_def: found_return_t={}", &found_return_t);
-        let explicit_type_t = self
-            .types
-            .get(&id)
-            .unwrap_or(&Type::Unit)
-            .fn_return_t()
-            .unwrap_or(Type::Unit);
-        if found_return_t != Type::Unit && explicit_type_t == Type::Unit {
-            found_return_t = Type::Unit;
-        } else {
-            self.is_type(&found_return_t, &explicit_type_t, &return_t_span)?;
-        }
+
+        // If the function was defined using the implicit form `fun add(a:Int, b:Int) = a+b`, the
+        // type is inferred to be the one of the expression.
+        // Otherwise we need to check if a type was declared. If yes it has to match the type of
+        // the body. Otherwise it is inferred to be Unit.
+        let found_return_t = match body {
+            AstNodeStmt::Expr(e) => self.expr(e)?,
+            AstNodeStmt::Block { .. } => {
+                let mut found_return_t = self.statement(body)?;
+                let explicit_type_t = self
+                    .types
+                    .get(&id)
+                    .unwrap_or(&Type::Unit)
+                    .fn_return_t()
+                    .unwrap_or(Type::Unit);
+                if found_return_t != Type::Unit && explicit_type_t == Type::Unit {
+                    found_return_t = Type::Unit;
+                } else {
+                    self.is_type(&found_return_t, &explicit_type_t, &return_t_span)?;
+                }
+                found_return_t
+            }
+            _ => unreachable!(),
+        };
 
         let args_t = args
             .iter()
