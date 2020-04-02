@@ -103,7 +103,7 @@ impl<'a> Resolver<'a> {
 
     fn when_entry(&mut self, entry: &WhenEntry) -> Result<(), Error> {
         self.expr(&entry.cond)?;
-        self.statements(&entry.body)?;
+        self.statement(&entry.body)?;
         Ok(())
     }
 

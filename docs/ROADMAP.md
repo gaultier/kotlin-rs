@@ -115,6 +115,7 @@
 - [x] Variable
 - [x] Function call
 - [ ] Class resolver
+- [ ] Out of order resolution
 
 ## Lint
 
