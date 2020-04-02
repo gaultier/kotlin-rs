@@ -208,18 +208,22 @@ impl<'a> Formatter<'a> {
         body: &AstNodeStmt,
         w: &mut W,
     ) -> Result<(), Error> {
-        write!(w, "(define (").unwrap();
+        write!(w, "fun ").unwrap();
         self.expr(fn_name, w)?;
-        write!(w, " ").unwrap();
+        write!(w, "(").unwrap();
 
-        for arg in args {
-            self.expr(arg, w)?;
-            write!(w, " ").unwrap();
+        if let Some((last, args)) = args.split_last() {
+            for arg in args {
+                self.expr(arg, w)?;
+                write!(w, ", ").unwrap();
+            }
+
+            self.expr(last, w)?;
         }
-        write!(w, ") ").unwrap();
+        write!(w, ") = ").unwrap();
 
         self.statement(body, w)?;
-        writeln!(w, ")").unwrap();
+        writeln!(w, "").unwrap();
         Ok(())
     }
 
@@ -228,50 +232,30 @@ impl<'a> Formatter<'a> {
             AstNodeExpr::WhenExpr {
                 entries,
                 else_entry,
-                subject: Some(subject),
+                subject,
                 ..
             } => {
-                write!(w, "(case ").unwrap();
-                self.statement(&subject, w)?;
-                write!(w, " ").unwrap();
-
-                for entry in entries {
-                    self.expr(&entry.cond, w)?;
-                    write!(w, " ").unwrap();
-                    self.statement(&entry.body, w)?;
-                    write!(w, " ").unwrap();
-                }
-
-                if let Some(else_entry) = else_entry {
-                    write!(w, " 'else ").unwrap();
-                    self.statement(&else_entry, w)?;
-                }
-
-                write!(w, ")").unwrap();
-                Ok(())
-            }
-            AstNodeExpr::WhenExpr {
-                entries,
-                else_entry,
-                subject: None,
-                ..
-            } => {
-                write!(w, "(cond ").unwrap();
-
-                for entry in entries {
+                write!(w, "when ").unwrap();
+                if let Some(subject) = subject {
                     write!(w, "(").unwrap();
+                    self.statement(&subject, w)?;
+                    write!(w, ")").unwrap();
+                }
+                write!(w, " {{").unwrap();
+
+                for entry in entries {
                     self.expr(&entry.cond, w)?;
-                    write!(w, " ").unwrap();
+                    write!(w, " -> ").unwrap();
                     self.statement(&entry.body, w)?;
-                    write!(w, ") ").unwrap();
+                    writeln!(w, "").unwrap();
                 }
 
                 if let Some(else_entry) = else_entry {
-                    write!(w, " 'else ").unwrap();
+                    write!(w, "\nelse -> ").unwrap();
                     self.statement(&else_entry, w)?;
                 }
 
-                write!(w, ")").unwrap();
+                write!(w, "\n}}").unwrap();
                 Ok(())
             }
             _ => unreachable!(),
