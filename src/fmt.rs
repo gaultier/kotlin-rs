@@ -93,7 +93,6 @@ impl<'a> Formatter<'a> {
                 flags,
                 ..
             } => {
-                self.ident(w);
                 write!(
                     w,
                     "{} {} = ",
