@@ -57,13 +57,13 @@ fn not_a_callable() -> Result<(), String> {
 
 #[test]
 fn fn_body_block() {
-    let src = String::from("fun a() {1; 2; 'a'; true; 10;} var b = a();");
+    let src = String::from("fun a() {1; 2; 'a'; true; 10;} var b:Unit = a();");
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
-        &"(begin (define (a ) (begin 1 2 'a' #t 10 ) )\n (define b (apply a (list )))\n )\n"
+        &"(begin (define (a ) (begin 1 2 'a' #t 10 ))\n (define b (apply a (list )))\n )\n"
     );
 }
 
@@ -105,7 +105,7 @@ fn fn_with_empty_return() {
 
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(begin (define (foo a b ) (if (< a b) (return )  (begin ))  )\n (define x (apply foo (list 1 2 )))\n )"
+        "(begin (define (foo a b ) (if (< a b) (return )  (begin )) )\n (define x (apply foo (list 1 2 )))\n )"
     );
 }
 
@@ -253,7 +253,7 @@ fn fn_with_function_definition_in_loop() {
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
         r##"(begin (define a 1)
  (while (< a 10) (begin (define (show x ) (begin (display x)
- (return ) ) )
+ (return ) ))
  (apply show (list (postfix-add1 a) )) (if (== a 5) (break)  (begin )) ))
  )"##
     );

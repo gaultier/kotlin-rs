@@ -575,12 +575,18 @@ impl<'a> TypeChecker<'a> {
         let current_fn_id = self.current_fn_id;
         self.current_fn_id = Some(id);
 
-        // If the function was defined using the implicit form `fun add(a:Int, b:Int) = a+b`, the
-        // type is inferred to be the one of the expression.
-        // Otherwise we need to check if a type was declared. If yes it has to match the type of
-        // the body. Otherwise it is inferred to be Unit.
+        // If the function was defined using the short form `fun add(a:Int, b:Int) = a+b`, the
+        // type is inferred to be the one of the expression if not explicitely defined.
+        // If the function was defined using the long form `fun add(a:Int, b:Int) { return a+b; }`, the type is the explicit type. If not given it is Unit.
         let found_return_t = match body {
-            AstNodeStmt::Expr(e) => self.expr(e)?,
+            AstNodeStmt::Expr(e) => {
+                let found_return_t = self.expr(e)?;
+                let explicit_type_t = self.types.get(&id).map(|t| t.fn_return_t()).flatten();
+                if let Some(explicit_type_t) = explicit_type_t {
+                    self.is_type(&found_return_t, &explicit_type_t, &return_t_span)?;
+                }
+                found_return_t
+            }
             AstNodeStmt::Block { .. } => {
                 let mut found_return_t = self.statement(body)?;
                 let explicit_type_t = self
