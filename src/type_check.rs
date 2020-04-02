@@ -604,12 +604,6 @@ impl<'a> TypeChecker<'a> {
                     .unwrap_or(Type::Unit);
 
                 debug!("fn_def long form: explicit_return_t={}", &explicit_return_t);
-                // // Small workaround to allow `fn foo(): Unit {1}`
-                // if found_return_t != Type::Unit && explicit_return_t == Type::Unit {
-                //     found_return_t = Type::Unit;
-                // } else {
-                //     self.is_type(&found_return_t, &explicit_return_t, &return_t_span)?;
-                // }
 
                 explicit_return_t
             }

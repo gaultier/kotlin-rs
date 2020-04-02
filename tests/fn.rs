@@ -118,7 +118,7 @@ fn fn_with_expr_return_body() {
 
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(begin (define (foo a b ) (return (if (< a b) #t  #f ))  )\n (define a (apply foo (list 1 2 )))\n )"
+        "(begin (define (foo a b ) (return (if (< a b) #t  #f )) )\n (define a (apply foo (list 1 2 )))\n )"
     );
 }
 
@@ -268,7 +268,7 @@ fn nested_fn() {
 
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        r##"(define (a ) (begin (define (b ) (return 42)  )
- (return (* 99 (apply b (list )))) ) )"##
+        r##"(define (a ) (begin (define (b ) (return 42) )
+ (return (* 99 (apply b (list )))) ))"##
     );
 }
