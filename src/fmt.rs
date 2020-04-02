@@ -19,6 +19,7 @@ impl<'a> Formatter<'a> {
         span: &Span,
         w: &mut W,
     ) -> Result<(), Error> {
+        self.ident(w);
         self.expr(target, w)?;
         write!(w, " {} ", &self.lexer.src[span.start..span.end]).unwrap();
         self.expr(value, w)?;
@@ -85,6 +86,7 @@ impl<'a> Formatter<'a> {
                 flags,
                 ..
             } => {
+                self.ident(w);
                 write!(
                     w,
                     "{} {} = ",
@@ -172,7 +174,6 @@ impl<'a> Formatter<'a> {
 
     fn block<W: std::io::Write>(&mut self, block: &[AstNodeStmt], w: &mut W) -> Result<(), Error> {
         self.ident += 1;
-        self.depth += 1;
 
         for stmt in block.iter() {
             self.ident(w);
