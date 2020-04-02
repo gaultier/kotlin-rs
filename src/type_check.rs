@@ -590,6 +590,10 @@ impl<'a> TypeChecker<'a> {
                 let found_return_t = self.expr(e)?;
                 let explicit_return_t = self.types.get(&id).map(|t| t.fn_return_t()).flatten();
                 if let Some(explicit_return_t) = explicit_return_t {
+                    debug!(
+                        "fn_def short form: found_return_t={} explicit_return_t={}",
+                        &found_return_t, &explicit_return_t
+                    );
                     self.is_type(&found_return_t, &explicit_return_t, &return_t_span)?;
                 }
                 found_return_t

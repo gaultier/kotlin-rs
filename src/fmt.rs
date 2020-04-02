@@ -235,7 +235,7 @@ impl<'a> Formatter<'a> {
         if let Some((last, args)) = args.split_last() {
             for arg in args {
                 self.expr(arg, w)?;
-                write!(w, ", ").unwrap();
+                write!(w, ":{}, ", self.types.get(&arg.id()).unwrap()).unwrap();
             }
 
             self.expr(last, w)?;
