@@ -1,6 +1,7 @@
 use clap::{App, Arg};
 use kotlin::compile::*;
 use kotlin::error::Error;
+use kotlin::fmt::Formatter;
 use kotlin::lex::Lexer;
 use kotlin::parse::Parser;
 use std::io::prelude::*;
@@ -63,7 +64,7 @@ fn main() {
             let mut handle = stdout.lock();
             compile(src, &mut handle)
         }
-        "fmt" => unimplemented!(),
+        "fmt" => fmt(src),
         "dump_ast" => dump_ast(src),
         _ => unreachable!(),
     };
@@ -85,9 +86,9 @@ fn fmt(src: String) -> Result<(), Error> {
     let mut lexer = Lexer::new(src);
     let mut parser = Parser::new(&mut lexer);
     let stmts = parser.parse()?;
-    let formatter = Formatter::new(&lexer, &types);
+    let formatter = Formatter::new(&lexer);
 
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
-    formatter.statements(&stmts, &handle)
+    formatter.statements(&stmts, &mut handle)
 }

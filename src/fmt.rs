@@ -2,12 +2,12 @@ use crate::error::*;
 use crate::lex::{Lexer, Span, Token, TokenKind};
 use crate::parse::*;
 
-pub(crate) struct Formatter<'a> {
+pub struct Formatter<'a> {
     lexer: &'a Lexer,
 }
 
 impl<'a> Formatter<'a> {
-    pub(crate) fn new(lexer: &'a Lexer) -> Formatter<'a> {
+    pub fn new(lexer: &'a Lexer) -> Formatter<'a> {
         Formatter { lexer }
     }
 
@@ -15,22 +15,12 @@ impl<'a> Formatter<'a> {
         &self,
         target: &AstNodeExpr,
         value: &AstNodeExpr,
-        op: &TokenKind,
+        span: &Span,
         w: &mut W,
     ) -> Result<(), Error> {
-        if *op == TokenKind::Equal {
-            write!(w, "(set! ").unwrap();
-            self.expr(target, w)?;
-            write!(w, " ").unwrap();
-            self.expr(value, w)?;
-            writeln!(w, ")").unwrap();
-        } else {
-            write!(w, "(set! ").unwrap();
-            self.expr(target, w)?;
-            write!(w, " ({} ", assign_op(op)).unwrap();
-            self.expr(value, w)?;
-            writeln!(w, "))").unwrap();
-        }
+        self.expr(target, w)?;
+        write!(w, " {} ", &self.lexer.src[span.start..span.end]).unwrap();
+        self.expr(value, w)?;
 
         Ok(())
     }
@@ -50,9 +40,12 @@ impl<'a> Formatter<'a> {
                 self.var_def(stmt, w)?;
             }
             AstNodeStmt::Assign {
-                target, value, op, ..
+                target,
+                value,
+                span,
+                ..
             } => {
-                self.assign(target, value, op, w)?;
+                self.assign(target, value, span, w)?;
             }
             AstNodeStmt::FnDefinition {
                 fn_name,
