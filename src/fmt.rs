@@ -70,7 +70,7 @@ impl<'a> Formatter<'a> {
             AstNodeStmt::Println(expr) => {
                 write!(w, "println(").unwrap();
                 self.expr(expr, w)?;
-                writeln!(w, ")").unwrap();
+                write!(w, ")").unwrap();
             }
         };
         Ok(())
@@ -280,7 +280,7 @@ impl<'a> Formatter<'a> {
                     self.statement(&else_entry, w)?;
                 }
 
-                write!(w, "\n}}").unwrap();
+                write!(w, "}}").unwrap();
                 Ok(())
             }
             _ => unreachable!(),
@@ -299,7 +299,7 @@ impl<'a> Formatter<'a> {
                 [AstNodeStmt::Println(e)] => {
                     write!(w, "= println(").unwrap();
                     self.expr(e, w)?;
-                    writeln!(w, ")").unwrap();
+                    write!(w, ")").unwrap();
                 }
                 [AstNodeStmt::Expr(AstNodeExpr::Jump {
                     kind: JumpKind::Return,
@@ -313,13 +313,13 @@ impl<'a> Formatter<'a> {
                 _ => {
                     writeln!(w, "{{").unwrap();
                     self.block(body, w)?;
-                    writeln!(w, "}}").unwrap();
+                    writeln!(w, "\n}}").unwrap();
                 }
             },
             AstNodeStmt::Println(e) => {
                 write!(w, "= println(").unwrap();
                 self.expr(e, w)?;
-                writeln!(w, ")").unwrap();
+                write!(w, ")").unwrap();
             }
             AstNodeStmt::Expr(e) if self.types.get(&e.id()).unwrap() == return_t => {
                 write!(w, "= ").unwrap();
@@ -338,6 +338,7 @@ impl<'a> Formatter<'a> {
         }
         Ok(())
     }
+
     fn control_structure_body<W: std::io::Write>(
         &mut self,
         ast: &AstNodeStmt,
