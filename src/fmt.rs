@@ -73,7 +73,6 @@ impl<'a> Formatter<'a> {
         w: &mut W,
     ) -> Result<(), Error> {
         self.statement(&block, w)?;
-        writeln!(w).unwrap();
         Ok(())
     }
 
@@ -93,7 +92,6 @@ impl<'a> Formatter<'a> {
                 )
                 .unwrap();
                 self.expr(value, w)?;
-                writeln!(w, "").unwrap();
                 Ok(())
             }
             _ => unreachable!(),
@@ -119,9 +117,9 @@ impl<'a> Formatter<'a> {
             AstNodeStmt::While { cond, body, .. } => {
                 write!(w, "while (").unwrap();
                 self.expr(cond, w)?;
-                writeln!(w, ")").unwrap();
+                writeln!(w, ") {{").unwrap();
                 self.statement(body, w)?;
-                writeln!(w, "").unwrap();
+                writeln!(w, "}}").unwrap();
                 Ok(())
             }
             _ => unreachable!(),
@@ -166,18 +164,11 @@ impl<'a> Formatter<'a> {
     }
 
     fn block<W: std::io::Write>(&self, block: &[AstNodeStmt], w: &mut W) -> Result<(), Error> {
-        if block.len() != 1 {
-            write!(w, "{{ ").unwrap();
-        }
-
         for stmt in block.iter() {
             self.statement(&stmt, w)?;
-            write!(w, " ").unwrap();
+            writeln!(w, "").unwrap();
         }
 
-        if block.len() != 1 {
-            writeln!(w, "\n}}").unwrap();
-        }
         Ok(())
     }
 
