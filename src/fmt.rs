@@ -1,5 +1,5 @@
 use crate::error::*;
-use crate::lex::{Lexer, Span};
+use crate::lex::{Lexer, Span, Token};
 use crate::parse::*;
 
 pub struct Formatter<'a> {
@@ -135,8 +135,8 @@ impl<'a> Formatter<'a> {
         }
     }
 
-    fn literal<W: std::io::Write>(&mut self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
-        write!(w, "{}", &self.lexer.src[ast.span().start..ast.span().end]).unwrap();
+    fn literal<W: std::io::Write>(&mut self, token: &Token, w: &mut W) -> Result<(), Error> {
+        write!(w, "{}", &self.lexer.src[token.span.start..token.span.end]).unwrap();
         Ok(())
     }
 
@@ -273,6 +273,25 @@ impl<'a> Formatter<'a> {
         }
     }
 
+    fn control_structure_body<W: std::io::Write>(
+        &mut self,
+        ast: &AstNodeStmt,
+        w: &mut W,
+    ) -> Result<(), Error> {
+        match ast {
+            AstNodeStmt::Block { body, .. } => match body.as_slice() {
+                [AstNodeStmt::Expr(e)] => self.expr(e, w),
+                _ => {
+                    writeln!(w, "{{").unwrap();
+                    self.block(body, w)?;
+                    write!(w, "}}").unwrap();
+                    Ok(())
+                }
+            },
+            _ => unreachable!(),
+        }
+    }
+
     fn if_expr<W: std::io::Write>(&mut self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeExpr::IfExpr {
@@ -284,9 +303,9 @@ impl<'a> Formatter<'a> {
                 write!(w, "if (").unwrap();
                 self.expr(cond, w)?;
                 write!(w, ") ").unwrap();
-                self.statement(&*if_body, w)?;
+                self.control_structure_body(&*if_body, w)?;
                 write!(w, " else ").unwrap();
-                self.statement(&*else_body, w)?;
+                self.control_structure_body(&*else_body, w)?;
                 write!(w, "").unwrap();
 
                 Ok(())
@@ -354,7 +373,7 @@ impl<'a> Formatter<'a> {
     fn expr<W: std::io::Write>(&mut self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeExpr::WhenExpr { .. } => self.when_expr(ast, w),
-            AstNodeExpr::Literal(..) => self.literal(ast, w),
+            AstNodeExpr::Literal(token, ..) => self.literal(token, w),
             AstNodeExpr::Unary { .. } => self.unary(ast, w),
             AstNodeExpr::Binary { .. } => self.binary(ast, w),
             AstNodeExpr::Grouping(expr, _) => {
