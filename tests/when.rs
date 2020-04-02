@@ -34,7 +34,7 @@ fn when_with_else() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(cond (#t 1) (#f 0)  'else 42 )"
+        "(cond (#t 1) (#f 0)  'else 42)"
     );
 }
 
@@ -140,7 +140,7 @@ fn when_type() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(define a (cond ((or #t #f) 1) (#f 0) 'else 42 ))"
+        "(define a (cond ((or #t #f) 1) (#f 0)  'else 42))"
     );
 }
 
@@ -153,7 +153,7 @@ fn when_type_2() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(define a (case (* 1 5) (not (in (range 0 10))) 1  5 0   'else 42 ))"
+        "(define a (case (* 1 5) (not (in (range 0 10))) 1 5 0  'else 42))"
     );
 }
 
@@ -165,7 +165,7 @@ fn when_type_3() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(define a (cond  'else 42 ))"
+        "(define a (cond  'else 42))"
     );
 }
 
@@ -178,7 +178,7 @@ fn when_type_4() {
     assert!(compile(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(define a (case (* 1 5) (in (range 0 10)) 1  5 0   'else 42 ))"
+        "(define a (case (* 1 5) (in (range 0 10)) 1 5 0  'else 42))"
     );
 }
 
