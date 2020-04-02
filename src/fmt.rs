@@ -301,7 +301,6 @@ impl<'a> Formatter<'a> {
                     writeln!(w, ")").unwrap();
                 }
                 [AstNodeStmt::Expr(e)] if self.types.get(&e.id()).unwrap() == return_t => {
-                    dbg!(&return_t);
                     write!(w, "= ").unwrap();
                     self.expr(e, w)?;
                 }
@@ -317,7 +316,6 @@ impl<'a> Formatter<'a> {
                 writeln!(w, ")").unwrap();
             }
             AstNodeStmt::Expr(e) if self.types.get(&e.id()).unwrap() == return_t => {
-                dbg!(&return_t);
                 write!(w, "= ").unwrap();
                 self.expr(e, w)?;
             }
@@ -331,6 +329,8 @@ impl<'a> Formatter<'a> {
             }
             _ => unreachable!(),
         }
+        // One empty line after the function declaration
+        writeln!(w, "").unwrap();
         Ok(())
     }
     fn control_structure_body<W: std::io::Write>(
