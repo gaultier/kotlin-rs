@@ -235,7 +235,7 @@ impl<'a> Formatter<'a> {
 
             self.expr(last, w)?;
         }
-        write!(w, ") = ").unwrap();
+        write!(w, ") = ").unwrap(); // FIXME
 
         self.control_structure_body(body, w)?;
         Ok(())
@@ -283,7 +283,7 @@ impl<'a> Formatter<'a> {
     ) -> Result<(), Error> {
         match ast {
             AstNodeStmt::Block { body, .. } => match body.as_slice() {
-                [AstNodeStmt::Expr(e)] => self.expr(e, w),
+                [AstNodeStmt::Println(e)] | [AstNodeStmt::Expr(e)] => self.expr(e, w),
                 _ => {
                     writeln!(w, "{{").unwrap();
                     self.block(body, w)?;
@@ -291,7 +291,7 @@ impl<'a> Formatter<'a> {
                     Ok(())
                 }
             },
-            AstNodeStmt::Expr(e) => self.expr(e, w),
+            AstNodeStmt::Println(e) | AstNodeStmt::Expr(e) => self.expr(e, w),
             _ => unreachable!(),
         }
     }
