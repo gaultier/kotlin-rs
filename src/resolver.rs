@@ -261,9 +261,7 @@ impl<'a> Resolver<'a> {
             AstNodeExpr::RangeTest { range, .. } => {
                 self.expr(range)?;
             }
-            AstNodeExpr::TypeTest { identifier, .. } => {
-                self.expr(identifier)?;
-            }
+            AstNodeExpr::TypeTest { .. } => {}
         };
         Ok(())
     }
