@@ -93,6 +93,7 @@ impl<'a> Formatter<'a> {
                 )
                 .unwrap();
                 self.expr(value, w)?;
+                writeln!(w, "").unwrap();
                 Ok(())
             }
             _ => unreachable!(),
@@ -166,7 +167,7 @@ impl<'a> Formatter<'a> {
 
     fn block<W: std::io::Write>(&self, block: &[AstNodeStmt], w: &mut W) -> Result<(), Error> {
         if block.len() != 1 {
-            write!(w, "{{").unwrap();
+            write!(w, "{{ ").unwrap();
         }
 
         for stmt in block.iter() {
@@ -175,7 +176,7 @@ impl<'a> Formatter<'a> {
         }
 
         if block.len() != 1 {
-            writeln!(w, "}}").unwrap();
+            writeln!(w, "\n}}").unwrap();
         }
         Ok(())
     }
@@ -340,7 +341,7 @@ impl<'a> Formatter<'a> {
         Ok(())
     }
 
-    pub fn expr<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
+    fn expr<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeExpr::WhenExpr { .. } => self.when_expr(ast, w),
             AstNodeExpr::Literal(..) => self.literal(ast, w),
