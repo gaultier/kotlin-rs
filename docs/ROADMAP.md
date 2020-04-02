@@ -88,15 +88,16 @@
 - [ ] `Nothing` type
 - [ ] `Any` type
 - [ ] Smart casts
+- [ ] Nullable types
 - [x] Type check math
 - [x] Type check boolean logic
-- [x] Type inference (hard)
+- [x] Type inference
 
 ## Name resolution
 
 - [x] Variable
 - [x] Function call
-- [ ] Class loader (hard)
+- [ ] Class resolver
 
 ## Lint
 
@@ -129,7 +130,6 @@
 - [ ] Java Byte Code
 - [ ] Varargs
 - [ ] Null safety
-- [ ] Class loader (hard)
 - [ ] Language server (?)
 
 ## Code emitting
