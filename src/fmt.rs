@@ -59,7 +59,7 @@ impl<'a> Formatter<'a> {
                 self.block(body, w)?;
             }
             AstNodeStmt::Println(expr) => {
-                write!(w, "(display ").unwrap();
+                write!(w, "println(").unwrap();
                 self.expr(expr, w)?;
                 writeln!(w, ")").unwrap();
             }
@@ -80,16 +80,19 @@ impl<'a> Formatter<'a> {
     fn var_def<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeStmt::VarDefinition {
-                identifier, value, ..
+                identifier,
+                value,
+                flags,
+                ..
             } => {
                 write!(
                     w,
-                    "(define {} ",
+                    "{} {} = ",
+                    if *flags & FLAG_VAR != 0 { "var" } else { "val" },
                     &self.lexer.src[identifier.span.start..identifier.span.end]
                 )
                 .unwrap();
                 self.expr(value, w)?;
-                writeln!(w, ")").unwrap();
                 Ok(())
             }
             _ => unreachable!(),
