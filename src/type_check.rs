@@ -694,9 +694,8 @@ impl<'a> TypeChecker<'a> {
                         self.is_type(&return_t, &prior_return_t, span)?;
                     } else {
                         // Fill the inferred return type
-                        let new_fn_t = fn_t.clone();
-                        self.types
-                            .insert(current_fn_id, new_fn_t.with_fn_return_t(&return_t));
+                        let fn_t = fn_t.with_fn_return_t(&return_t);
+                        self.types.insert(current_fn_id, fn_t);
                     }
                 } else {
                 }
