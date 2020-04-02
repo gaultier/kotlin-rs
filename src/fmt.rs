@@ -260,15 +260,19 @@ impl<'a> Formatter<'a> {
                 subject,
                 ..
             } => {
+                self.ident(w);
                 write!(w, "when ").unwrap();
                 if let Some(subject) = subject {
                     write!(w, "(").unwrap();
                     self.statement(&subject, w)?;
                     write!(w, ")").unwrap();
                 }
-                write!(w, " {{").unwrap();
+                writeln!(w, " {{").unwrap();
+
+                self.ident += 1;
 
                 for entry in entries {
+                    self.ident(w);
                     self.expr(&entry.cond, w)?;
                     write!(w, " -> ").unwrap();
                     self.statement(&entry.body, w)?;
@@ -276,10 +280,13 @@ impl<'a> Formatter<'a> {
                 }
 
                 if let Some(else_entry) = else_entry {
-                    write!(w, "\nelse -> ").unwrap();
+                    self.ident(w);
+                    write!(w, "else -> ").unwrap();
                     self.statement(&else_entry, w)?;
+                    writeln!(w, "").unwrap();
                 }
 
+                self.ident -= 1;
                 write!(w, "}}").unwrap();
                 Ok(())
             }
