@@ -56,12 +56,13 @@ fn main() {
         src
     };
 
-    let stdout = std::io::stdout();
-    let mut handle = stdout.lock();
-
     let cpy = src.clone();
     let res = match matches.value_of("command").unwrap() {
-        "sexp" => compile(src, &mut handle),
+        "sexp" => {
+            let stdout = std::io::stdout();
+            let mut handle = stdout.lock();
+            compile(src, &mut handle)
+        }
         "fmt" => unimplemented!(),
         "dump_ast" => dump_ast(src),
         _ => unreachable!(),
@@ -78,4 +79,15 @@ fn dump_ast(src: String) -> Result<(), Error> {
     let stmts = parser.parse()?;
     println!("{:?}", stmts);
     Ok(())
+}
+
+fn fmt(src: String) -> Result<(), Error> {
+    let mut lexer = Lexer::new(src);
+    let mut parser = Parser::new(&mut lexer);
+    let stmts = parser.parse()?;
+    let formatter = Formatter::new(&lexer, &types);
+
+    let stdout = std::io::stdout();
+    let mut handle = stdout.lock();
+    formatter.statements(&stmts, &handle)
 }
