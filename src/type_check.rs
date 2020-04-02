@@ -613,7 +613,7 @@ impl<'a> TypeChecker<'a> {
             Ok(Type::Boolean)
         } else {
             Err(Error::new(
-                ErrorKind::IncompatibleTypes(t.clone(), Type::IntRange), // FIXME
+                ErrorKind::IncompatibleTypes(t, Type::IntRange), // FIXME
                 self.lexer.span_location(&span),
             ))
         }

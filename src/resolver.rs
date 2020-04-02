@@ -14,11 +14,11 @@ const LEXICAL_CONTEXT_LOOP_IN_FUNCTION: u8 = 0b011;
 pub struct LexicalContext(pub u8);
 
 impl LexicalContext {
-    fn is_in_loop(&self) -> bool {
+    fn is_in_loop(self) -> bool {
         self.0 & LEXICAL_CONTEXT_LOOP != 0
     }
 
-    fn is_in_function(&self) -> bool {
+    fn is_in_function(self) -> bool {
         self.0 & LEXICAL_CONTEXT_FUNCTION != 0
     }
 

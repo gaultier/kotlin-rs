@@ -475,7 +475,7 @@ impl<'a> SexpEmitter<'a> {
 
     fn jump_expr<W: std::io::Write>(
         &self,
-        kind: &JumpKind,
+        kind: JumpKind,
         expr: &Option<Box<AstNodeExpr>>,
         w: &mut W,
     ) -> Result<(), Error> {
@@ -546,7 +546,7 @@ impl<'a> SexpEmitter<'a> {
             AstNodeExpr::IfExpr { .. } => self.if_expr(ast, w),
             AstNodeExpr::VarRef(span, _) => self.var_ref(span, w),
             AstNodeExpr::FnCall { fn_name, args, .. } => self.fn_call(fn_name, args, w),
-            AstNodeExpr::Jump { kind, expr, .. } => self.jump_expr(kind, expr, w),
+            AstNodeExpr::Jump { kind, expr, .. } => self.jump_expr(*kind, expr, w),
             AstNodeExpr::RangeTest { range, cond, .. } => self.range_test(range, *cond, w),
             AstNodeExpr::TypeTest {
                 identifier, cond, ..

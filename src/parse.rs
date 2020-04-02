@@ -82,6 +82,7 @@ impl Type {
             _ => unreachable!(),
         }
     }
+
     pub(crate) fn with_fn_return_t(&self, t: &Type) -> Self {
         match self {
             Type::Function { args, .. } => Type::Function {
