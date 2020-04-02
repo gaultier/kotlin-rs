@@ -595,7 +595,7 @@ impl<'a> TypeChecker<'a> {
                 found_return_t
             }
             AstNodeStmt::Block { .. } => {
-                let mut found_return_t = self.statement(body)?;
+                self.statement(body)?;
                 let explicit_return_t = self
                     .types
                     .get(&id)
@@ -603,17 +603,15 @@ impl<'a> TypeChecker<'a> {
                     .flatten()
                     .unwrap_or(Type::Unit);
 
-                debug!(
-                    "fn_def long form: found_return_t={} explicit_return_t={}",
-                    &found_return_t, &explicit_return_t
-                );
-                // Small workaround to allow `fn foo(): Unit {1}`
-                if found_return_t != Type::Unit && explicit_return_t == Type::Unit {
-                    found_return_t = Type::Unit;
-                } else {
-                    self.is_type(&found_return_t, &explicit_return_t, &return_t_span)?;
-                }
-                found_return_t
+                debug!("fn_def long form: explicit_return_t={}", &explicit_return_t);
+                // // Small workaround to allow `fn foo(): Unit {1}`
+                // if found_return_t != Type::Unit && explicit_return_t == Type::Unit {
+                //     found_return_t = Type::Unit;
+                // } else {
+                //     self.is_type(&found_return_t, &explicit_return_t, &return_t_span)?;
+                // }
+
+                explicit_return_t
             }
             _ => unreachable!(),
         };
