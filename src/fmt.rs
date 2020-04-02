@@ -1,20 +1,15 @@
 use crate::error::*;
-use crate::lex::{Lexer, Span, Token, TokenKind};
+use crate::lex::{Lexer, Span};
 use crate::parse::*;
 
 pub struct Formatter<'a> {
     lexer: &'a Lexer,
-    depth: usize,
     ident: usize,
 }
 
 impl<'a> Formatter<'a> {
     pub fn new(lexer: &'a Lexer) -> Formatter<'a> {
-        Formatter {
-            lexer,
-            depth: 0,
-            ident: 0,
-        }
+        Formatter { lexer, ident: 0 }
     }
 
     fn assign<W: std::io::Write>(
@@ -125,10 +120,12 @@ impl<'a> Formatter<'a> {
     fn while_stmt<W: std::io::Write>(&mut self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeStmt::While { cond, body, .. } => {
+                self.ident(w);
                 write!(w, "while (").unwrap();
                 self.expr(cond, w)?;
                 writeln!(w, ") {{").unwrap();
                 self.statement(body, w)?;
+                self.ident(w);
                 writeln!(w, "}}").unwrap();
                 Ok(())
             }
@@ -178,11 +175,16 @@ impl<'a> Formatter<'a> {
         self.depth += 1;
 
         for stmt in block.iter() {
+            self.ident(w);
             self.statement(&stmt, w)?;
             writeln!(w, "").unwrap();
         }
 
         Ok(())
+    }
+
+    fn ident<W: std::io::Write>(&mut self, w: &mut W) {
+        write!(w, "{}", str::repeat("  ", self.ident)).unwrap();
     }
 
     fn fn_call<W: std::io::Write>(
