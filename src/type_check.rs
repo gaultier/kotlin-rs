@@ -40,6 +40,20 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    fn do_while_stmt(
+        &mut self,
+        cond: &AstNodeExpr,
+        block: &AstNodeStmt,
+        span: &Span,
+    ) -> Result<Type, Error> {
+        // The types in the body are inferred before the types in the condition since the condition
+        // could use variables declared in the body
+        self.statement(block)?;
+        let cond_t = self.expr(cond)?;
+        self.is_type(&cond_t, &Type::Boolean, &span)?;
+        Ok(Type::Unit)
+    }
+
     fn while_stmt(
         &mut self,
         cond: &AstNodeExpr,
@@ -86,9 +100,8 @@ impl<'a> TypeChecker<'a> {
     fn statement(&mut self, statement: &AstNodeStmt) -> Result<Type, Error> {
         match statement {
             AstNodeStmt::Expr(expr) => self.expr(expr),
-            AstNodeStmt::DoWhile { cond, span, body } | AstNodeStmt::While { cond, span, body } => {
-                self.while_stmt(cond, body, span)
-            }
+            AstNodeStmt::DoWhile { cond, span, body } => self.do_while_stmt(cond, body, span),
+            AstNodeStmt::While { cond, span, body } => self.while_stmt(cond, body, span),
             AstNodeStmt::VarDefinition {
                 value,
                 id,

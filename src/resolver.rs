@@ -411,10 +411,28 @@ impl<'a> Resolver<'a> {
             AstNodeStmt::Expr(expr) => {
                 self.expr(expr)?;
             }
-            AstNodeStmt::While { cond, body, .. } | AstNodeStmt::DoWhile { cond, body, .. } => {
+            AstNodeStmt::DoWhile { cond, body, .. } => {
                 let ctx = self.context;
                 self.context.enter_loop();
+
+                match &**body {
+                    AstNodeStmt::Block { id, body } => {
+                        self.enter_scope(*id);
+                        for stmt in body {
+                            self.statement(&stmt)?;
+                        }
+                        // The condition is in the same scope as the loop body for the resolution
+                        self.expr(cond)?;
+                        self.exit_scope();
+                    }
+                    stmt => self.statement(&stmt)?,
+                }
+                self.context = ctx;
+            }
+            AstNodeStmt::While { cond, body, .. } => {
+                let ctx = self.context;
                 self.expr(cond)?;
+                self.context.enter_loop();
                 self.statements(body)?;
                 self.context = ctx;
             }
