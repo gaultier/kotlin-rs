@@ -235,9 +235,9 @@ impl<'a> Formatter<'a> {
 
             self.expr(last, w)?;
         }
-        write!(w, ") = ").unwrap(); // FIXME
+        write!(w, ") ").unwrap();
 
-        self.control_structure_body(body, w)?;
+        self.fn_body(body, w)?;
         Ok(())
     }
 
@@ -276,6 +276,27 @@ impl<'a> Formatter<'a> {
         }
     }
 
+    fn fn_body<W: std::io::Write>(&mut self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
+        match ast {
+            AstNodeStmt::Block { body, .. } => match body.as_slice() {
+                [AstNodeStmt::Println(e)] | [AstNodeStmt::Expr(e)] => {
+                    write!(w, "= ").unwrap();
+                    self.expr(e, w)
+                }
+                _ => {
+                    writeln!(w, "{{").unwrap();
+                    self.block(body, w)?;
+                    write!(w, "}}").unwrap();
+                    Ok(())
+                }
+            },
+            AstNodeStmt::Println(e) | AstNodeStmt::Expr(e) => {
+                write!(w, " = ").unwrap();
+                self.expr(e, w)
+            }
+            _ => unreachable!(),
+        }
+    }
     fn control_structure_body<W: std::io::Write>(
         &mut self,
         ast: &AstNodeStmt,

@@ -78,7 +78,7 @@ fn dump_ast(src: String) -> Result<(), Error> {
     let mut lexer = Lexer::new(src);
     let mut parser = Parser::new(&mut lexer);
     let stmts = parser.parse()?;
-    println!("{:?}", stmts);
+    println!("{:#?}", stmts);
     Ok(())
 }
 
