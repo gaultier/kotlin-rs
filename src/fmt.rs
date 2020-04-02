@@ -260,7 +260,6 @@ impl<'a> Formatter<'a> {
                 subject,
                 ..
             } => {
-                self.ident(w);
                 write!(w, "when ").unwrap();
                 if let Some(subject) = subject {
                     write!(w, "(").unwrap();
