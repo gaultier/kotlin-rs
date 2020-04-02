@@ -125,6 +125,10 @@
 ## CLI
 
 - [ ] Simplify CLI (align with kotlinc)
+- [ ] Add debug dump of the AST
+- [ ] Add debug dump of resolution & types
+- [ ] Show default paths of dependencies e.g stdlib
+- [ ] Give on the CLI paths of dependencies e.g stdlib
 
 ## Errors
 
