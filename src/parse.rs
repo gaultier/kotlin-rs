@@ -838,7 +838,6 @@ impl Parser<'_> {
 
         let mut args = Vec::new();
         let end_span = self.fn_call_args(&mut args)?;
-        self.skip_newlines()?;
 
         let start_span = fn_name.span();
 
