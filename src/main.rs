@@ -1,7 +1,6 @@
 use clap::{App, Arg};
 use kotlin::compile::*;
 use kotlin::error::Error;
-use kotlin::fmt::Formatter;
 use kotlin::lex::Lexer;
 use kotlin::parse::Parser;
 use std::io::prelude::*;
@@ -58,13 +57,11 @@ fn main() {
     };
 
     let cpy = src.clone();
+    let stdout = std::io::stdout();
+    let mut handle = stdout.lock();
     let res = match matches.value_of("command").unwrap() {
-        "sexp" => {
-            let stdout = std::io::stdout();
-            let mut handle = stdout.lock();
-            compile(src, &mut handle)
-        }
-        "fmt" => fmt(src),
+        "sexp" => compile(src, &mut handle),
+        "fmt" => fmt(src, &mut handle),
         "dump_ast" => dump_ast(src),
         _ => unreachable!(),
     };
@@ -80,15 +77,4 @@ fn dump_ast(src: String) -> Result<(), Error> {
     let stmts = parser.parse()?;
     println!("{:#?}", stmts);
     Ok(())
-}
-
-fn fmt(src: String) -> Result<(), Error> {
-    let mut lexer = Lexer::new(src);
-    let mut parser = Parser::new(&mut lexer);
-    let stmts = parser.parse()?;
-    let mut formatter = Formatter::new(&lexer);
-
-    let stdout = std::io::stdout();
-    let mut handle = stdout.lock();
-    formatter.statements(&stmts, &mut handle)
 }

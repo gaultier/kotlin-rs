@@ -5,11 +5,16 @@ use crate::parse::*;
 pub struct Formatter<'a> {
     lexer: &'a Lexer,
     ident: isize,
+    types: &'a Types,
 }
 
 impl<'a> Formatter<'a> {
-    pub fn new(lexer: &'a Lexer) -> Formatter<'a> {
-        Formatter { lexer, ident: -1 }
+    pub fn new(lexer: &'a Lexer, types: &'a Types) -> Formatter<'a> {
+        Formatter {
+            lexer,
+            ident: -1,
+            types,
+        }
     }
 
     fn assign<W: std::io::Write>(
