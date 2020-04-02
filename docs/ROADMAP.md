@@ -76,7 +76,7 @@
 - [ ] Annotations
 - [ ] Infix function
 - [ ] For
-- [ ] As expression
+- [x] As expression
 - [ ] Jump expression with label e.g `return@loop; break@foo; continue@bar;`
 
 ## Type checker
