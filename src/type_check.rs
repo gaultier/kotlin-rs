@@ -509,6 +509,7 @@ impl<'a> TypeChecker<'a> {
                 };
 
                 self.types.insert(*id, t.clone());
+                debug!("if_expr: id={} t={}", id, t);
                 Ok(t)
             }
             _ => unreachable!(),
@@ -572,15 +573,10 @@ impl<'a> TypeChecker<'a> {
         return_t_span: &Span,
         id: NodeId,
     ) -> Result<Type, Error> {
-        let args_t = args
-            .iter()
-            .map(|arg| self.expr(arg))
-            .collect::<Result<Vec<_>, Error>>()?;
-
         let current_fn_id = self.current_fn_id;
         self.current_fn_id = Some(id);
 
-        debug!("fn_def: id={} args_t={:?} args={:?}", id, args_t, args);
+        debug!("fn_def: id={} t={}", id, self.types.get(&id).unwrap());
 
         // If the function was defined using the short form `fun add(a:Int, b:Int) = a+b`, the
         // type is inferred to be the one of the expression if not explicitely defined.
