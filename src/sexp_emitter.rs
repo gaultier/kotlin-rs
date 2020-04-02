@@ -163,11 +163,11 @@ impl<'a> SexpEmitter<'a> {
     fn do_while_stmt<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeStmt::DoWhile { cond, body, .. } => {
-                write!(w, "(loop [] ").unwrap();
+                write!(w, "(do-while ").unwrap();
                 self.statement(body, w)?;
                 write!(w, " (if ").unwrap();
                 self.expr(cond, w)?;
-                writeln!(w, " (recur)))").unwrap();
+                writeln!(w, "))").unwrap();
                 Ok(())
             }
             _ => unreachable!(),

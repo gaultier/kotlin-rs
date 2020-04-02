@@ -132,3 +132,15 @@ fn continue_not_in_loop() -> Result<(), String> {
         other => Err(format!("Should be an error: {:?}", other)),
     }
 }
+
+#[test]
+fn do_while_use_var_in_cond_from_body() {
+    let src = String::from("do {val y = 5;} while(y <5)");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(do-while (define y 5)\n  (if (< y 5)))"
+    );
+}
