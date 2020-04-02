@@ -1,6 +1,7 @@
 use crate::error::*;
 use crate::lex::{Lexer, Span, Token};
 use crate::parse::*;
+use log::debug;
 
 pub struct Formatter<'a> {
     lexer: &'a Lexer,
@@ -243,14 +244,11 @@ impl<'a> Formatter<'a> {
             self.expr(arg, w)?;
             write!(w, ": {}", self.types.get(&arg.id()).unwrap()).unwrap();
         }
-        write!(
-            w,
-            "): {} ",
-            self.types.get(&id).unwrap().fn_return_t().unwrap()
-        )
-        .unwrap();
+        let return_t = self.types.get(&id).unwrap().fn_return_t().unwrap();
+        debug!("fn_def: name={:?} return_t={}", fn_name, return_t);
+        write!(w, "): {} ", return_t).unwrap();
 
-        self.fn_body(body, w)?;
+        self.fn_body(body, &return_t, w)?;
         Ok(())
     }
 
@@ -289,26 +287,51 @@ impl<'a> Formatter<'a> {
         }
     }
 
-    fn fn_body<W: std::io::Write>(&mut self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
+    fn fn_body<W: std::io::Write>(
+        &mut self,
+        ast: &AstNodeStmt,
+        return_t: &Type,
+        w: &mut W,
+    ) -> Result<(), Error> {
         match ast {
             AstNodeStmt::Block { body, .. } => match body.as_slice() {
-                [AstNodeStmt::Println(e)] | [AstNodeStmt::Expr(e)] => {
+                [AstNodeStmt::Println(e)] => {
+                    write!(w, "= println(").unwrap();
+                    self.expr(e, w)?;
+                    writeln!(w, ")").unwrap();
+                }
+                [AstNodeStmt::Expr(e)] if self.types.get(&e.id()).unwrap() == return_t => {
+                    dbg!(&return_t);
                     write!(w, "= ").unwrap();
-                    self.expr(e, w)
+                    self.expr(e, w)?;
                 }
                 _ => {
                     writeln!(w, "{{").unwrap();
                     self.block(body, w)?;
                     write!(w, "}}").unwrap();
-                    Ok(())
                 }
             },
-            AstNodeStmt::Println(e) | AstNodeStmt::Expr(e) => {
-                write!(w, " = ").unwrap();
-                self.expr(e, w)
+            AstNodeStmt::Println(e) => {
+                write!(w, "= println(").unwrap();
+                self.expr(e, w)?;
+                writeln!(w, ")").unwrap();
+            }
+            AstNodeStmt::Expr(e) if self.types.get(&e.id()).unwrap() == return_t => {
+                dbg!(&return_t);
+                write!(w, "= ").unwrap();
+                self.expr(e, w)?;
+            }
+            AstNodeStmt::Expr(e) => {
+                writeln!(w, "{{").unwrap();
+                self.ident += 1;
+                self.ident(w);
+                self.expr(e, w)?;
+                self.ident -= 1;
+                writeln!(w, "\n}}").unwrap();
             }
             _ => unreachable!(),
         }
+        Ok(())
     }
     fn control_structure_body<W: std::io::Write>(
         &mut self,
