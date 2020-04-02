@@ -584,9 +584,10 @@ impl<'a> TypeChecker<'a> {
 
         // We need to insert the type early even if partial because of the way `return` in the body
         // fill this type with more info.
+        let explicit_return_t = self.types.get(&id).map(|t| t.fn_return_t()).flatten();
         let fn_t = Type::Function {
             args: args_t,
-            return_t: Box::new(None),
+            return_t: Box::new(explicit_return_t),
         };
 
         self.types.insert(id, fn_t.clone());
