@@ -39,6 +39,7 @@
 - [x] When
 - [x] When with subject
 - [x] Range test in when entry e.g `when {4 in 1..5 -> 99 else 0}`
+- [x] Type test in when entry e.g `when {4 is Int -> true else false}`
 - [ ] Elvis operator
 - [x] As expression
 - [x] While
@@ -75,7 +76,6 @@
 - [ ] Annotations
 - [ ] Infix function
 - [ ] For
-- [ ] Type test in when entry e.g `when {4 is Int -> true else false}`
 - [ ] As expression
 - [ ] Jump expression with label e.g `return@loop; break@foo; continue@bar;`
 
