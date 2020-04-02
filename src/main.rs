@@ -1,5 +1,8 @@
 use clap::{App, Arg};
 use kotlin::compile::*;
+use kotlin::error::Error;
+use kotlin::lex::Lexer;
+use kotlin::parse::Parser;
 use std::io::prelude::*;
 
 fn main() {
@@ -27,7 +30,7 @@ fn main() {
         .get_matches();
     let file_name = matches.value_of("input_file");
 
-    let contents = if let Some(file_name) = file_name {
+    let src = if let Some(file_name) = file_name {
         let file = std::fs::File::open(file_name);
         if let Err(err) = file {
             eprintln!("Could not open file {}: {}", file_name, err);
@@ -35,36 +38,44 @@ fn main() {
         }
         let mut file = file.unwrap();
 
-        let mut contents = String::new();
-        if let Err(err) = file.read_to_string(&mut contents) {
-            eprintln!("Could not read contents of file {}: {}", file_name, err);
+        let mut src = String::new();
+        if let Err(err) = file.read_to_string(&mut src) {
+            eprintln!("Could not read src of file {}: {}", file_name, err);
             std::process::exit(1);
         }
 
-        contents
+        src
     } else {
-        let mut contents = String::new();
+        let mut src = String::new();
         let stdin = std::io::stdin();
         let mut handle = stdin.lock();
-        if let Err(err) = handle.read_to_string(&mut contents) {
+        if let Err(err) = handle.read_to_string(&mut src) {
             eprintln!("Could not read stdin: {}", err);
             std::process::exit(1);
         }
-        contents
+        src
     };
 
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
 
-    match matches.value_of("command").unwrap() {
-        "sexp" => {
-            let cpy = contents.clone();
-            if let Err(err) = compile(contents, &mut handle) {
-                err.eprint(&cpy);
-                std::process::exit(1);
-            }
-        }
+    let cpy = src.clone();
+    let res = match matches.value_of("command").unwrap() {
+        "sexp" => compile(src, &mut handle),
         "fmt" => unimplemented!(),
+        "dump_ast" => dump_ast(src),
         _ => unreachable!(),
+    };
+    if let Err(err) = res {
+        err.eprint(&cpy);
+        std::process::exit(1);
     }
+}
+
+fn dump_ast(src: String) -> Result<(), Error> {
+    let mut lexer = Lexer::new(src);
+    let mut parser = Parser::new(&mut lexer);
+    let stmts = parser.parse()?;
+    println!("{:?}", stmts);
+    Ok(())
 }
