@@ -512,6 +512,25 @@ impl<'a> SexpEmitter<'a> {
         Ok(())
     }
 
+    fn type_test<W: std::io::Write>(
+        &self,
+        identifier: &AstNodeExpr,
+        cond: bool,
+        w: &mut W,
+    ) -> Result<(), Error> {
+        if !cond {
+            write!(w, "(not ").unwrap();
+        }
+        write!(w, "(is ").unwrap();
+        self.expr(identifier, w)?;
+        write!(w, ")").unwrap();
+
+        if !cond {
+            write!(w, ")").unwrap();
+        }
+        Ok(())
+    }
+
     pub fn expr<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeExpr::WhenExpr { .. } => self.when_expr(ast, w),
@@ -531,7 +550,7 @@ impl<'a> SexpEmitter<'a> {
             AstNodeExpr::RangeTest { range, cond, .. } => self.range_test(range, *cond, w),
             AstNodeExpr::TypeTest {
                 identifier, cond, ..
-            } => unimplemented!(),
+            } => self.type_test(identifier, *cond, w),
         }
     }
 }

@@ -491,12 +491,18 @@ impl Parser<'_> {
                 let span = previous.span;
                 self.advance()?;
                 self.skip_newlines()?;
+                let type_literal_tok = self.previous.unwrap();
+                let type_literal_expr = self.simple_identifier()?;
+                let t = self.simple_identifier_type(&type_literal_tok)?;
+                let id = self.next_id();
+                debug!("type_test: id={} t={}", id, &t);
+                self.types.insert(id, t);
 
                 Ok(AstNodeExpr::TypeTest {
                     span,
-                    identifier: Box::new(self.simple_identifier()?),
+                    identifier: Box::new(type_literal_expr),
                     cond: true,
-                    id: self.next_id(),
+                    id,
                 })
             }
             _ => self.expr(),
