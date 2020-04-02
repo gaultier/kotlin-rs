@@ -102,11 +102,11 @@ impl<'a> Formatter<'a> {
     fn do_while_stmt<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeStmt::DoWhile { cond, body, .. } => {
-                write!(w, "(do-while ").unwrap();
+                writeln!(w, "do ").unwrap();
                 self.statement(body, w)?;
-                write!(w, " (if ").unwrap();
+                write!(w, "\nwhile (").unwrap();
                 self.expr(cond, w)?;
-                writeln!(w, "))").unwrap();
+                writeln!(w, ")").unwrap();
                 Ok(())
             }
             _ => unreachable!(),
@@ -116,11 +116,11 @@ impl<'a> Formatter<'a> {
     fn while_stmt<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeStmt::While { cond, body, .. } => {
-                write!(w, "(while ").unwrap();
+                write!(w, "while (").unwrap();
                 self.expr(cond, w)?;
-                write!(w, " ").unwrap();
-                self.statement(body, w)?;
                 writeln!(w, ")").unwrap();
+                self.statement(body, w)?;
+                writeln!(w, "").unwrap();
                 Ok(())
             }
             _ => unreachable!(),
@@ -128,109 +128,8 @@ impl<'a> Formatter<'a> {
     }
 
     fn literal<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
-        match ast {
-            AstNodeExpr::Literal(
-                Token {
-                    kind: TokenKind::Int(n),
-                    ..
-                },
-                _,
-            ) => {
-                write!(w, "{}", n).unwrap();
-                Ok(())
-            }
-            AstNodeExpr::Literal(
-                Token {
-                    kind: TokenKind::UInt(n),
-                    ..
-                },
-                _,
-            ) => {
-                write!(w, "{}", n).unwrap();
-                Ok(())
-            }
-            AstNodeExpr::Literal(
-                Token {
-                    kind: TokenKind::Long(n),
-                    ..
-                },
-                _,
-            ) => {
-                write!(w, "{}", n).unwrap();
-                Ok(())
-            }
-            AstNodeExpr::Literal(
-                Token {
-                    kind: TokenKind::ULong(n),
-                    ..
-                },
-                _,
-            ) => {
-                write!(w, "{}", n).unwrap();
-                Ok(())
-            }
-            AstNodeExpr::Literal(
-                Token {
-                    kind: TokenKind::Float(n),
-                    ..
-                },
-                _,
-            ) => {
-                write!(w, "{}", n).unwrap();
-                Ok(())
-            }
-            AstNodeExpr::Literal(
-                Token {
-                    kind: TokenKind::Double(n),
-                    ..
-                },
-                _,
-            ) => {
-                write!(w, "{}", n).unwrap();
-                Ok(())
-            }
-            AstNodeExpr::Literal(
-                Token {
-                    kind: TokenKind::Boolean(b),
-                    ..
-                },
-                _,
-            ) => {
-                write!(w, "{}", if *b { "#t" } else { "#f" }).unwrap();
-                Ok(())
-            }
-            AstNodeExpr::Literal(
-                Token {
-                    kind: TokenKind::Char(c),
-                    ..
-                },
-                _,
-            ) => {
-                write!(w, "'{}'", c).unwrap();
-                Ok(())
-            }
-            AstNodeExpr::Literal(
-                Token {
-                    kind: TokenKind::TString,
-                    span,
-                },
-                _,
-            ) => {
-                write!(w, "{}", &self.lexer.src[span.start..span.end]).unwrap();
-                Ok(())
-            }
-            AstNodeExpr::Literal(
-                Token {
-                    kind: TokenKind::Null,
-                    ..
-                },
-                _,
-            ) => {
-                write!(w, "'nil").unwrap();
-                Ok(())
-            }
-            _ => unreachable!(),
-        }
+        write!(w, "{}", &self.lexer.src[ast.span().start..ast.span().end]).unwrap();
+        Ok(())
     }
 
     fn unary<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
@@ -267,7 +166,7 @@ impl<'a> Formatter<'a> {
 
     fn block<W: std::io::Write>(&self, block: &[AstNodeStmt], w: &mut W) -> Result<(), Error> {
         if block.len() != 1 {
-            write!(w, "(begin ").unwrap();
+            write!(w, "{{").unwrap();
         }
 
         for stmt in block.iter() {
@@ -276,7 +175,7 @@ impl<'a> Formatter<'a> {
         }
 
         if block.len() != 1 {
-            write!(w, ")").unwrap();
+            writeln!(w, "}}").unwrap();
         }
         Ok(())
     }
@@ -287,14 +186,17 @@ impl<'a> Formatter<'a> {
         args: &[AstNodeExpr],
         w: &mut W,
     ) -> Result<(), Error> {
-        write!(w, "(apply ").unwrap();
         self.expr(fn_name, w)?;
-        write!(w, " (list ").unwrap();
-        for arg in args {
-            self.expr(arg, w)?;
-            write!(w, " ").unwrap();
+        write!(w, "(").unwrap();
+        if let Some((last, args)) = args.split_last() {
+            for arg in args {
+                self.expr(arg, w)?;
+                write!(w, ", ").unwrap();
+            }
+
+            self.expr(last, w)?;
         }
-        write!(w, "))").unwrap();
+        write!(w, ")").unwrap();
 
         Ok(())
     }
