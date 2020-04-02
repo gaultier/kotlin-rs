@@ -270,13 +270,13 @@ impl<'a> Formatter<'a> {
                 else_body,
                 ..
             } => {
-                write!(w, "(if ").unwrap();
+                write!(w, "if (").unwrap();
                 self.expr(cond, w)?;
-                write!(w, " ").unwrap();
+                write!(w, ") ").unwrap();
                 self.statement(&*if_body, w)?;
-                write!(w, " ").unwrap();
+                write!(w, " else ").unwrap();
                 self.statement(&*else_body, w)?;
-                write!(w, ")").unwrap();
+                write!(w, "").unwrap();
 
                 Ok(())
             }
@@ -297,13 +297,13 @@ impl<'a> Formatter<'a> {
         w: &mut W,
     ) -> Result<(), Error> {
         match kind {
-            JumpKind::Break | JumpKind::Continue => write!(w, "({})", kind).unwrap(),
+            JumpKind::Break | JumpKind::Continue => write!(w, "{}", kind).unwrap(),
             JumpKind::Return => {
-                write!(w, "(return ").unwrap();
+                write!(w, "return ").unwrap();
                 if let Some(expr) = expr {
                     self.expr(expr, w)?;
                 }
-                write!(w, ")").unwrap();
+                writeln!(w, "").unwrap();
             }
             JumpKind::Throw => unimplemented!(),
         }
