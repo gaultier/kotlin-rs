@@ -170,7 +170,6 @@ pub enum AstNodeStmt {
         body: Statements,
         id: NodeId,
     },
-    Println(AstNodeExpr),
 }
 
 pub type Statements = Vec<AstNodeStmt>;
@@ -255,6 +254,7 @@ pub enum AstNodeExpr {
         cond: bool,
         id: NodeId,
     },
+    Println(Box<AstNodeExpr>, NodeId),
 }
 
 impl AstNodeExpr {
@@ -270,7 +270,8 @@ impl AstNodeExpr {
             | AstNodeExpr::Grouping(_, id)
             | AstNodeExpr::RangeTest { id, .. }
             | AstNodeExpr::TypeTest { id, .. }
-            | AstNodeExpr::Jump { id, .. } => *id,
+            | AstNodeExpr::Jump { id, .. }
+            | AstNodeExpr::Println(_, id) => *id,
         }
     }
 
@@ -282,6 +283,7 @@ impl AstNodeExpr {
             AstNodeExpr::Literal(token, _) => token.span,
             AstNodeExpr::Unary { expr, .. } => expr.span(),
             AstNodeExpr::Grouping(expr, _) => expr.span(),
+            AstNodeExpr::Println(expr, _) => expr.span(),
             AstNodeExpr::IfExpr {
                 cond_span,
                 else_body_span,
@@ -898,6 +900,13 @@ impl Parser<'_> {
                     kind: UnaryKind::Prefix,
                 })
             }
+            TokenKind::KeywordPrintln => {
+                self.advance()?;
+                self.eat(TokenKind::LeftParen)?;
+                let expr = self.expr()?;
+                self.eat(TokenKind::RightParen)?;
+                Ok(AstNodeExpr::Println(Box::new(expr), self.next_id()))
+            }
             _ => self.postfix_unary_expr(),
         }
     }
@@ -1172,7 +1181,7 @@ impl Parser<'_> {
 
                 self.types.insert(id, arg_t);
                 debug!(
-                    "fn_def: arg={:?} t={:?}",
+                    "fn_def_args: arg={:?} t={:?}",
                     args.last().unwrap(),
                     type_literal_expr
                 );
@@ -1263,13 +1272,6 @@ impl Parser<'_> {
             TokenKind::KeywordWhile => self.while_stmt(),
             TokenKind::KeywordDo => self.do_while_stmt(),
             TokenKind::KeywordVal | TokenKind::KeywordVar => self.var_def(),
-            TokenKind::KeywordPrintln => {
-                self.advance()?;
-                self.eat(TokenKind::LeftParen)?;
-                let expr = self.expr()?;
-                self.eat(TokenKind::RightParen)?;
-                Ok(AstNodeStmt::Println(expr))
-            }
             TokenKind::Identifier
                 if cur_kind == TokenKind::Equal
                     || cur_kind == TokenKind::MinusEqual

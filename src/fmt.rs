@@ -67,11 +67,6 @@ impl<'a> Formatter<'a> {
             AstNodeStmt::Block { body, .. } => {
                 self.block(body, w)?;
             }
-            AstNodeStmt::Println(expr) => {
-                write!(w, "println(").unwrap();
-                self.expr(expr, w)?;
-                write!(w, ")").unwrap();
-            }
         };
         Ok(())
     }
@@ -302,11 +297,6 @@ impl<'a> Formatter<'a> {
         // One empty line after the function declaration
         match ast {
             AstNodeStmt::Block { body, .. } => match body.as_slice() {
-                [AstNodeStmt::Println(e)] => {
-                    write!(w, "= println(").unwrap();
-                    self.expr(e, w)?;
-                    write!(w, ")").unwrap();
-                }
                 [AstNodeStmt::Expr(AstNodeExpr::Jump {
                     kind: JumpKind::Return,
                     expr: Some(expr),
@@ -322,11 +312,6 @@ impl<'a> Formatter<'a> {
                     writeln!(w, "\n}}").unwrap();
                 }
             },
-            AstNodeStmt::Println(e) => {
-                write!(w, "= println(").unwrap();
-                self.expr(e, w)?;
-                write!(w, ")").unwrap();
-            }
             AstNodeStmt::Expr(e) if self.types.get(&e.id()).unwrap() == return_t => {
                 write!(w, "= ").unwrap();
                 self.expr(e, w)?;
@@ -344,7 +329,7 @@ impl<'a> Formatter<'a> {
     ) -> Result<(), Error> {
         match ast {
             AstNodeStmt::Block { body, .. } => match body.as_slice() {
-                [AstNodeStmt::Println(e)] | [AstNodeStmt::Expr(e)] => self.expr(e, w),
+                [AstNodeStmt::Expr(e)] => self.expr(e, w),
                 _ => {
                     writeln!(w, "{{").unwrap();
                     self.block(body, w)?;
@@ -352,7 +337,7 @@ impl<'a> Formatter<'a> {
                     Ok(())
                 }
             },
-            AstNodeStmt::Println(e) | AstNodeStmt::Expr(e) => self.expr(e, w),
+            AstNodeStmt::Expr(e) => self.expr(e, w),
             _ => unreachable!(),
         }
     }
@@ -455,6 +440,12 @@ impl<'a> Formatter<'a> {
             AstNodeExpr::TypeTest {
                 identifier, cond, ..
             } => self.type_test(identifier, *cond, w),
+            AstNodeExpr::Println(expr, _) => {
+                write!(w, "println(").unwrap();
+                self.expr(expr, w)?;
+                write!(w, ")").unwrap();
+                Ok(())
+            }
         }
     }
 }

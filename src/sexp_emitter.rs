@@ -122,11 +122,6 @@ impl<'a> SexpEmitter<'a> {
             AstNodeStmt::Block { body, .. } => {
                 self.block(body, w)?;
             }
-            AstNodeStmt::Println(expr) => {
-                write!(w, "(display ").unwrap();
-                self.expr(expr, w)?;
-                writeln!(w, ")").unwrap();
-            }
         };
         Ok(())
     }
@@ -551,6 +546,12 @@ impl<'a> SexpEmitter<'a> {
             AstNodeExpr::TypeTest {
                 identifier, cond, ..
             } => self.type_test(identifier, *cond, w),
+            AstNodeExpr::Println(expr, _) => {
+                write!(w, "(display ").unwrap();
+                self.expr(expr, w)?;
+                writeln!(w, ")").unwrap();
+                Ok(())
+            }
         }
     }
 }

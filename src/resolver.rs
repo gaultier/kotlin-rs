@@ -262,6 +262,9 @@ impl<'a> Resolver<'a> {
                 self.expr(range)?;
             }
             AstNodeExpr::TypeTest { .. } => {}
+            AstNodeExpr::Println(expr, _) => {
+                self.expr(expr)?;
+            }
         };
         Ok(())
     }
@@ -461,9 +464,6 @@ impl<'a> Resolver<'a> {
                 self.fn_def(fn_name, args, body, *flags, *id)?;
             }
             AstNodeStmt::Block { body, .. } => self.fn_block(body)?,
-            AstNodeStmt::Println(expr) => {
-                self.expr(expr)?;
-            }
         };
         Ok(())
     }

@@ -123,10 +123,6 @@ impl<'a> TypeChecker<'a> {
                 return_t_span,
             } => self.fn_def(fn_name, args, body, *flags, return_t_span, *id),
             AstNodeStmt::Block { body, .. } => self.block(body),
-            AstNodeStmt::Println(expr) => {
-                self.expr(expr)?;
-                Ok(Type::Unit)
-            }
         }
     }
 
@@ -698,6 +694,11 @@ impl<'a> TypeChecker<'a> {
                 range, span, id, ..
             } => self.range_test(range, span, *id),
             AstNodeExpr::TypeTest { id, .. } => Ok(self.types.get(id).cloned().unwrap()),
+            AstNodeExpr::Println(expr, id) => {
+                self.expr(expr)?;
+                self.types.insert(*id, Type::Unit);
+                Ok(Type::Unit)
+            }
         }
     }
 
