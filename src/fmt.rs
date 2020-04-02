@@ -293,6 +293,7 @@ impl<'a> Formatter<'a> {
         return_t: &Type,
         w: &mut W,
     ) -> Result<(), Error> {
+        // One empty line after the function declaration
         match ast {
             AstNodeStmt::Block { body, .. } => match body.as_slice() {
                 [AstNodeStmt::Println(e)] => {
@@ -303,11 +304,12 @@ impl<'a> Formatter<'a> {
                 [AstNodeStmt::Expr(e)] if self.types.get(&e.id()).unwrap() == return_t => {
                     write!(w, "= ").unwrap();
                     self.expr(e, w)?;
+                    writeln!(w, "").unwrap();
                 }
                 _ => {
                     writeln!(w, "{{").unwrap();
                     self.block(body, w)?;
-                    write!(w, "}}").unwrap();
+                    writeln!(w, "}}").unwrap();
                 }
             },
             AstNodeStmt::Println(e) => {
@@ -318,6 +320,7 @@ impl<'a> Formatter<'a> {
             AstNodeStmt::Expr(e) if self.types.get(&e.id()).unwrap() == return_t => {
                 write!(w, "= ").unwrap();
                 self.expr(e, w)?;
+                writeln!(w, "").unwrap();
             }
             AstNodeStmt::Expr(e) => {
                 writeln!(w, "{{").unwrap();
@@ -329,8 +332,6 @@ impl<'a> Formatter<'a> {
             }
             _ => unreachable!(),
         }
-        // One empty line after the function declaration
-        writeln!(w, "").unwrap();
         Ok(())
     }
     fn control_structure_body<W: std::io::Write>(
