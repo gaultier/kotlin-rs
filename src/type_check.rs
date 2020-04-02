@@ -596,15 +596,15 @@ impl<'a> TypeChecker<'a> {
         let found_return_t = match body {
             AstNodeStmt::Expr(e) => {
                 let found_return_t = self.expr(e)?;
-                let explicit_type_t = self.types.get(&id).map(|t| t.fn_return_t()).flatten();
-                if let Some(explicit_type_t) = explicit_type_t {
-                    self.is_type(&found_return_t, &explicit_type_t, &return_t_span)?;
+                let explicit_return_t = self.types.get(&id).map(|t| t.fn_return_t()).flatten();
+                if let Some(explicit_return_t) = explicit_return_t {
+                    self.is_type(&found_return_t, &explicit_return_t, &return_t_span)?;
                 }
                 found_return_t
             }
             AstNodeStmt::Block { .. } => {
                 let mut found_return_t = self.statement(body)?;
-                let explicit_type_t = self
+                let explicit_return_t = self
                     .types
                     .get(&id)
                     .map(|t| t.fn_return_t())
@@ -612,14 +612,14 @@ impl<'a> TypeChecker<'a> {
                     .unwrap_or(Type::Unit);
 
                 debug!(
-                    "fn_def long form: found_return_t={} explicit_type_t={}",
-                    &found_return_t, &explicit_type_t
+                    "fn_def long form: found_return_t={} explicit_return_t={}",
+                    &found_return_t, &explicit_return_t
                 );
                 // Small workaround to allow `fn foo(): Unit {1}`
-                if found_return_t != Type::Unit && explicit_type_t == Type::Unit {
+                if found_return_t != Type::Unit && explicit_return_t == Type::Unit {
                     found_return_t = Type::Unit;
                 } else {
-                    self.is_type(&found_return_t, &explicit_type_t, &return_t_span)?;
+                    self.is_type(&found_return_t, &explicit_return_t, &return_t_span)?;
                 }
                 found_return_t
             }
