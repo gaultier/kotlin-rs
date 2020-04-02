@@ -301,9 +301,13 @@ impl<'a> Formatter<'a> {
                     self.expr(e, w)?;
                     writeln!(w, ")").unwrap();
                 }
-                [AstNodeStmt::Expr(e)] if self.types.get(&e.id()).unwrap() == return_t => {
+                [AstNodeStmt::Expr(AstNodeExpr::Jump {
+                    kind: JumpKind::Return,
+                    expr: Some(expr),
+                    ..
+                })] => {
                     write!(w, "= ").unwrap();
-                    self.expr(e, w)?;
+                    self.expr(expr, w)?;
                     writeln!(w, "").unwrap();
                 }
                 _ => {
