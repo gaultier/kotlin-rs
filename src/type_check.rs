@@ -582,16 +582,6 @@ impl<'a> TypeChecker<'a> {
 
         debug!("fn_def: id={} args_t={:?} args={:?}", id, args_t, args);
 
-        // We need to insert the type early even if partial because of the way `return` in the body
-        // fill this type with more info.
-        let explicit_return_t = self.types.get(&id).map(|t| t.fn_return_t()).flatten();
-        let fn_t = Type::Function {
-            args: args_t,
-            return_t: Box::new(explicit_return_t),
-        };
-
-        self.types.insert(id, fn_t.clone());
-
         // If the function was defined using the short form `fun add(a:Int, b:Int) = a+b`, the
         // type is inferred to be the one of the expression if not explicitely defined.
         // If the function was defined using the long form `fun add(a:Int, b:Int) { return a+b; }`, the type is the explicit type. If not given it is Unit.
@@ -629,7 +619,12 @@ impl<'a> TypeChecker<'a> {
         };
 
         // Fill the inferred return type
-        let fn_t = fn_t.with_fn_return_t(&found_return_t);
+
+        let fn_t = self
+            .types
+            .get(&id)
+            .unwrap()
+            .with_fn_return_t(&found_return_t);
         self.types.insert(id, fn_t.clone());
 
         debug!(
