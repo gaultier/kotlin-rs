@@ -22,7 +22,7 @@ fn main() {
                 .help("What to do")
                 .default_value("sexp")
                 .possible_values(&[
-                    "sexp", "fmt",
+                    "sexp", "fmt", "dump_ast",
                     // Later: build, verify, etc
                 ])
                 .index(1),
