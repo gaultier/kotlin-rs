@@ -86,7 +86,7 @@ fn fmt(src: String) -> Result<(), Error> {
     let mut lexer = Lexer::new(src);
     let mut parser = Parser::new(&mut lexer);
     let stmts = parser.parse()?;
-    let formatter = Formatter::new(&lexer);
+    let mut formatter = Formatter::new(&lexer);
 
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();

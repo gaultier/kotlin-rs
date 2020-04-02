@@ -4,15 +4,21 @@ use crate::parse::*;
 
 pub struct Formatter<'a> {
     lexer: &'a Lexer,
+    depth: usize,
+    ident: usize,
 }
 
 impl<'a> Formatter<'a> {
     pub fn new(lexer: &'a Lexer) -> Formatter<'a> {
-        Formatter { lexer }
+        Formatter {
+            lexer,
+            depth: 0,
+            ident: 0,
+        }
     }
 
     fn assign<W: std::io::Write>(
-        &self,
+        &mut self,
         target: &AstNodeExpr,
         value: &AstNodeExpr,
         span: &Span,
@@ -25,7 +31,7 @@ impl<'a> Formatter<'a> {
         Ok(())
     }
 
-    fn statement<W: std::io::Write>(&self, stmt: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
+    fn statement<W: std::io::Write>(&mut self, stmt: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
         match stmt {
             AstNodeStmt::Expr(expr) => {
                 self.expr(expr, w)?;
@@ -68,7 +74,7 @@ impl<'a> Formatter<'a> {
     }
 
     pub fn statements<W: std::io::Write>(
-        &self,
+        &mut self,
         block: &AstNodeStmt,
         w: &mut W,
     ) -> Result<(), Error> {
@@ -76,7 +82,7 @@ impl<'a> Formatter<'a> {
         Ok(())
     }
 
-    fn var_def<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
+    fn var_def<W: std::io::Write>(&mut self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeStmt::VarDefinition {
                 identifier,
@@ -98,7 +104,11 @@ impl<'a> Formatter<'a> {
         }
     }
 
-    fn do_while_stmt<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
+    fn do_while_stmt<W: std::io::Write>(
+        &mut self,
+        ast: &AstNodeStmt,
+        w: &mut W,
+    ) -> Result<(), Error> {
         match ast {
             AstNodeStmt::DoWhile { cond, body, .. } => {
                 writeln!(w, "do ").unwrap();
@@ -112,7 +122,7 @@ impl<'a> Formatter<'a> {
         }
     }
 
-    fn while_stmt<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
+    fn while_stmt<W: std::io::Write>(&mut self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeStmt::While { cond, body, .. } => {
                 write!(w, "while (").unwrap();
@@ -126,12 +136,12 @@ impl<'a> Formatter<'a> {
         }
     }
 
-    fn literal<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
+    fn literal<W: std::io::Write>(&mut self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         write!(w, "{}", &self.lexer.src[ast.span().start..ast.span().end]).unwrap();
         Ok(())
     }
 
-    fn unary<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
+    fn unary<W: std::io::Write>(&mut self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeExpr::Unary {
                 token, expr, kind, ..
@@ -149,7 +159,7 @@ impl<'a> Formatter<'a> {
         }
     }
 
-    fn binary<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
+    fn binary<W: std::io::Write>(&mut self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeExpr::Binary {
                 left, op, right, ..
@@ -163,7 +173,10 @@ impl<'a> Formatter<'a> {
         }
     }
 
-    fn block<W: std::io::Write>(&self, block: &[AstNodeStmt], w: &mut W) -> Result<(), Error> {
+    fn block<W: std::io::Write>(&mut self, block: &[AstNodeStmt], w: &mut W) -> Result<(), Error> {
+        self.ident += 1;
+        self.depth += 1;
+
         for stmt in block.iter() {
             self.statement(&stmt, w)?;
             writeln!(w, "").unwrap();
@@ -173,7 +186,7 @@ impl<'a> Formatter<'a> {
     }
 
     fn fn_call<W: std::io::Write>(
-        &self,
+        &mut self,
         fn_name: &AstNodeExpr,
         args: &[AstNodeExpr],
         w: &mut W,
@@ -194,7 +207,7 @@ impl<'a> Formatter<'a> {
     }
 
     fn fn_def<W: std::io::Write>(
-        &self,
+        &mut self,
         fn_name: &AstNodeExpr,
         args: &[AstNodeExpr],
         body: &AstNodeStmt,
@@ -219,7 +232,7 @@ impl<'a> Formatter<'a> {
         Ok(())
     }
 
-    fn when_expr<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
+    fn when_expr<W: std::io::Write>(&mut self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeExpr::WhenExpr {
                 entries,
@@ -254,7 +267,7 @@ impl<'a> Formatter<'a> {
         }
     }
 
-    fn if_expr<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
+    fn if_expr<W: std::io::Write>(&mut self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeExpr::IfExpr {
                 cond,
@@ -276,14 +289,14 @@ impl<'a> Formatter<'a> {
         }
     }
 
-    fn var_ref<W: std::io::Write>(&self, span: &Span, w: &mut W) -> Result<(), Error> {
+    fn var_ref<W: std::io::Write>(&mut self, span: &Span, w: &mut W) -> Result<(), Error> {
         let identifier = &self.lexer.src[span.start..span.end];
         write!(w, "{}", identifier).unwrap();
         Ok(())
     }
 
     fn jump_expr<W: std::io::Write>(
-        &self,
+        &mut self,
         kind: JumpKind,
         expr: &Option<Box<AstNodeExpr>>,
         w: &mut W,
@@ -303,7 +316,7 @@ impl<'a> Formatter<'a> {
     }
 
     fn range_test<W: std::io::Write>(
-        &self,
+        &mut self,
         range: &AstNodeExpr,
         cond: bool,
         w: &mut W,
@@ -318,7 +331,7 @@ impl<'a> Formatter<'a> {
     }
 
     fn type_test<W: std::io::Write>(
-        &self,
+        &mut self,
         identifier: &AstNodeExpr,
         cond: bool,
         w: &mut W,
@@ -332,7 +345,7 @@ impl<'a> Formatter<'a> {
         Ok(())
     }
 
-    fn expr<W: std::io::Write>(&self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
+    fn expr<W: std::io::Write>(&mut self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeExpr::WhenExpr { .. } => self.when_expr(ast, w),
             AstNodeExpr::Literal(..) => self.literal(ast, w),
