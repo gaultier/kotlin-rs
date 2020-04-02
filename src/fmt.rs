@@ -4,12 +4,12 @@ use crate::parse::*;
 
 pub struct Formatter<'a> {
     lexer: &'a Lexer,
-    ident: usize,
+    ident: isize,
 }
 
 impl<'a> Formatter<'a> {
     pub fn new(lexer: &'a Lexer) -> Formatter<'a> {
-        Formatter { lexer, ident: 0 }
+        Formatter { lexer, ident: -1 }
     }
 
     fn assign<W: std::io::Write>(
@@ -181,11 +181,14 @@ impl<'a> Formatter<'a> {
             writeln!(w, "").unwrap();
         }
 
+        self.ident -= 1;
         Ok(())
     }
 
     fn ident<W: std::io::Write>(&mut self, w: &mut W) {
-        write!(w, "{}", str::repeat("  ", self.ident)).unwrap();
+        if self.ident > 0 {
+            write!(w, "{}", str::repeat("  ", self.ident as usize)).unwrap();
+        }
     }
 
     fn fn_call<W: std::io::Write>(
