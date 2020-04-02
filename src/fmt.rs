@@ -58,9 +58,10 @@ impl<'a> Formatter<'a> {
                 fn_name,
                 args,
                 body,
+                id,
                 ..
             } => {
-                self.fn_def(fn_name, args, body, w)?;
+                self.fn_def(fn_name, args, body, *id, w)?;
             }
             AstNodeStmt::Block { body, .. } => {
                 self.block(body, w)?;
@@ -226,21 +227,28 @@ impl<'a> Formatter<'a> {
         fn_name: &AstNodeExpr,
         args: &[AstNodeExpr],
         body: &AstNodeStmt,
+        id: NodeId,
         w: &mut W,
     ) -> Result<(), Error> {
         write!(w, "fun ").unwrap();
         self.expr(fn_name, w)?;
         write!(w, "(").unwrap();
 
-        if let Some((last, args)) = args.split_last() {
+        if let Some((arg, args)) = args.split_last() {
             for arg in args {
                 self.expr(arg, w)?;
-                write!(w, ":{}, ", self.types.get(&arg.id()).unwrap()).unwrap();
+                write!(w, ": {}, ", self.types.get(&arg.id()).unwrap()).unwrap();
             }
 
-            self.expr(last, w)?;
+            self.expr(arg, w)?;
+            write!(w, ": {}", self.types.get(&arg.id()).unwrap()).unwrap();
         }
-        write!(w, ") ").unwrap();
+        write!(
+            w,
+            "): {} ",
+            self.types.get(&id).unwrap().fn_return_t().unwrap()
+        )
+        .unwrap();
 
         self.fn_body(body, w)?;
         Ok(())
