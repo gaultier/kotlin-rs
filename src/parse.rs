@@ -486,7 +486,26 @@ impl Parser<'_> {
                     id: self.next_id(),
                 })
             }
-            (TokenKind::Bang, TokenKind::KeywordIs) => unimplemented!(),
+            (TokenKind::Bang, TokenKind::KeywordIs) => {
+                let span_start = previous.span.start;
+                let span_end = current.span.end;
+                self.advance()?;
+                self.advance()?;
+                self.skip_newlines()?;
+                let type_literal_tok = self.previous.unwrap();
+                let type_literal_expr = self.simple_identifier()?;
+                let t = self.simple_identifier_type(&type_literal_tok)?;
+                let id = self.next_id();
+                debug!("type_test: id={} t={}", id, &t);
+                self.types.insert(id, t);
+
+                Ok(AstNodeExpr::TypeTest {
+                    span: Span::new(span_start, span_end),
+                    identifier: Box::new(type_literal_expr),
+                    cond: false,
+                    id,
+                })
+            }
             (TokenKind::KeywordIs, _) => {
                 let span = previous.span;
                 self.advance()?;
