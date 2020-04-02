@@ -575,6 +575,21 @@ impl<'a> TypeChecker<'a> {
         let current_fn_id = self.current_fn_id;
         self.current_fn_id = Some(id);
 
+        let args_t = args
+            .iter()
+            .map(|arg| self.expr(arg))
+            .collect::<Result<Vec<_>, Error>>()?;
+        debug!("fn_def: args_t={:?} args={:?}", args_t, args);
+
+        // We need to insert the type early even if partial because of the way `return` in the body
+        // fill this type with more info.
+        let fn_t = Type::Function {
+            args: args_t,
+            return_t: Box::new(None),
+        };
+
+        self.types.insert(id, fn_t.clone());
+
         // If the function was defined using the short form `fun add(a:Int, b:Int) = a+b`, the
         // type is inferred to be the one of the expression if not explicitely defined.
         // If the function was defined using the long form `fun add(a:Int, b:Int) { return a+b; }`, the type is the explicit type. If not given it is Unit.
@@ -611,27 +626,18 @@ impl<'a> TypeChecker<'a> {
             _ => unreachable!(),
         };
 
-        let args_t = args
-            .iter()
-            .map(|arg| self.expr(arg))
-            .collect::<Result<Vec<_>, Error>>()?;
-        debug!("fn_def: args_t={:?} args={:?}", args_t, args);
-
-        let t = Type::Function {
-            args: args_t,
-            return_t: Box::new(Some(found_return_t)),
-        };
-
-        self.types.insert(id, t.clone());
+        // Fill the inferred return type
+        let fn_t = fn_t.with_fn_return_t(&found_return_t);
+        self.types.insert(id, fn_t.clone());
 
         debug!(
             "fn def: fn_name={:?} args={:?} body={:?} flags={} id={} type={:?}",
-            fn_name, args, body, flags, id, t
+            fn_name, args, body, flags, id, fn_t
         );
 
         self.current_fn_id = current_fn_id;
 
-        Ok(t)
+        Ok(fn_t)
     }
 
     fn range_test(&mut self, range: &AstNodeExpr, span: &Span, id: NodeId) -> Result<Type, Error> {
