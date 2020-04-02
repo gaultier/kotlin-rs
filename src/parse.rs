@@ -1123,7 +1123,6 @@ impl Parser<'_> {
         self.eat(TokenKind::Equal)?;
         self.skip_newlines()?;
         let value = self.expr()?;
-        // self.eat_opt(TokenKind::Semicolon)?;
 
         Ok(AstNodeStmt::VarDefinition {
             identifier,

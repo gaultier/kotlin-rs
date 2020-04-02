@@ -144,3 +144,15 @@ fn do_while_use_var_in_cond_from_body() {
         "(do-while (define y 5)\n  (if (< y 5)))"
     );
 }
+
+#[test]
+fn do_while_empty_body() {
+    let src = String::from("do while(true)");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(do-while (begin ) (if #t))"
+    );
+}
