@@ -242,19 +242,13 @@ impl<'a> Formatter<'a> {
             AstNodeExpr::Unary {
                 token, expr, kind, ..
             } => {
-                write!(
-                    w,
-                    "({}{} ",
-                    if *kind == UnaryKind::Postfix {
-                        "postfix-"
-                    } else {
-                        ""
-                    },
-                    unary_op(&token.kind)
-                )
-                .unwrap();
-                self.expr(expr, w)?;
-                write!(w, ")").unwrap();
+                if *kind == UnaryKind::Postfix {
+                    self.expr(expr, w)?;
+                    write!(w, "{}", &self.lexer.src[token.span.start..token.span.end]).unwrap();
+                } else {
+                    write!(w, "{}", &self.lexer.src[token.span.start..token.span.end]).unwrap();
+                    self.expr(expr, w)?;
+                }
                 Ok(())
             }
             _ => unreachable!(),
@@ -266,11 +260,9 @@ impl<'a> Formatter<'a> {
             AstNodeExpr::Binary {
                 left, op, right, ..
             } => {
-                write!(w, "({} ", binary_op(&op.kind)).unwrap();
                 self.expr(left, w)?;
-                write!(w, " ").unwrap();
+                write!(w, " {} ", &self.lexer.src[op.span.start..op.span.end]).unwrap();
                 self.expr(right, w)?;
-                write!(w, ")").unwrap();
                 Ok(())
             }
             _ => unreachable!(),
