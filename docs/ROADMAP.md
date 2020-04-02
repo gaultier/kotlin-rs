@@ -47,7 +47,7 @@
 - [x] Val declaration e.g `val a = 1`
 - [x] Var declaration e.g `var a = 1`
 - [x] When with subject with binding e.g `when (val x = 1) {0 -> 1; 1 -> 2; 2 -> 4; else x * 2}`
-- [ ] Do while with binding e.g `do {val a = 1} while (a < 10)`
+- [x] Do while with binding e.g `do {val a = 1} while (a < 10)`
 - [x] Explicit types e.g `val a: Long = 1`
 - [x] Prefix increment/decrement operators e.g `--a; ++a;`
 - [x] Postfix increment/decrement operators e.g `a--; a++;`
