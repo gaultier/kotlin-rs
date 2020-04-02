@@ -14,6 +14,16 @@ fn main() {
                 .takes_value(true)
                 .help("Input file"),
         )
+        .arg(
+            Arg::with_name("command")
+                .help("What to do")
+                .default_value("sexp")
+                .possible_values(&[
+                    "sexp", "fmt",
+                    // Later: build, verify, etc
+                ])
+                .index(1),
+        )
         .get_matches();
     let file_name = matches.value_of("input_file");
 
@@ -46,9 +56,15 @@ fn main() {
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
 
-    let cpy = contents.clone();
-    if let Err(err) = compile(contents, &mut handle) {
-        err.eprint(&cpy);
-        std::process::exit(1);
+    match matches.value_of("command").unwrap() {
+        "sexp" => {
+            let cpy = contents.clone();
+            if let Err(err) = compile(contents, &mut handle) {
+                err.eprint(&cpy);
+                std::process::exit(1);
+            }
+        }
+        "fmt" => unimplemented!(),
+        _ => unreachable!(),
     }
 }
