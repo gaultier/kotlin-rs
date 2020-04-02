@@ -175,10 +175,14 @@ impl<'a> Formatter<'a> {
     fn block<W: std::io::Write>(&mut self, block: &[AstNodeStmt], w: &mut W) -> Result<(), Error> {
         self.ident += 1;
 
-        for stmt in block.iter() {
+        if let Some((stmt, stmts)) = block.split_last() {
+            for stmt in stmts {
+                self.ident(w);
+                self.statement(&stmt, w)?;
+                writeln!(w, "").unwrap();
+            }
             self.ident(w);
             self.statement(&stmt, w)?;
-            writeln!(w, "").unwrap();
         }
 
         self.ident -= 1;
