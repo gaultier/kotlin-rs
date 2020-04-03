@@ -47,7 +47,6 @@ struct FnDef<'a> {
     id: NodeId,
     block_id: NodeId,
     flags: u16,
-    depth: usize,
 }
 
 pub(crate) struct Resolver<'a> {
@@ -408,7 +407,6 @@ impl<'a> Resolver<'a> {
             flags,
             block_id,
             identifier,
-            depth: self.scopes.len(),
         });
         debug!(
             "fn declaration: identifier=`{}` scope_id={} id={}",
@@ -628,7 +626,6 @@ impl<'a> Resolver<'a> {
     pub(crate) fn resolve(&mut self, block: &AstNodeStmt) -> Result<Resolution, Error> {
         self.statements0(block)?;
         self.statements(block)?;
-        debug!("scopes={:#?}", &self.scopes);
 
         Ok(self.resolution.clone())
     }
