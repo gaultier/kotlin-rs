@@ -1237,6 +1237,7 @@ impl Parser<'_> {
             args: args_t,
         };
 
+        debug!("fn_def: id={} fn_name={:?} fn_t={}", id, fn_name, fn_t);
         self.types.insert(id, fn_t);
 
         let body = match self.previous.unwrap().kind {
