@@ -316,3 +316,27 @@ println(a())
  )"##
     );
 }
+
+#[test]
+fn mutually_rec() {
+    let src = String::from(
+        r##"
+fun odd(n: Int): Boolean = if (n == 1) true else even(n-1)
+
+fun even(n: Int): Boolean = if (n == 0) true else odd(n-1)
+
+println(even(100))
+            "##,
+    );
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(begin (define (odd n ) (if (== n 1) #t (apply even (list (- n 1) ))))
+ (define (even n ) (if (== n 0) #t (apply odd (list (- n 1) ))))
+ (display (apply even (list 100 )))
+ )"##
+    );
+}
