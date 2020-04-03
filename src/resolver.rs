@@ -475,9 +475,8 @@ impl<'a> Resolver<'a> {
         body: &AstNodeStmt,
         id: NodeId,
     ) -> Result<(), Error> {
-        self.enter_scope(id);
-
         self.fn_name_decl(fn_name, flags, id)?;
+        self.enter_scope(id);
 
         let ctx = self.context;
         self.context.enter_function();
