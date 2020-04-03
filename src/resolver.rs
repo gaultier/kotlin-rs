@@ -42,6 +42,7 @@ impl fmt::Display for LexicalContext {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 struct FnDef<'a> {
     identifier: &'a str,
     id: NodeId,
@@ -467,8 +468,23 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn fn_def0(&mut self, fn_name: &AstNodeExpr, flags: u16, id: NodeId) -> Result<(), Error> {
+    fn fn_def0(
+        &mut self,
+        fn_name: &AstNodeExpr,
+        flags: u16,
+        body: &AstNodeStmt,
+        id: NodeId,
+    ) -> Result<(), Error> {
+        self.enter_scope(id);
+
         self.fn_name_decl(fn_name, flags, id)?;
+
+        let ctx = self.context;
+        self.context.enter_function();
+        self.statement0(body)?;
+        self.context = ctx;
+
+        self.exit_scope();
         Ok(())
     }
 
@@ -528,9 +544,13 @@ impl<'a> Resolver<'a> {
             AstNodeStmt::VarDefinition { .. } => {}
             AstNodeStmt::Assign { .. } => {}
             AstNodeStmt::FnDefinition {
-                fn_name, flags, id, ..
+                fn_name,
+                flags,
+                body,
+                id,
+                ..
             } => {
-                self.fn_def0(fn_name, *flags, *id)?;
+                self.fn_def0(fn_name, *flags, body, *id)?;
             }
             AstNodeStmt::Block { body, .. } => self.fn_block0(body)?,
         };
@@ -625,6 +645,7 @@ impl<'a> Resolver<'a> {
 
     pub(crate) fn resolve(&mut self, block: &AstNodeStmt) -> Result<Resolution, Error> {
         self.statements0(block)?;
+        debug!("fn_definitions={:?}", &self.fn_definitions);
         self.statements(block)?;
 
         Ok(self.resolution.clone())
