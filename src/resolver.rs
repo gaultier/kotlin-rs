@@ -42,11 +42,20 @@ impl fmt::Display for LexicalContext {
     }
 }
 
+struct FnDef<'a> {
+    identifier: &'a str,
+    id: NodeId,
+    block_id: NodeId,
+    flags: u16,
+    depth: usize,
+}
+
 pub(crate) struct Resolver<'a> {
     lexer: &'a Lexer,
     resolution: Resolution,
     scopes: Scopes<'a>,
     context: LexicalContext,
+    fn_definitions: Vec<FnDef<'a>>,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -98,6 +107,7 @@ impl<'a> Resolver<'a> {
             resolution: Resolution::new(),
             scopes: Vec::new(),
             context: LexicalContext(LEXICAL_CONTEXT_TOP_LEVEL),
+            fn_definitions: Vec::new(),
         }
     }
 
@@ -107,7 +117,7 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn find_var(&self, identifier: &str) -> Option<(&Scope, &Var, usize)> {
+    fn find_var(&self, identifier: &str) -> Option<(NodeId, &Var, usize)> {
         let depth = self
             .scopes
             .iter()
@@ -115,18 +125,34 @@ impl<'a> Resolver<'a> {
             .position(|scope| scope.var_statuses.contains_key(identifier))?;
         let scope = self.scopes.iter().rev().nth(depth)?;
         let var = scope.var_statuses.get(identifier)?;
-        Some((scope, var, depth))
+        Some((scope.block_id, var, depth))
     }
 
-    fn find_fn(&self, identifier: &str) -> Option<(&Scope, &Var, usize)> {
-        let depth = self
-            .scopes
-            .iter()
-            .rev()
-            .position(|scope| scope.fn_statuses.contains_key(identifier))?;
-        let scope = self.scopes.iter().rev().nth(depth)?;
-        let var = scope.fn_statuses.get(identifier)?;
-        Some((scope, var, depth))
+    fn find_fn(&self, identifier: &str) -> Option<(NodeId, &Var, usize)> {
+        let depth = self.scopes.iter().rev().position(|scope| {
+            self.fn_definitions
+                .iter()
+                .find(|f| f.block_id == scope.block_id)
+                .is_some()
+        })?;
+        let mut fn_def = None;
+        for scope in self.scopes.iter().rev() {
+            if let Some(f) = self
+                .fn_definitions
+                .iter()
+                .find(|f| f.block_id == scope.block_id)
+            {
+                fn_def = Some(f);
+                break;
+            }
+        }
+
+        let var = Var {
+            id: fn_def?.id,
+            flags: fn_def?.flags,
+            status: VarStatus::Declared,
+        };
+        Some((fn_def?.block_id, &var, depth))
     }
 
     fn var_ref(&mut self, span: &Span, id: NodeId) -> Result<(), Error> {
@@ -371,45 +397,22 @@ impl<'a> Resolver<'a> {
     }
 
     fn fn_name_decl(&mut self, fn_name: &AstNodeExpr, flags: u16, id: NodeId) -> Result<(), Error> {
-        let scope = self.scopes.last_mut().unwrap();
+        let block_id = self.scopes.last().unwrap().block_id;
         let identifier = match fn_name {
             AstNodeExpr::VarRef(span, _) => &self.lexer.src[span.start..span.end],
             _ => unimplemented!(),
         };
 
-        scope.fn_statuses.insert(
+        self.fn_definitions.push(FnDef {
+            id,
+            flags,
+            block_id,
             identifier,
-            Var {
-                id,
-                status: VarStatus::Declared,
-                flags,
-            },
-        );
+            depth: self.scopes.len(),
+        });
         debug!(
             "fn declaration: identifier=`{}` scope_id={} id={}",
-            identifier, scope.block_id, id
-        );
-        Ok(())
-    }
-
-    fn fn_name_def(&mut self, fn_name: &AstNodeExpr, flags: u16, id: NodeId) -> Result<(), Error> {
-        let scope = self.scopes.last_mut().unwrap();
-        let identifier = match fn_name {
-            AstNodeExpr::VarRef(span, _) => &self.lexer.src[span.start..span.end],
-            _ => unimplemented!(),
-        };
-
-        scope.fn_statuses.insert(
-            identifier,
-            Var {
-                id,
-                status: VarStatus::Defined,
-                flags,
-            },
-        );
-        debug!(
-            "fn definition: identifier=`{}` scope_id={} id={}",
-            identifier, scope.block_id, id
+            identifier, block_id, id
         );
         Ok(())
     }
@@ -467,7 +470,7 @@ impl<'a> Resolver<'a> {
     }
 
     fn fn_def0(&mut self, fn_name: &AstNodeExpr, flags: u16, id: NodeId) -> Result<(), Error> {
-        self.fn_name_def(fn_name, flags, id)?;
+        self.fn_name_decl(fn_name, flags, id)?;
         Ok(())
     }
 
