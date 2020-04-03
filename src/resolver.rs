@@ -117,7 +117,7 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn find_var(&self, identifier: &str) -> Option<(NodeId, &Var, usize)> {
+    fn find_var(&self, identifier: &str) -> Option<(NodeId, Var, usize)> {
         let depth = self
             .scopes
             .iter()
@@ -125,14 +125,14 @@ impl<'a> Resolver<'a> {
             .position(|scope| scope.var_statuses.contains_key(identifier))?;
         let scope = self.scopes.iter().rev().nth(depth)?;
         let var = scope.var_statuses.get(identifier)?;
-        Some((scope.block_id, var, depth))
+        Some((scope.block_id, var.clone(), depth))
     }
 
-    fn find_fn(&self, identifier: &str) -> Option<(NodeId, &Var, usize)> {
+    fn find_fn(&self, identifier: &str) -> Option<(NodeId, Var, usize)> {
         let depth = self.scopes.iter().rev().position(|scope| {
             self.fn_definitions
                 .iter()
-                .find(|f| f.block_id == scope.block_id)
+                .find(|f| f.block_id == scope.block_id && f.identifier == identifier)
                 .is_some()
         })?;
         let mut fn_def = None;
@@ -140,7 +140,7 @@ impl<'a> Resolver<'a> {
             if let Some(f) = self
                 .fn_definitions
                 .iter()
-                .find(|f| f.block_id == scope.block_id)
+                .find(|f| f.block_id == scope.block_id && f.identifier == identifier)
             {
                 fn_def = Some(f);
                 break;
@@ -152,12 +152,12 @@ impl<'a> Resolver<'a> {
             flags: fn_def?.flags,
             status: VarStatus::Declared,
         };
-        Some((fn_def?.block_id, &var, depth))
+        Some((fn_def?.block_id, var, depth))
     }
 
     fn var_ref(&mut self, span: &Span, id: NodeId) -> Result<(), Error> {
         let identifier = &self.lexer.src[span.start..span.end];
-        let (scope, var, depth) = self
+        let (block_id, var, depth) = self
             .find_var(identifier)
             .or_else(|| self.find_fn(identifier))
             .ok_or_else(|| {
@@ -171,12 +171,12 @@ impl<'a> Resolver<'a> {
             scope_depth: depth,
             node_ref_id: var.id,
             node_ref_flags: var.flags,
-            block_id_ref: scope.block_id,
+            block_id_ref: block_id,
         };
 
         debug!(
             "var_ref: identifier={} id={} depth={} scope_id={} node_ref_id={}",
-            identifier, id, depth, scope.block_id, var.id
+            identifier, id, depth, block_id, var.id
         );
         self.resolution.insert(id, var_usage_ref);
         Ok(())
