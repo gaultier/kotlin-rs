@@ -14,7 +14,7 @@ pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
     let mut types = parser.types;
 
     let mut resolver = Resolver::new(&lexer);
-    let resolution = resolver.statements(&stmts)?;
+    let resolution = resolver.resolve(&stmts)?;
 
     let mut type_checker = TypeChecker::new(&lexer, &resolution, &mut types);
     let types = type_checker.check_types(&stmts)?;
@@ -30,7 +30,7 @@ pub fn fmt<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
     let mut types = parser.types;
 
     let mut resolver = Resolver::new(&lexer);
-    let resolution = resolver.statements(&stmts)?;
+    let resolution = resolver.resolve(&stmts)?;
 
     let mut type_checker = TypeChecker::new(&lexer, &resolution, &mut types);
     let types = type_checker.check_types(&stmts)?;

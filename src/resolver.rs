@@ -370,16 +370,17 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
+    fn fn_def0(&mut self, fn_name: &AstNodeExpr, flags: u16, id: NodeId) -> Result<(), Error> {
+        self.fn_name_def(fn_name, flags, id)?;
+        Ok(())
+    }
+
     fn fn_def(
         &mut self,
-        fn_name: &AstNodeExpr,
         args: &[AstNodeExpr],
         body: &AstNodeStmt,
-        flags: u16,
         id: NodeId,
     ) -> Result<(), Error> {
-        self.fn_name_def(fn_name, flags, id)?;
-
         self.enter_scope(id);
 
         for arg in args {
@@ -406,6 +407,29 @@ impl<'a> Resolver<'a> {
         for stmt in body {
             self.statement(stmt)?;
         }
+        Ok(())
+    }
+
+    fn statement0(&mut self, statement: &AstNodeStmt) -> Result<(), Error> {
+        match statement {
+            AstNodeStmt::Expr(expr) => {
+                // self.expr(expr)?;
+            }
+            AstNodeStmt::DoWhile { body, .. } | AstNodeStmt::While { body, .. } => {
+                let ctx = self.context;
+                self.context.enter_loop();
+                self.statements(body)?;
+                self.context = ctx;
+            }
+            AstNodeStmt::VarDefinition { .. } => {}
+            AstNodeStmt::Assign { .. } => {}
+            AstNodeStmt::FnDefinition {
+                fn_name, flags, id, ..
+            } => {
+                self.fn_def0(fn_name, *flags, *id)?;
+            }
+            AstNodeStmt::Block { body, .. } => self.fn_block(body)?,
+        };
         Ok(())
     }
 
@@ -453,22 +477,32 @@ impl<'a> Resolver<'a> {
             AstNodeStmt::Assign { target, value, .. } => {
                 self.assign(target, value)?;
             }
-            AstNodeStmt::FnDefinition {
-                fn_name,
-                args,
-                body,
-                flags,
-                id,
-                ..
-            } => {
-                self.fn_def(fn_name, args, body, *flags, *id)?;
+            AstNodeStmt::FnDefinition { args, body, id, .. } => {
+                self.fn_def(args, body, *id)?;
             }
             AstNodeStmt::Block { body, .. } => self.fn_block(body)?,
         };
         Ok(())
     }
 
-    pub(crate) fn statements(&mut self, block: &AstNodeStmt) -> Result<Resolution, Error> {
+    fn statements0(&mut self, block: &AstNodeStmt) -> Result<(), Error> {
+        match block {
+            AstNodeStmt::Block { id, body } => {
+                self.enter_scope(*id);
+                for stmt in body {
+                    self.statement0(&stmt)?;
+                }
+                self.exit_scope();
+            }
+            AstNodeStmt::Expr(expr) => {
+                // self.expr(expr)?;
+            }
+            _ => unreachable!(),
+        }
+        Ok(())
+    }
+
+    fn statements(&mut self, block: &AstNodeStmt) -> Result<(), Error> {
         match block {
             AstNodeStmt::Block { id, body } => {
                 self.enter_scope(*id);
@@ -482,6 +516,13 @@ impl<'a> Resolver<'a> {
             }
             _ => unreachable!(),
         }
+        Ok(())
+    }
+
+    pub(crate) fn resolve(&mut self, block: &AstNodeStmt) -> Result<Resolution, Error> {
+        self.statements0(block);
+        self.statements(block);
+
         Ok(self.resolution.clone())
     }
 }
