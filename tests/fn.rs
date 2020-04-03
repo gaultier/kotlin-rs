@@ -272,6 +272,7 @@ fn nested_fn() {
  (return (* 99 (apply b (list )))) ))"##
     );
 }
+
 #[test]
 fn sum() {
     let src =
@@ -283,5 +284,35 @@ fn sum() {
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
         "(define (sum n acc ) (if (== n 0) acc (apply sum (list (- n 1) (+ n acc) ))))"
+    );
+}
+
+#[test]
+fn fn_and_var_with_same_name() {
+    let src = String::from(
+        r##"
+var a = 2
+fun a () = if (a>2) { 
+    fun a() = a* a
+    a() * a()
+} else {
+    fun a() = a* a*a
+    a() * a()
+}
+println(a())
+            "##,
+    );
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(begin (define a 2)
+ (define (a ) (if (> a 2) (begin (define (a ) (* a a))
+ (* (apply a (list )) (apply a (list ))) ) (begin (define (a ) (* a (* a a)))
+ (* (apply a (list )) (apply a (list ))) )))
+ (display (apply a (list )))
+ )"##
     );
 }
