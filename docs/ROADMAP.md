@@ -103,7 +103,7 @@
 - [ ] `Byte` type
 - [ ] `UByte` type
 - [ ] `Nothing` type
-- [ ] `Any` type
+- [x] `Any` type
 - [ ] Smart casts
 - [ ] Nullable types
 - [x] Type check math
