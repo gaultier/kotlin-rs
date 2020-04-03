@@ -115,7 +115,7 @@ impl<'a> Formatter<'a> {
                 self.ident(w);
                 write!(w, "}} while (").unwrap();
                 self.expr(cond, w)?;
-                writeln!(w, ")").unwrap();
+                write!(w, ")").unwrap();
                 Ok(())
             }
             _ => unreachable!(),
@@ -130,7 +130,7 @@ impl<'a> Formatter<'a> {
                 writeln!(w, ") {{").unwrap();
                 self.statement(body, w)?;
                 self.ident(w);
-                writeln!(w, "}}").unwrap();
+                write!(w, "}}").unwrap();
                 Ok(())
             }
             _ => unreachable!(),
