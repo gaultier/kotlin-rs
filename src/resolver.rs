@@ -369,8 +369,44 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
+    fn var_ref_fn(&mut self, fn_name: &AstNodeExpr) -> Result<(), Error> {
+        match fn_name {
+            AstNodeExpr::VarRef(span, id) => {
+                let identifier = &self.lexer.src[span.start..span.end];
+                let (block_id, var, depth) = self.find_fn(identifier).ok_or_else(|| {
+                    if self.find_var(identifier).is_some() {
+                        Error::new(
+                            ErrorKind::NotACallable(Type::TString),
+                            self.lexer.span_location(span),
+                        )
+                    } else {
+                        Error::new(
+                            ErrorKind::UnknownIdentifier(identifier.to_string()),
+                            self.lexer.span_location(span),
+                        )
+                    }
+                })?;
+
+                let var_usage_ref = VarUsageRef {
+                    scope_depth: depth,
+                    node_ref_id: var.id,
+                    node_ref_flags: var.flags,
+                    block_id_ref: block_id,
+                };
+
+                debug!(
+                    "var_ref_fn: identifier={} id={} depth={} scope_id={} node_ref_id={}",
+                    identifier, id, depth, block_id, var.id
+                );
+                self.resolution.insert(*id, var_usage_ref);
+                Ok(())
+            }
+            _ => unreachable!(),
+        }
+    }
+
     fn fn_call(&mut self, fn_name: &AstNodeExpr, args: &[AstNodeExpr]) -> Result<(), Error> {
-        self.expr(fn_name)?;
+        self.var_ref_fn(fn_name)?;
 
         for arg in args {
             self.expr(arg)?;
