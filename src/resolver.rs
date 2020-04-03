@@ -45,7 +45,8 @@ impl fmt::Display for LexicalContext {
 pub(crate) struct Resolver<'a> {
     lexer: &'a Lexer,
     resolution: Resolution,
-    scopes: Scopes<'a>,
+    var_scopes: Scopes<'a>,
+    fn_scopes: Scopes<'a>,
     context: LexicalContext,
 }
 
@@ -64,8 +65,7 @@ struct Var {
 
 #[derive(Debug, Clone)]
 struct Scope<'a> {
-    var_statuses: BTreeMap<&'a str, Var>,
-    fn_statuses: BTreeMap<&'a str, Var>,
+    statuses: BTreeMap<&'a str, Var>,
     block_id: NodeId,
 }
 
@@ -73,8 +73,7 @@ impl<'a> Scope<'a> {
     fn new(block_id: NodeId) -> Scope<'a> {
         Scope {
             block_id,
-            var_statuses: BTreeMap::new(),
-            fn_statuses: BTreeMap::new(),
+            statuses: BTreeMap::new(),
         }
     }
 }
@@ -96,7 +95,8 @@ impl<'a> Resolver<'a> {
         Resolver {
             lexer,
             resolution: Resolution::new(),
-            scopes: Vec::new(),
+            var_scopes: Vec::new(),
+            fn_scopes: Vec::new(),
             context: LexicalContext(LEXICAL_CONTEXT_TOP_LEVEL),
         }
     }
@@ -109,23 +109,23 @@ impl<'a> Resolver<'a> {
 
     fn find_var(&self, identifier: &str) -> Option<(&Scope, &Var, usize)> {
         let depth = self
-            .scopes
+            .var_scopes
             .iter()
             .rev()
-            .position(|scope| scope.var_statuses.contains_key(identifier))?;
-        let scope = self.scopes.iter().rev().nth(depth)?;
-        let var = scope.var_statuses.get(identifier)?;
+            .position(|scope| scope.statuses.contains_key(identifier))?;
+        let scope = self.var_scopes.iter().rev().nth(depth)?;
+        let var = scope.statuses.get(identifier)?;
         Some((scope, var, depth))
     }
 
     fn find_fn(&self, identifier: &str) -> Option<(&Scope, &Var, usize)> {
         let depth = self
-            .scopes
+            .fn_scopes
             .iter()
             .rev()
-            .position(|scope| scope.fn_statuses.contains_key(identifier))?;
-        let scope = self.scopes.iter().rev().nth(depth)?;
-        let var = scope.fn_statuses.get(identifier)?;
+            .position(|scope| scope.statuses.contains_key(identifier))?;
+        let scope = self.fn_scopes.iter().rev().nth(depth)?;
+        let var = scope.statuses.get(identifier)?;
         Some((scope, var, depth))
     }
 
@@ -354,8 +354,8 @@ impl<'a> Resolver<'a> {
     }
 
     fn var_decl(&mut self, identifier: &'a str, flags: u16, id: NodeId) -> Result<(), Error> {
-        let scope = self.scopes.last_mut().unwrap();
-        scope.var_statuses.insert(
+        let scope = self.var_scopes.last_mut().unwrap();
+        scope.statuses.insert(
             identifier,
             Var {
                 id,
@@ -370,18 +370,18 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn fn_name_def(&mut self, fn_name: &AstNodeExpr, flags: u16, id: NodeId) -> Result<(), Error> {
-        let scope = self.scopes.last_mut().unwrap();
+    fn fn_name_decl(&mut self, fn_name: &AstNodeExpr, flags: u16, id: NodeId) -> Result<(), Error> {
+        let scope = self.fn_scopes.last_mut().unwrap();
         let identifier = match fn_name {
             AstNodeExpr::VarRef(span, _) => &self.lexer.src[span.start..span.end],
             _ => unimplemented!(),
         };
 
-        scope.fn_statuses.insert(
+        scope.statuses.insert(
             identifier,
             Var {
                 id,
-                status: VarStatus::Defined,
+                status: VarStatus::Declared,
                 flags,
             },
         );
@@ -392,9 +392,31 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
+    fn fn_name_def(&mut self, fn_name: &AstNodeExpr, flags: u16, id: NodeId) -> Result<(), Error> {
+        let scope = self.fn_scopes.last_mut().unwrap();
+        let identifier = match fn_name {
+            AstNodeExpr::VarRef(span, _) => &self.lexer.src[span.start..span.end],
+            _ => unimplemented!(),
+        };
+
+        scope.statuses.insert(
+            identifier,
+            Var {
+                id,
+                status: VarStatus::Defined,
+                flags,
+            },
+        );
+        debug!(
+            "fn definition: identifier=`{}` scope_id={} id={}",
+            identifier, scope.block_id, id
+        );
+        Ok(())
+    }
+
     fn var_def(&mut self, identifier: &'a str, flags: u16, id: NodeId) -> Result<(), Error> {
-        let scope = self.scopes.last_mut().unwrap();
-        scope.var_statuses.insert(
+        let scope = self.var_scopes.last_mut().unwrap();
+        scope.statuses.insert(
             identifier,
             Var {
                 id,
@@ -409,14 +431,30 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn enter_scope(&mut self, block_id: NodeId) {
-        debug!("enter scope: id={}", block_id);
-        self.scopes.push(Scope::new(block_id));
+    fn enter_fn_scope(&mut self, block_id: NodeId) {
+        debug!("enter fn scope: id={}", block_id);
+        self.fn_scopes.push(Scope::new(block_id));
     }
 
-    fn exit_scope(&mut self) {
-        debug!("exit scope: id={}", self.scopes.last().unwrap().block_id);
-        self.scopes.pop();
+    fn exit_fn_scope(&mut self) {
+        debug!(
+            "exit fn scope: id={}",
+            self.fn_scopes.last().unwrap().block_id
+        );
+        self.fn_scopes.pop();
+    }
+
+    fn enter_var_scope(&mut self, block_id: NodeId) {
+        debug!("enter var scope: id={}", block_id);
+        self.var_scopes.push(Scope::new(block_id));
+    }
+
+    fn exit_var_scope(&mut self) {
+        debug!(
+            "exit var scope: id={}",
+            self.var_scopes.last().unwrap().block_id
+        );
+        self.var_scopes.pop();
     }
 
     fn assign(&mut self, target: &AstNodeExpr, value: &AstNodeExpr) -> Result<(), Error> {
@@ -445,17 +483,21 @@ impl<'a> Resolver<'a> {
     }
 
     fn fn_def0(&mut self, fn_name: &AstNodeExpr, flags: u16, id: NodeId) -> Result<(), Error> {
-        self.fn_name_def(fn_name, flags, id)?;
+        self.fn_name_decl(fn_name, flags, id)?;
         Ok(())
     }
 
     fn fn_def(
         &mut self,
+        fn_name: &AstNodeExpr,
+        flags: u16,
         args: &[AstNodeExpr],
         body: &AstNodeStmt,
         id: NodeId,
     ) -> Result<(), Error> {
-        self.enter_scope(id);
+        self.fn_name_def(fn_name, flags, id)?;
+
+        self.enter_fn_scope(id);
 
         for arg in args {
             match arg {
@@ -473,7 +515,7 @@ impl<'a> Resolver<'a> {
         self.statement(body)?;
         self.context = ctx;
 
-        self.exit_scope();
+        self.exit_fn_scope();
         Ok(())
     }
 
@@ -558,8 +600,15 @@ impl<'a> Resolver<'a> {
             AstNodeStmt::Assign { target, value, .. } => {
                 self.assign(target, value)?;
             }
-            AstNodeStmt::FnDefinition { args, body, id, .. } => {
-                self.fn_def(args, body, *id)?;
+            AstNodeStmt::FnDefinition {
+                fn_name,
+                flags,
+                args,
+                body,
+                id,
+                ..
+            } => {
+                self.fn_def(fn_name, *flags, args, body, *id)?;
             }
             AstNodeStmt::Block { body, .. } => self.fn_block(body)?,
         };
@@ -603,6 +652,7 @@ impl<'a> Resolver<'a> {
     pub(crate) fn resolve(&mut self, block: &AstNodeStmt) -> Result<Resolution, Error> {
         self.statements0(block)?;
         self.statements(block)?;
+        debug!("scopes={:#?}", &self.scopes);
 
         Ok(self.resolution.clone())
     }
