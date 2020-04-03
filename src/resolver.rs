@@ -205,31 +205,27 @@ impl<'a> Resolver<'a> {
                     self.statement0(else_entry)?;
                 }
             }
-            AstNodeExpr::VarRef(span, id) => {}
-            AstNodeExpr::FnCall { fn_name, args, .. } => {}
+            AstNodeExpr::VarRef(_, _) => {}
+            AstNodeExpr::FnCall { .. } => {}
             AstNodeExpr::Jump {
-                kind: k @ JumpKind::Break,
-                span,
+                kind: JumpKind::Break,
                 ..
             }
             | AstNodeExpr::Jump {
-                kind: k @ JumpKind::Continue,
-                span,
+                kind: JumpKind::Continue,
                 ..
             } => {}
             AstNodeExpr::Jump {
-                kind: k @ JumpKind::Return,
-                span,
-                expr,
+                kind: JumpKind::Return,
                 ..
             } => {}
             AstNodeExpr::Jump {
                 kind: JumpKind::Throw,
                 ..
             } => unimplemented!(),
-            AstNodeExpr::RangeTest { range, .. } => {}
+            AstNodeExpr::RangeTest { .. } => {}
             AstNodeExpr::TypeTest { .. } => {}
-            AstNodeExpr::Println(expr, _) => {}
+            AstNodeExpr::Println(_, _) => {}
         };
         Ok(())
     }
@@ -605,8 +601,8 @@ impl<'a> Resolver<'a> {
     }
 
     pub(crate) fn resolve(&mut self, block: &AstNodeStmt) -> Result<Resolution, Error> {
-        self.statements0(block);
-        self.statements(block);
+        self.statements0(block)?;
+        self.statements(block)?;
 
         Ok(self.resolution.clone())
     }
