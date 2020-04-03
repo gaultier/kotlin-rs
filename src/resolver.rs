@@ -156,6 +156,84 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
+    fn expr0(&mut self, expr: &AstNodeExpr) -> Result<(), Error> {
+        match &expr {
+            AstNodeExpr::Literal(_, _) => (),
+            AstNodeExpr::Grouping(expr, _) | AstNodeExpr::Unary { expr, .. } => {
+                self.expr0(&*expr)?;
+            }
+            AstNodeExpr::Binary {
+                left,
+                op:
+                    Token {
+                        kind: TokenKind::KeywordAs(_),
+                        ..
+                    },
+                ..
+            } => {
+                self.expr0(&*left)?;
+            }
+            AstNodeExpr::Binary { left, right, .. } => {
+                self.expr0(&*left)?;
+                self.expr0(&*right)?;
+            }
+            AstNodeExpr::IfExpr {
+                cond,
+                if_body,
+                else_body,
+                ..
+            } => {
+                self.expr0(cond)?;
+                self.statements0(if_body)?;
+                self.statements0(else_body)?;
+            }
+            AstNodeExpr::WhenExpr {
+                subject,
+                entries,
+                else_entry,
+                ..
+            } => {
+                if let Some(subject) = subject {
+                    self.statement0(subject)?;
+                }
+
+                for entry in entries {
+                    // self.when_entry0(entry)?;
+                }
+
+                if let Some(else_entry) = else_entry {
+                    self.statement0(else_entry)?;
+                }
+            }
+            AstNodeExpr::VarRef(span, id) => {}
+            AstNodeExpr::FnCall { fn_name, args, .. } => {}
+            AstNodeExpr::Jump {
+                kind: k @ JumpKind::Break,
+                span,
+                ..
+            }
+            | AstNodeExpr::Jump {
+                kind: k @ JumpKind::Continue,
+                span,
+                ..
+            } => {}
+            AstNodeExpr::Jump {
+                kind: k @ JumpKind::Return,
+                span,
+                expr,
+                ..
+            } => {}
+            AstNodeExpr::Jump {
+                kind: JumpKind::Throw,
+                ..
+            } => unimplemented!(),
+            AstNodeExpr::RangeTest { range, .. } => {}
+            AstNodeExpr::TypeTest { .. } => {}
+            AstNodeExpr::Println(expr, _) => {}
+        };
+        Ok(())
+    }
+
     fn expr(&mut self, expr: &AstNodeExpr) -> Result<(), Error> {
         match &expr {
             AstNodeExpr::Literal(_, _) => (),
@@ -403,6 +481,13 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
+    fn fn_block0(&mut self, body: &[AstNodeStmt]) -> Result<(), Error> {
+        for stmt in body {
+            self.statement0(stmt)?;
+        }
+        Ok(())
+    }
+
     fn fn_block(&mut self, body: &[AstNodeStmt]) -> Result<(), Error> {
         for stmt in body {
             self.statement(stmt)?;
@@ -413,12 +498,12 @@ impl<'a> Resolver<'a> {
     fn statement0(&mut self, statement: &AstNodeStmt) -> Result<(), Error> {
         match statement {
             AstNodeStmt::Expr(expr) => {
-                // self.expr(expr)?;
+                self.expr0(expr)?;
             }
             AstNodeStmt::DoWhile { body, .. } | AstNodeStmt::While { body, .. } => {
                 let ctx = self.context;
                 self.context.enter_loop();
-                self.statements(body)?;
+                self.statements0(body)?;
                 self.context = ctx;
             }
             AstNodeStmt::VarDefinition { .. } => {}
@@ -428,7 +513,7 @@ impl<'a> Resolver<'a> {
             } => {
                 self.fn_def0(fn_name, *flags, *id)?;
             }
-            AstNodeStmt::Block { body, .. } => self.fn_block(body)?,
+            AstNodeStmt::Block { body, .. } => self.fn_block0(body)?,
         };
         Ok(())
     }
@@ -495,7 +580,7 @@ impl<'a> Resolver<'a> {
                 self.exit_scope();
             }
             AstNodeStmt::Expr(expr) => {
-                // self.expr(expr)?;
+                self.expr0(expr)?;
             }
             _ => unreachable!(),
         }
