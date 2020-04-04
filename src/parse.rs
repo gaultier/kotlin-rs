@@ -1002,19 +1002,34 @@ impl Parser<'_> {
         }
     }
 
-    fn infix_operation(&mut self) -> Result<AstNodeExpr, Error> {
+    fn infix_fn_call(&mut self) -> Result<AstNodeExpr, Error> {
         // TODO
-        self.elvis_expr()
+        self.range()
     }
 
     fn elvis_expr(&mut self) -> Result<AstNodeExpr, Error> {
         // TODO
-        self.infix_fn_call()
+        let previous = self.previous.unwrap();
+        let left = self.infix_fn_call()?;
+        match previous.kind {
+            TokenKind::Elvis => {
+                self.advance()?;
+                self.skip_newlines()?;
+                let right = self.elvis_expr()?;
+                Ok(AstNodeExpr::Binary {
+                    left: Box::new(left),
+                    op: previous,
+                    right: Box::new(right),
+                    id: self.next_id(),
+                })
+            }
+            _ => Ok(left),
+        }
     }
 
-    fn infix_fn_call(&mut self) -> Result<AstNodeExpr, Error> {
+    fn infix_operation(&mut self) -> Result<AstNodeExpr, Error> {
         // TODO
-        self.range()
+        self.elvis_expr()
     }
 
     fn comparison(&mut self) -> Result<AstNodeExpr, Error> {
