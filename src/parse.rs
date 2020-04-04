@@ -1002,8 +1002,23 @@ impl Parser<'_> {
         }
     }
 
+    fn infix_operation(&mut self) -> Result<AstNodeExpr, Error> {
+        // TODO
+        self.elvis_expr()
+    }
+
+    fn elvis_expr(&mut self) -> Result<AstNodeExpr, Error> {
+        // TODO
+        self.infix_fn_call()
+    }
+
+    fn infix_fn_call(&mut self) -> Result<AstNodeExpr, Error> {
+        // TODO
+        self.range()
+    }
+
     fn comparison(&mut self) -> Result<AstNodeExpr, Error> {
-        let left = self.range()?;
+        let left = self.infix_operation()?;
         let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::Greater
