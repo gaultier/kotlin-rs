@@ -331,7 +331,7 @@ impl Parser<'_> {
         }
     }
 
-    /// Skip over unsignificant tokens
+    // Skip over unsignificant tokens
     fn next_parse_token(&mut self) -> Result<Token, Error> {
         loop {
             let token = self.lexer.next_token()?;
@@ -1206,9 +1206,21 @@ impl Parser<'_> {
         })
     }
 
+    fn assignable_expr(&mut self) -> Result<AstNodeExpr, Error> {
+        match self.previous.unwrap().kind {
+            TokenKind::LeftParen => {
+                self.advance()?;
+                let expr = self.assignable_expr()?;
+                self.eat(TokenKind::RightParen)?;
+                Ok(expr)
+            }
+            _ => self.prefix_unary_expr(),
+        }
+    }
+
     fn assign(&mut self) -> Result<AstNodeStmt, Error> {
         let span = self.current.unwrap().span;
-        let target = self.primary()?;
+        let target = self.assignable_expr()?;
 
         // Operator
         let op = self.previous.unwrap().kind;
@@ -1335,24 +1347,25 @@ impl Parser<'_> {
         }
     }
 
-    fn statement(&mut self) -> Result<AstNodeStmt, Error> {
+    // FIXME
+    fn incoming_assignement(&self) -> bool {
         let cur_kind = self.current.unwrap().kind;
+        self.previous.unwrap().kind == TokenKind::Identifier
+            && (cur_kind == TokenKind::Equal
+                || cur_kind == TokenKind::MinusEqual
+                || cur_kind == TokenKind::PlusEqual
+                || cur_kind == TokenKind::StarEqual
+                || cur_kind == TokenKind::SlashEqual
+                || cur_kind == TokenKind::PercentEqual)
+    }
 
+    fn statement(&mut self) -> Result<AstNodeStmt, Error> {
         match self.previous.unwrap().kind {
             TokenKind::KeywordWhile => self.while_stmt(),
             TokenKind::KeywordDo => self.do_while_stmt(),
             TokenKind::KeywordVal | TokenKind::KeywordVar => self.var_def(),
-            TokenKind::Identifier
-                if cur_kind == TokenKind::Equal
-                    || cur_kind == TokenKind::MinusEqual
-                    || cur_kind == TokenKind::PlusEqual
-                    || cur_kind == TokenKind::StarEqual
-                    || cur_kind == TokenKind::SlashEqual
-                    || cur_kind == TokenKind::PercentEqual =>
-            {
-                self.assign()
-            }
             TokenKind::KeywordFun => self.declaration(),
+            _ if self.incoming_assignement() => self.assign(),
             _ => Ok(AstNodeStmt::Expr(self.expr()?)),
         }
     }
