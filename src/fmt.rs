@@ -111,7 +111,7 @@ impl<'a> Formatter<'a> {
             AstNodeStmt::DoWhile { cond, body, .. } => {
                 writeln!(w, "do {{").unwrap();
                 self.statement(body, w)?;
-                writeln!(w, "").unwrap();
+                writeln!(w).unwrap();
                 self.ident(w);
                 write!(w, "}} while (").unwrap();
                 self.expr(cond, w)?;
@@ -181,7 +181,7 @@ impl<'a> Formatter<'a> {
             for stmt in stmts {
                 self.ident(w);
                 self.statement(&stmt, w)?;
-                writeln!(w, "").unwrap();
+                writeln!(w).unwrap();
             }
             self.ident(w);
             self.statement(&stmt, w)?;
@@ -270,14 +270,14 @@ impl<'a> Formatter<'a> {
                     self.expr(&entry.cond, w)?;
                     write!(w, " -> ").unwrap();
                     self.statement(&entry.body, w)?;
-                    writeln!(w, "").unwrap();
+                    writeln!(w).unwrap();
                 }
 
                 if let Some(else_entry) = else_entry {
                     self.ident(w);
                     write!(w, "else -> ").unwrap();
                     self.statement(&else_entry, w)?;
-                    writeln!(w, "").unwrap();
+                    writeln!(w).unwrap();
                 }
 
                 self.ident -= 1;
@@ -305,7 +305,7 @@ impl<'a> Formatter<'a> {
                 })] => {
                     write!(w, "= ").unwrap();
                     self.expr(expr, w)?;
-                    writeln!(w, "").unwrap();
+                    writeln!(w).unwrap();
                 }
                 _ => {
                     writeln!(w, "{{").unwrap();
@@ -316,7 +316,7 @@ impl<'a> Formatter<'a> {
             AstNodeStmt::Expr(e) if self.types.get(&e.id()).unwrap() == return_t => {
                 write!(w, "= ").unwrap();
                 self.expr(e, w)?;
-                writeln!(w, "").unwrap();
+                writeln!(w).unwrap();
             }
             _ => unreachable!(),
         }
@@ -384,7 +384,7 @@ impl<'a> Formatter<'a> {
                 if let Some(expr) = expr {
                     self.expr(expr, w)?;
                 }
-                writeln!(w, "").unwrap();
+                writeln!(w).unwrap();
             }
             JumpKind::Throw => unimplemented!(),
         }

@@ -55,7 +55,7 @@ pub(crate) struct Resolver<'a> {
     resolution: Resolution,
     scopes: Scopes<'a>,
     context: LexicalContext,
-    fn_definitions: Vec<FnDef<'a>>,
+    fn_definitions: BTreeMap<(NodeId, &'a str), FnDef<'a>>, // Key=(block_id, identifier)
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -107,7 +107,7 @@ impl<'a> Resolver<'a> {
             resolution: Resolution::new(),
             scopes: Vec::new(),
             context: LexicalContext(LEXICAL_CONTEXT_TOP_LEVEL),
-            fn_definitions: Vec::new(),
+            fn_definitions: BTreeMap::new(),
         }
     }
 
@@ -125,34 +125,27 @@ impl<'a> Resolver<'a> {
             .position(|scope| scope.var_statuses.contains_key(identifier))?;
         let scope = self.scopes.iter().rev().nth(depth)?;
         let var = scope.var_statuses.get(identifier)?;
-        Some((scope.block_id, var.clone(), depth))
+        Some((scope.block_id, *var, depth))
     }
 
     fn find_fn(&self, identifier: &str) -> Option<(NodeId, Var, usize)> {
         let depth = self.scopes.iter().rev().position(|scope| {
             self.fn_definitions
-                .iter()
-                .find(|f| f.block_id == scope.block_id && f.identifier == identifier)
+                .get(&(scope.block_id, identifier))
                 .is_some()
         })?;
-        let mut fn_def = None;
-        for scope in self.scopes.iter().rev() {
-            if let Some(f) = self
-                .fn_definitions
-                .iter()
-                .find(|f| f.block_id == scope.block_id && f.identifier == identifier)
-            {
-                fn_def = Some(f);
-                break;
-            }
-        }
+        let mut fn_def = self
+            .scopes
+            .iter()
+            .rev()
+            .find_map(|scope| self.fn_definitions.get(&(scope.block_id, identifier)))?;
 
         let var = Var {
-            id: fn_def?.id,
-            flags: fn_def?.flags,
+            id: fn_def.id,
+            flags: fn_def.flags,
             status: VarStatus::Declared,
         };
-        Some((fn_def?.block_id, var, depth))
+        Some((fn_def.block_id, var, depth))
     }
 
     fn var_ref(&mut self, span: &Span, id: NodeId) -> Result<(), Error> {
