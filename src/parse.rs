@@ -1005,8 +1005,7 @@ impl Parser<'_> {
         let left = self.range()?;
 
         if self.previous.unwrap().kind == TokenKind::Identifier {
-            // TODO: infix function call
-            unimplemented!();
+            unimplemented!("Infix function calls are not yet implemented");
         } else {
             Ok(left)
         }
