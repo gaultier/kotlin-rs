@@ -40,7 +40,7 @@
 - [x] When with subject
 - [x] Range test in when entry e.g `when {4 in 1..5 -> 99 else 0}`
 - [x] Type test in when entry e.g `when {4 is Int -> true else false}`
-- [ ] Elvis operator
+- [x] Elvis operator
 - [x] As expression
 - [x] While
 - [x] Do while
