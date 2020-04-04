@@ -1434,14 +1434,24 @@ impl Parser<'_> {
         })
     }
 
-    pub fn new(lexer: &mut Lexer) -> Parser {
-        Parser {
+    pub fn new(lexer: &mut Lexer) -> Result<Parser, Error> {
+        let mut tokens = Vec::new();
+        loop {
+            let token = lexer.next_token()?;
+            if token.kind == TokenKind::Eof {
+                break;
+            } else {
+                tokens.push(token);
+            }
+        }
+        dbg!(tokens);
+        Ok(Parser {
             previous: None,
             current: None,
             lexer,
             types: BTreeMap::new(),
             current_id: 0,
-        }
+        })
     }
 
     fn next_id(&mut self) -> NodeId {
