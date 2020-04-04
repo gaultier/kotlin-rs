@@ -42,3 +42,16 @@ fn in_expr_wrong_type_inside() -> Result<(), String> {
         other => Err(format!("Should be an error: {:?}", other)),
     }
 }
+
+#[test]
+fn in_is_complex_expr() {
+    let src = String::from("val a: Boolean = 1 is Int in false..true is Long is Boolean");
+
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(define a (is (is (in (is 1 Int) (range #f #t)) Long) Boolean))"
+    );
+}

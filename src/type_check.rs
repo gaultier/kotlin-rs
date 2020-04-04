@@ -386,6 +386,7 @@ impl<'a> TypeChecker<'a> {
                 Ok(t)
             }
             AstNodeExpr::Binary {
+                left,
                 op:
                     Token {
                         kind: TokenKind::KeywordIs,
@@ -393,7 +394,10 @@ impl<'a> TypeChecker<'a> {
                     },
                 id,
                 ..
-            } => Ok(self.types.get(id).cloned().unwrap()),
+            } => {
+                self.expr(left)?;
+                Ok(self.types.get(id).cloned().unwrap())
+            }
             AstNodeExpr::Binary {
                 left,
                 op:
