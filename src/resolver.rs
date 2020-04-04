@@ -134,7 +134,7 @@ impl<'a> Resolver<'a> {
                 .get(&(scope.block_id, identifier))
                 .is_some()
         })?;
-        let mut fn_def = self
+        let fn_def = self
             .scopes
             .iter()
             .rev()
@@ -432,12 +432,15 @@ impl<'a> Resolver<'a> {
             _ => unimplemented!(),
         };
 
-        self.fn_definitions.push(FnDef {
-            id,
-            flags,
-            block_id,
-            identifier,
-        });
+        self.fn_definitions.insert(
+            (block_id, identifier),
+            FnDef {
+                id,
+                flags,
+                block_id,
+                identifier,
+            },
+        );
         debug!(
             "fn declaration: identifier=`{}` scope_id={} id={}",
             identifier, block_id, id
