@@ -36,6 +36,7 @@ fn binary_op(kind: &TokenKind) -> &'static str {
         TokenKind::GreaterEqual => ">=",
         TokenKind::Elvis => "?:",
         TokenKind::KeywordIn => "in",
+        TokenKind::KeywordIs => "is",
         TokenKind::KeywordAs(safe) => {
             if *safe {
                 "as?"

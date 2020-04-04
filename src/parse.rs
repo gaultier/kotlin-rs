@@ -1030,7 +1030,7 @@ impl Parser<'_> {
         let left = self.elvis_expr()?;
         let previous = self.previous.unwrap();
         match previous.kind {
-            TokenKind::KeywordIn => {
+            TokenKind::KeywordIs | TokenKind::KeywordIn => {
                 self.advance()?;
                 self.skip_newlines()?;
                 let right = self.infix_operation()?;

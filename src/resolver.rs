@@ -265,6 +265,15 @@ impl<'a> Resolver<'a> {
                 left,
                 op:
                     Token {
+                        kind: TokenKind::KeywordIs,
+                        ..
+                    },
+                ..
+            }
+            | AstNodeExpr::Binary {
+                left,
+                op:
+                    Token {
                         kind: TokenKind::KeywordAs(_),
                         ..
                     },
