@@ -1002,8 +1002,14 @@ impl Parser<'_> {
     }
 
     fn infix_fn_call(&mut self) -> Result<AstNodeExpr, Error> {
-        // TODO
-        self.range()
+        let left = self.range()?;
+
+        if self.previous.unwrap().kind == TokenKind::Identifier {
+            // TODO: infix function call
+            unimplemented!();
+        } else {
+            Ok(left)
+        }
     }
 
     fn elvis_expr(&mut self) -> Result<AstNodeExpr, Error> {
