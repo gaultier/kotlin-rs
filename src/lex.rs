@@ -26,6 +26,7 @@ enum NumberSuffix {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenKind {
+    Elvis,
     Plus,
     PlusPlus,
     Minus,
@@ -170,6 +171,7 @@ pub enum TokenKind {
 impl fmt::Display for TokenKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            TokenKind::Elvis => write!(f, "?:"),
             TokenKind::Plus => write!(f, "+"),
             TokenKind::PlusPlus => write!(f, "++"),
             TokenKind::Minus => write!(f, "-"),
@@ -326,6 +328,7 @@ enum CursorNumberKind {
 
 #[derive(Debug, PartialEq, Clone)]
 enum CursorTokenKind {
+    Elvis,
     Number {
         kind: CursorNumberKind,
         suffix: Option<NumberSuffix>,
@@ -499,6 +502,7 @@ impl Cursor<'_> {
             ']' => CursorTokenKind::CloseBracket,
             '@' => CursorTokenKind::At,
             '#' => CursorTokenKind::Pound,
+            '?' if self.match_char(':') => CursorTokenKind::Elvis,
             '?' => CursorTokenKind::Question,
             ':' if self.match_char(':') => CursorTokenKind::ColonColon,
             ':' => CursorTokenKind::Colon,
@@ -1199,6 +1203,7 @@ impl Lexer {
         span: &Span,
     ) -> Result<TokenKind, Error> {
         match kind {
+            CursorTokenKind::Elvis => Ok(TokenKind::Elvis),
             CursorTokenKind::TString { terminated: false } => Err(Error::new(
                 ErrorKind::UnterminatedString,
                 self.span_location(&span),
