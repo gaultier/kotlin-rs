@@ -209,3 +209,25 @@ fn not_is() {
         "(define a (case (* 1 5) (in (range 0 10)) 1 (not (is Int)) 0  'else 42))"
     );
 }
+
+#[test]
+fn mutual_fn_in_when() {
+    let src = String::from(
+        r##"when {true -> {
+                    fun odd(n: Int): Boolean = if (n == 1) true else even(n-1)
+                    fun even(n: Int): Boolean = if (n == 0) true else odd(n-1)
+                    odd(100) 
+                    }
+                 else -> false
+        }"##,
+    );
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        r##"(cond (#t (begin (define (odd n ) (if (== n 1) #t (apply even (list (- n 1) ))))
+ (define (even n ) (if (== n 0) #t (apply odd (list (- n 1) ))))
+ (apply odd (list 100 )) ))  'else #f)"##
+    );
+}

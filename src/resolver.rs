@@ -111,6 +111,12 @@ impl<'a> Resolver<'a> {
         }
     }
 
+    fn when_entry0(&mut self, entry: &WhenEntry) -> Result<(), Error> {
+        self.expr0(&entry.cond)?;
+        self.statement0(&entry.body)?;
+        Ok(())
+    }
+
     fn when_entry(&mut self, entry: &WhenEntry) -> Result<(), Error> {
         self.expr(&entry.cond)?;
         self.statement(&entry.body)?;
@@ -217,7 +223,7 @@ impl<'a> Resolver<'a> {
                 }
 
                 for entry in entries {
-                    // self.when_entry0(entry)?;
+                    self.when_entry0(entry)?;
                 }
 
                 if let Some(else_entry) = else_entry {
