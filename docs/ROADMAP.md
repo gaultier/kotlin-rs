@@ -62,6 +62,8 @@
 - [x] Function call e.g `add(1, 5)`
 - [x] Return in function e.g `fun add(a: Int, b: Int): Int { return a + b; }`
 - [x] Explicit type for function with block body (except Unit)
+- [x] In expression e.g `val a = 1 in 0..10`
+- [ ] Is expression e.g `val a = 1 is Int`
 - [ ] Call function with named parameter
 - [ ] Default value for parameter in function
 - [ ] Tailrec function
