@@ -754,7 +754,7 @@ impl Parser<'_> {
                     id,
                 })
             }
-            TokenKind::KeywordThrow => unimplemented!(),
+            TokenKind::KeywordThrow => unimplemented!("Throw expressions"),
             _ => unreachable!(),
         }
     }
@@ -1005,7 +1005,7 @@ impl Parser<'_> {
         let left = self.range()?;
 
         if self.previous.unwrap().kind == TokenKind::Identifier {
-            unimplemented!("Infix function calls are not yet implemented");
+            unimplemented!("Infix function calls");
         } else {
             Ok(left)
         }
@@ -1331,7 +1331,7 @@ impl Parser<'_> {
     fn declaration(&mut self) -> Result<AstNodeStmt, Error> {
         match self.previous.unwrap().kind {
             TokenKind::KeywordFun => self.fn_def(),
-            _ => unimplemented!(),
+            _ => unimplemented!("Declarations other than functions (e.g class)"),
         }
     }
 

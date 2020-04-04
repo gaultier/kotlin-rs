@@ -247,7 +247,7 @@ impl<'a> Resolver<'a> {
             AstNodeExpr::Jump {
                 kind: JumpKind::Throw,
                 ..
-            } => unimplemented!(),
+            } => unimplemented!("Throw expressions"),
             AstNodeExpr::RangeTest { .. } => {}
             AstNodeExpr::TypeTest { .. } => {}
             AstNodeExpr::Println(_, _) => {}
@@ -365,7 +365,7 @@ impl<'a> Resolver<'a> {
             AstNodeExpr::Jump {
                 kind: JumpKind::Throw,
                 ..
-            } => unimplemented!(),
+            } => unimplemented!("Throw expressions"),
             AstNodeExpr::RangeTest { range, .. } => {
                 self.expr(range)?;
             }
@@ -444,7 +444,7 @@ impl<'a> Resolver<'a> {
         let block_id = self.scopes.last().unwrap().block_id;
         let identifier = match fn_name {
             AstNodeExpr::VarRef(span, _) => &self.lexer.src[span.start..span.end],
-            _ => unimplemented!(),
+            _ => unimplemented!("Complex function names (e.g extension methods)"),
         };
 
         self.fn_definitions.insert(

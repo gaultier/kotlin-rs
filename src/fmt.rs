@@ -386,7 +386,7 @@ impl<'a> Formatter<'a> {
                 }
                 writeln!(w).unwrap();
             }
-            JumpKind::Throw => unimplemented!(),
+            JumpKind::Throw => unimplemented!("Throw expressions"),
         }
         Ok(())
     }
