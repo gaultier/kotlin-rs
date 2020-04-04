@@ -1025,27 +1025,34 @@ impl Parser<'_> {
         }
     }
 
-    fn infix_operation(&mut self) -> Result<AstNodeExpr, Error> {
-        let left = self.elvis_expr()?;
+    fn infix_operation(&mut self, acc: AstNodeExpr) -> Result<AstNodeExpr, Error> {
         let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::KeywordIs | TokenKind::KeywordIn => {
                 self.advance()?;
                 self.skip_newlines()?;
-                let right = self.infix_operation()?;
-                Ok(AstNodeExpr::Binary {
-                    left: Box::new(left),
+
+                let type_span = self.previous.unwrap().span;
+                let _t = self.simple_identifier_type(&type_span)?;
+                let id = self.next_id();
+                self.types.insert(id, Type::Boolean);
+                let right = self.simple_identifier()?;
+
+                let left = AstNodeExpr::Binary {
+                    left: Box::new(acc),
                     op: previous,
                     right: Box::new(right),
-                    id: self.next_id(),
-                })
+                    id,
+                };
+                self.infix_operation(left)
             }
-            _ => Ok(left),
+            _ => Ok(acc),
         }
     }
 
     fn comparison(&mut self) -> Result<AstNodeExpr, Error> {
-        let left = self.infix_operation()?;
+        let acc = self.elvis_expr()?;
+        let left = self.infix_operation(acc)?;
         let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::Greater
