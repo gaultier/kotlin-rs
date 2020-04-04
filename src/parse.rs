@@ -1008,9 +1008,8 @@ impl Parser<'_> {
     }
 
     fn elvis_expr(&mut self) -> Result<AstNodeExpr, Error> {
-        // TODO
-        let previous = self.previous.unwrap();
         let left = self.infix_fn_call()?;
+        let previous = self.previous.unwrap();
         match previous.kind {
             TokenKind::Elvis => {
                 self.advance()?;

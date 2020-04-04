@@ -34,6 +34,7 @@ fn binary_op(kind: &TokenKind) -> &'static str {
         TokenKind::LesserEqual => "<=",
         TokenKind::Greater => ">",
         TokenKind::GreaterEqual => ">=",
+        TokenKind::Elvis => "?:",
         TokenKind::KeywordAs(safe) => {
             if *safe {
                 "as?"
