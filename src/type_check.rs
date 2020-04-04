@@ -387,6 +387,38 @@ impl<'a> TypeChecker<'a> {
             }
             AstNodeExpr::Binary {
                 left,
+                op:
+                    Token {
+                        kind: TokenKind::KeywordIn,
+                        span,
+                    },
+                right,
+                id,
+            } => {
+                let left_t = self.expr(left)?;
+                let right_t = self.expr(right)?;
+                let t = match (&left_t, &right_t) {
+                    (Type::Int, Type::IntRange)
+                    | (Type::UInt, Type::UIntRange)
+                    | (Type::Long, Type::LongRange)
+                    | (Type::ULong, Type::ULongRange)
+                    | (Type::Float, Type::FloatRange)
+                    | (Type::Double, Type::DoubleRange)
+                    | (Type::TString, Type::TStringRange)
+                    | (Type::Char, Type::CharRange)
+                    | (Type::Boolean, Type::BooleanRange) => Ok(Type::Boolean),
+                    _ => {
+                        Err(Error::new(
+                            ErrorKind::IncompatibleTypes(right_t, Type::IntRange), // FIXME
+                            self.lexer.span_location(&span),
+                        ))
+                    }
+                }?;
+                self.types.insert(*id, t.clone());
+                Ok(t)
+            }
+            AstNodeExpr::Binary {
+                left,
                 op,
                 right,
                 id,

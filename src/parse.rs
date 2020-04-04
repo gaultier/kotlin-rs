@@ -1027,8 +1027,22 @@ impl Parser<'_> {
     }
 
     fn infix_operation(&mut self) -> Result<AstNodeExpr, Error> {
-        // TODO
-        self.elvis_expr()
+        let left = self.elvis_expr()?;
+        let previous = self.previous.unwrap();
+        match previous.kind {
+            TokenKind::KeywordIn => {
+                self.advance()?;
+                self.skip_newlines()?;
+                let right = self.infix_operation()?;
+                Ok(AstNodeExpr::Binary {
+                    left: Box::new(left),
+                    op: previous,
+                    right: Box::new(right),
+                    id: self.next_id(),
+                })
+            }
+            _ => Ok(left),
+        }
     }
 
     fn comparison(&mut self) -> Result<AstNodeExpr, Error> {
