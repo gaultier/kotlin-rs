@@ -3,6 +3,7 @@ use crate::error::*;
 use crate::parse::*;
 use crate::session::Session;
 use log::debug;
+use std::mem::size_of;
 
 const CTOR_STR: &'static str = "<init>";
 
@@ -81,8 +82,18 @@ enum Attribute {
         max_locals: u16,
         code: Vec<u8>,
         exception_table: Vec<Exception>,
-        blob: Vec<u8>,
+        attributes: Vec<Attribute>,
     },
+    LineNumberTable {
+        name_index: u16,
+        line_number_tables: Vec<LineNumberTable>,
+    },
+}
+
+#[derive(Debug)]
+struct LineNumberTable {
+    start_pc: u16,
+    line_number: u16,
 }
 
 #[derive(Debug)]
@@ -154,10 +165,14 @@ impl<'a> JvmEmitter<'a> {
                     max_locals: 1,
                     code: vec![0x2a, 0xb7, 0x00, 0x01, 0xb1],
                     exception_table: vec![],
-                    blob: vec![
-                        0x00, 0x01, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01, 0x00, 0x00,
-                        0x00, 0x01,
-                    ], // TODO
+                    attributes: vec![Attribute::LineNumberTable {
+                        name_index: 10,
+                        line_number_tables: vec![LineNumberTable {
+                            start_pc: 0,
+                            line_number: 1,
+                        }],
+                    }],
+                    // blob: vec![0x00, 0x00, 0x00, 0x06, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01], // TODO
                 }],
             },
             Function {
@@ -170,10 +185,13 @@ impl<'a> JvmEmitter<'a> {
                     max_locals: 1,
                     code: vec![0xb1],
                     exception_table: vec![],
-                    blob: vec![
-                        0x00, 0x01, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01, 0x00, 0x00,
-                        0x00, 0x02,
-                    ], // TODO
+                    attributes: vec![Attribute::LineNumberTable {
+                        name_index: 10,
+                        line_number_tables: vec![LineNumberTable {
+                            start_pc: 0,
+                            line_number: 2,
+                        }],
+                    }],
                 }],
             },
         ];
@@ -286,15 +304,14 @@ impl<'a> JvmEmitter<'a> {
                 max_locals,
                 code,
                 exception_table,
-                blob,
+                attributes,
             } => {
                 w.write(&u16_to_u8s(*name_index))?;
 
                 // This attribute length includes:
                 // max_stacks, max_locals, code length (u32), code length, exception_table, ...
-                w.write(&u32_to_u8s(
-                    blob.len() as u32 + 2 + 2 + 4 + code.len() as u32 + 2 /* + exception_table.len() * sizeof Exception */ ,
-                ))?;
+                let size: u32 = 2 + 2+ 4 + code.len() as u32 + 2 + /* exception_table + */ 14;
+                w.write(&u32_to_u8s(size))?;
 
                 w.write(&u16_to_u8s(*max_stack))?;
 
@@ -308,7 +325,7 @@ impl<'a> JvmEmitter<'a> {
                 // TODO
                 // w.write(&exception_table)?;
 
-                w.write(&blob)?;
+                self.attributes(attributes, w)?;
             }
             Attribute::SourceFile {
                 name_index,
@@ -317,6 +334,17 @@ impl<'a> JvmEmitter<'a> {
                 w.write(&u16_to_u8s(*name_index))?;
                 w.write(&[0x00, 0x00, 0x00, 0x02])?; // sizeof(u16) to come, as u32
                 w.write(&u16_to_u8s(*source_file_index))?;
+            }
+            Attribute::LineNumberTable {
+                name_index,
+                line_number_tables,
+            } => {
+                w.write(&u16_to_u8s(*name_index))?;
+                w.write(&u32_to_u8s(
+                    (line_number_tables.len() * size_of::<LineNumberTable>()) as u32,
+                ))?;
+
+                self.line_number_tables(line_number_tables, w)?;
             }
         }
 
@@ -362,6 +390,20 @@ impl<'a> JvmEmitter<'a> {
                 w.write(&u16_to_u8s(*class))?;
                 w.write(&u16_to_u8s(*name_and_type))?;
             }
+        }
+        Ok(())
+    }
+
+    fn line_number_tables<W: std::io::Write>(
+        &self,
+        line_number_tables: &[LineNumberTable],
+        w: &mut W,
+    ) -> Result<(), Error> {
+        debug!("line_number_tables={:?}", line_number_tables);
+
+        for l in line_number_tables {
+            w.write(&u16_to_u8s(l.start_pc))?;
+            w.write(&u16_to_u8s(l.line_number))?;
         }
         Ok(())
     }
