@@ -3,7 +3,6 @@ use crate::error::*;
 use crate::parse::*;
 use crate::session::Session;
 use log::debug;
-use std::mem::size_of;
 
 const CTOR_STR: &'static str = "<init>";
 
@@ -172,7 +171,6 @@ impl<'a> JvmEmitter<'a> {
                             line_number: 1,
                         }],
                     }],
-                    // blob: vec![0x00, 0x00, 0x00, 0x06, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01], // TODO
                 }],
             },
             Function {
@@ -286,11 +284,9 @@ impl<'a> JvmEmitter<'a> {
         w.write(&u16_to_u8s(method.access_flags))?;
         w.write(&u16_to_u8s(method.name_index))?;
         w.write(&u16_to_u8s(method.descriptor_index))?;
-        w.write(&u16_to_u8s(method.attributes.len() as u16))?;
 
-        for attribute in &method.attributes {
-            self.attribute(attribute, w)?;
-        }
+        self.attributes(&method.attributes, w)?;
+
         Ok(())
     }
 
@@ -340,9 +336,7 @@ impl<'a> JvmEmitter<'a> {
                 line_number_tables,
             } => {
                 w.write(&u16_to_u8s(*name_index))?;
-                w.write(&u32_to_u8s(
-                    (line_number_tables.len() * size_of::<LineNumberTable>()) as u32,
-                ))?;
+                w.write(&u32_to_u8s((2 + line_number_tables.len() * 4) as u32))?;
 
                 self.line_number_tables(line_number_tables, w)?;
             }
@@ -400,6 +394,7 @@ impl<'a> JvmEmitter<'a> {
         w: &mut W,
     ) -> Result<(), Error> {
         debug!("line_number_tables={:?}", line_number_tables);
+        w.write(&u16_to_u8s(line_number_tables.len() as u16))?;
 
         for l in line_number_tables {
             w.write(&u16_to_u8s(l.start_pc))?;
