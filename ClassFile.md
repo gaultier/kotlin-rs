@@ -116,3 +116,5 @@ SourceFile: "hello.java"
   - Tag: `0x01`
   - Length: `0x00 0x03` => 3
   - Content: `()V`
+
+- Access flags: u2 = 0x0020 i.e ACC_SUPER
