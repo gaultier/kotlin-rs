@@ -155,7 +155,10 @@ impl<'a> JvmEmitter<'a> {
         ];
         self.methods(&methods, w)?;
 
-        let attributes = vec![];
+        let attributes = vec![Attribute {
+            name_index: 13, // SourceFile
+            info: vec![14], // Foo.java
+        }];
         self.attributes(&attributes, w)?;
 
         Ok(())
@@ -243,17 +246,13 @@ impl<'a> JvmEmitter<'a> {
         w.write(&u16_to_u8s(method.attributes.len() as u16))?;
 
         for attribute in &method.attributes {
-            self.method_attribute(attribute, w)?;
+            self.attribute(attribute, w)?;
         }
         Ok(())
     }
 
-    fn method_attribute<W: std::io::Write>(
-        &self,
-        attribute: &Attribute,
-        w: &mut W,
-    ) -> Result<(), Error> {
-        debug!("method_attribute={:?}", attribute);
+    fn attribute<W: std::io::Write>(&self, attribute: &Attribute, w: &mut W) -> Result<(), Error> {
+        debug!("attribute={:?}", attribute);
 
         w.write(&u16_to_u8s(attribute.name_index))?;
         w.write(&u32_to_u8s(attribute.info.len() as u32))?;
@@ -274,10 +273,6 @@ impl<'a> JvmEmitter<'a> {
             self.attribute(a, w)?;
         }
 
-        Ok(())
-    }
-
-    fn attribute<W: std::io::Write>(&self, attribute: &Attribute, w: &mut W) -> Result<(), Error> {
         Ok(())
     }
 
