@@ -31,7 +31,9 @@ $ echo '123' | cargo run
 ## Debugging
 
 ```
+# Possible values: 0|trace|debug|info|warn|error
 $ export RUST_LOG=debug
+# Possible values: 0|1|full
 $ export RUST_BACKTRACE=full
 $ cargo run -- dump_tokens -f /path/to/file.kt
 $ cargo run -- dump_ast -f /path/to/file.kt
