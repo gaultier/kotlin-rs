@@ -80,8 +80,17 @@ enum Attribute {
         max_stack: u16,
         max_locals: u16,
         code: Vec<u8>,
+        exception_table: Vec<Exception>,
         blob: Vec<u8>,
     },
+}
+
+#[derive(Debug)]
+struct Exception {
+    start_pc: u16,
+    end_pc: u16,
+    handler_pc: u16,
+    catch_type: u16,
 }
 
 fn u16_to_u8s(b: u16) -> [u8; 2] {
@@ -144,9 +153,10 @@ impl<'a> JvmEmitter<'a> {
                     max_stack: 1,
                     max_locals: 1,
                     code: vec![0x2a, 0xb7, 0x00, 0x01, 0xb1],
+                    exception_table: vec![],
                     blob: vec![
-                        0x00, 0x00, 0x00, 0x01, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01,
-                        0x00, 0x00, 0x00, 0x01,
+                        0x00, 0x01, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01, 0x00, 0x00,
+                        0x00, 0x01,
                     ], // TODO
                 }],
             },
@@ -159,9 +169,10 @@ impl<'a> JvmEmitter<'a> {
                     max_stack: 0,
                     max_locals: 1,
                     code: vec![0xb1],
+                    exception_table: vec![],
                     blob: vec![
-                        0x00, 0x00, 0x00, 0x01, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01,
-                        0x00, 0x00, 0x00, 0x02,
+                        0x00, 0x01, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01, 0x00, 0x00,
+                        0x00, 0x02,
                     ], // TODO
                 }],
             },
@@ -274,19 +285,28 @@ impl<'a> JvmEmitter<'a> {
                 max_stack,
                 max_locals,
                 code,
+                exception_table,
                 blob,
             } => {
                 w.write(&u16_to_u8s(*name_index))?;
 
                 // This attribute length includes:
-                // max_stacks, max_locals, code length (u32), code length, blob
+                // max_stacks, max_locals, code length (u32), code length, exception_table, ...
                 w.write(&u32_to_u8s(
-                    blob.len() as u32 + 2 + 2 + 4 + code.len() as u32,
+                    blob.len() as u32 + 2 + 2 + 4 + code.len() as u32 + 2 /* + exception_table.len() * sizeof Exception */ ,
                 ))?;
+
                 w.write(&u16_to_u8s(*max_stack))?;
+
                 w.write(&u16_to_u8s(*max_locals))?;
+
                 w.write(&u32_to_u8s(code.len() as u32))?;
                 w.write(&code)?;
+
+                w.write(&u16_to_u8s(exception_table.len() as u16))?;
+                assert!(exception_table.is_empty());
+                // TODO
+                // w.write(&exception_table)?;
 
                 w.write(&blob)?;
             }
