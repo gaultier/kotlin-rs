@@ -4,18 +4,20 @@ use crate::parse::*;
 use crate::session::Session;
 use log::debug;
 
+const CTOR_STR: &'static str = "<init>";
+
 const ACC_SUPER: u16 = 0x0002;
 
 const CONSTANT_CLASS: u8 = 7;
 const _CONSTANT_FIELDREF: u8 = 9;
-const _CONSTANT_METHODREF: u8 = 10;
+const CONSTANT_METHODREF: u8 = 10;
 const _CONSTANT_INTERFACE_METHODREF: u8 = 11;
 const _CONSTANT_STRING: u8 = 8;
 const _CONSTANT_INTEGER: u8 = 3;
 const _CONSTANT_FLOAT: u8 = 4;
 const _CONSTANT_LONG: u8 = 5;
 const _CONSTANT_DOUBLE: u8 = 6;
-const _CONSTANT_NAME_AND_TYPE: u8 = 12;
+const CONSTANT_NAME_AND_TYPE: u8 = 12;
 const CONSTANT_UTF8: u8 = 1;
 const _CONSTANT_METHOD_HANDLE: u8 = 15;
 const _CONSTANT_METHOD_TYPE: u8 = 16;
@@ -25,6 +27,8 @@ const _CONSTANT_INVOKE_DYNAMIC: u8 = 18;
 enum Constant {
     Utf8(String),
     ClassInfo(u16),
+    MethodRef(u16, u16),
+    NameAndType(u16, u16),
 }
 
 #[derive(Debug)]
@@ -44,8 +48,12 @@ impl<'a> JvmEmitter<'a> {
             session,
             _types,
             constants: vec![
+                Constant::MethodRef(2, 3),
+                Constant::ClassInfo(4),
+                Constant::NameAndType(5, 6),
                 Constant::Utf8(String::from("java/lang/Object")),
-                Constant::ClassInfo(0),
+                Constant::Utf8(String::from(CTOR_STR)),
+                Constant::Utf8(String::from("()V")),
             ],
         }
     }
@@ -152,6 +160,16 @@ impl<'a> JvmEmitter<'a> {
             Constant::ClassInfo(index) => {
                 w.write(&[CONSTANT_CLASS])?;
                 w.write(&u16_to_u8s(*index))?;
+            }
+            Constant::NameAndType(name, type_descriptor) => {
+                w.write(&[CONSTANT_NAME_AND_TYPE])?;
+                w.write(&u16_to_u8s(*name))?;
+                w.write(&u16_to_u8s(*type_descriptor))?;
+            }
+            Constant::MethodRef(class, name_and_type) => {
+                w.write(&[CONSTANT_METHODREF])?;
+                w.write(&u16_to_u8s(*class))?;
+                w.write(&u16_to_u8s(*name_and_type))?;
             }
         }
         Ok(())
