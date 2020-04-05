@@ -1,10 +1,10 @@
 use crate::error::*;
-use crate::lex::{Lexer, Token, TokenKind};
+use crate::lex::{Token, TokenKind};
 use crate::parse::*;
-use crate::session::Span;
+use crate::session::{Session, Span};
 
 pub(crate) struct SexpEmitter<'a> {
-    lexer: &'a Lexer,
+    session: &'a Session<'a>,
     _types: &'a Types,
 }
 
@@ -68,8 +68,8 @@ fn assign_op(kind: &TokenKind) -> &'static str {
 }
 
 impl<'a> SexpEmitter<'a> {
-    pub(crate) fn new(lexer: &'a Lexer, _types: &'a Types) -> SexpEmitter<'a> {
-        SexpEmitter { lexer, _types }
+    pub(crate) fn new(session: &'a Session, _types: &'a Types) -> SexpEmitter<'a> {
+        SexpEmitter { session, _types }
     }
 
     fn assign<W: std::io::Write>(
@@ -148,7 +148,7 @@ impl<'a> SexpEmitter<'a> {
                 write!(
                     w,
                     "(define {} ",
-                    &self.lexer.src[identifier.span.start..identifier.span.end]
+                    &self.session.src[identifier.span.start..identifier.span.end]
                 )
                 .unwrap();
                 self.expr(value, w)?;
@@ -276,7 +276,7 @@ impl<'a> SexpEmitter<'a> {
                 },
                 _,
             ) => {
-                write!(w, "{}", &self.lexer.src[span.start..span.end]).unwrap();
+                write!(w, "{}", &self.session.src[span.start..span.end]).unwrap();
                 Ok(())
             }
             AstNodeExpr::Literal(
@@ -467,7 +467,7 @@ impl<'a> SexpEmitter<'a> {
     }
 
     fn var_ref<W: std::io::Write>(&self, span: &Span, w: &mut W) -> Result<(), Error> {
-        let identifier = &self.lexer.src[span.start..span.end];
+        let identifier = &self.session.src[span.start..span.end];
         write!(w, "{}", identifier).unwrap();
         Ok(())
     }

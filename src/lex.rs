@@ -1,6 +1,6 @@
 use crate::cursor::*;
 use crate::error::*;
-use crate::session::Span;
+use crate::session::{Session, Span};
 use log::debug;
 use std::fmt;
 
@@ -891,8 +891,8 @@ impl Cursor<'_> {
 }
 
 #[derive(Debug)]
-pub struct Lexer {
-    pub(crate) src: String,
+pub struct Lexer<'a> {
+    session: &'a Session<'a>,
     pos: usize,
     // Index of each line, 0 based
     lines: Vec<usize>,
@@ -917,9 +917,9 @@ impl Token {
     }
 }
 
-impl Lexer {
+impl<'a> Lexer<'a> {
     fn cursor_identifier_to_token_identifier(&self, span: &Span) -> TokenKind {
-        let s = &self.src[span.start..span.end];
+        let s = &self.session.src[span.start..span.end];
 
         match s {
             "true" => TokenKind::Boolean(true),
@@ -1012,7 +1012,7 @@ impl Lexer {
                 self.span_location(&span),
             ));
         }
-        let original_str = &self.src[span.start..span.end];
+        let original_str = &self.session.src[span.start..span.end];
 
         // Remove prefix e.g `0x` and suffix e.g `UL`
         let num_str = match kind {
@@ -1023,8 +1023,8 @@ impl Lexer {
             | CursorNumberKind::Float {
                 base: NumberBase::Decimal,
                 ..
-            } => &self.src[span.start..span.start + suffix_start],
-            _ => &self.src[span.start + 2..span.start + suffix_start],
+            } => &self.session.src[span.start..span.start + suffix_start],
+            _ => &self.session.src[span.start + 2..span.start + suffix_start],
         };
 
         let suffix_str = &original_str[suffix_start..];
@@ -1249,7 +1249,7 @@ impl Lexer {
             )),
             CursorTokenKind::Char { terminated: true } => {
                 // Trim surrounding quotes to get content
-                let c_str = &self.src[span.start + 1..span.end - 1];
+                let c_str = &self.session.src[span.start + 1..span.end - 1];
                 let c_chars = c_str.chars().collect::<Vec<_>>();
                 let slice: &[char] = &c_chars;
                 let c: char = match slice {
@@ -1298,26 +1298,26 @@ impl Lexer {
             .ok_or_else(|| Error::new(ErrorKind::InvalidCharLiteral, self.span_location(&span)))
     }
 
-    pub fn new(src: String) -> Lexer {
+    pub fn new(session: &'a Session<'a>) -> Lexer<'a> {
         Lexer {
-            src,
+            session,
             pos: 0,
             lines: vec![0],
         }
     }
 
     fn next_token(&mut self) -> Result<Token, Error> {
-        if self.pos >= self.src.len() {
+        if self.pos >= self.session.src.len() {
             return Ok(Token::new(TokenKind::Eof, Span::new(self.pos, self.pos)));
         }
-        let cursor_token = first_token(&self.src[self.pos..], &mut self.lines, self.pos);
+        let cursor_token = first_token(&self.session.src[self.pos..], &mut self.lines, self.pos);
         let start = self.pos;
         self.pos += cursor_token.len;
 
         debug!(
             "next_token: kind={:?} c={:?} start={} pos={}",
             cursor_token.kind,
-            &self.src[start..self.pos],
+            &self.session.src[start..self.pos],
             start,
             self.pos
         );
@@ -1328,7 +1328,7 @@ impl Lexer {
         Ok(Token::new(kind, span))
     }
 
-    pub fn lex(&mut self) -> Result<Vec<Token>, Error> {
+    pub fn lex(&mut self) -> Result<(Vec<Token>, Session), Error> {
         let mut tokens = Vec::new();
         loop {
             let token = self.next_token()?;
@@ -1341,7 +1341,14 @@ impl Lexer {
             }
         }
 
-        Ok(tokens)
+        Ok((
+            tokens,
+            Session {
+                lines: self.lines.clone(),
+                src: self.session.src,
+                file: self.session.file,
+            },
+        ))
     }
 
     pub fn span_location(&self, span: &Span) -> Location {
@@ -1356,13 +1363,13 @@ impl Lexer {
         let start_line_pos = self.lines[start_line_i];
         let end_line_pos = self.lines[end_line_i];
 
-        let start_line_s = &self.src[start_line_pos..span.start];
+        let start_line_s = &self.session.src[start_line_pos..span.start];
         let start_col = start_line_s
             .char_indices()
             .take_while(|(i, _)| *i != span.start)
             .count();
 
-        let end_line_s = &self.src[end_line_pos..span.end];
+        let end_line_s = &self.session.src[end_line_pos..span.end];
         let end_col = end_line_s
             .char_indices()
             .take_while(|(i, _)| *i != span.end)
@@ -1391,7 +1398,8 @@ mod tests {
     #[test]
     fn single_token() {
         let s = String::from("@");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert!(tok.is_ok());
@@ -1427,7 +1435,8 @@ mod tests {
     #[test]
     fn single_token_2_chars() {
         let s = String::from("++");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert!(tok.is_ok());
@@ -1463,7 +1472,8 @@ mod tests {
     #[test]
     fn token_with_newline() {
         let s = String::from("@\n$");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert!(tok.is_ok());
@@ -1529,7 +1539,8 @@ mod tests {
     #[test]
     fn unknown() {
         let s = String::from("§");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert!(tok.is_err());
@@ -1561,7 +1572,8 @@ mod tests {
     #[test]
     fn int() {
         let s = String::from("123");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
         let tok = lexer.next_token();
 
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1574,7 +1586,8 @@ mod tests {
     #[test]
     fn int_with_underscores() {
         let s = String::from("123_000_000");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
         let tok = lexer.next_token();
 
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1587,7 +1600,8 @@ mod tests {
     #[test]
     fn int_with_trailing_underscore() {
         let s = String::from("123_000_000_  ");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
         let tok = lexer.next_token();
 
         assert_eq!(tok.as_ref().is_err(), true);
@@ -1600,7 +1614,8 @@ mod tests {
     #[test]
     fn int_zero() {
         let s = String::from("0");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1613,7 +1628,8 @@ mod tests {
     #[test]
     fn int_with_leading_zero() {
         let s = String::from("0123");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
@@ -1626,7 +1642,8 @@ mod tests {
     #[test]
     fn uint_with_leading_zero() {
         let s = String::from("01u");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
@@ -1639,7 +1656,8 @@ mod tests {
     #[test]
     fn uint() {
         let s = String::from("10U");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1652,7 +1670,8 @@ mod tests {
     #[test]
     fn ulong() {
         let s = String::from("10uL");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1665,7 +1684,8 @@ mod tests {
     #[test]
     fn long() {
         let s = String::from("10L");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1678,7 +1698,8 @@ mod tests {
     #[test]
     fn float() {
         let s = String::from("10F");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1691,7 +1712,8 @@ mod tests {
     #[test]
     fn real_number_with_suffix_l() {
         let s = String::from("1.23L");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
@@ -1704,7 +1726,8 @@ mod tests {
     #[test]
     fn real_number_with_suffix_u() {
         let s = String::from("1.23u");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
@@ -1717,7 +1740,8 @@ mod tests {
     #[test]
     fn real_number_with_suffix_ul() {
         let s = String::from("1.23uL");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
@@ -1730,7 +1754,8 @@ mod tests {
     #[test]
     fn bin_number_with_suffix_f() {
         let s = String::from("0b101F");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
@@ -1743,7 +1768,8 @@ mod tests {
     #[test]
     fn bin_number() {
         let s = String::from("0b101");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1756,7 +1782,8 @@ mod tests {
     #[test]
     fn bin_number_2() {
         let s = String::from("0B1_00000000_00000000_00000000_00000000");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1772,7 +1799,8 @@ mod tests {
     #[test]
     fn bin_number_with_suffix_l() {
         let s = String::from("0b101L");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1785,7 +1813,8 @@ mod tests {
     #[test]
     fn bin_number_with_suffix_ul() {
         let s = String::from("0b101uL");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1798,7 +1827,8 @@ mod tests {
     #[test]
     fn bin_number_with_suffix_u() {
         let s = String::from("0b101U");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1811,7 +1841,8 @@ mod tests {
     #[test]
     fn bin_number_missing_digits() {
         let s = String::from("0b");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
@@ -1826,7 +1857,8 @@ mod tests {
     #[test]
     fn hex_number_missing_digits() {
         let s = String::from("0x");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
@@ -1841,7 +1873,8 @@ mod tests {
     #[test]
     fn hex_number() {
         let s = String::from("0XdeadBEEF");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1854,7 +1887,8 @@ mod tests {
     #[test]
     fn hex_number_with_suffix_l() {
         let s = String::from("0XdeadL");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1867,7 +1901,8 @@ mod tests {
     #[test]
     fn hex_number_with_suffix_u() {
         let s = String::from("0Xdeadu");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1880,7 +1915,8 @@ mod tests {
     #[test]
     fn hex_number_with_suffix_ul() {
         let s = String::from("0XdeaduL");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1893,7 +1929,8 @@ mod tests {
     #[test]
     fn double_number() {
         let s = String::from("123.456");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1906,7 +1943,8 @@ mod tests {
     #[test]
     fn double_exp() {
         let s = String::from("123.456e2");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1919,7 +1957,8 @@ mod tests {
     #[test]
     fn double_exp_2() {
         let s = String::from("123.456e+2");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1932,7 +1971,8 @@ mod tests {
     #[test]
     fn double_exp_3() {
         let s = String::from("123.456e-2");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1945,7 +1985,8 @@ mod tests {
     #[test]
     fn double_starting_with_dot() {
         let s = String::from(".1");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1958,7 +1999,8 @@ mod tests {
     #[test]
     fn double_with_empty_exp() {
         let s = String::from(".1e");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
@@ -1971,7 +2013,8 @@ mod tests {
     #[test]
     fn dot_not_followed_by_digit() {
         let s = String::from(".@");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -1991,7 +2034,8 @@ mod tests {
     #[test]
     fn line_comment() {
         let s = String::from("// hello\n1");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -2024,7 +2068,8 @@ mod tests {
     #[test]
     fn block_comment() {
         let s = String::from("/* hello\n 1 */2");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -2050,7 +2095,8 @@ mod tests {
     #[test]
     fn windows_newline() {
         let s = String::from("@\r\r\n1");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -2084,7 +2130,8 @@ mod tests {
     #[test]
     fn single_char_literal() {
         let s = String::from("'a'");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -2097,7 +2144,8 @@ mod tests {
     #[test]
     fn invalid_char_literal() {
         let s = String::from("'ab'");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
@@ -2110,7 +2158,8 @@ mod tests {
     #[test]
     fn invalid_char_literal_2() {
         let s = String::from("'\\ab'");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
@@ -2123,7 +2172,8 @@ mod tests {
     #[test]
     fn invalid_char_literal_3() {
         let s = String::from("'\\ua'");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
@@ -2136,7 +2186,8 @@ mod tests {
     #[test]
     fn invalid_char_literal_4() {
         let s = String::from("'\\uab'");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
@@ -2149,7 +2200,8 @@ mod tests {
     #[test]
     fn invalid_char_literal_5() {
         let s = String::from("'\\uabc'");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
@@ -2162,7 +2214,8 @@ mod tests {
     #[test]
     fn invalid_char_literal_6() {
         let s = String::from("'\\Uabcd'");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
@@ -2175,7 +2228,8 @@ mod tests {
     #[test]
     fn invalid_char_literal_7() {
         let s = String::from("'\\ud800'");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
@@ -2188,7 +2242,8 @@ mod tests {
     #[test]
     fn invalid_char_literal_8() {
         let s = String::from("'\\uwxyz'");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
@@ -2201,7 +2256,8 @@ mod tests {
     #[test]
     fn unicode_char_literal() {
         let s = String::from("'\\uabcd'");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -2214,7 +2270,8 @@ mod tests {
     #[test]
     fn unicode_char_literal_unassigned_unicode() {
         let s = String::from("'\\u2fe0'");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -2227,7 +2284,8 @@ mod tests {
     #[test]
     fn escaped_sequence_char_literal_r() {
         let s = String::from(r#"'\r'"#);
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -2240,7 +2298,8 @@ mod tests {
     #[test]
     fn escaped_sequence_char_literal_n() {
         let s = String::from(r#"'\n'"#);
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -2253,7 +2312,8 @@ mod tests {
     #[test]
     fn escaped_sequence_char_literal_t() {
         let s = String::from(r#"'\t'"#);
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -2266,7 +2326,8 @@ mod tests {
     #[test]
     fn escaped_sequence_char_literal_b() {
         let s = String::from(r#"'\b'"#);
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -2279,7 +2340,8 @@ mod tests {
     #[test]
     fn escaped_sequence_char_literal_single_quote() {
         let s = String::from(r#"'\''"#);
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -2292,7 +2354,8 @@ mod tests {
     #[test]
     fn escaped_sequence_char_literal_double_quote() {
         let s = String::from(r#"'"'"#);
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -2305,7 +2368,8 @@ mod tests {
     #[test]
     fn escaped_sequence_char_literal_dollar() {
         let s = String::from("'$'");
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -2318,7 +2382,8 @@ mod tests {
     #[test]
     fn escaped_sequence_char_literal_backslash() {
         let s = String::from(r#"'\\'"#);
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
@@ -2332,39 +2397,42 @@ mod tests {
     fn keyword_true() {
         let s = String::from("true");
 
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Boolean(true));
-        assert_eq!(&lexer.src[tok.span.start..tok.span.end], "true");
+        assert_eq!(&session.src[tok.span.start..tok.span.end], "true");
     }
 
     #[test]
     fn keyword_false() {
         let s = String::from("false");
 
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Boolean(false));
-        assert_eq!(&lexer.src[tok.span.start..tok.span.end], "false");
+        assert_eq!(&session.src[tok.span.start..tok.span.end], "false");
     }
 
     #[test]
     fn identifier_ascii() {
         let s = String::from("_foo_bar_");
 
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Identifier);
-        assert_eq!(&lexer.src[tok.span.start..tok.span.end], "_foo_bar_");
+        assert_eq!(&session.src[tok.span.start..tok.span.end], "_foo_bar_");
     }
 
     #[test]
@@ -2377,13 +2445,14 @@ mod tests {
         // `ᛮ` is of category Nl (letter number)
         let s = String::from("ᛮƍᴽאᾯƱ");
 
-        let mut lexer = Lexer::new(s);
+        let session = Session::new(&s, None);
+        let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_ok(), true);
         let tok = tok.as_ref().unwrap();
         assert_eq!(tok.kind, TokenKind::Identifier);
-        assert_eq!(&lexer.src[tok.span.start..tok.span.end], "ᛮƍᴽאᾯƱ");
+        assert_eq!(&session.src[tok.span.start..tok.span.end], "ᛮƍᴽאᾯƱ");
     }
 
     //     #[test]

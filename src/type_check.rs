@@ -1,12 +1,12 @@
 use crate::error::*;
-use crate::lex::{Lexer, Token, TokenKind};
+use crate::lex::{Token, TokenKind};
 use crate::parse::*;
 use crate::resolver::Resolution;
-use crate::session::Span;
+use crate::session::{Session, Span};
 use log::debug;
 
 pub(crate) struct TypeChecker<'a> {
-    lexer: &'a Lexer,
+    session: &'a Session<'a>,
     resolution: &'a Resolution,
     types: &'a mut Types,
     current_fn_id: Option<NodeId>,
@@ -14,12 +14,12 @@ pub(crate) struct TypeChecker<'a> {
 
 impl<'a> TypeChecker<'a> {
     pub fn new(
-        lexer: &'a Lexer,
+        session: &'a Session,
         resolution: &'a Resolution,
         types: &'a mut Types,
     ) -> TypeChecker<'a> {
         TypeChecker {
-            lexer,
+            session,
             resolution,
             types,
             current_fn_id: None,
@@ -34,7 +34,7 @@ impl<'a> TypeChecker<'a> {
         if left != right {
             Err(Error::new(
                 ErrorKind::IncompatibleTypes(left.clone(), right.clone()),
-                self.lexer.span_location(&span),
+                self.session.span_location(&span),
             ))
         } else {
             Ok(())
@@ -200,7 +200,7 @@ impl<'a> TypeChecker<'a> {
                     _ => Err(Error::new(
                         // FIXME: should not be Int
                         ErrorKind::IncompatibleTypes(t, Type::Int),
-                        self.lexer.span_location(span),
+                        self.session.span_location(span),
                     )),
                 }
             }
@@ -320,7 +320,7 @@ impl<'a> TypeChecker<'a> {
                     _ => {
                         return Err(Error::new(
                             ErrorKind::InvalidRange(left_t),
-                            self.lexer.span_location(&ast.span()),
+                            self.session.span_location(&ast.span()),
                         ));
                     }
                 };
@@ -424,7 +424,7 @@ impl<'a> TypeChecker<'a> {
                     _ => {
                         Err(Error::new(
                             ErrorKind::IncompatibleTypes(right_t, Type::IntRange), // FIXME
-                            self.lexer.span_location(&span),
+                            self.session.span_location(&span),
                         ))
                     }
                 }?;
@@ -605,7 +605,7 @@ impl<'a> TypeChecker<'a> {
             }
             _ => Err(Error::new(
                 ErrorKind::NotACallable(t),
-                self.lexer.span_location(span),
+                self.session.span_location(span),
             )),
         }
     }
@@ -683,7 +683,7 @@ impl<'a> TypeChecker<'a> {
         } else {
             Err(Error::new(
                 ErrorKind::IncompatibleTypes(t, Type::IntRange), // FIXME
-                self.lexer.span_location(&span),
+                self.session.span_location(&span),
             ))
         }
     }
@@ -803,7 +803,7 @@ impl<'a> TypeChecker<'a> {
             (Type::Char, Type::Int) if token.kind == TokenKind::Minus => Ok(Type::Char),
             _ => Err(Error::new(
                 ErrorKind::IncompatibleTypes(left.clone(), right.clone()),
-                self.lexer.span_location(&token.span))),
+                self.session.span_location(&token.span))),
         }
     }
 }

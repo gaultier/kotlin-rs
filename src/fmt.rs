@@ -1,19 +1,19 @@
 use crate::error::*;
-use crate::lex::{Lexer, Token};
+use crate::lex::Token;
 use crate::parse::*;
-use crate::session::Span;
+use crate::session::{Session, Span};
 use log::debug;
 
 pub struct Formatter<'a> {
-    lexer: &'a Lexer,
+    session: &'a Session<'a>,
     ident: isize,
     types: &'a Types,
 }
 
 impl<'a> Formatter<'a> {
-    pub fn new(lexer: &'a Lexer, types: &'a Types) -> Formatter<'a> {
+    pub fn new(session: &'a Session, types: &'a Types) -> Formatter<'a> {
         Formatter {
-            lexer,
+            session,
             ident: -1,
             types,
         }
@@ -28,7 +28,7 @@ impl<'a> Formatter<'a> {
     ) -> Result<(), Error> {
         self.ident(w);
         self.expr(target, w)?;
-        write!(w, " {} ", &self.lexer.src[span.start..span.end]).unwrap();
+        write!(w, " {} ", &self.session.src[span.start..span.end]).unwrap();
         self.expr(value, w)?;
 
         Ok(())
@@ -93,7 +93,7 @@ impl<'a> Formatter<'a> {
                     w,
                     "{} {} = ",
                     if *flags & FLAG_VAR != 0 { "var" } else { "val" },
-                    &self.lexer.src[identifier.span.start..identifier.span.end]
+                    &self.session.src[identifier.span.start..identifier.span.end]
                 )
                 .unwrap();
                 self.expr(value, w)?;
@@ -139,7 +139,7 @@ impl<'a> Formatter<'a> {
     }
 
     fn literal<W: std::io::Write>(&mut self, token: &Token, w: &mut W) -> Result<(), Error> {
-        write!(w, "{}", &self.lexer.src[token.span.start..token.span.end]).unwrap();
+        write!(w, "{}", &self.session.src[token.span.start..token.span.end]).unwrap();
         Ok(())
     }
 
@@ -150,9 +150,9 @@ impl<'a> Formatter<'a> {
             } => {
                 if *kind == UnaryKind::Postfix {
                     self.expr(expr, w)?;
-                    write!(w, "{}", &self.lexer.src[token.span.start..token.span.end]).unwrap();
+                    write!(w, "{}", &self.session.src[token.span.start..token.span.end]).unwrap();
                 } else {
-                    write!(w, "{}", &self.lexer.src[token.span.start..token.span.end]).unwrap();
+                    write!(w, "{}", &self.session.src[token.span.start..token.span.end]).unwrap();
                     self.expr(expr, w)?;
                 }
                 Ok(())
@@ -167,7 +167,7 @@ impl<'a> Formatter<'a> {
                 left, op, right, ..
             } => {
                 self.expr(left, w)?;
-                write!(w, " {} ", &self.lexer.src[op.span.start..op.span.end]).unwrap();
+                write!(w, " {} ", &self.session.src[op.span.start..op.span.end]).unwrap();
                 self.expr(right, w)?;
                 Ok(())
             }
@@ -367,7 +367,7 @@ impl<'a> Formatter<'a> {
     }
 
     fn var_ref<W: std::io::Write>(&mut self, span: &Span, w: &mut W) -> Result<(), Error> {
-        let identifier = &self.lexer.src[span.start..span.end];
+        let identifier = &self.session.src[span.start..span.end];
         write!(w, "{}", identifier).unwrap();
         Ok(())
     }

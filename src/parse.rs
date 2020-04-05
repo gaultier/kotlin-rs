@@ -1,6 +1,6 @@
 use crate::error::*;
 use crate::lex::*;
-use crate::session::Span;
+use crate::session::{Session, Span};
 use log::debug;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -306,14 +306,14 @@ pub struct Parser<'a> {
     current: Option<Token>,
     i: usize,
     tokens: Vec<Token>,
-    lexer: &'a Lexer,
+    session: &'a Session<'a>,
     pub(crate) types: Types,
     pub(crate) current_id: usize,
 }
 
 impl<'a> Parser<'a> {
     fn simple_identifier_type(&self, span: &Span) -> Result<Type, Error> {
-        let identifier = &self.lexer.src[span.start..span.end];
+        let identifier = &self.session.src[span.start..span.end];
         match identifier {
             "Int" => Ok(Type::Int),
             "Long" => Ok(Type::Long),
@@ -329,7 +329,7 @@ impl<'a> Parser<'a> {
             "Any" => Ok(Type::Any),
             _ => Err(Error::new(
                 ErrorKind::UnknownIdentifier(identifier.to_string()),
-                self.lexer.span_location(&span),
+                self.session.span_location(&span),
             )),
         }
     }
@@ -365,9 +365,9 @@ impl<'a> Parser<'a> {
             _ => Err(Error::new(
                 ErrorKind::ExpectedToken(
                     kind,
-                    self.lexer.src[previous.span.start..previous.span.end].to_string(),
+                    self.session.src[previous.span.start..previous.span.end].to_string(),
                 ),
-                self.lexer.span_location(&previous.span),
+                self.session.span_location(&previous.span),
             )),
         }
     }
@@ -787,7 +787,7 @@ impl<'a> Parser<'a> {
             | TokenKind::KeywordThrow => self.jump_expr(),
             _ => Err(Error::new(
                 ErrorKind::ExpectedPrimary,
-                self.lexer.span_location(&previous.span),
+                self.session.span_location(&previous.span),
             )),
         }
     }
@@ -817,9 +817,9 @@ impl<'a> Parser<'a> {
             _ => Err(Error::new(
                 ErrorKind::UnexpectedToken(
                     previous.kind,
-                    self.lexer.src[previous.span.start..previous.span.end].to_string(),
+                    self.session.src[previous.span.start..previous.span.end].to_string(),
                 ),
-                self.lexer.span_location(&previous.span),
+                self.session.span_location(&previous.span),
             )),
         }
     }
@@ -1271,9 +1271,9 @@ impl<'a> Parser<'a> {
             _ => Err(Error::new(
                 ErrorKind::UnexpectedToken(
                     previous.kind,
-                    self.lexer.src[previous.span.start..previous.span.end].to_string(),
+                    self.session.src[previous.span.start..previous.span.end].to_string(),
                 ),
-                self.lexer.span_location(&previous.span),
+                self.session.span_location(&previous.span),
             )),
         }
     }
@@ -1392,9 +1392,9 @@ impl<'a> Parser<'a> {
                             return Err(Error::new(
                                 ErrorKind::ExpectedToken(
                                     TokenKind::Semicolon,
-                                    self.lexer.src[span.start..span.end].to_string(),
+                                    self.session.src[span.start..span.end].to_string(),
                                 ),
-                                self.lexer.span_location(&span),
+                                self.session.span_location(&span),
                             ));
                         }
                     }
@@ -1430,7 +1430,7 @@ impl<'a> Parser<'a> {
         })
     }
 
-    pub fn new(lexer: &'a Lexer, tokens: &'a [Token]) -> Parser<'a> {
+    pub fn new(session: &'a Session, tokens: &'a [Token]) -> Parser<'a> {
         let tokens = tokens
             .iter()
             .filter(|t| !t.is_unsignificant_ws())
@@ -1441,7 +1441,7 @@ impl<'a> Parser<'a> {
             previous: Some(tokens[0]),
             current: Some(tokens[1]),
             i: 0,
-            lexer,
+            session,
             tokens,
             types: BTreeMap::new(),
             current_id: 0,

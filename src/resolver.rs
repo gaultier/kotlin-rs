@@ -1,7 +1,7 @@
 use crate::error::*;
-use crate::lex::{Lexer, Token, TokenKind};
+use crate::lex::{Token, TokenKind};
 use crate::parse::*;
-use crate::session::Span;
+use crate::session::{Session, Span};
 use log::debug;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -52,7 +52,7 @@ struct FnDef<'a> {
 }
 
 pub(crate) struct Resolver<'a> {
-    lexer: &'a Lexer,
+    session: &'a Session<'a>,
     resolution: Resolution,
     scopes: Scopes<'a>,
     context: LexicalContext,
@@ -102,9 +102,9 @@ pub(crate) struct VarUsageRef {
 pub(crate) type Resolution = BTreeMap<NodeId, VarUsageRef>;
 
 impl<'a> Resolver<'a> {
-    pub(crate) fn new(lexer: &Lexer) -> Resolver {
+    pub(crate) fn new(session: &'a Session) -> Resolver<'a> {
         Resolver {
-            lexer,
+            session,
             resolution: Resolution::new(),
             scopes: Vec::new(),
             context: LexicalContext(LEXICAL_CONTEXT_TOP_LEVEL),
@@ -156,14 +156,14 @@ impl<'a> Resolver<'a> {
     }
 
     fn var_ref(&mut self, span: &Span, id: NodeId) -> Result<(), Error> {
-        let identifier = &self.lexer.src[span.start..span.end];
+        let identifier = &self.session.src[span.start..span.end];
         let (block_id, var, depth) = self
             .find_var(identifier)
             .or_else(|| self.find_fn(identifier))
             .ok_or_else(|| {
                 Error::new(
                     ErrorKind::UnknownIdentifier(identifier.to_string()),
-                    self.lexer.span_location(span),
+                    self.session.span_location(span),
                 )
             })?;
 
@@ -338,7 +338,7 @@ impl<'a> Resolver<'a> {
                             expected_context: LexicalContext(LEXICAL_CONTEXT_LOOP),
                             found_context: self.context,
                         },
-                        self.lexer.span_location(span),
+                        self.session.span_location(span),
                     ));
                 }
             }
@@ -355,7 +355,7 @@ impl<'a> Resolver<'a> {
                             expected_context: LexicalContext(LEXICAL_CONTEXT_FUNCTION),
                             found_context: self.context,
                         },
-                        self.lexer.span_location(span),
+                        self.session.span_location(span),
                     ));
                 }
 
@@ -381,17 +381,17 @@ impl<'a> Resolver<'a> {
     fn var_ref_fn(&mut self, fn_name: &AstNodeExpr) -> Result<(), Error> {
         match fn_name {
             AstNodeExpr::VarRef(span, id) => {
-                let identifier = &self.lexer.src[span.start..span.end];
+                let identifier = &self.session.src[span.start..span.end];
                 let (block_id, var, depth) = self.find_fn(identifier).ok_or_else(|| {
                     if self.find_var(identifier).is_some() {
                         Error::new(
                             ErrorKind::NotACallable(Type::TString),
-                            self.lexer.span_location(span),
+                            self.session.span_location(span),
                         )
                     } else {
                         Error::new(
                             ErrorKind::UnknownIdentifier(identifier.to_string()),
-                            self.lexer.span_location(span),
+                            self.session.span_location(span),
                         )
                     }
                 })?;
@@ -444,7 +444,7 @@ impl<'a> Resolver<'a> {
     fn fn_name_decl(&mut self, fn_name: &AstNodeExpr, flags: u16, id: NodeId) -> Result<(), Error> {
         let block_id = self.scopes.last().unwrap().block_id;
         let identifier = match fn_name {
-            AstNodeExpr::VarRef(span, _) => &self.lexer.src[span.start..span.end],
+            AstNodeExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
             _ => unimplemented!("Complex function names (e.g extension methods)"),
         };
 
@@ -496,7 +496,7 @@ impl<'a> Resolver<'a> {
         self.expr(value)?;
 
         let (identifier, span) = match target {
-            AstNodeExpr::VarRef(span, _) => (&self.lexer.src[span.start..span.end], span),
+            AstNodeExpr::VarRef(span, _) => (&self.session.src[span.start..span.end], span),
             _ => unreachable!(),
         };
 
@@ -505,7 +505,7 @@ impl<'a> Resolver<'a> {
         if flags & FLAG_VAL as u16 == FLAG_VAL {
             return Err(Error::new(
                 ErrorKind::CannotReassignVal(identifier.to_string()),
-                self.lexer.span_location(span),
+                self.session.span_location(span),
             ));
         }
 
@@ -546,7 +546,7 @@ impl<'a> Resolver<'a> {
         for arg in args {
             match arg {
                 AstNodeExpr::VarRef(span, id) => {
-                    let identifier = &self.lexer.src[span.start..span.end];
+                    let identifier = &self.session.src[span.start..span.end];
                     self.var_decl(identifier, 0, *id)?;
                     self.var_def(identifier, 0, *id)?;
                 }
@@ -641,7 +641,7 @@ impl<'a> Resolver<'a> {
                 flags,
             } => {
                 self.expr(value)?;
-                let identifier = &self.lexer.src[identifier.span.start..identifier.span.end];
+                let identifier = &self.session.src[identifier.span.start..identifier.span.end];
                 self.var_decl(identifier, *flags as u16, *id)?;
                 self.var_def(identifier, *flags as u16, *id)?;
             }
