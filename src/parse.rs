@@ -334,25 +334,19 @@ impl<'a> Parser<'a> {
     }
 
     // Skip over unsignificant tokens
-    fn next_parse_token(&mut self) -> Result<Token, Error> {
-        loop {
-            let token = self.lexer.next_token()?;
-            match token.kind {
-                TokenKind::Whitespace | TokenKind::LineComment | TokenKind::BlockComment { .. } => {
-                }
-                _ => {
-                    return Ok(token);
-                }
-            }
-        }
-    }
-
     fn advance(&mut self) -> Result<(), Error> {
         if self.i < self.tokens.len() {
             self.i += 1;
             self.previous = self.current;
             self.current = Some(self.tokens[self.i]);
-        } else {
+
+            let k = self.previous.unwrap().kind;
+            match k {
+                TokenKind::Whitespace | TokenKind::LineComment | TokenKind::BlockComment { .. } => {
+                    return self.advance();
+                }
+                _ => (),
+            }
         }
         Ok(())
     }
