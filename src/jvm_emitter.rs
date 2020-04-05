@@ -15,15 +15,15 @@ const _CLASS_ACC_SYNTHETIC: u16 = 0x1000; // Declared synthetic; not present in 
 const _CLASS_ACC_ANNOTATION: u16 = 0x2000; // Declared as an annotation type.
 const _CLASS_ACC_ENUM: u16 = 0x4000; // Declared as an enum type.
 
-const METHOD_ACC_PUBLIC: u16 = 0x0001; //Declared public; may be accessed from outside its package.
-const _METHOD_ACC_PRIVATE: u16 = 0x0002; //Declared private; usable only within the defining class.
-const _METHOD_ACC_PROTECTED: u16 = 0x0004; //Declared protected; may be accessed within subclasses.
-const METHOD_ACC_STATIC: u16 = 0x0008; //Declared static.
-const _METHOD_ACC_FINAL: u16 = 0x0010; //Declared final; never directly assigned to after object construction (JLS §17.5).
-const _METHOD_ACC_VOLATILE: u16 = 0x0040; //Declared volatile; cannot be cached.
-const _METHOD_ACC_TRANSIENT: u16 = 0x0080; //Declared transient; not written or read by a persistent object manager.
-const _METHOD_ACC_SYNTHETIC: u16 = 0x1000; //Declared synthetic; not present in the source code.
-const _METHOD_ACC_ENUM: u16 = 0x4000; //Declared as an element of an enum.
+const METHOD_ACC_PUBLIC: u16 = 0x0001; // Declared public; may be accessed from outside its package.
+const _METHOD_ACC_PRIVATE: u16 = 0x0002; // Declared private; usable only within the defining class.
+const _METHOD_ACC_PROTECTED: u16 = 0x0004; // Declared protected; may be accessed within subclasses.
+const METHOD_ACC_STATIC: u16 = 0x0008; // Declared static.
+const _METHOD_ACC_FINAL: u16 = 0x0010; // Declared final; never directly assigned to after object construction (JLS §17.5).
+const _METHOD_ACC_VOLATILE: u16 = 0x0040; // Declared volatile; cannot be cached.
+const _METHOD_ACC_TRANSIENT: u16 = 0x0080; // Declared transient; not written or read by a persistent object manager.
+const _METHOD_ACC_SYNTHETIC: u16 = 0x1000; // Declared synthetic; not present in the source code.
+const _METHOD_ACC_ENUM: u16 = 0x4000; // Declared as an element of an enum.
 
 const CONSTANT_CLASS: u8 = 7;
 const _CONSTANT_FIELDREF: u8 = 9;
