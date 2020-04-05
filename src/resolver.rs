@@ -501,7 +501,7 @@ impl<'a> Resolver<'a> {
 
         let (_, var, _) = self.find_var(identifier).unwrap();
         let flags = var.flags;
-        if flags & FLAG_VAL as u16 == 1 {
+        if flags & FLAG_VAL as u16 == FLAG_VAL {
             return Err(Error::new(
                 ErrorKind::CannotReassignVal(identifier.to_string()),
                 self.lexer.span_location(span),

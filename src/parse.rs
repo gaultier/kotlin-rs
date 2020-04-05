@@ -129,9 +129,9 @@ impl Token {
     }
 }
 
-pub(crate) const FLAG_VAR: u8 = 1;
-pub(crate) const FLAG_VAL: u8 = 2;
-pub(crate) const FLAG_FN: u8 = 4;
+pub(crate) const FLAG_VAR: u16 = 1;
+pub(crate) const FLAG_VAL: u16 = 2;
+pub(crate) const FLAG_FN: u16 = 4;
 
 #[derive(Debug)]
 pub enum AstNodeStmt {
@@ -150,7 +150,7 @@ pub enum AstNodeStmt {
         identifier: Token,
         value: AstNodeExpr,
         id: NodeId,
-        flags: u8,
+        flags: u16,
     },
     Assign {
         target: AstNodeExpr,
@@ -1328,7 +1328,7 @@ impl<'a> Parser<'a> {
             args,
             body: Box::new(body),
             id,
-            flags: FLAG_FN as u16,
+            flags: FLAG_FN,
             return_t_span,
         })
     }
