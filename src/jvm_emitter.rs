@@ -18,12 +18,26 @@ impl<'a> JvmEmitter<'a> {
         _block: &AstNodeStmt,
         w: &mut W,
     ) -> Result<(), Error> {
-        self.magic_number(w)?;
+        self.prologue(w)?;
         Ok(())
     }
 
     fn magic_number<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         w.write(&[0xca, 0xfe, 0xba, 0xbe])?;
+        Ok(())
+    }
+
+    fn version<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
+        // Minor
+        w.write(&[0x00, 0x00])?;
+        // Major: 0x39 = 57 => java 13
+        w.write(&[0x00, 0x40])?;
+        Ok(())
+    }
+
+    fn prologue<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
+        self.magic_number(w)?;
+        self.version(w)?;
         Ok(())
     }
 }
