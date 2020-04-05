@@ -63,7 +63,8 @@ fn main() {
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
     let res = match matches.value_of("command").unwrap() {
-        "sexp" => compile(&src, &mut handle),
+        "build" => compile(&src, &mut handle),
+        "sexp" => sexp(&src, &mut handle),
         "fmt" => fmt(&src, &mut handle),
         "dump_ast" => dump_ast(&src),
         "dump_tokens" => dump_tokens(&src),
