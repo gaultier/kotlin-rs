@@ -1,7 +1,8 @@
 use crate::error::*;
-use crate::lex::{Lexer, Span, Token, TokenKind};
+use crate::lex::{Lexer, Token, TokenKind};
 use crate::parse::*;
 use crate::resolver::Resolution;
+use crate::session::Span;
 use log::debug;
 
 pub(crate) struct TypeChecker<'a> {

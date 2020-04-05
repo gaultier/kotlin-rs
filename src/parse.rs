@@ -1,5 +1,6 @@
 use crate::error::*;
 use crate::lex::*;
+use crate::session::Span;
 use log::debug;
 use std::collections::BTreeMap;
 use std::fmt;

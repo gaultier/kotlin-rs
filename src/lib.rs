@@ -7,5 +7,6 @@ pub mod lex;
 pub mod mir;
 pub mod parse;
 pub mod resolver;
+pub mod session;
 pub mod sexp_emitter;
 pub mod type_check;

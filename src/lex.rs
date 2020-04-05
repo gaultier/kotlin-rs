@@ -1,5 +1,6 @@
 use crate::cursor::*;
 use crate::error::*;
+use crate::session::Span;
 use log::debug;
 use std::fmt;
 
@@ -895,34 +896,6 @@ pub struct Lexer {
     pos: usize,
     // Index of each line, 0 based
     lines: Vec<usize>,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct Span {
-    pub start: usize,
-    pub end: usize,
-}
-
-impl Span {
-    pub fn new(start: usize, end: usize) -> Span {
-        Span { start, end }
-    }
-
-    pub fn from_spans(left: &Span, right: &Span) -> Span {
-        Span {
-            start: left.start,
-            end: right.end,
-        }
-    }
-
-    pub fn len(&self) -> usize {
-        debug_assert!(self.end >= self.start);
-        self.end - self.start
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
 }
 
 #[derive(Debug, Copy, Clone)]

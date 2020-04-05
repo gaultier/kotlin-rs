@@ -1,6 +1,7 @@
 use crate::error::*;
-use crate::lex::{Lexer, Span, Token};
+use crate::lex::{Lexer, Token};
 use crate::parse::*;
+use crate::session::Span;
 use log::debug;
 
 pub struct Formatter<'a> {
