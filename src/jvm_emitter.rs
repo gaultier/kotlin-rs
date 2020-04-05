@@ -6,7 +6,7 @@ use log::debug;
 
 const ACC_SUPER: u16 = 0x0002;
 
-const _CONSTANT_CLASS: u8 = 7;
+const CONSTANT_CLASS: u8 = 7;
 const _CONSTANT_FIELDREF: u8 = 9;
 const _CONSTANT_METHODREF: u8 = 10;
 const _CONSTANT_INTERFACE_METHODREF: u8 = 11;
@@ -24,6 +24,7 @@ const _CONSTANT_INVOKE_DYNAMIC: u8 = 18;
 #[derive(Debug)]
 enum Constant {
     Utf8(String),
+    ClassInfo(u16),
 }
 
 #[derive(Debug)]
@@ -42,7 +43,10 @@ impl<'a> JvmEmitter<'a> {
         JvmEmitter {
             session,
             _types,
-            constants: vec![Constant::Utf8(String::from("java/lang/Object"))],
+            constants: vec![
+                Constant::Utf8(String::from("java/lang/Object")),
+                Constant::ClassInfo(0),
+            ],
         }
     }
 
@@ -144,6 +148,10 @@ impl<'a> JvmEmitter<'a> {
                 w.write(&[CONSTANT_UTF8])?;
                 w.write(&u16_to_u8s(s.len() as u16))?;
                 w.write(&s.as_bytes())?;
+            }
+            Constant::ClassInfo(index) => {
+                w.write(&[CONSTANT_CLASS])?;
+                w.write(&u16_to_u8s(*index))?;
             }
         }
         Ok(())
