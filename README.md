@@ -35,6 +35,8 @@ $ export RUST_LOG=debug
 $ export RUST_BACKTRACE=full
 $ cargo run -- dump_tokens -f /path/to/file.kt
 $ cargo run -- dump_ast -f /path/to/file.kt
+# Prettier view of the ast with s-expressions
+$ cargo run -- sexp -f /path/to/file.kt
 ```
 
 ## Tests
