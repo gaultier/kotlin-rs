@@ -6,7 +6,7 @@ use log::debug;
 
 const CTOR_STR: &'static str = "<init>";
 
-const CLASS_ACC_PUBLIC: u16 = 0x0001; // Declared public; may be accessed from outside its package.
+const _CLASS_ACC_PUBLIC: u16 = 0x0001; // Declared public; may be accessed from outside its package.
 const _CLASS_ACC_FINAL: u16 = 0x0010; // Declared final; no subclasses allowed.
 const CLASS_ACC_SUPER: u16 = 0x0020; // Treat superclass methods specially when invoked by the invokespecial instruction.
 const _CLASS_ACC_INTERFACE: u16 = 0x0200; // Is an interface, not a class.
@@ -141,9 +141,16 @@ impl<'a> JvmEmitter<'a> {
             },
             Function {
                 access_flags: METHOD_ACC_PUBLIC | METHOD_ACC_STATIC,
-                name_index: 1,
-                descriptor_index: 3,
-                attributes: vec![],
+                name_index: 11,
+                descriptor_index: 12,
+                attributes: vec![Attribute {
+                    name_index: 9, // Code
+                    info: vec![
+                        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0xb1, 0x00, 0x00, 0x00,
+                        0x01, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01, 0x00, 0x00, 0x00,
+                        0x02,
+                    ], // TODO
+                }],
             },
         ];
         self.methods(&methods, w)?;
@@ -232,13 +239,17 @@ impl<'a> JvmEmitter<'a> {
         w.write(&u16_to_u8s(method.attributes.len() as u16))?;
 
         for attribute in &method.attributes {
-            self.attribute(attribute, w)?;
+            self.method_attribute(attribute, w)?;
         }
         Ok(())
     }
 
-    fn attribute<W: std::io::Write>(&self, attribute: &Attribute, w: &mut W) -> Result<(), Error> {
-        debug!("attribute={:?}", attribute);
+    fn method_attribute<W: std::io::Write>(
+        &self,
+        attribute: &Attribute,
+        w: &mut W,
+    ) -> Result<(), Error> {
+        debug!("method_attribute={:?}", attribute);
 
         w.write(&u16_to_u8s(attribute.name_index))?;
         w.write(&u32_to_u8s(attribute.info.len() as u32))?;
