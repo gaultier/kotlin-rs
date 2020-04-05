@@ -22,7 +22,10 @@ fn main() {
                 .help("What to do")
                 .default_value("sexp")
                 .possible_values(&[
-                    "sexp", "fmt", "dump_ast",
+                    "sexp",
+                    "fmt",
+                    "dump_ast",
+                    "dump_tokens",
                     // Later: build, verify, etc
                 ])
                 .index(1),
@@ -63,6 +66,7 @@ fn main() {
         "sexp" => compile(src, &mut handle),
         "fmt" => fmt(src, &mut handle),
         "dump_ast" => dump_ast(src),
+        "dump_tokens" => dump_tokens(src),
         _ => unreachable!(),
     };
     if let Err(err) = res {
@@ -77,5 +81,12 @@ fn dump_ast(src: String) -> Result<(), Error> {
     let mut parser = Parser::new(&lexer, &tokens);
     let stmts = parser.parse()?;
     println!("{:#?}", stmts);
+    Ok(())
+}
+
+fn dump_tokens(src: String) -> Result<(), Error> {
+    let mut lexer = Lexer::new(src);
+    let tokens = lexer.lex()?;
+    println!("{:#?}", tokens);
     Ok(())
 }
