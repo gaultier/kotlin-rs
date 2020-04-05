@@ -1353,6 +1353,8 @@ impl Lexer {
         loop {
             let token = self.next_token()?;
             if token.kind == TokenKind::Eof {
+                tokens.push(token);
+                tokens.push(token);
                 break;
             } else {
                 tokens.push(token);

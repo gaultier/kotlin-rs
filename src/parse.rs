@@ -335,11 +335,11 @@ impl<'a> Parser<'a> {
 
     // Skip over unsignificant tokens
     fn advance(&mut self) -> Result<(), Error> {
-        if self.i < self.tokens.len() - 1 {
-            self.i += 1;
-            self.previous = self.current;
-            self.current = Some(self.tokens[self.i]);
+        while self.i < self.tokens.len() - 1 {
+            self.previous = Some(self.tokens[self.i]);
+            self.current = Some(self.tokens[self.i + 1]);
 
+            self.i += 1;
             match self.previous {
                 Some(Token {
                     kind: TokenKind::Whitespace,
@@ -352,10 +352,8 @@ impl<'a> Parser<'a> {
                 | Some(Token {
                     kind: TokenKind::BlockComment { .. },
                     ..
-                }) => {
-                    return self.advance();
-                }
-                _ => (),
+                }) => (),
+                _ => break,
             }
         }
         Ok(())
@@ -1465,7 +1463,6 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse(&mut self) -> Result<AstNodeStmt, Error> {
-        self.advance()?;
         self.advance()?;
         self.statements()
     }
