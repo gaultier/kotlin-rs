@@ -10,6 +10,21 @@ pub(crate) struct JvmEmitter<'a> {
 
 const ACC_SUPER: u16 = 0x0002;
 
+const CONSTANT_CLASS: u8 = 7;
+const CONSTANT_FIELDREF: u8 = 9;
+const CONSTANT_METHODREF: u8 = 10;
+const CONSTANT_INTERFACE_METHODREF: u8 = 11;
+const CONSTANT_STRING: u8 = 8;
+const CONSTANT_INTEGER: u8 = 3;
+const CONSTANT_FLOAT: u8 = 4;
+const CONSTANT_LONG: u8 = 5;
+const CONSTANT_DOUBLE: u8 = 6;
+const CONSTANT_NAME_AND_TYPE: u8 = 12;
+const CONSTANT_UTF8: u8 = 1;
+const CONSTANT_METHOD_HANDLE: u8 = 15;
+const CONSTANT_METHOD_TYPE: u8 = 16;
+const CONSTANT_INVOKE_DYNAMIC: u8 = 18;
+
 impl<'a> JvmEmitter<'a> {
     pub(crate) fn new(session: &'a Session, _types: &'a Types) -> JvmEmitter<'a> {
         JvmEmitter { session, _types }
