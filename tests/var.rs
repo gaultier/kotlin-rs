@@ -177,3 +177,15 @@ fn val_wrong_explicit_type() -> Result<(), String> {
         other => Err(format!("Should be an error: {:?}", other)),
     }
 }
+
+#[test]
+fn assign_with_paren() {
+    let src = String::from("var a = 5*10; (((a))) = 1");
+    let mut out: Vec<u8> = Vec::new();
+
+    assert!(compile(src, &mut out).is_ok());
+    assert_eq!(
+        std::str::from_utf8(&out).as_mut().unwrap().trim(),
+        "(begin (define a (* 5 10))\n (set! a 1)\n )"
+    );
+}

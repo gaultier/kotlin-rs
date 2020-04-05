@@ -1342,14 +1342,16 @@ impl<'a> Parser<'a> {
 
     // FIXME
     fn incoming_assignement(&self) -> bool {
+        let prev_kind = self.previous.unwrap().kind;
         let cur_kind = self.current.unwrap().kind;
-        self.previous.unwrap().kind == TokenKind::Identifier
+        (prev_kind == TokenKind::Identifier
             && (cur_kind == TokenKind::Equal
                 || cur_kind == TokenKind::MinusEqual
                 || cur_kind == TokenKind::PlusEqual
                 || cur_kind == TokenKind::StarEqual
                 || cur_kind == TokenKind::SlashEqual
-                || cur_kind == TokenKind::PercentEqual)
+                || cur_kind == TokenKind::PercentEqual))
+            || (prev_kind == TokenKind::LeftParen)
     }
 
     fn statement(&mut self) -> Result<AstNodeStmt, Error> {
