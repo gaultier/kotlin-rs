@@ -6,7 +6,24 @@ use log::debug;
 
 const CTOR_STR: &'static str = "<init>";
 
-const ACC_SUPER: u16 = 0x0020;
+const CLASS_ACC_PUBLIC: u16 = 0x0001; // Declared public; may be accessed from outside its package.
+const _CLASS_ACC_FINAL: u16 = 0x0010; // Declared final; no subclasses allowed.
+const CLASS_ACC_SUPER: u16 = 0x0020; // Treat superclass methods specially when invoked by the invokespecial instruction.
+const _CLASS_ACC_INTERFACE: u16 = 0x0200; // Is an interface, not a class.
+const _CLASS_ACC_ABSTRACT: u16 = 0x0400; // Declared abstract; must not be instantiated.
+const _CLASS_ACC_SYNTHETIC: u16 = 0x1000; // Declared synthetic; not present in the source code.
+const _CLASS_ACC_ANNOTATION: u16 = 0x2000; // Declared as an annotation type.
+const _CLASS_ACC_ENUM: u16 = 0x4000; // Declared as an enum type.
+
+const METHOD_ACC_PUBLIC: u16 = 0x0001; //Declared public; may be accessed from outside its package.
+const _METHOD_ACC_PRIVATE: u16 = 0x0002; //Declared private; usable only within the defining class.
+const _METHOD_ACC_PROTECTED: u16 = 0x0004; //Declared protected; may be accessed within subclasses.
+const METHOD_ACC_STATIC: u16 = 0x0008; //Declared static.
+const _METHOD_ACC_FINAL: u16 = 0x0010; //Declared final; never directly assigned to after object construction (JLS §17.5).
+const _METHOD_ACC_VOLATILE: u16 = 0x0040; //Declared volatile; cannot be cached.
+const _METHOD_ACC_TRANSIENT: u16 = 0x0080; //Declared transient; not written or read by a persistent object manager.
+const _METHOD_ACC_SYNTHETIC: u16 = 0x1000; //Declared synthetic; not present in the source code.
+const _METHOD_ACC_ENUM: u16 = 0x4000; //Declared as an element of an enum.
 
 const CONSTANT_CLASS: u8 = 7;
 const _CONSTANT_FIELDREF: u8 = 9;
@@ -77,20 +94,20 @@ impl<'a> JvmEmitter<'a> {
             session,
             _types,
             constants: vec![
-                Constant::MethodRef(2, 3),                               // 1
-                Constant::ClassInfo(4),                                  // 2
-                Constant::NameAndType(5, 6),                             // 3
-                Constant::Utf8(String::from("java/lang/Object")),        // 4
-                Constant::Utf8(String::from(CTOR_STR)),                  // 5
-                Constant::Utf8(String::from("()V")),                     // 6
-                Constant::ClassInfo(8),                                  // 7
-                Constant::Utf8(String::from("Foo")),                     // 8
-                Constant::Utf8(String::from("Code")),                    // 9
-                Constant::Utf8(String::from("LineNumberTable")),         // 10
-                Constant::Utf8(String::from("main")),                    // 11
-                Constant::Utf8(String::from("([Ljava/lang/String;])V")), // 12
-                Constant::Utf8(String::from("SourceFile")),              // 13
-                Constant::Utf8(String::from("Foo.java")),                // 14
+                Constant::MethodRef(2, 3),                              // 1
+                Constant::ClassInfo(4),                                 // 2
+                Constant::NameAndType(5, 6),                            // 3
+                Constant::Utf8(String::from("java/lang/Object")),       // 4
+                Constant::Utf8(String::from(CTOR_STR)),                 // 5
+                Constant::Utf8(String::from("()V")),                    // 6
+                Constant::ClassInfo(8),                                 // 7
+                Constant::Utf8(String::from("Foo")),                    // 8
+                Constant::Utf8(String::from("Code")),                   // 9
+                Constant::Utf8(String::from("LineNumberTable")),        // 10
+                Constant::Utf8(String::from("main")),                   // 11
+                Constant::Utf8(String::from("([Ljava/lang/String;)V")), // 12
+                Constant::Utf8(String::from("SourceFile")),             // 13
+                Constant::Utf8(String::from("Foo.java")),               // 14
             ],
         }
     }
@@ -123,7 +140,7 @@ impl<'a> JvmEmitter<'a> {
                 }],
             },
             Function {
-                access_flags: 0,
+                access_flags: METHOD_ACC_PUBLIC | METHOD_ACC_STATIC,
                 name_index: 1,
                 descriptor_index: 3,
                 attributes: vec![],
@@ -166,7 +183,7 @@ impl<'a> JvmEmitter<'a> {
 
     fn access_flags<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         // FIXME
-        w.write(&u16_to_u8s(ACC_SUPER))?;
+        w.write(&u16_to_u8s(CLASS_ACC_SUPER))?;
         Ok(())
     }
 
