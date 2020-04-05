@@ -303,12 +303,14 @@ impl AstNodeExpr {
 pub struct Parser<'a> {
     previous: Option<Token>,
     current: Option<Token>,
-    lexer: &'a mut Lexer,
+    i: usize,
+    tokens: Vec<Token>,
+    lexer: &'a Lexer,
     pub(crate) types: Types,
     pub(crate) current_id: usize,
 }
 
-impl Parser<'_> {
+impl<'a> Parser<'a> {
     fn simple_identifier_type(&self, span: &Span) -> Result<Type, Error> {
         let identifier = &self.lexer.src[span.start..span.end];
         match identifier {
@@ -331,23 +333,11 @@ impl Parser<'_> {
         }
     }
 
-    // Skip over unsignificant tokens
-    fn next_parse_token(&mut self) -> Result<Token, Error> {
-        loop {
-            let token = self.lexer.next_token()?;
-            match token.kind {
-                TokenKind::Whitespace | TokenKind::LineComment | TokenKind::BlockComment { .. } => {
-                }
-                _ => {
-                    return Ok(token);
-                }
-            }
-        }
-    }
-
     fn advance(&mut self) -> Result<(), Error> {
-        self.previous = self.current;
-        self.current = Some(self.next_parse_token()?);
+        self.i += 1;
+        self.previous = Some(self.tokens[self.i]);
+        self.current = Some(self.tokens[self.i + 1]);
+
         Ok(())
     }
 
@@ -1176,16 +1166,11 @@ impl Parser<'_> {
 
     fn var_def(&mut self) -> Result<AstNodeStmt, Error> {
         let flags = match self.previous.unwrap().kind {
-            TokenKind::KeywordVar => {
-                self.advance()?;
-                FLAG_VAR
-            }
-            TokenKind::KeywordVal => {
-                self.advance()?;
-                FLAG_VAL
-            }
+            TokenKind::KeywordVar => FLAG_VAR,
+            TokenKind::KeywordVal => FLAG_VAL,
             _ => unreachable!(),
         };
+        self.advance()?;
 
         self.skip_newlines()?;
         let identifier = self.eat(TokenKind::Identifier)?;
@@ -1218,9 +1203,17 @@ impl Parser<'_> {
         }
     }
 
+    fn assign_target_expr(&mut self) -> Result<AstNodeExpr, Error> {
+        match self.previous.unwrap().kind {
+            TokenKind::LeftParen => self.assignable_expr(),
+            TokenKind::Identifier => self.primary(),
+            _ => unreachable!(),
+        }
+    }
+
     fn assign(&mut self) -> Result<AstNodeStmt, Error> {
         let span = self.current.unwrap().span;
-        let target = self.assignable_expr()?;
+        let target = self.assign_target_expr()?;
 
         // Operator
         let op = self.previous.unwrap().kind;
@@ -1434,11 +1427,19 @@ impl Parser<'_> {
         })
     }
 
-    pub fn new(lexer: &mut Lexer) -> Parser {
+    pub fn new(lexer: &'a Lexer, tokens: &'a [Token]) -> Parser<'a> {
+        let tokens = tokens
+            .iter()
+            .filter(|t| !t.is_unsignificant_ws())
+            .cloned()
+            .collect::<Vec<Token>>();
+
         Parser {
-            previous: None,
-            current: None,
+            previous: Some(tokens[0]),
+            current: Some(tokens[1]),
+            i: 0,
             lexer,
+            tokens,
             types: BTreeMap::new(),
             current_id: 0,
         }
@@ -1453,8 +1454,6 @@ impl Parser<'_> {
     }
 
     pub fn parse(&mut self) -> Result<AstNodeStmt, Error> {
-        self.advance()?;
-        self.advance()?;
         self.statements()
     }
 }

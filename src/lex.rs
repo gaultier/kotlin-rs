@@ -2,10 +2,6 @@ use crate::cursor::*;
 use crate::error::*;
 use log::debug;
 use std::fmt;
-// use std::convert::TryFrom;
-// use std::fmt;
-// use std::option::Option;
-// use std::result::Result;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 enum NumberBase {
@@ -939,6 +935,13 @@ impl Token {
     pub fn new(kind: TokenKind, span: Span) -> Token {
         Token { kind, span }
     }
+
+    pub fn is_unsignificant_ws(&self) -> bool {
+        match self.kind {
+            TokenKind::Whitespace | TokenKind::LineComment | TokenKind::BlockComment { .. } => true,
+            _ => false,
+        }
+    }
 }
 
 impl Lexer {
@@ -1330,7 +1333,7 @@ impl Lexer {
         }
     }
 
-    pub fn next_token(&mut self) -> Result<Token, Error> {
+    fn next_token(&mut self) -> Result<Token, Error> {
         if self.pos >= self.src.len() {
             return Ok(Token::new(TokenKind::Eof, Span::new(self.pos, self.pos)));
         }
@@ -1350,6 +1353,22 @@ impl Lexer {
         let kind = self.cursor_to_lex_token_kind(cursor_token.kind, &span)?;
 
         Ok(Token::new(kind, span))
+    }
+
+    pub fn lex(&mut self) -> Result<Vec<Token>, Error> {
+        let mut tokens = Vec::new();
+        loop {
+            let token = self.next_token()?;
+            if token.kind == TokenKind::Eof {
+                tokens.push(token);
+                tokens.push(token);
+                break;
+            } else {
+                tokens.push(token);
+            }
+        }
+
+        Ok(tokens)
     }
 
     pub fn span_location(&self, span: &Span) -> Location {

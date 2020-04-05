@@ -9,7 +9,8 @@ use std::io;
 
 pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
     let mut lexer = Lexer::new(src);
-    let mut parser = Parser::new(&mut lexer);
+    let tokens = lexer.lex()?;
+    let mut parser = Parser::new(&lexer, &tokens);
     let stmts = parser.parse()?;
     let mut types = parser.types;
 
@@ -25,7 +26,8 @@ pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
 
 pub fn fmt<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
     let mut lexer = Lexer::new(src);
-    let mut parser = Parser::new(&mut lexer);
+    let tokens = lexer.lex()?;
+    let mut parser = Parser::new(&lexer, &tokens);
     let stmts = parser.parse()?;
     let mut types = parser.types;
 
