@@ -351,14 +351,15 @@ impl<'a> JvmEmitter<'a> {
             } => {
                 w.write(&u16_to_u8s(*name_index))?;
 
-                let size: u32 = attribute.size();
+                let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
+                debug!("code size={}", size);
                 w.write(&u32_to_u8s(size))?;
 
                 w.write(&u16_to_u8s(*max_stack))?;
 
                 w.write(&u16_to_u8s(*max_locals))?;
 
-                w.write(&u32_to_u8s((code.len() as isize - (2 + 4)) as u32))?;
+                w.write(&u32_to_u8s((code.len()) as u32))?;
                 w.write(&code)?;
 
                 w.write(&u16_to_u8s(exception_table.len() as u16))?;
@@ -373,7 +374,8 @@ impl<'a> JvmEmitter<'a> {
                 source_file_index,
             } => {
                 w.write(&u16_to_u8s(*name_index))?;
-                w.write(&u32_to_u8s((attribute.size() as isize - (2 + 4)) as u32))?;
+                let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
+                w.write(&u32_to_u8s(size))?;
                 w.write(&u16_to_u8s(*source_file_index))?;
             }
             Attribute::LineNumberTable {
@@ -381,7 +383,8 @@ impl<'a> JvmEmitter<'a> {
                 line_number_tables,
             } => {
                 w.write(&u16_to_u8s(*name_index))?;
-                w.write(&u32_to_u8s((attribute.size() as isize - (2 + 4)) as u32))?;
+                let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
+                w.write(&u32_to_u8s(size))?;
 
                 self.line_number_tables(line_number_tables, w)?;
             }
