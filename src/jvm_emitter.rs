@@ -135,7 +135,7 @@ impl<'a> JvmEmitter<'a> {
                     info: vec![
                         0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x05, 0x2a, 0xb7, 0x00, 0x01,
                         0xb1, 0x00, 0x00, 0x00, 0x01, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x06, 0x00,
-                        0x01,
+                        0x01, 0x00, 0x00, 0x00, 0x01,
                     ], // TODO
                 }],
             },
@@ -156,8 +156,8 @@ impl<'a> JvmEmitter<'a> {
         self.methods(&methods, w)?;
 
         let attributes = vec![Attribute {
-            name_index: 13, // SourceFile
-            info: vec![14], // Foo.java
+            name_index: 13,    // SourceFile
+            info: vec![0, 14], // 0x00 0x14 : Foo.java
         }];
         self.attributes(&attributes, w)?;
 
@@ -184,7 +184,8 @@ impl<'a> JvmEmitter<'a> {
     }
 
     fn constant_pool<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        let len = &u16_to_u8s(self.constants.len() as u16);
+        // + 1 because it is one-indexed
+        let len = &u16_to_u8s(self.constants.len() as u16 + 1);
         debug!("constant pool size={:#04X} {:#04X}", len[0], len[1]);
         w.write(len)?;
 
