@@ -313,7 +313,7 @@ pub struct Parser<'a> {
 
 impl<'a> Parser<'a> {
     fn simple_identifier_type(&self, span: &Span) -> Result<Type, Error> {
-        let identifier = &self.lexer.src[span.start..span.end];
+        let identifier = &self.session.src[span.start..span.end];
         match identifier {
             "Int" => Ok(Type::Int),
             "Long" => Ok(Type::Long),
@@ -329,7 +329,7 @@ impl<'a> Parser<'a> {
             "Any" => Ok(Type::Any),
             _ => Err(Error::new(
                 ErrorKind::UnknownIdentifier(identifier.to_string()),
-                self.lexer.span_location(&span),
+                self.session.span_location(&span),
             )),
         }
     }
@@ -365,9 +365,9 @@ impl<'a> Parser<'a> {
             _ => Err(Error::new(
                 ErrorKind::ExpectedToken(
                     kind,
-                    self.lexer.src[previous.span.start..previous.span.end].to_string(),
+                    self.session.src[previous.span.start..previous.span.end].to_string(),
                 ),
-                self.lexer.span_location(&previous.span),
+                self.session.span_location(&previous.span),
             )),
         }
     }
@@ -787,7 +787,7 @@ impl<'a> Parser<'a> {
             | TokenKind::KeywordThrow => self.jump_expr(),
             _ => Err(Error::new(
                 ErrorKind::ExpectedPrimary,
-                self.lexer.span_location(&previous.span),
+                self.session.span_location(&previous.span),
             )),
         }
     }
@@ -817,9 +817,9 @@ impl<'a> Parser<'a> {
             _ => Err(Error::new(
                 ErrorKind::UnexpectedToken(
                     previous.kind,
-                    self.lexer.src[previous.span.start..previous.span.end].to_string(),
+                    self.session.src[previous.span.start..previous.span.end].to_string(),
                 ),
-                self.lexer.span_location(&previous.span),
+                self.session.span_location(&previous.span),
             )),
         }
     }
@@ -1271,9 +1271,9 @@ impl<'a> Parser<'a> {
             _ => Err(Error::new(
                 ErrorKind::UnexpectedToken(
                     previous.kind,
-                    self.lexer.src[previous.span.start..previous.span.end].to_string(),
+                    self.session.src[previous.span.start..previous.span.end].to_string(),
                 ),
-                self.lexer.span_location(&previous.span),
+                self.session.span_location(&previous.span),
             )),
         }
     }
@@ -1392,9 +1392,9 @@ impl<'a> Parser<'a> {
                             return Err(Error::new(
                                 ErrorKind::ExpectedToken(
                                     TokenKind::Semicolon,
-                                    self.lexer.src[span.start..span.end].to_string(),
+                                    self.session.src[span.start..span.end].to_string(),
                                 ),
-                                self.lexer.span_location(&span),
+                                self.session.span_location(&span),
                             ));
                         }
                     }

@@ -148,7 +148,7 @@ impl<'a> SexpEmitter<'a> {
                 write!(
                     w,
                     "(define {} ",
-                    &self.lexer.src[identifier.span.start..identifier.span.end]
+                    &self.session.src[identifier.span.start..identifier.span.end]
                 )
                 .unwrap();
                 self.expr(value, w)?;
@@ -276,7 +276,7 @@ impl<'a> SexpEmitter<'a> {
                 },
                 _,
             ) => {
-                write!(w, "{}", &self.lexer.src[span.start..span.end]).unwrap();
+                write!(w, "{}", &self.session.src[span.start..span.end]).unwrap();
                 Ok(())
             }
             AstNodeExpr::Literal(
@@ -467,7 +467,7 @@ impl<'a> SexpEmitter<'a> {
     }
 
     fn var_ref<W: std::io::Write>(&self, span: &Span, w: &mut W) -> Result<(), Error> {
-        let identifier = &self.lexer.src[span.start..span.end];
+        let identifier = &self.session.src[span.start..span.end];
         write!(w, "{}", identifier).unwrap();
         Ok(())
     }
