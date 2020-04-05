@@ -3,11 +3,6 @@ use crate::error::*;
 use crate::parse::*;
 use crate::session::Session;
 
-pub(crate) struct JvmEmitter<'a> {
-    session: &'a Session<'a>,
-    _types: &'a Types,
-}
-
 const ACC_SUPER: u16 = 0x0002;
 
 const CONSTANT_CLASS: u8 = 7;
@@ -25,9 +20,29 @@ const CONSTANT_METHOD_HANDLE: u8 = 15;
 const CONSTANT_METHOD_TYPE: u8 = 16;
 const CONSTANT_INVOKE_DYNAMIC: u8 = 18;
 
+#[derive(Debug)]
+enum Constant {
+    Utf8(String),
+}
+
+#[derive(Debug)]
+pub(crate) struct JvmEmitter<'a> {
+    session: &'a Session<'a>,
+    _types: &'a Types,
+    constants: Vec<Constant>,
+}
+
+fn u16_to_u8s(b: u16) -> [u8; 2] {
+    [(b & 0xff00) as u8, (b & 0x00ff) as u8]
+}
+
 impl<'a> JvmEmitter<'a> {
     pub(crate) fn new(session: &'a Session, _types: &'a Types) -> JvmEmitter<'a> {
-        JvmEmitter { session, _types }
+        JvmEmitter {
+            session,
+            _types,
+            constants: vec![Constant::Utf8(String::from("java/lang/Object"))],
+        }
     }
 
     pub(crate) fn statements<W: std::io::Write>(
@@ -68,7 +83,12 @@ impl<'a> JvmEmitter<'a> {
 
     fn constant_pool<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         // FIXME
-        w.write(&[0x00, 0x00])?;
+        w.write(&u16_to_u8s(self.constants.len() as u16))?;
+
+        for constant in &self.constants {
+            self.constant(constant, w)?;
+        }
+
         Ok(())
     }
 
@@ -111,6 +131,16 @@ impl<'a> JvmEmitter<'a> {
     fn attributes<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         // FIXME
         w.write(&[0x00, 0x00])?;
+        Ok(())
+    }
+
+    fn constant<W: std::io::Write>(&self, constant: &Constant, w: &mut W) -> Result<(), Error> {
+        match constant {
+            Constant::Utf8(s) => {
+                w.write(&[CONSTANT_UTF8])?;
+                w.write(&s.as_bytes())?;
+            }
+        }
         Ok(())
     }
 }
