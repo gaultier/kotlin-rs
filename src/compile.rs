@@ -25,7 +25,6 @@ pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
 }
 
 pub fn fmt<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
-    let cpy = src.clone();
     let mut lexer = Lexer::new(src);
     let tokens = lexer.lex()?;
     let mut parser = Parser::new(&lexer, &tokens);

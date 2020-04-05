@@ -340,9 +340,19 @@ impl<'a> Parser<'a> {
             self.previous = self.current;
             self.current = Some(self.tokens[self.i]);
 
-            let k = self.previous.unwrap().kind;
-            match k {
-                TokenKind::Whitespace | TokenKind::LineComment | TokenKind::BlockComment { .. } => {
+            match self.previous {
+                Some(Token {
+                    kind: TokenKind::Whitespace,
+                    ..
+                })
+                | Some(Token {
+                    kind: TokenKind::LineComment,
+                    ..
+                })
+                | Some(Token {
+                    kind: TokenKind::BlockComment { .. },
+                    ..
+                }) => {
                     return self.advance();
                 }
                 _ => (),
