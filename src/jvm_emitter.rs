@@ -62,14 +62,14 @@ fn u16_to_u8s(b: u16) -> [u8; 2] {
     [(b & 0xff_00) as u8, (b & 0x00_ff) as u8]
 }
 
-fn u32_to_u8s(b: u32) -> [u8; 4] {
-    [
-        (b & 0xff_00_00_00) as u8,
-        (b & 0x00_ff_00_00) as u8,
-        (b & 0x00_00_ff_00) as u8,
-        (b & 0x00_00_00_ff) as u8,
-    ]
-}
+// fn u32_to_u8s(b: u32) -> [u8; 4] {
+//     [
+//         (b & 0xff_00_00_00) as u8,
+//         (b & 0x00_ff_00_00) as u8,
+//         (b & 0x00_00_ff_00) as u8,
+//         (b & 0x00_00_00_ff) as u8,
+//     ]
+// }
 
 impl<'a> JvmEmitter<'a> {
     pub(crate) fn new(session: &'a Session, _types: &'a Types) -> JvmEmitter<'a> {
@@ -209,7 +209,7 @@ impl<'a> JvmEmitter<'a> {
         w.write(&u16_to_u8s(method.access_flags))?;
         w.write(&u16_to_u8s(method.name_index))?;
         w.write(&u16_to_u8s(method.descriptor_index))?;
-        w.write(&u32_to_u8s(method.attributes.len() as u32))?;
+        w.write(&u16_to_u8s(method.attributes.len() as u16))?;
         Ok(())
     }
 

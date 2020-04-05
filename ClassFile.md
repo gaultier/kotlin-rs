@@ -120,4 +120,10 @@ SourceFile: "hello.java"
 - Access flags: u2 = 0x0020 i.e ACC_SUPER
 - This class: 0x00 0x07 i.e Foo
 - Super class: 0x00 0x02 i.e java.lang.Object
-- Methods
+- Method count: 0x00 0x02 => 2
+- Methods:
+  - Flag: 0x00 0x00 => 0
+  - Name index: 0x00 0x05 => 5 i.e `<init>` (constructor)
+  - Descriptor index: 0x00 0x06 => 6 i.e `()V` (return value void, no arguments)
+  - Attributes count: 0x00 0x01 => 1 
+  - Attributes:
