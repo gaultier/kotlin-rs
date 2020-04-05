@@ -31,7 +31,7 @@ impl<'a> JvmEmitter<'a> {
         // Minor
         w.write(&[0x00, 0x00])?;
         // Major: 0x39 = 57 => java 13
-        w.write(&[0x00, 0x40])?;
+        w.write(&[0x00, 0x39])?;
         Ok(())
     }
 
