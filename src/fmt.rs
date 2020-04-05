@@ -1,19 +1,19 @@
 use crate::error::*;
-use crate::lex::{Lexer, Token};
+use crate::lex::Token;
 use crate::parse::*;
-use crate::session::Span;
+use crate::session::{Session, Span};
 use log::debug;
 
 pub struct Formatter<'a> {
-    lexer: &'a Lexer,
+    session: &'a Session<'a>,
     ident: isize,
     types: &'a Types,
 }
 
 impl<'a> Formatter<'a> {
-    pub fn new(lexer: &'a Lexer, types: &'a Types) -> Formatter<'a> {
+    pub fn new(session: &'a Session, types: &'a Types) -> Formatter<'a> {
         Formatter {
-            lexer,
+            session,
             ident: -1,
             types,
         }

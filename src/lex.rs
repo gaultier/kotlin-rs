@@ -892,7 +892,7 @@ impl Cursor<'_> {
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
-    session: &'a mut Session,
+    session: &'a mut Session<'a>,
     pos: usize,
     // Index of each line, 0 based
     lines: Vec<usize>,
@@ -1298,7 +1298,7 @@ impl<'a> Lexer<'a> {
             .ok_or_else(|| Error::new(ErrorKind::InvalidCharLiteral, self.span_location(&span)))
     }
 
-    pub fn new(session: &'a Session) -> Lexer {
+    pub fn new(session: &'a Session) -> Lexer<'a> {
         Lexer {
             session,
             pos: 0,

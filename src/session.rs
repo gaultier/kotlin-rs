@@ -8,7 +8,7 @@ pub struct Span {
     pub end: usize,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub(crate) struct Session<'a> {
     src: &'a str,
     file: Option<&'a PathBuf>,

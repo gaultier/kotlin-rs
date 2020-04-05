@@ -1,7 +1,7 @@
 use crate::error::*;
-use crate::lex::{Lexer, Token, TokenKind};
+use crate::lex::{Token, TokenKind};
 use crate::parse::*;
-use crate::session::Span;
+use crate::session::{Session, Span};
 use log::debug;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -52,7 +52,7 @@ struct FnDef<'a> {
 }
 
 pub(crate) struct Resolver<'a> {
-    lexer: &'a Lexer,
+    session: &'a Session<'a>,
     resolution: Resolution,
     scopes: Scopes<'a>,
     context: LexicalContext,
@@ -102,9 +102,9 @@ pub(crate) struct VarUsageRef {
 pub(crate) type Resolution = BTreeMap<NodeId, VarUsageRef>;
 
 impl<'a> Resolver<'a> {
-    pub(crate) fn new(lexer: &Lexer) -> Resolver {
+    pub(crate) fn new(session: &'a Session) -> Resolver<'a> {
         Resolver {
-            lexer,
+            session,
             resolution: Resolution::new(),
             scopes: Vec::new(),
             context: LexicalContext(LEXICAL_CONTEXT_TOP_LEVEL),

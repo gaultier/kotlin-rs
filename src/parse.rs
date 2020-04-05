@@ -306,7 +306,7 @@ pub struct Parser<'a> {
     current: Option<Token>,
     i: usize,
     tokens: Vec<Token>,
-    session: &'a Session,
+    session: &'a Session<'a>,
     pub(crate) types: Types,
     pub(crate) current_id: usize,
 }

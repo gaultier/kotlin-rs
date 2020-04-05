@@ -1,12 +1,12 @@
 use crate::error::*;
-use crate::lex::{Lexer, Token, TokenKind};
+use crate::lex::{Token, TokenKind};
 use crate::parse::*;
 use crate::resolver::Resolution;
-use crate::session::Span;
+use crate::session::{Session, Span};
 use log::debug;
 
 pub(crate) struct TypeChecker<'a> {
-    lexer: &'a Lexer,
+    session: &'a Session<'a>,
     resolution: &'a Resolution,
     types: &'a mut Types,
     current_fn_id: Option<NodeId>,
@@ -14,12 +14,12 @@ pub(crate) struct TypeChecker<'a> {
 
 impl<'a> TypeChecker<'a> {
     pub fn new(
-        lexer: &'a Lexer,
+        session: &'a Session,
         resolution: &'a Resolution,
         types: &'a mut Types,
     ) -> TypeChecker<'a> {
         TypeChecker {
-            lexer,
+            session,
             resolution,
             types,
             current_fn_id: None,

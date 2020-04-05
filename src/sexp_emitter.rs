@@ -1,10 +1,10 @@
 use crate::error::*;
-use crate::lex::{Lexer, Token, TokenKind};
+use crate::lex::{Token, TokenKind};
 use crate::parse::*;
-use crate::session::Span;
+use crate::session::{Session, Span};
 
 pub(crate) struct SexpEmitter<'a> {
-    lexer: &'a Lexer,
+    session: &'a Session<'a>,
     _types: &'a Types,
 }
 
@@ -68,8 +68,8 @@ fn assign_op(kind: &TokenKind) -> &'static str {
 }
 
 impl<'a> SexpEmitter<'a> {
-    pub(crate) fn new(lexer: &'a Lexer, _types: &'a Types) -> SexpEmitter<'a> {
-        SexpEmitter { lexer, _types }
+    pub(crate) fn new(session: &'a Session, _types: &'a Types) -> SexpEmitter<'a> {
+        SexpEmitter { session, _types }
     }
 
     fn assign<W: std::io::Write>(
