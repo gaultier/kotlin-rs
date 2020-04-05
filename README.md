@@ -17,10 +17,29 @@ Prerequisite: a Rust toolchain installed.
 # Build
 $ cargo build --release
 # Run with a file
-$ cargo run -- build /path/to/file.kt
+$ cargo run -- -f /path/to/file.kt
 # Or with stdin
-$ echo '123' | cargo run -- build
+$ echo '123' | cargo run
 ```
+
+## Format a file
+
+*Note: this does not modify the file in place (yet)*
+
+`cargo run -- fmt -f /path/to/file/kt`
+
+## Debugging
+
+```
+$ export RUST_LOG=debug
+$ export RUST_BACKTRACE=full
+$ cargo run -- dump_tokens -f /path/to/file.kt
+$ cargo run -- dump_ast -f /path/to/file.kt
+```
+
+## Tests
+
+`cargo test`
 
 ## Status
 
