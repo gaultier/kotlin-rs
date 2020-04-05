@@ -1,6 +1,6 @@
 use crate::error::*;
 use crate::lex::*;
-use crate::session::Span;
+use crate::session::{Session, Span};
 use log::debug;
 use std::collections::BTreeMap;
 use std::fmt;
@@ -306,7 +306,7 @@ pub struct Parser<'a> {
     current: Option<Token>,
     i: usize,
     tokens: Vec<Token>,
-    lexer: &'a Lexer,
+    session: &'a Session,
     pub(crate) types: Types,
     pub(crate) current_id: usize,
 }
@@ -1430,7 +1430,7 @@ impl<'a> Parser<'a> {
         })
     }
 
-    pub fn new(lexer: &'a Lexer, tokens: &'a [Token]) -> Parser<'a> {
+    pub fn new(session: &'a Session, tokens: &'a [Token]) -> Parser<'a> {
         let tokens = tokens
             .iter()
             .filter(|t| !t.is_unsignificant_ws())
@@ -1441,7 +1441,7 @@ impl<'a> Parser<'a> {
             previous: Some(tokens[0]),
             current: Some(tokens[1]),
             i: 0,
-            lexer,
+            session,
             tokens,
             types: BTreeMap::new(),
             current_id: 0,

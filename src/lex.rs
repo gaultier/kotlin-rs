@@ -1,6 +1,6 @@
 use crate::cursor::*;
 use crate::error::*;
-use crate::session::Span;
+use crate::session::{Session, Span};
 use log::debug;
 use std::fmt;
 
@@ -891,8 +891,8 @@ impl Cursor<'_> {
 }
 
 #[derive(Debug)]
-pub struct Lexer {
-    pub(crate) src: String,
+pub struct Lexer<'a> {
+    session: &'a mut Session,
     pos: usize,
     // Index of each line, 0 based
     lines: Vec<usize>,
@@ -917,7 +917,7 @@ impl Token {
     }
 }
 
-impl Lexer {
+impl<'a> Lexer<'a> {
     fn cursor_identifier_to_token_identifier(&self, span: &Span) -> TokenKind {
         let s = &self.src[span.start..span.end];
 
@@ -1298,9 +1298,9 @@ impl Lexer {
             .ok_or_else(|| Error::new(ErrorKind::InvalidCharLiteral, self.span_location(&span)))
     }
 
-    pub fn new(src: String) -> Lexer {
+    pub fn new(session: &'a Session) -> Lexer {
         Lexer {
-            src,
+            session,
             pos: 0,
             lines: vec![0],
         }
