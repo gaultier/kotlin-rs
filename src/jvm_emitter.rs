@@ -6,7 +6,7 @@ use log::debug;
 
 const CTOR_STR: &'static str = "<init>";
 
-const ACC_SUPER: u16 = 0x0002;
+const ACC_SUPER: u16 = 0x0020;
 
 const CONSTANT_CLASS: u8 = 7;
 const _CONSTANT_FIELDREF: u8 = 9;
