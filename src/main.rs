@@ -27,7 +27,8 @@ fn main() {
                     "fmt",
                     "dump_ast",
                     "dump_tokens",
-                    // Later: build, verify, etc
+                    "build",
+                    // Later: verify, etc
                 ])
                 .index(1),
         )
