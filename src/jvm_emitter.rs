@@ -261,7 +261,7 @@ impl<'a> JvmEmitter<'a> {
             }
             Attribute::SourceFile(index) => {
                 w.write(&u16_to_u8s(13))?; // FIXME: SourceFile
-                w.write(&[0x00, 0x02])?; // sizeof(u16) to come
+                w.write(&[0x00, 0x00, 0x00, 0x02])?; // sizeof(u16) to come, as u32
                 w.write(&u16_to_u8s(*index))?;
             }
         }
