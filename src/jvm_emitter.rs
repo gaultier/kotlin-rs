@@ -142,6 +142,7 @@ impl<'a> JvmEmitter<'a> {
         match constant {
             Constant::Utf8(s) => {
                 w.write(&[CONSTANT_UTF8])?;
+                w.write(&u16_to_u8s(s.len() as u16))?;
                 w.write(&s.as_bytes())?;
             }
         }
