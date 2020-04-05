@@ -48,12 +48,14 @@ impl<'a> JvmEmitter<'a> {
             session,
             _types,
             constants: vec![
-                Constant::MethodRef(2, 3),
-                Constant::ClassInfo(4),
-                Constant::NameAndType(5, 6),
-                Constant::Utf8(String::from("java/lang/Object")),
-                Constant::Utf8(String::from(CTOR_STR)),
-                Constant::Utf8(String::from("()V")),
+                Constant::MethodRef(2, 3),                        // 0
+                Constant::ClassInfo(4),                           // 1
+                Constant::NameAndType(5, 6),                      // 2
+                Constant::Utf8(String::from("java/lang/Object")), // 3
+                Constant::Utf8(String::from(CTOR_STR)),           // 4
+                Constant::Utf8(String::from("()V")),              // 5
+                Constant::Utf8(String::from("SourceFile")),       // 6
+                Constant::Utf8(String::from("Foo.java")),         // 7
             ],
         }
     }
