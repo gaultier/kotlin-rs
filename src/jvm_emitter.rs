@@ -115,7 +115,11 @@ impl<'a> JvmEmitter<'a> {
                 descriptor_index: 6,
                 attributes: vec![Attribute {
                     name_index: 9, // Code
-                    info: vec![],  // TODO
+                    info: vec![
+                        0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x05, 0x2a, 0xb7, 0x00, 0x01,
+                        0xb1, 0x00, 0x00, 0x00, 0x01, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x06, 0x00,
+                        0x01,
+                    ], // TODO
                 }],
             },
             Function {
