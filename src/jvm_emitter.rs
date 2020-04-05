@@ -2,6 +2,7 @@ use crate::error::*;
 // use crate::lex::{Token, TokenKind};
 use crate::parse::*;
 use crate::session::Session;
+use log::debug;
 
 const ACC_SUPER: u16 = 0x0002;
 
@@ -82,8 +83,9 @@ impl<'a> JvmEmitter<'a> {
     }
 
     fn constant_pool<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        // FIXME
-        w.write(&u16_to_u8s(self.constants.len() as u16))?;
+        let len = &u16_to_u8s(self.constants.len() as u16);
+        debug!("constant pool size={:#04X} {:#04X}", len[0], len[1]);
+        w.write(len)?;
 
         for constant in &self.constants {
             self.constant(constant, w)?;
@@ -135,6 +137,8 @@ impl<'a> JvmEmitter<'a> {
     }
 
     fn constant<W: std::io::Write>(&self, constant: &Constant, w: &mut W) -> Result<(), Error> {
+        debug!("constant={:?}", constant);
+
         match constant {
             Constant::Utf8(s) => {
                 w.write(&[CONSTANT_UTF8])?;
