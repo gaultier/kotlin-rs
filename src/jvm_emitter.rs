@@ -275,6 +275,7 @@ impl<'a> JvmEmitter<'a> {
             } => {
                 w.write(&u16_to_u8s(*name_index))?;
 
+                // This attribute length includes max_stacks and max_locals
                 w.write(&u32_to_u8s(blob.len() as u32 + 2 * 2))?;
                 w.write(&u16_to_u8s(*max_stack))?;
                 w.write(&u16_to_u8s(*max_locals))?;
