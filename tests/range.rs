@@ -4,7 +4,7 @@ use kotlin::parse::Type;
 
 #[test]
 fn simple_range() {
-    let src = String::from("1..5");
+    let src = "1..5";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -16,7 +16,7 @@ fn simple_range() {
 
 #[test]
 fn check_both_types_match() -> Result<(), String> {
-    let src = String::from("1U..\n\n5UL");
+    let src = "1U..\n\n5UL";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -30,7 +30,7 @@ fn check_both_types_match() -> Result<(), String> {
 
 #[test]
 fn reject_invalid_range_type() -> Result<(), String> {
-    let src = String::from("null..null");
+    let src = "null..null";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {

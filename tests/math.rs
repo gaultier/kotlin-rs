@@ -4,7 +4,7 @@ use kotlin::parse::Type;
 
 #[test]
 fn add_int_int() {
-    let src = String::from("1 + 2;");
+    let src = "1 + 2;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -16,7 +16,7 @@ fn add_int_int() {
 
 #[test]
 fn add_int_long() {
-    let src = String::from("1 + 2L;");
+    let src = "1 + 2L;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -28,7 +28,7 @@ fn add_int_long() {
 
 #[test]
 fn add_long_long() {
-    let src = String::from("1L + 2L;");
+    let src = "1L + 2L;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -40,7 +40,7 @@ fn add_long_long() {
 
 #[test]
 fn add_uint_uint() {
-    let src = String::from("1U + 2U;");
+    let src = "1U + 2U;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -52,7 +52,7 @@ fn add_uint_uint() {
 
 #[test]
 fn add_uint_ulong() {
-    let src = String::from("1U + 2UL;");
+    let src = "1U + 2UL;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -64,7 +64,7 @@ fn add_uint_ulong() {
 
 #[test]
 fn add_ulong_uint() {
-    let src = String::from("1UL + 2U;");
+    let src = "1UL + 2U;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -76,7 +76,7 @@ fn add_ulong_uint() {
 
 #[test]
 fn add_ulong_ulong() {
-    let src = String::from("1UL + 2UL;");
+    let src = "1UL + 2UL;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -88,7 +88,7 @@ fn add_ulong_ulong() {
 
 #[test]
 fn add_float_float() {
-    let src = String::from("1f + 2f;");
+    let src = "1f + 2f;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -100,7 +100,7 @@ fn add_float_float() {
 
 #[test]
 fn add_float_double() {
-    let src = String::from("1f + 2e2;");
+    let src = "1f + 2e2;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -112,7 +112,7 @@ fn add_float_double() {
 
 #[test]
 fn add_double_float() {
-    let src = String::from("1e2 + 2f;");
+    let src = "1e2 + 2f;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -124,7 +124,7 @@ fn add_double_float() {
 
 #[test]
 fn add_double_double() {
-    let src = String::from("1.5 + 2.3;");
+    let src = "1.5 + 2.3;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -136,7 +136,7 @@ fn add_double_double() {
 
 #[test]
 fn add_int_double() {
-    let src = String::from("1 + 2.3;");
+    let src = "1 + 2.3;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -148,7 +148,7 @@ fn add_int_double() {
 
 #[test]
 fn add_double_int() {
-    let src = String::from("1.5 + 2;");
+    let src = "1.5 + 2;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -160,7 +160,7 @@ fn add_double_int() {
 
 #[test]
 fn complex_math() {
-    let src = String::from("-1.5 / 2 + 5 * 3;");
+    let src = "-1.5 / 2 + 5 * 3;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -172,7 +172,7 @@ fn complex_math() {
 
 #[test]
 fn add_string_string() {
-    let src = String::from(r##""abc" + "def";"##);
+    let src = r##""abc" + "def";"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -184,7 +184,7 @@ fn add_string_string() {
 
 #[test]
 fn add_string_int() {
-    let src = String::from(r##""abc" + 2;"##);
+    let src = r##""abc" + 2;"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -196,7 +196,7 @@ fn add_string_int() {
 
 #[test]
 fn add_int_string() {
-    let src = String::from(r##"2 + "abc";"##);
+    let src = r##"2 + "abc";"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -208,7 +208,7 @@ fn add_int_string() {
 
 #[test]
 fn add_string_long() {
-    let src = String::from(r##""abc" + 2L;"##);
+    let src = r##""abc" + 2L;"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -220,7 +220,7 @@ fn add_string_long() {
 
 #[test]
 fn add_long_string() {
-    let src = String::from(r##"2L + "abc";"##);
+    let src = r##"2L + "abc";"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -232,7 +232,7 @@ fn add_long_string() {
 
 #[test]
 fn add_string_uint() {
-    let src = String::from(r##""abc" + 2U;"##);
+    let src = r##""abc" + 2U;"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -244,7 +244,7 @@ fn add_string_uint() {
 
 #[test]
 fn add_uint_string() {
-    let src = String::from(r##"2U + "abc";"##);
+    let src = r##"2U + "abc";"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -256,7 +256,7 @@ fn add_uint_string() {
 
 #[test]
 fn add_string_ulong() {
-    let src = String::from(r##""abc" + 2UL;"##);
+    let src = r##""abc" + 2UL;"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -268,7 +268,7 @@ fn add_string_ulong() {
 
 #[test]
 fn add_ulong_string() {
-    let src = String::from(r##"2UL + "abc";"##);
+    let src = r##"2UL + "abc";"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -280,7 +280,7 @@ fn add_ulong_string() {
 
 #[test]
 fn add_string_float() {
-    let src = String::from(r##""abc" + 2f;"##);
+    let src = r##""abc" + 2f;"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -292,7 +292,7 @@ fn add_string_float() {
 
 #[test]
 fn add_string_double() {
-    let src = String::from(r##""abc" + 2.0;"##);
+    let src = r##""abc" + 2.0;"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -304,7 +304,7 @@ fn add_string_double() {
 
 #[test]
 fn add_string_bool() {
-    let src = String::from(r##""abc" + true;"##);
+    let src = r##""abc" + true;"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -316,7 +316,7 @@ fn add_string_bool() {
 
 #[test]
 fn add_bool_string() -> Result<(), String> {
-    let src = String::from(r##"true + "abc";"##);
+    let src = r##"true + "abc";"##;
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -337,7 +337,7 @@ fn add_bool_string() -> Result<(), String> {
 
 #[test]
 fn add_string_null() {
-    let src = String::from(r##""abc" + null;"##);
+    let src = r##""abc" + null;"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -349,7 +349,7 @@ fn add_string_null() {
 
 #[test]
 fn add_null_string() {
-    let src = String::from(r##"null + "abc";"##);
+    let src = r##"null + "abc";"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -361,7 +361,7 @@ fn add_null_string() {
 
 #[test]
 fn add_null_null() {
-    let src = String::from(r##"null + null;"##);
+    let src = r##"null + null;"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -373,7 +373,7 @@ fn add_null_null() {
 
 #[test]
 fn plus_plus() {
-    let src = String::from(r##"++1;"##);
+    let src = r##"++1;"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -385,7 +385,7 @@ fn plus_plus() {
 
 #[test]
 fn minus_minus() {
-    let src = String::from(r##"--1;"##);
+    let src = r##"--1;"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -397,7 +397,7 @@ fn minus_minus() {
 
 #[test]
 fn multi_prefix_operators() {
-    let src = String::from(r##"- + -- ++ 1;"##);
+    let src = r##"- + -- ++ 1;"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -408,7 +408,7 @@ fn multi_prefix_operators() {
 }
 #[test]
 fn plus_plus_not_a_number() -> Result<(), String> {
-    let src = String::from(r##"++true;"##);
+    let src = r##"++true;"##;
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -429,7 +429,7 @@ fn plus_plus_not_a_number() -> Result<(), String> {
 
 #[test]
 fn minus_minus_not_a_number() -> Result<(), String> {
-    let src = String::from(r##"--true;"##);
+    let src = r##"--true;"##;
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {

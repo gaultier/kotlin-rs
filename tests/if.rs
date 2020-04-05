@@ -4,7 +4,7 @@ use kotlin::parse::Type;
 
 #[test]
 fn simple_if_expr() {
-    let src = String::from("if (1<2) 'o' else 'x';");
+    let src = "if (1<2) 'o' else 'x';";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -16,7 +16,7 @@ fn simple_if_expr() {
 
 #[test]
 fn multi_if_expr() {
-    let src = String::from("if (1<2) 'o' else 'x'\nif (true) \n\n 42 \n else 99");
+    let src = "if (1<2) 'o' else 'x'\nif (true) \n\n 42 \n else 99";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -28,7 +28,7 @@ fn multi_if_expr() {
 
 #[test]
 fn nested_if_expr() {
-    let src = String::from("if (1<2) if (99U < 100UL) 'a' else 'b' else 'c'\n");
+    let src = "if (1<2) if (99U < 100UL) 'a' else 'b' else 'c'\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -40,7 +40,7 @@ fn nested_if_expr() {
 
 #[test]
 fn if_body_block() {
-    let src = String::from("if (1<2) {'a'; 1\n\n true; 'b'} else {1*3; 'c'}\n");
+    let src = "if (1<2) {'a'; 1\n\n true; 'b'} else {1*3; 'c'}\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -52,7 +52,7 @@ fn if_body_block() {
 
 #[test]
 fn if_with_empty_else_block() {
-    let src = String::from("if (1<2) {'a'; 1\n\n true; 'b'} else {}\n");
+    let src = "if (1<2) {'a'; 1\n\n true; 'b'} else {}\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -64,7 +64,7 @@ fn if_with_empty_else_block() {
 
 #[test]
 fn if_with_empty_if_body_block() {
-    let src = String::from("if (1<2) {} else {'a'; 1\n\n true; 'b'}\n");
+    let src = "if (1<2) {} else {'a'; 1\n\n true; 'b'}\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -76,7 +76,7 @@ fn if_with_empty_if_body_block() {
 
 #[test]
 fn if_with_no_if_body_block() {
-    let src = String::from("if (1<2) \n else {'a'; 1\n\n true; 'b'}\n");
+    let src = "if (1<2) \n else {'a'; 1\n\n true; 'b'}\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -88,7 +88,7 @@ fn if_with_no_if_body_block() {
 
 #[test]
 fn if_with_no_else_block() {
-    let src = String::from("if (1==2) {'a'; 1\n\n true; 'b'} else ; \n");
+    let src = "if (1==2) {'a'; 1\n\n true; 'b'} else ; \n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -100,7 +100,7 @@ fn if_with_no_else_block() {
 
 #[test]
 fn check_both_branches_types_match() -> Result<(), String> {
-    let src = String::from("if (1<2) \n 'a'\n\n else 1 \n");
+    let src = "if (1<2) \n 'a'\n\n else 1 \n";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -122,7 +122,7 @@ fn check_both_branches_types_match() -> Result<(), String> {
 
 #[test]
 fn check_both_branches_types_match_unit_when_empty_else() {
-    let src = String::from("if (1<2) 'a' else {} \n");
+    let src = "if (1<2) 'a' else {} \n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -134,7 +134,7 @@ fn check_both_branches_types_match_unit_when_empty_else() {
 
 #[test]
 fn check_both_branches_types_match_unit_when_empty_if() {
-    let src = String::from("if (1<2) ; else 42 \n");
+    let src = "if (1<2) ; else 42 \n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -146,7 +146,7 @@ fn check_both_branches_types_match_unit_when_empty_if() {
 
 #[test]
 fn check_types_coalesce() -> Result<(), String> {
-    let src = String::from("if (1<2) 99U else 99UL \n");
+    let src = "if (1<2) 99U else 99UL \n";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -160,7 +160,7 @@ fn check_types_coalesce() -> Result<(), String> {
 
 #[test]
 fn any() {
-    let src = String::from("val x: Any = if (1<2) 99 as Any else 42 \n");
+    let src = "val x: Any = if (1<2) 99 as Any else 42 \n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -172,7 +172,7 @@ fn any() {
 
 #[test]
 fn any_2() {
-    let src = String::from("val x: Any = 3; val y: Any = if (1<2) x else 42 \n");
+    let src = "val x: Any = 3; val y: Any = if (1<2) x else 42 \n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());

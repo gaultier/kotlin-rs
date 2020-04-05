@@ -60,24 +60,23 @@ fn main() {
         src
     };
 
-    let cpy = src.clone();
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
     let res = match matches.value_of("command").unwrap() {
-        "sexp" => compile(src, &mut handle),
-        "fmt" => fmt(src, &mut handle),
-        "dump_ast" => dump_ast(src),
-        "dump_tokens" => dump_tokens(src),
+        "sexp" => compile(&src, &mut handle),
+        "fmt" => fmt(&src, &mut handle),
+        "dump_ast" => dump_ast(&src),
+        "dump_tokens" => dump_tokens(&src),
         _ => unreachable!(),
     };
     if let Err(err) = res {
-        err.eprint(&cpy);
+        err.eprint(&src);
         std::process::exit(1);
     }
 }
 
-fn dump_ast(src: String) -> Result<(), Error> {
-    let session = Session::new(&src, None);
+fn dump_ast(src: &str) -> Result<(), Error> {
+    let session = Session::new(src, None);
     let mut lexer = Lexer::new(&session);
     let (tokens, session) = lexer.lex()?;
     let mut parser = Parser::new(&session, &tokens);
@@ -86,8 +85,8 @@ fn dump_ast(src: String) -> Result<(), Error> {
     Ok(())
 }
 
-fn dump_tokens(src: String) -> Result<(), Error> {
-    let session = Session::new(&src, None);
+fn dump_tokens(src: &str) -> Result<(), Error> {
+    let session = Session::new(src, None);
     let mut lexer = Lexer::new(&session);
     let (tokens, _) = lexer.lex()?;
     println!("{:#?}", tokens);

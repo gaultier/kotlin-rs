@@ -5,7 +5,7 @@ use kotlin::resolver::LexicalContext;
 
 #[test]
 fn while_with_body() {
-    let src = String::from("while (1 < 10) { 'c' }");
+    let src = "while (1 < 10) { 'c' }";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -17,7 +17,7 @@ fn while_with_body() {
 
 #[test]
 fn while_with_empty_body() {
-    let src = String::from("while (1 < 10) {}");
+    let src = "while (1 < 10) {}";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -29,7 +29,7 @@ fn while_with_empty_body() {
 
 #[test]
 fn while_without_body() {
-    let src = String::from("while (1 < 10) ;");
+    let src = "while (1 < 10) ;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -41,7 +41,7 @@ fn while_without_body() {
 
 #[test]
 fn while_bad_cond_type() -> Result<(), String> {
-    let src = String::from("while\n ('a') ;");
+    let src = "while\n ('a') ;";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -63,7 +63,7 @@ fn while_bad_cond_type() -> Result<(), String> {
 
 #[test]
 fn while_bad_body_type() -> Result<(), String> {
-    let src = String::from("while\n (true) {1+'c'}");
+    let src = "while\n (true) {1+'c'}";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -85,7 +85,7 @@ fn while_bad_body_type() -> Result<(), String> {
 
 #[test]
 fn while_jumps() {
-    let src = String::from("while (1 < 10) {if (true) break else continue}");
+    let src = "while (1 < 10) {if (true) break else continue}";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -97,7 +97,7 @@ fn while_jumps() {
 
 #[test]
 fn break_not_in_loop() -> Result<(), String> {
-    let src = String::from("if (true) break else 1");
+    let src = "if (true) break else 1";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -116,7 +116,7 @@ fn break_not_in_loop() -> Result<(), String> {
 
 #[test]
 fn continue_not_in_loop() -> Result<(), String> {
-    let src = String::from("if (true) 2 else continue");
+    let src = "if (true) 2 else continue";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -135,7 +135,7 @@ fn continue_not_in_loop() -> Result<(), String> {
 
 #[test]
 fn do_while_use_var_in_cond_from_body() {
-    let src = String::from("do {val y = 5;} while(y <5)");
+    let src = "do {val y = 5;} while(y <5)";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -147,7 +147,7 @@ fn do_while_use_var_in_cond_from_body() {
 
 #[test]
 fn do_while_empty_body() {
-    let src = String::from("do while(true)");
+    let src = "do while(true)";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());

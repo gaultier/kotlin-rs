@@ -4,7 +4,7 @@ use kotlin::parse::Type;
 
 #[test]
 fn in_expr() {
-    let src = String::from("val a: Boolean = 1 in 0..10");
+    let src = "val a: Boolean = 1 in 0..10";
 
     let mut out: Vec<u8> = Vec::new();
 
@@ -17,7 +17,7 @@ fn in_expr() {
 
 #[test]
 fn in_expr_wrong_type_return() -> Result<(), String> {
-    let src = String::from("val a: String = 1 in 0..2");
+    let src = "val a: String = 1 in 0..2";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -31,7 +31,7 @@ fn in_expr_wrong_type_return() -> Result<(), String> {
 
 #[test]
 fn in_expr_wrong_type_inside() -> Result<(), String> {
-    let src = String::from("1 in true..false");
+    let src = "1 in true..false";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -45,7 +45,7 @@ fn in_expr_wrong_type_inside() -> Result<(), String> {
 
 #[test]
 fn in_is_complex_expr() {
-    let src = String::from("val a: Boolean = 1 is Int in false..true is Long is Boolean");
+    let src = "val a: Boolean = 1 is Int in false..true is Long is Boolean";
 
     let mut out: Vec<u8> = Vec::new();
 

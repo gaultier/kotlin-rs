@@ -4,7 +4,7 @@ use kotlin::parse::Type;
 
 #[test]
 fn simple_when_expr() {
-    let src = String::from("when { true -> 1; false -> 0}");
+    let src = "when { true -> 1; false -> 0}";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -16,7 +16,7 @@ fn simple_when_expr() {
 
 #[test]
 fn empty_when_body() {
-    let src = String::from("when {}");
+    let src = "when {}";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -28,7 +28,7 @@ fn empty_when_body() {
 
 #[test]
 fn when_with_else() {
-    let src = String::from("when {true -> 1\n false -> 0\n\n else -> 42\n}\n");
+    let src = "when {true -> 1\n false -> 0\n\n else -> 42\n}\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -40,7 +40,7 @@ fn when_with_else() {
 
 #[test]
 fn when_with_boolean_exprs() {
-    let src = String::from("when {true || false -> 1\n false -> 0\n\n else -> 42\n}\n");
+    let src = "when {true || false -> 1\n false -> 0\n\n else -> 42\n}\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -52,7 +52,7 @@ fn when_with_boolean_exprs() {
 
 #[test]
 fn when_with_subject() {
-    let src = String::from("when (5) {1 -> 2; 2->4; 3->6; 4->8; 5->10; else -> 42\n}\n");
+    let src = "when (5) {1 -> 2; 2->4; 3->6; 4->8; 5->10; else -> 42\n}\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -64,7 +64,7 @@ fn when_with_subject() {
 
 #[test]
 fn when_with_subject_type_err() -> Result<(), String> {
-    let src = String::from("when (5) {1 -> 2; 2->4; 'a'->6; 4->8; 5->10; else -> 42\n}\n");
+    let src = "when (5) {1 -> 2; 2->4; 'a'->6; 4->8; 5->10; else -> 42\n}\n";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -78,7 +78,7 @@ fn when_with_subject_type_err() -> Result<(), String> {
 
 #[test]
 fn when_with_val_subject() {
-    let src = String::from("when (val a = 5) {1 -> 2; 2->4; 3->6; 4->8; 5->10; else -> a * 2\n}\n");
+    let src = "when (val a = 5) {1 -> 2; 2->4; 3->6; 4->8; 5->10; else -> a * 2\n}\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -90,9 +90,7 @@ fn when_with_val_subject() {
 
 #[test]
 fn when_with_val_subject_type_err() -> Result<(), String> {
-    let src = String::from(
-        "when (\nval \n\na \n\n =\n\n 5) {1 -> 2; 2->4; 'a'->6; 4->8; 5->10; else -> 42\n}\n",
-    );
+    let src = "when (\nval \n\na \n\n =\n\n 5) {1 -> 2; 2->4; 'a'->6; 4->8; 5->10; else -> 42\n}\n";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -106,8 +104,7 @@ fn when_with_val_subject_type_err() -> Result<(), String> {
 
 #[test]
 fn when_with_val_subject_with_type() {
-    let src =
-        String::from("when (val a: Int = 5) {1 -> 2; 2->4; 3->6; 4->8; 5->10; else -> a * 2\n}\n");
+    let src = "when (val a: Int = 5) {1 -> 2; 2->4; 3->6; 4->8; 5->10; else -> a * 2\n}\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -119,7 +116,7 @@ fn when_with_val_subject_with_type() {
 
 #[test]
 fn when_with_val_subject_with_type_type_err() -> Result<(), String> {
-    let src = String::from("when (\nval \n\na: Char \n\n =\n\n 5) {1 -> 2; else -> 42\n}\n");
+    let src = "when (\nval \n\na: Char \n\n =\n\n 5) {1 -> 2; else -> 42\n}\n";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -133,8 +130,7 @@ fn when_with_val_subject_with_type_type_err() -> Result<(), String> {
 
 #[test]
 fn when_type() {
-    let src =
-        String::from("val a : Int = when {true || false -> 1\n false -> 0\n\n else -> 42\n}\n");
+    let src = "val a : Int = when {true || false -> 1\n false -> 0\n\n else -> 42\n}\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -146,8 +142,7 @@ fn when_type() {
 
 #[test]
 fn when_type_2() {
-    let src =
-        String::from("val a : Long = when (1*5) {!in 0..10-> 1L\n 5 -> 0L\n\n else -> 42L\n}\n");
+    let src = "val a : Long = when (1*5) {!in 0..10-> 1L\n 5 -> 0L\n\n else -> 42L\n}\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -159,7 +154,7 @@ fn when_type_2() {
 
 #[test]
 fn when_type_3() {
-    let src = String::from("val a : Long = when {else -> 42L\n}\n");
+    let src = "val a : Long = when {else -> 42L\n}\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -171,8 +166,7 @@ fn when_type_3() {
 
 #[test]
 fn when_type_4() {
-    let src =
-        String::from("val a : Long = when (1*5) {in 0..10-> 1L\n 5 -> 0L\n\n else -> 42L\n}\n");
+    let src = "val a : Long = when (1*5) {in 0..10-> 1L\n 5 -> 0L\n\n else -> 42L\n}\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -184,9 +178,7 @@ fn when_type_4() {
 
 #[test]
 fn is() {
-    let src = String::from(
-        "val a : Long = when (1*5) {in 0..10-> 1L\n is Int -> 0L\n\n else -> 42L\n}\n",
-    );
+    let src = "val a : Long = when (1*5) {in 0..10-> 1L\n is Int -> 0L\n\n else -> 42L\n}\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -198,9 +190,7 @@ fn is() {
 
 #[test]
 fn not_is() {
-    let src = String::from(
-        "val a : Long = when (1*5) {in 0..10-> 1L\n !is Int -> 0L\n\n else -> 42L\n}\n",
-    );
+    let src = "val a : Long = when (1*5) {in 0..10-> 1L\n !is Int -> 0L\n\n else -> 42L\n}\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -212,15 +202,13 @@ fn not_is() {
 
 #[test]
 fn mutual_fn_in_when() {
-    let src = String::from(
-        r##"when {true -> {
+    let src = r##"when {true -> {
                     fun odd(n: Int): Boolean = if (n == 1) true else even(n-1)
                     fun even(n: Int): Boolean = if (n == 0) true else odd(n-1)
                     odd(100) 
                     }
                  else -> false
-        }"##,
-    );
+        }"##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());

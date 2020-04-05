@@ -5,7 +5,7 @@ use kotlin::resolver::*;
 
 #[test]
 fn simple_call() {
-    let src = String::from("fun a() = 10; a();");
+    let src = "fun a() = 10; a();";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -17,7 +17,7 @@ fn simple_call() {
 
 #[test]
 fn assign_to_call_expr() {
-    let src = String::from("var a = 1; fun foo() = 99; a = foo();");
+    let src = "var a = 1; fun foo() = 99; a = foo();";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -29,7 +29,7 @@ fn assign_to_call_expr() {
 
 #[test]
 fn call_expr_wrong_type() -> Result<(), String> {
-    let src = String::from("var a = \"hello\"; fun foo() = 99; a = foo();");
+    let src = "var a = \"hello\"; fun foo() = 99; a = foo();";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -43,7 +43,7 @@ fn call_expr_wrong_type() -> Result<(), String> {
 
 #[test]
 fn not_a_callable() -> Result<(), String> {
-    let src = String::from("var a = \"hello\"; a();");
+    let src = "var a = \"hello\"; a();";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -57,7 +57,7 @@ fn not_a_callable() -> Result<(), String> {
 
 #[test]
 fn fn_body_block() {
-    let src = String::from("fun a() {1; 2; 'a'; true; 10;} var b:Unit = a();");
+    let src = "fun a() {1; 2; 'a'; true; 10;} var b:Unit = a();";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -69,7 +69,7 @@ fn fn_body_block() {
 
 #[test]
 fn fn_body_block_no_return_type() -> Result<(), String> {
-    let src = String::from("fun a() {1} var b= a(); b+=1;");
+    let src = "fun a() {1} var b= a(); b+=1;";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -83,7 +83,7 @@ fn fn_body_block_no_return_type() -> Result<(), String> {
 
 #[test]
 fn fn_with_args() {
-    let src = String::from("fun foo(a:Int, b:Long) = a * b; foo(1, 2L);");
+    let src = "fun foo(a:Int, b:Long) = a * b; foo(1, 2L);";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -96,9 +96,7 @@ fn fn_with_args() {
 
 #[test]
 fn fn_with_empty_return() {
-    let src = String::from(
-        "fun foo(a:Int, b:Long){ if (a< b) return else ;}; val x : Unit = foo(1, 2L);",
-    );
+    let src = "fun foo(a:Int, b:Long){ if (a< b) return else ;}; val x : Unit = foo(1, 2L);";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -111,7 +109,7 @@ fn fn_with_empty_return() {
 
 #[test]
 fn fn_with_expr_return_body() {
-    let src = String::from("fun foo(a:Int, b:Long): Boolean {return if (a < b) true else false }; val a: Boolean = foo(1, 2L);");
+    let src = "fun foo(a:Int, b:Long): Boolean {return if (a < b) true else false }; val a: Boolean = foo(1, 2L);";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -124,7 +122,7 @@ fn fn_with_expr_return_body() {
 
 #[test]
 fn fn_with_expr_return() -> Result<(), String> {
-    let src = String::from("fun foo(a:Int, b:Long): Boolean = if (a < b) return true else return false; val a: Boolean = foo(1, 2L);");
+    let src = "fun foo(a:Int, b:Long): Boolean = if (a < b) return true else return false; val a: Boolean = foo(1, 2L);";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -138,7 +136,7 @@ fn fn_with_expr_return() -> Result<(), String> {
 
 #[test]
 fn fn_with_expr_return_without_explicit_type() -> Result<(), String> {
-    let src = String::from("fun foo(a:Int, b:Long)= if (a < b) return true else return false; val a: Boolean = foo(1, 2L);");
+    let src = "fun foo(a:Int, b:Long)= if (a < b) return true else return false; val a: Boolean = foo(1, 2L);";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -152,7 +150,7 @@ fn fn_with_expr_return_without_explicit_type() -> Result<(), String> {
 
 #[test]
 fn fn_with_wrong_arg_type() -> Result<(), String> {
-    let src = String::from("fun foo(a:Int, b:Long) = a * b; foo(1, true);");
+    let src = "fun foo(a:Int, b:Long) = a * b; foo(1, true);";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -166,7 +164,7 @@ fn fn_with_wrong_arg_type() -> Result<(), String> {
 
 #[test]
 fn fn_with_wrong_return_type() -> Result<(), String> {
-    let src = String::from("fun foo(a:Int, b:Long): String = a * b;");
+    let src = "fun foo(a:Int, b:Long): String = a * b;";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -180,7 +178,7 @@ fn fn_with_wrong_return_type() -> Result<(), String> {
 
 #[test]
 fn fn_with_wrong_return_type_2() -> Result<(), String> {
-    let src = String::from("fun foo(a:Int, b:Long): String {return a* b;}");
+    let src = "fun foo(a:Int, b:Long): String {return a* b;}";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -194,7 +192,7 @@ fn fn_with_wrong_return_type_2() -> Result<(), String> {
 
 #[test]
 fn fn_with_wrong_return_types() -> Result<(), String> {
-    let src = String::from("fun foo(a:Int, b:Long): String {return \"a\"; return a* b;}");
+    let src = "fun foo(a:Int, b:Long): String {return \"a\"; return a* b;}";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -208,7 +206,7 @@ fn fn_with_wrong_return_types() -> Result<(), String> {
 
 #[test]
 fn fn_with_unknown_identifier_for_return_type() -> Result<(), String> {
-    let src = String::from("fun foo(a:Int, b:Long): Null = a * b;");
+    let src = "fun foo(a:Int, b:Long): Null = a * b;";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -222,8 +220,7 @@ fn fn_with_unknown_identifier_for_return_type() -> Result<(), String> {
 
 #[test]
 fn return_not_in_fn() -> Result<(), String> {
-    let src =
-        String::from("fun foo(a:Int, b:Long): Unit { while(true) {break}} while (true) {return}");
+    let src = "fun foo(a:Int, b:Long): Unit { while(true) {break}} while (true) {return}";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -242,9 +239,7 @@ fn return_not_in_fn() -> Result<(), String> {
 
 #[test]
 fn fn_with_function_definition_in_loop() {
-    let src = String::from(
-"var a =1; while (a < 10)  {fun show(x: Int) {println(x); return }; show(a++); if (a==5) break; else ;}"
-    );
+    let src = "var a =1; while (a < 10)  {fun show(x: Int) {println(x); return }; show(a++); if (a==5) break; else ;}";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -261,7 +256,7 @@ fn fn_with_function_definition_in_loop() {
 
 #[test]
 fn nested_fn() {
-    let src = String::from("fun a(): Long {fun b(): Int {return 42}; return 99L * b();}");
+    let src = "fun a(): Long {fun b(): Int {return 42}; return 99L * b();}";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -275,8 +270,7 @@ fn nested_fn() {
 
 #[test]
 fn sum() {
-    let src =
-        String::from("fun sum(n: Int, acc: Int): Int = if (n == 0) acc else sum(n - 1, n + acc)");
+    let src = "fun sum(n: Int, acc: Int): Int = if (n == 0) acc else sum(n - 1, n + acc)";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -289,8 +283,7 @@ fn sum() {
 
 #[test]
 fn fn_and_var_with_same_name() {
-    let src = String::from(
-        r##"
+    let src = r##"
 var a = 2
 fun a () = if (a>2) { 
     fun a() = a* a
@@ -300,8 +293,7 @@ fun a () = if (a>2) {
     a() * a()
 }
 println(a())
-            "##,
-    );
+            "##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -319,15 +311,13 @@ println(a())
 
 #[test]
 fn mutually_rec() {
-    let src = String::from(
-        r##"
+    let src = r##"
 fun odd(n: Int): Boolean = if (n == 1) true else even(n-1)
 
 fun even(n: Int): Boolean = if (n == 0) true else odd(n-1)
 
 println(even(100))
-            "##,
-    );
+            "##;
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());

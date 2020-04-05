@@ -8,7 +8,7 @@ use crate::sexp_emitter::SexpEmitter;
 use crate::type_check::TypeChecker;
 use std::io;
 
-pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
+pub fn compile<W: io::Write>(src: &str, w: &mut W) -> Result<(), Error> {
     let session = Session::new(&src, None);
     let mut lexer = Lexer::new(&session);
     let (tokens, session) = lexer.lex()?;
@@ -26,7 +26,7 @@ pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
     emitter.statements(&stmts, w)
 }
 
-pub fn fmt<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
+pub fn fmt<W: io::Write>(src: &str, w: &mut W) -> Result<(), Error> {
     let session = Session::new(&src, None);
     let mut lexer = Lexer::new(&session);
     let (tokens, session) = lexer.lex()?;

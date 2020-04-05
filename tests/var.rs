@@ -4,7 +4,7 @@ use kotlin::parse::Type;
 
 #[test]
 fn simple_var() {
-    let src = String::from("var a = 1;");
+    let src = "var a = 1;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -16,7 +16,7 @@ fn simple_var() {
 
 #[test]
 fn var_with_math_expr() {
-    let src = String::from("var a = 5*10\n");
+    let src = "var a = 5*10\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -28,7 +28,7 @@ fn var_with_math_expr() {
 
 #[test]
 fn var_with_no_expr() -> Result<(), String> {
-    let src = String::from("var a = while (true) ;");
+    let src = "var a = while (true) ;";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -42,7 +42,7 @@ fn var_with_no_expr() -> Result<(), String> {
 
 #[test]
 fn ref_var() {
-    let src = String::from("var a = 1; var b = a * 2; if(b<4) {} else {}");
+    let src = "var a = 1; var b = a * 2; if(b<4) {} else {}";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -54,7 +54,7 @@ fn ref_var() {
 
 #[test]
 fn simple_val() {
-    let src = String::from("val a = 1;");
+    let src = "val a = 1;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -66,7 +66,7 @@ fn simple_val() {
 
 #[test]
 fn val_with_math_expr() {
-    let src = String::from("val a = 5*10\n");
+    let src = "val a = 5*10\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -78,7 +78,7 @@ fn val_with_math_expr() {
 
 #[test]
 fn val_with_no_expr() -> Result<(), String> {
-    let src = String::from("val a = while (true) ;");
+    let src = "val a = while (true) ;";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -92,7 +92,7 @@ fn val_with_no_expr() -> Result<(), String> {
 
 #[test]
 fn ref_val() {
-    let src = String::from("val a = 1; val b = a * 2; if(b<4) {} else {}");
+    let src = "val a = 1; val b = a * 2; if(b<4) {} else {}";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -104,7 +104,7 @@ fn ref_val() {
 
 #[test]
 fn simple_var_assign() {
-    let src = String::from("var a = 1; a = 4;");
+    let src = "var a = 1; a = 4;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -116,7 +116,7 @@ fn simple_var_assign() {
 
 #[test]
 fn var_assign_with_math_expr() {
-    let src = String::from("var a = 5*10; a = a * 2;");
+    let src = "var a = 5*10; a = a * 2;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -128,7 +128,7 @@ fn var_assign_with_math_expr() {
 
 #[test]
 fn val_reassign() -> Result<(), String> {
-    let src = String::from("val a = 4; a = a*2;");
+    let src = "val a = 4; a = a*2;";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -142,7 +142,7 @@ fn val_reassign() -> Result<(), String> {
 
 #[test]
 fn var_assign_other_ops() {
-    let src = String::from("var a = 5*10; a -=\n 1; a%=2; a/=3; a*=4 ");
+    let src = "var a = 5*10; a -=\n 1; a%=2; a/=3; a*=4 ";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -154,7 +154,7 @@ fn var_assign_other_ops() {
 
 #[test]
 fn vars_with_type() {
-    let src = String::from("var a:Int = 5*10; val b: Char = 'b';");
+    let src = "var a:Int = 5*10; val b: Char = 'b';";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
@@ -166,7 +166,7 @@ fn vars_with_type() {
 
 #[test]
 fn val_wrong_explicit_type() -> Result<(), String> {
-    let src = String::from("val a: Int = 4L");
+    let src = "val a: Int = 4L";
     let mut out: Vec<u8> = Vec::new();
 
     match compile(src, &mut out) {
@@ -180,7 +180,7 @@ fn val_wrong_explicit_type() -> Result<(), String> {
 
 #[test]
 fn assign_with_paren() {
-    let src = String::from("var a = 5*10; (((a))) = 1");
+    let src = "var a = 5*10; (((a))) = 1";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(compile(src, &mut out).is_ok());
