@@ -21,7 +21,7 @@ fn main() {
         .arg(
             Arg::with_name("command")
                 .help("What to do")
-                .default_value("sexp")
+                .default_value("build")
                 .possible_values(&[
                     "sexp",
                     "fmt",

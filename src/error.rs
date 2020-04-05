@@ -3,6 +3,7 @@ use crate::parse::{JumpKind, Type};
 use crate::resolver::LexicalContext;
 use log::debug;
 use std::fmt;
+use std::io;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -15,7 +16,7 @@ pub struct Location {
     pub end_column: usize,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug)]
 pub enum ErrorKind {
     UnknownChar,
     UnexpectedChar(char),
@@ -46,6 +47,7 @@ pub enum ErrorKind {
         expected_context: LexicalContext,
         found_context: LexicalContext,
     },
+    IoError(std::io::Error),
 }
 
 impl fmt::Display for JumpKind {
@@ -56,6 +58,22 @@ impl fmt::Display for JumpKind {
             JumpKind::Return => write!(f, "return"),
             JumpKind::Throw => write!(f, "throw"),
         }
+    }
+}
+
+impl From<io::Error> for Error {
+    fn from(error: io::Error) -> Self {
+        Error::new(
+            ErrorKind::IoError(error),
+            Location {
+                start_pos: 0,
+                start_line: 0,
+                start_column: 0,
+                end_pos: 0,
+                end_line: 0,
+                end_column: 0,
+            },
+        )
     }
 }
 
@@ -109,11 +127,12 @@ impl fmt::Display for ErrorKind {
                 "`{}` should be inside a {}, found it inside a {}",
                 *jump_kind, *expected_context, *found_context,
             ),
+            ErrorKind::IoError(err) => write!(f, "{}", err),
         }
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug)]
 pub struct Error {
     pub kind: ErrorKind,
     pub location: Location,
