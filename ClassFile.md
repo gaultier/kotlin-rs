@@ -127,3 +127,6 @@ SourceFile: "hello.java"
   - Descriptor index: 0x00 0x06 => 6 i.e `()V` (return value void, no arguments)
   - Attributes count: 0x00 0x01 => 1 
   - Attributes:
+    * Name index: 0x00 0x09 => 9 i.e "Code"
+    * Length (u4): 0x00 0x00 0x00 0x1d => 29
+    * Bytecode of 29 bytes size

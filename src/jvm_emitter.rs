@@ -62,14 +62,14 @@ fn u16_to_u8s(b: u16) -> [u8; 2] {
     [(b & 0xff_00) as u8, (b & 0x00_ff) as u8]
 }
 
-// fn u32_to_u8s(b: u32) -> [u8; 4] {
-//     [
-//         (b & 0xff_00_00_00) as u8,
-//         (b & 0x00_ff_00_00) as u8,
-//         (b & 0x00_00_ff_00) as u8,
-//         (b & 0x00_00_00_ff) as u8,
-//     ]
-// }
+fn u32_to_u8s(b: u32) -> [u8; 4] {
+    [
+        (b & 0xff_00_00_00) as u8,
+        (b & 0x00_ff_00_00) as u8,
+        (b & 0x00_00_ff_00) as u8,
+        (b & 0x00_00_00_ff) as u8,
+    ]
+}
 
 impl<'a> JvmEmitter<'a> {
     pub(crate) fn new(session: &'a Session, _types: &'a Types) -> JvmEmitter<'a> {
@@ -126,7 +126,6 @@ impl<'a> JvmEmitter<'a> {
             },
         ];
         self.methods(&methods, w)?;
-        self.attributes(w)?;
         Ok(())
     }
 
@@ -210,12 +209,19 @@ impl<'a> JvmEmitter<'a> {
         w.write(&u16_to_u8s(method.name_index))?;
         w.write(&u16_to_u8s(method.descriptor_index))?;
         w.write(&u16_to_u8s(method.attributes.len() as u16))?;
+
+        for attribute in &method.attributes {
+            self.attribute(attribute, w)?;
+        }
         Ok(())
     }
 
-    fn attributes<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        // FIXME
-        w.write(&[0x00, 0x00])?;
+    fn attribute<W: std::io::Write>(&self, attribute: &Attribute, w: &mut W) -> Result<(), Error> {
+        debug!("attribute={:?}", attribute);
+
+        w.write(&u16_to_u8s(attribute.name_index))?;
+        w.write(&u32_to_u8s(attribute.info.len() as u32))?;
+        w.write(&attribute.info)?;
         Ok(())
     }
 
