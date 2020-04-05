@@ -38,8 +38,37 @@ pub(crate) struct JvmEmitter<'a> {
     constants: Vec<Constant>,
 }
 
+#[derive(Debug)]
+struct Class {
+    ctor: Function,
+    methods: Vec<Function>,
+}
+
+#[derive(Debug)]
+struct Function {
+    access_flags: u16,
+    name_index: u16,
+    descriptor_index: u16,
+    attributes: Vec<Attribute>,
+}
+
+#[derive(Debug)]
+struct Attribute {
+    name_index: u16,
+    info: Vec<u8>,
+}
+
 fn u16_to_u8s(b: u16) -> [u8; 2] {
-    [(b & 0xff00) as u8, (b & 0x00ff) as u8]
+    [(b & 0xff_00) as u8, (b & 0x00_ff) as u8]
+}
+
+fn u32_to_u8s(b: u32) -> [u8; 4] {
+    [
+        (b & 0xff_00_00_00) as u8,
+        (b & 0x00_ff_00_00) as u8,
+        (b & 0x00_00_ff_00) as u8,
+        (b & 0x00_00_00_ff) as u8,
+    ]
 }
 
 impl<'a> JvmEmitter<'a> {
@@ -78,7 +107,25 @@ impl<'a> JvmEmitter<'a> {
         self.super_class(w)?;
         self.interfaces(w)?;
         self.fields(w)?;
-        self.methods(w)?;
+
+        let methods = vec![
+            Function {
+                access_flags: 0,
+                name_index: 5,
+                descriptor_index: 6,
+                attributes: vec![Attribute {
+                    name_index: 9, // Code
+                    info: vec![],  // TODO
+                }],
+            },
+            Function {
+                access_flags: 0,
+                name_index: 1,
+                descriptor_index: 3,
+                attributes: vec![],
+            },
+        ];
+        self.methods(&methods, w)?;
         self.attributes(w)?;
         Ok(())
     }
@@ -116,19 +163,19 @@ impl<'a> JvmEmitter<'a> {
 
     fn access_flags<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         // FIXME
-        w.write(&[(ACC_SUPER & 0xff00) as u8, (ACC_SUPER & 0x00ff) as u8])?;
+        w.write(&u16_to_u8s(ACC_SUPER))?;
         Ok(())
     }
 
     fn this_class<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         // FIXME
-        w.write(&[0x00, 0x00])?;
+        w.write(&[0x00, 0x07])?;
         Ok(())
     }
 
     fn super_class<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         // FIXME
-        w.write(&[0x00, 0x00])?;
+        w.write(&[0x00, 0x02])?;
         Ok(())
     }
 
@@ -144,9 +191,25 @@ impl<'a> JvmEmitter<'a> {
         Ok(())
     }
 
-    fn methods<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        // FIXME
-        w.write(&[0x00, 0x00])?;
+    fn methods<W: std::io::Write>(&self, methods: &[Function], w: &mut W) -> Result<(), Error> {
+        let len = &u16_to_u8s(methods.len() as u16);
+        debug!("methods size={:#04X} {:#04X}", len[0], len[1]);
+        w.write(len)?;
+
+        for m in methods {
+            self.method(m, w)?;
+        }
+
+        Ok(())
+    }
+
+    fn method<W: std::io::Write>(&self, method: &Function, w: &mut W) -> Result<(), Error> {
+        debug!("method={:?}", method);
+
+        w.write(&u16_to_u8s(method.access_flags))?;
+        w.write(&u16_to_u8s(method.name_index))?;
+        w.write(&u16_to_u8s(method.descriptor_index))?;
+        w.write(&u32_to_u8s(method.attributes.len() as u32))?;
         Ok(())
     }
 

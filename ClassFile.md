@@ -118,3 +118,6 @@ SourceFile: "hello.java"
   - Content: `()V`
 
 - Access flags: u2 = 0x0020 i.e ACC_SUPER
+- This class: 0x00 0x07 i.e Foo
+- Super class: 0x00 0x02 i.e java.lang.Object
+- Methods
