@@ -9,10 +9,10 @@ pub struct Span {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct Session<'a> {
-    pub(crate) src: &'a str,
-    pub(crate) file: Option<&'a PathBuf>,
-    lines: Vec<usize>,
+pub struct Session<'a> {
+    pub src: &'a str,
+    pub file: Option<&'a PathBuf>,
+    pub lines: Vec<usize>,
 }
 
 impl<'a> Session<'a> {

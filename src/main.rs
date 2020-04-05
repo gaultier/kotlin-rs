@@ -3,6 +3,7 @@ use kotlin::compile::*;
 use kotlin::error::Error;
 use kotlin::lex::Lexer;
 use kotlin::parse::Parser;
+use kotlin::session::Session;
 use std::io::prelude::*;
 
 fn main() {
@@ -76,17 +77,19 @@ fn main() {
 }
 
 fn dump_ast(src: String) -> Result<(), Error> {
-    let mut lexer = Lexer::new(src);
-    let tokens = lexer.lex()?;
-    let mut parser = Parser::new(&lexer, &tokens);
+    let session = Session::new(&src, None);
+    let mut lexer = Lexer::new(&session);
+    let (tokens, session) = lexer.lex()?;
+    let mut parser = Parser::new(&session, &tokens);
     let stmts = parser.parse()?;
     println!("{:#?}", stmts);
     Ok(())
 }
 
 fn dump_tokens(src: String) -> Result<(), Error> {
-    let mut lexer = Lexer::new(src);
-    let tokens = lexer.lex()?;
+    let session = Session::new(&src, None);
+    let mut lexer = Lexer::new(&session);
+    let (tokens, _) = lexer.lex()?;
     println!("{:#?}", tokens);
     Ok(())
 }

@@ -9,9 +9,9 @@ use crate::type_check::TypeChecker;
 use std::io;
 
 pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
-    let mut session = Session::new(&src, None);
-    let mut lexer = Lexer::new(&mut session);
-    let tokens = lexer.lex()?;
+    let session = Session::new(&src, None);
+    let mut lexer = Lexer::new(&session);
+    let (tokens, session) = lexer.lex()?;
     let mut parser = Parser::new(&session, &tokens);
     let stmts = parser.parse()?;
     let mut types = parser.types;
@@ -27,9 +27,9 @@ pub fn compile<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
 }
 
 pub fn fmt<W: io::Write>(src: String, w: &mut W) -> Result<(), Error> {
-    let mut session = Session::new(&src, None);
-    let mut lexer = Lexer::new(&mut session);
-    let tokens = lexer.lex()?;
+    let session = Session::new(&src, None);
+    let mut lexer = Lexer::new(&session);
+    let (tokens, session) = lexer.lex()?;
     let mut parser = Parser::new(&session, &tokens);
     let stmts = parser.parse()?;
     let mut types = parser.types;

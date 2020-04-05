@@ -892,7 +892,7 @@ impl Cursor<'_> {
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
-    session: &'a mut Session<'a>,
+    session: &'a Session<'a>,
     pos: usize,
     // Index of each line, 0 based
     lines: Vec<usize>,
@@ -919,7 +919,7 @@ impl Token {
 
 impl<'a> Lexer<'a> {
     fn cursor_identifier_to_token_identifier(&self, span: &Span) -> TokenKind {
-        let s = &self.src[span.start..span.end];
+        let s = &self.session.src[span.start..span.end];
 
         match s {
             "true" => TokenKind::Boolean(true),
@@ -1012,7 +1012,7 @@ impl<'a> Lexer<'a> {
                 self.span_location(&span),
             ));
         }
-        let original_str = &self.src[span.start..span.end];
+        let original_str = &self.session.src[span.start..span.end];
 
         // Remove prefix e.g `0x` and suffix e.g `UL`
         let num_str = match kind {
@@ -1023,8 +1023,8 @@ impl<'a> Lexer<'a> {
             | CursorNumberKind::Float {
                 base: NumberBase::Decimal,
                 ..
-            } => &self.src[span.start..span.start + suffix_start],
-            _ => &self.src[span.start + 2..span.start + suffix_start],
+            } => &self.session.src[span.start..span.start + suffix_start],
+            _ => &self.session.src[span.start + 2..span.start + suffix_start],
         };
 
         let suffix_str = &original_str[suffix_start..];
@@ -1249,7 +1249,7 @@ impl<'a> Lexer<'a> {
             )),
             CursorTokenKind::Char { terminated: true } => {
                 // Trim surrounding quotes to get content
-                let c_str = &self.src[span.start + 1..span.end - 1];
+                let c_str = &self.session.src[span.start + 1..span.end - 1];
                 let c_chars = c_str.chars().collect::<Vec<_>>();
                 let slice: &[char] = &c_chars;
                 let c: char = match slice {
@@ -1298,7 +1298,7 @@ impl<'a> Lexer<'a> {
             .ok_or_else(|| Error::new(ErrorKind::InvalidCharLiteral, self.span_location(&span)))
     }
 
-    pub fn new(session: &'a Session) -> Lexer<'a> {
+    pub fn new(session: &'a Session<'a>) -> Lexer<'a> {
         Lexer {
             session,
             pos: 0,
@@ -1307,17 +1307,17 @@ impl<'a> Lexer<'a> {
     }
 
     fn next_token(&mut self) -> Result<Token, Error> {
-        if self.pos >= self.src.len() {
+        if self.pos >= self.session.src.len() {
             return Ok(Token::new(TokenKind::Eof, Span::new(self.pos, self.pos)));
         }
-        let cursor_token = first_token(&self.src[self.pos..], &mut self.lines, self.pos);
+        let cursor_token = first_token(&self.session.src[self.pos..], &mut self.lines, self.pos);
         let start = self.pos;
         self.pos += cursor_token.len;
 
         debug!(
             "next_token: kind={:?} c={:?} start={} pos={}",
             cursor_token.kind,
-            &self.src[start..self.pos],
+            &self.session.src[start..self.pos],
             start,
             self.pos
         );
@@ -1328,7 +1328,7 @@ impl<'a> Lexer<'a> {
         Ok(Token::new(kind, span))
     }
 
-    pub fn lex(&mut self) -> Result<Vec<Token>, Error> {
+    pub fn lex(&mut self) -> Result<(Vec<Token>, Session), Error> {
         let mut tokens = Vec::new();
         loop {
             let token = self.next_token()?;
@@ -1341,7 +1341,14 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        Ok(tokens)
+        Ok((
+            tokens,
+            Session {
+                lines: self.lines.clone(),
+                src: self.session.src,
+                file: self.session.file,
+            },
+        ))
     }
 
     pub fn span_location(&self, span: &Span) -> Location {
@@ -1356,13 +1363,13 @@ impl<'a> Lexer<'a> {
         let start_line_pos = self.lines[start_line_i];
         let end_line_pos = self.lines[end_line_i];
 
-        let start_line_s = &self.src[start_line_pos..span.start];
+        let start_line_s = &self.session.src[start_line_pos..span.start];
         let start_col = start_line_s
             .char_indices()
             .take_while(|(i, _)| *i != span.start)
             .count();
 
-        let end_line_s = &self.src[end_line_pos..span.end];
+        let end_line_s = &self.session.src[end_line_pos..span.end];
         let end_col = end_line_s
             .char_indices()
             .take_while(|(i, _)| *i != span.end)
