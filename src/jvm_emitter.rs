@@ -154,6 +154,10 @@ impl<'a> JvmEmitter<'a> {
             },
         ];
         self.methods(&methods, w)?;
+
+        let attributes = vec![];
+        self.attributes(&attributes, w)?;
+
         Ok(())
     }
 
@@ -254,6 +258,26 @@ impl<'a> JvmEmitter<'a> {
         w.write(&u16_to_u8s(attribute.name_index))?;
         w.write(&u32_to_u8s(attribute.info.len() as u32))?;
         w.write(&attribute.info)?;
+        Ok(())
+    }
+
+    fn attributes<W: std::io::Write>(
+        &self,
+        attributes: &[Attribute],
+        w: &mut W,
+    ) -> Result<(), Error> {
+        let len = &u16_to_u8s(attributes.len() as u16);
+        debug!("attributes size={:#04X} {:#04X}", len[0], len[1]);
+        w.write(len)?;
+
+        for a in attributes {
+            self.attribute(a, w)?;
+        }
+
+        Ok(())
+    }
+
+    fn attribute<W: std::io::Write>(&self, attribute: &Attribute, w: &mut W) -> Result<(), Error> {
         Ok(())
     }
 
