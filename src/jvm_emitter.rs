@@ -8,6 +8,8 @@ pub(crate) struct JvmEmitter<'a> {
     _types: &'a Types,
 }
 
+const ACC_SUPER: u16 = 0x0002;
+
 impl<'a> JvmEmitter<'a> {
     pub(crate) fn new(session: &'a Session, _types: &'a Types) -> JvmEmitter<'a> {
         JvmEmitter { session, _types }
@@ -57,8 +59,7 @@ impl<'a> JvmEmitter<'a> {
 
     fn access_flags<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         // FIXME
-        const ACC_SUPER: u8 = 0x02;
-        w.write(&[ACC_SUPER])?;
+        w.write(&[(ACC_SUPER & 0xff00) as u8, (ACC_SUPER & 0x00ff) as u8])?;
         Ok(())
     }
 
