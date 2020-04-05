@@ -335,7 +335,7 @@ impl<'a> Parser<'a> {
 
     // Skip over unsignificant tokens
     fn advance(&mut self) -> Result<(), Error> {
-        if self.i < self.tokens.len() {
+        if self.i < self.tokens.len() - 1 {
             self.i += 1;
             self.previous = self.current;
             self.current = Some(self.tokens[self.i]);
