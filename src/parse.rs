@@ -334,10 +334,9 @@ impl<'a> Parser<'a> {
     }
 
     fn advance(&mut self) -> Result<(), Error> {
-        self.previous = self.current;
-        self.current = Some(self.tokens[self.i + 1]);
-
         self.i += 1;
+        self.previous = Some(self.tokens[self.i]);
+        self.current = Some(self.tokens[self.i + 1]);
 
         Ok(())
     }
@@ -1167,16 +1166,11 @@ impl<'a> Parser<'a> {
 
     fn var_def(&mut self) -> Result<AstNodeStmt, Error> {
         let flags = match self.previous.unwrap().kind {
-            TokenKind::KeywordVar => {
-                self.advance()?;
-                FLAG_VAR
-            }
-            TokenKind::KeywordVal => {
-                self.advance()?;
-                FLAG_VAL
-            }
+            TokenKind::KeywordVar => FLAG_VAR,
+            TokenKind::KeywordVal => FLAG_VAL,
             _ => unreachable!(),
         };
+        self.advance()?;
 
         self.skip_newlines()?;
         let identifier = self.eat(TokenKind::Identifier)?;
@@ -1434,16 +1428,18 @@ impl<'a> Parser<'a> {
     }
 
     pub fn new(lexer: &'a Lexer, tokens: &'a [Token]) -> Parser<'a> {
+        let tokens = tokens
+            .iter()
+            .filter(|t| !t.is_unsignificant_ws())
+            .cloned()
+            .collect::<Vec<Token>>();
+
         Parser {
-            previous: None,
-            current: None,
+            previous: Some(tokens[0]),
+            current: Some(tokens[1]),
             i: 0,
             lexer,
-            tokens: tokens
-                .iter()
-                .filter(|t| !t.is_unsignificant_ws())
-                .cloned()
-                .collect::<Vec<Token>>(),
+            tokens,
             types: BTreeMap::new(),
             current_id: 0,
         }
@@ -1458,8 +1454,6 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse(&mut self) -> Result<AstNodeStmt, Error> {
-        self.advance()?;
-        self.advance()?;
         self.statements()
     }
 }
