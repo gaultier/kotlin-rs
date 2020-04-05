@@ -79,6 +79,7 @@ enum Attribute {
         name_index: u16,
         max_stack: u16,
         max_locals: u16,
+        code: Vec<u8>,
         blob: Vec<u8>,
     },
 }
@@ -142,10 +143,10 @@ impl<'a> JvmEmitter<'a> {
                     name_index: 9, // Code
                     max_stack: 1,
                     max_locals: 1,
+                    code: vec![0x2a, 0xb7, 0x00, 0x01, 0xb1],
                     blob: vec![
-                        0x00, 0x00, 0x00, 0x05, 0x2a, 0xb7, 0x00, 0x01, 0xb1, 0x00, 0x00, 0x00,
-                        0x01, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01, 0x00, 0x00, 0x00,
-                        0x01,
+                        0x00, 0x00, 0x00, 0x01, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01,
+                        0x00, 0x00, 0x00, 0x01,
                     ], // TODO
                 }],
             },
@@ -157,9 +158,10 @@ impl<'a> JvmEmitter<'a> {
                     name_index: 9, // Code
                     max_stack: 0,
                     max_locals: 1,
+                    code: vec![0xb1],
                     blob: vec![
-                        0x00, 0x00, 0x00, 0x01, 0xb1, 0x00, 0x00, 0x00, 0x01, 0x00, 0x0a, 0x00,
-                        0x00, 0x00, 0x06, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02,
+                        0x00, 0x00, 0x00, 0x01, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01,
+                        0x00, 0x00, 0x00, 0x02,
                     ], // TODO
                 }],
             },
@@ -271,14 +273,21 @@ impl<'a> JvmEmitter<'a> {
                 name_index,
                 max_stack,
                 max_locals,
+                code,
                 blob,
             } => {
                 w.write(&u16_to_u8s(*name_index))?;
 
-                // This attribute length includes max_stacks and max_locals
-                w.write(&u32_to_u8s(blob.len() as u32 + 2 * 2))?;
+                // This attribute length includes:
+                // max_stacks, max_locals, code length (u32), code length, blob
+                w.write(&u32_to_u8s(
+                    blob.len() as u32 + 2 + 2 + 4 + code.len() as u32,
+                ))?;
                 w.write(&u16_to_u8s(*max_stack))?;
                 w.write(&u16_to_u8s(*max_locals))?;
+                w.write(&u32_to_u8s(code.len() as u32))?;
+                w.write(&code)?;
+
                 w.write(&blob)?;
             }
             Attribute::SourceFile {
