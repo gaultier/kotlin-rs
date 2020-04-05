@@ -135,10 +135,11 @@ impl Exception {
 impl Attribute {
     fn size(&self) -> u32 {
         match self {
-            Attribute::SourceFile { .. } => 2, // source_file_index
+            Attribute::SourceFile { .. } => 2 + 4 + 2, // source_file_index
             Attribute::LineNumberTable {
                 line_number_tables, ..
             } => {
+                2 + 4 +
                 2 // line_number_tables len
             + line_number_tables.iter().map(|l| l.size()).sum::<u32>()
             }
@@ -148,6 +149,7 @@ impl Attribute {
                 attributes,
                 ..
             } => {
+                2 + 4 +
                 2 // max_stacks
                     + 2 // max_locals
                     + 4 // code len
@@ -356,7 +358,7 @@ impl<'a> JvmEmitter<'a> {
 
                 w.write(&u16_to_u8s(*max_locals))?;
 
-                w.write(&u32_to_u8s(code.len() as u32))?;
+                w.write(&u32_to_u8s((code.len() as isize - (2 + 4)) as u32))?;
                 w.write(&code)?;
 
                 w.write(&u16_to_u8s(exception_table.len() as u16))?;
@@ -371,7 +373,7 @@ impl<'a> JvmEmitter<'a> {
                 source_file_index,
             } => {
                 w.write(&u16_to_u8s(*name_index))?;
-                w.write(&u32_to_u8s(attribute.size()))?;
+                w.write(&u32_to_u8s((attribute.size() as isize - (2 + 4)) as u32))?;
                 w.write(&u16_to_u8s(*source_file_index))?;
             }
             Attribute::LineNumberTable {
@@ -379,7 +381,7 @@ impl<'a> JvmEmitter<'a> {
                 line_number_tables,
             } => {
                 w.write(&u16_to_u8s(*name_index))?;
-                w.write(&u32_to_u8s(attribute.size()))?;
+                w.write(&u32_to_u8s((attribute.size() as isize - (2 + 4)) as u32))?;
 
                 self.line_number_tables(line_number_tables, w)?;
             }
