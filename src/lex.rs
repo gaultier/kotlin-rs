@@ -935,6 +935,13 @@ impl Token {
     pub fn new(kind: TokenKind, span: Span) -> Token {
         Token { kind, span }
     }
+
+    pub fn is_unsignificant_ws(&self) -> bool {
+        match self.kind {
+            TokenKind::Whitespace | TokenKind::LineComment | TokenKind::BlockComment { .. } => true,
+            _ => false,
+        }
+    }
 }
 
 impl Lexer {

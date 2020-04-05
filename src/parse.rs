@@ -304,7 +304,7 @@ pub struct Parser<'a> {
     previous: Option<Token>,
     current: Option<Token>,
     i: usize,
-    tokens: &'a [Token],
+    tokens: Vec<Token>,
     lexer: &'a Lexer,
     pub(crate) types: Types,
     pub(crate) current_id: usize,
@@ -333,29 +333,12 @@ impl<'a> Parser<'a> {
         }
     }
 
-    // Skip over unsignificant tokens
     fn advance(&mut self) -> Result<(), Error> {
-        while self.i < self.tokens.len() - 1 {
-            self.previous = Some(self.tokens[self.i]);
-            self.current = Some(self.tokens[self.i + 1]);
+        self.previous = self.current;
+        self.current = Some(self.tokens[self.i + 1]);
 
-            self.i += 1;
-            match self.previous {
-                Some(Token {
-                    kind: TokenKind::Whitespace,
-                    ..
-                })
-                | Some(Token {
-                    kind: TokenKind::LineComment,
-                    ..
-                })
-                | Some(Token {
-                    kind: TokenKind::BlockComment { .. },
-                    ..
-                }) => (),
-                _ => break,
-            }
-        }
+        self.i += 1;
+
         Ok(())
     }
 
@@ -1226,9 +1209,17 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn assign_target_expr(&mut self) -> Result<AstNodeExpr, Error> {
+        match self.previous.unwrap().kind {
+            TokenKind::LeftParen => self.assignable_expr(),
+            TokenKind::Identifier => self.simple_identifier(),
+            _ => unreachable!(),
+        }
+    }
+
     fn assign(&mut self) -> Result<AstNodeStmt, Error> {
         let span = self.current.unwrap().span;
-        let target = self.assignable_expr()?;
+        let target = self.assign_target_expr()?;
 
         // Operator
         let op = self.previous.unwrap().kind;
@@ -1448,7 +1439,11 @@ impl<'a> Parser<'a> {
             current: None,
             i: 0,
             lexer,
-            tokens,
+            tokens: tokens
+                .iter()
+                .filter(|t| !t.is_unsignificant_ws())
+                .cloned()
+                .collect::<Vec<Token>>(),
             types: BTreeMap::new(),
             current_id: 0,
         }
@@ -1463,6 +1458,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse(&mut self) -> Result<AstNodeStmt, Error> {
+        self.advance()?;
         self.advance()?;
         self.statements()
     }
