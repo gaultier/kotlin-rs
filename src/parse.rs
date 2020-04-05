@@ -303,12 +303,14 @@ impl AstNodeExpr {
 pub struct Parser<'a> {
     previous: Option<Token>,
     current: Option<Token>,
-    lexer: &'a mut Lexer,
+    i: usize,
+    tokens: &'a [Token],
+    lexer: &'a Lexer,
     pub(crate) types: Types,
     pub(crate) current_id: usize,
 }
 
-impl Parser<'_> {
+impl<'a> Parser<'a> {
     fn simple_identifier_type(&self, span: &Span) -> Result<Type, Error> {
         let identifier = &self.lexer.src[span.start..span.end];
         match identifier {
@@ -346,8 +348,12 @@ impl Parser<'_> {
     }
 
     fn advance(&mut self) -> Result<(), Error> {
-        self.previous = self.current;
-        self.current = Some(self.next_parse_token()?);
+        if self.i < self.tokens.len() {
+            self.i += 1;
+            self.previous = self.current;
+            self.current = Some(self.tokens[self.i]);
+        } else {
+        }
         Ok(())
     }
 
@@ -1434,24 +1440,16 @@ impl Parser<'_> {
         })
     }
 
-    pub fn new(lexer: &mut Lexer) -> Result<Parser, Error> {
-        let mut tokens = Vec::new();
-        loop {
-            let token = lexer.next_token()?;
-            if token.kind == TokenKind::Eof {
-                break;
-            } else {
-                tokens.push(token);
-            }
-        }
-        dbg!(tokens);
-        Ok(Parser {
+    pub fn new(lexer: &'a Lexer, tokens: &'a [Token]) -> Parser<'a> {
+        Parser {
             previous: None,
             current: None,
+            i: 0,
             lexer,
+            tokens,
             types: BTreeMap::new(),
             current_id: 0,
-        })
+        }
     }
 
     fn next_id(&mut self) -> NodeId {
