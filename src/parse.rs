@@ -129,9 +129,9 @@ impl Token {
     }
 }
 
-pub(crate) const FLAG_VAR: u8 = 0;
-pub(crate) const FLAG_VAL: u8 = 1;
-pub(crate) const FLAG_FN: u8 = 2;
+pub(crate) const FLAG_VAR: u8 = 1;
+pub(crate) const FLAG_VAL: u8 = 2;
+pub(crate) const FLAG_FN: u8 = 4;
 
 #[derive(Debug)]
 pub enum AstNodeStmt {
