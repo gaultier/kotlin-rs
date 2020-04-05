@@ -1212,7 +1212,7 @@ impl<'a> Parser<'a> {
     fn assign_target_expr(&mut self) -> Result<AstNodeExpr, Error> {
         match self.previous.unwrap().kind {
             TokenKind::LeftParen => self.assignable_expr(),
-            TokenKind::Identifier => self.simple_identifier(),
+            TokenKind::Identifier => self.primary(),
             _ => unreachable!(),
         }
     }
