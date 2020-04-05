@@ -71,8 +71,14 @@ struct Function {
 
 #[derive(Debug)]
 enum Attribute {
-    SourceFile(u16),
-    Code { blob: Vec<u8> },
+    SourceFile {
+        name_index: u16,
+        source_file_index: u16,
+    },
+    Code {
+        name_index: u16,
+        blob: Vec<u8>,
+    },
 }
 
 fn u16_to_u8s(b: u16) -> [u8; 2] {
@@ -131,6 +137,7 @@ impl<'a> JvmEmitter<'a> {
                 name_index: 5,
                 descriptor_index: 6,
                 attributes: vec![Attribute::Code {
+                    name_index: 9, // Code
                     blob: vec![
                         0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x05, 0x2a, 0xb7, 0x00, 0x01,
                         0xb1, 0x00, 0x00, 0x00, 0x01, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x06, 0x00,
@@ -143,6 +150,7 @@ impl<'a> JvmEmitter<'a> {
                 name_index: 11,
                 descriptor_index: 12,
                 attributes: vec![Attribute::Code {
+                    name_index: 9, // Code
                     blob: vec![
                         0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0xb1, 0x00, 0x00, 0x00,
                         0x01, 0x00, 0x0a, 0x00, 0x00, 0x00, 0x06, 0x00, 0x01, 0x00, 0x00, 0x00,
@@ -153,9 +161,10 @@ impl<'a> JvmEmitter<'a> {
         ];
         self.methods(&methods, w)?;
 
-        let attributes = vec![
-            Attribute::SourceFile(14), // 0x00 0x14 : Foo.java
-        ];
+        let attributes = vec![Attribute::SourceFile {
+            name_index: 13,
+            source_file_index: 14, // Foo.java
+        }];
         self.attributes(&attributes, w)?;
 
         Ok(())
@@ -253,16 +262,19 @@ impl<'a> JvmEmitter<'a> {
         debug!("attribute={:?}", attribute);
 
         match attribute {
-            Attribute::Code { blob } => {
-                w.write(&u16_to_u8s(9))?; // FIXME: Code
+            Attribute::Code { name_index, blob } => {
+                w.write(&u16_to_u8s(*name_index))?;
 
                 w.write(&u32_to_u8s(blob.len() as u32))?;
                 w.write(&blob)?;
             }
-            Attribute::SourceFile(index) => {
-                w.write(&u16_to_u8s(13))?; // FIXME: SourceFile
+            Attribute::SourceFile {
+                name_index,
+                source_file_index,
+            } => {
+                w.write(&u16_to_u8s(*name_index))?;
                 w.write(&[0x00, 0x00, 0x00, 0x02])?; // sizeof(u16) to come, as u32
-                w.write(&u16_to_u8s(*index))?;
+                w.write(&u16_to_u8s(*source_file_index))?;
             }
         }
 
