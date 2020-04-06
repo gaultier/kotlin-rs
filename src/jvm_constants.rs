@@ -33,3 +33,5 @@ pub(crate) const CONSTANT_UTF8: u8 = 1;
 pub(crate) const _CONSTANT_METHOD_HANDLE: u8 = 15;
 pub(crate) const _CONSTANT_METHOD_TYPE: u8 = 16;
 pub(crate) const _CONSTANT_INVOKE_DYNAMIC: u8 = 18;
+
+pub(crate) const OP_RETURN: u8 = 0xb1;

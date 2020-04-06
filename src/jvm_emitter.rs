@@ -193,7 +193,7 @@ impl<'a> JvmEmitter<'a> {
                     name_index: 9, // Code
                     max_stack: 0,
                     max_locals: 1,
-                    code: vec![0xb1], // return
+                    code: vec![OP_RETURN],
                     exception_table: vec![],
                     attributes: vec![Attribute::LineNumberTable {
                         name_index: 10,
