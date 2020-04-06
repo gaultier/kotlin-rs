@@ -28,6 +28,8 @@ pub(crate) struct JvmEmitter<'a> {
     main_descriptor_str_index: u16,
     super_class_index: u16,
     this_class_index: u16,
+    obj_ctor_descriptor_index: u16,
+    obj_method_ref_index: u16,
 }
 
 #[derive(Debug)]
@@ -155,26 +157,35 @@ fn add_constant(constants: &mut Vec<Constant>, constant: Constant) -> Result<u16
 impl<'a> JvmEmitter<'a> {
     pub(crate) fn new(session: &'a Session, _types: &'a Types) -> JvmEmitter<'a> {
         let mut constants = Vec::new();
-        let obj_method_ref_index = add_constant(&mut constants, Constant::MethodRef(2, 3)).unwrap(); // 1
-        let super_class_index = add_constant(&mut constants, Constant::ClassInfo(4)).unwrap(); // 2
-        let obj_name_type_index =
-            add_constant(&mut constants, Constant::NameAndType(5, 6)).unwrap(); // 3
+
         let obj_str_index = add_constant(
             &mut constants,
             Constant::Utf8(String::from("java/lang/Object")),
         )
-        .unwrap(); // 4
+        .unwrap();
+        let obj_ctor_descriptor_index =
+            add_constant(&mut constants, Constant::Utf8(String::from("()V"))).unwrap();
+        let obj_name_type_index = add_constant(
+            &mut constants,
+            Constant::NameAndType(obj_str_index, obj_ctor_descriptor_index),
+        )
+        .unwrap();
+        let super_class_index =
+            add_constant(&mut constants, Constant::ClassInfo(obj_str_index)).unwrap();
 
+        let obj_method_ref_index = add_constant(
+            &mut constants,
+            Constant::MethodRef(super_class_index, obj_name_type_index),
+        )
+        .unwrap();
         let ctor_str_index =
             add_constant(&mut constants, Constant::Utf8(String::from(CTOR_STR))).unwrap();
 
-        let obj_ctor_descriptor_index =
-            add_constant(&mut constants, Constant::Utf8(String::from("()V"))).unwrap(); // 6
+        let this_class_name_index =
+            add_constant(&mut constants, Constant::Utf8(String::from("Foo"))).unwrap();
 
-        let this_class_index = add_constant(&mut constants, Constant::ClassInfo(8)).unwrap();
-
-        let class_name_index =
-            add_constant(&mut constants, Constant::Utf8(String::from("Foo"))).unwrap(); // 8
+        let this_class_index =
+            add_constant(&mut constants, Constant::ClassInfo(this_class_name_index)).unwrap();
 
         let code_str_index =
             add_constant(&mut constants, Constant::Utf8(String::from("Code"))).unwrap();
@@ -213,6 +224,8 @@ impl<'a> JvmEmitter<'a> {
             main_descriptor_str_index,
             super_class_index,
             this_class_index,
+            obj_ctor_descriptor_index,
+            obj_method_ref_index,
         }
     }
 
@@ -232,13 +245,19 @@ impl<'a> JvmEmitter<'a> {
         let methods = vec![
             Function {
                 access_flags: 0,
-                name_index: 5,
-                descriptor_index: 6,
+                name_index: self.ctor_str_index,
+                descriptor_index: self.obj_ctor_descriptor_index,
                 attributes: vec![Attribute::Code {
                     name_index: self.code_str_index,
                     max_stack: 1,
                     max_locals: 1,
-                    code: vec![OP_ALOAD_0, OP_INVOKE_SPECIAL, 0x00, 0x01, OP_RETURN],
+                    code: vec![
+                        OP_ALOAD_0,
+                        OP_INVOKE_SPECIAL,
+                        u16_to_u8s(self.obj_method_ref_index)[0],
+                        u16_to_u8s(self.obj_method_ref_index)[1],
+                        OP_RETURN,
+                    ],
                     exception_table: vec![],
                     attributes: vec![Attribute::LineNumberTable {
                         name_index: self.line_table_str_index,
