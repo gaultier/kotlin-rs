@@ -35,3 +35,6 @@ pub(crate) const _CONSTANT_METHOD_TYPE: u8 = 16;
 pub(crate) const _CONSTANT_INVOKE_DYNAMIC: u8 = 18;
 
 pub(crate) const OP_RETURN: u8 = 0xb1;
+pub(crate) const _OP_NOP: u8 = 0x00;
+pub(crate) const OP_ALOAD_0: u8 = 0x2a;
+pub(crate) const OP_INVOKE_SPECIAL: u8 = 0xb7;
