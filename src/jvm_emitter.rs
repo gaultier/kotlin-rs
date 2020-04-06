@@ -313,7 +313,7 @@ impl<'a> JvmEmitter<'a> {
     }
 
     fn access_flags<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        // FIXME
+        // TODO: figure out why
         w.write(&u16_to_u8s(CLASS_ACC_SUPER))?;
         Ok(())
     }
@@ -329,13 +329,13 @@ impl<'a> JvmEmitter<'a> {
     }
 
     fn interfaces<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        // FIXME
+        // TODO
         w.write(&[0x00, 0x00])?;
         Ok(())
     }
 
     fn fields<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        // FIXME
+        // TODO
         w.write(&[0x00, 0x00])?;
         Ok(())
     }
