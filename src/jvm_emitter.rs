@@ -20,6 +20,9 @@ pub(crate) struct JvmEmitter<'a> {
     constants: Vec<Constant>,
     source_file_constant_index: u16,
     source_file_name_constant_index: u16,
+    ctor_str_index: u16,
+    code_str_index: u16,
+    line_table_str_index: u16,
 }
 
 #[derive(Debug)]
@@ -146,31 +149,46 @@ fn add_constant(constants: &mut Vec<Constant>, constant: Constant) -> Result<u16
 
 impl<'a> JvmEmitter<'a> {
     pub(crate) fn new(session: &'a Session, _types: &'a Types) -> JvmEmitter<'a> {
-        let mut constants = vec![
-            Constant::MethodRef(2, 3),                              // 1
-            Constant::ClassInfo(4),                                 // 2
-            Constant::NameAndType(5, 6),                            // 3
-            Constant::Utf8(String::from("java/lang/Object")),       // 4
-            Constant::Utf8(String::from(CTOR_STR)),                 // 5
-            Constant::Utf8(String::from("()V")),                    // 6
-            Constant::ClassInfo(8),                                 // 7
-            Constant::Utf8(String::from("Foo")),                    // 8
-            Constant::Utf8(String::from("Code")),                   // 9
-            Constant::Utf8(String::from("LineNumberTable")),        // 10
-            Constant::Utf8(String::from("main")),                   // 11
-            Constant::Utf8(String::from("([Ljava/lang/String;)V")), // 12
-        ];
+        let mut constants = Vec::new();
+        add_constant(&mut constants, Constant::MethodRef(2, 3)).unwrap(); // 1
+        add_constant(&mut constants, Constant::ClassInfo(4)).unwrap(); // 2
+        add_constant(&mut constants, Constant::NameAndType(5, 6)).unwrap(); // 3
+        add_constant(
+            &mut constants,
+            Constant::Utf8(String::from("java/lang/Object")),
+        )
+        .unwrap(); // 4
 
-        let source_file_constant_index = add_constant(
+        let ctor_str_index =
+            add_constant(&mut constants, Constant::Utf8(String::from(CTOR_STR))).unwrap();
+
+        add_constant(&mut constants, Constant::Utf8(String::from("()V"))).unwrap(); // 6
+
+        add_constant(&mut constants, Constant::ClassInfo(8)).unwrap(); // 7
+
+        add_constant(&mut constants, Constant::Utf8(String::from("Foo"))).unwrap(); // 8
+
+        let code_str_index =
+            add_constant(&mut constants, Constant::Utf8(String::from("Code"))).unwrap();
+
+        let line_table_str_index = add_constant(
             &mut constants,
-            Constant::Utf8(String::from("SourceFile")), // 13
+            Constant::Utf8(String::from("LineNumberTable")),
         )
         .unwrap();
-        let source_file_name_constant_index = add_constant(
+
+        add_constant(&mut constants, Constant::Utf8(String::from("main"))).unwrap(); // 11
+
+        add_constant(
             &mut constants,
-            Constant::Utf8(String::from("Foo.java")), // 14
+            Constant::Utf8(String::from("([Ljava/lang/String;)V")),
         )
-        .unwrap();
+        .unwrap(); // 12
+
+        let source_file_constant_index =
+            add_constant(&mut constants, Constant::Utf8(String::from("SourceFile"))).unwrap();
+        let source_file_name_constant_index =
+            add_constant(&mut constants, Constant::Utf8(String::from("Foo.java"))).unwrap();
 
         JvmEmitter {
             session,
@@ -178,6 +196,9 @@ impl<'a> JvmEmitter<'a> {
             constants,
             source_file_constant_index,
             source_file_name_constant_index,
+            code_str_index,
+            line_table_str_index,
+            ctor_str_index,
         }
     }
 
@@ -200,7 +221,7 @@ impl<'a> JvmEmitter<'a> {
                 name_index: 5,
                 descriptor_index: 6,
                 attributes: vec![Attribute::Code {
-                    name_index: 9, // Code
+                    name_index: self.code_str_index,
                     max_stack: 1,
                     max_locals: 1,
                     code: vec![OP_ALOAD_0, OP_INVOKE_SPECIAL, 0x00, 0x01, OP_RETURN],
@@ -219,13 +240,13 @@ impl<'a> JvmEmitter<'a> {
                 name_index: 11,
                 descriptor_index: 12,
                 attributes: vec![Attribute::Code {
-                    name_index: 9, // Code
+                    name_index: self.code_str_index,
                     max_stack: 0,
                     max_locals: 1,
                     code: vec![OP_RETURN],
                     exception_table: vec![],
                     attributes: vec![Attribute::LineNumberTable {
-                        name_index: 10,
+                        name_index: self.line_table_str_index,
                         line_number_tables: vec![LineNumberTable {
                             start_pc: 0,
                             line_number: 2,
