@@ -48,6 +48,20 @@ pub enum ErrorKind {
         found_context: LexicalContext,
     },
     IoError(std::io::Error),
+    MaxConstantsReached(u16),
+}
+
+impl Location {
+    pub(crate) fn new() -> Location {
+        Location {
+            start_pos: 0,
+            start_line: 0,
+            start_column: 0,
+            end_pos: 0,
+            end_line: 0,
+            end_column: 0,
+        }
+    }
 }
 
 impl fmt::Display for JumpKind {
@@ -128,6 +142,11 @@ impl fmt::Display for ErrorKind {
                 *jump_kind, *expected_context, *found_context,
             ),
             ErrorKind::IoError(err) => write!(f, "{}", err),
+            ErrorKind::MaxConstantsReached(max) => write!(
+                f,
+                "The maximum number of constants has been reached: {}",
+                max
+            ),
         }
     }
 }

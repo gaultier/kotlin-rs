@@ -18,6 +18,8 @@ pub(crate) struct JvmEmitter<'a> {
     session: &'a Session<'a>,
     _types: &'a Types,
     constants: Vec<Constant>,
+    source_file_constant_index: u16,
+    source_file_name_constant_index: u16,
 }
 
 #[derive(Debug)]
@@ -128,27 +130,54 @@ impl Attribute {
     }
 }
 
+fn add_constant(constants: &mut Vec<Constant>, constant: Constant) -> Result<u16, Error> {
+    // Since `constants` is one-indexed, the max index is `std::u16::MAX+1` but since we
+    // can only index it with u16 the real max index is `std::u16::MAX`
+    if constants.len() < std::u16::MAX as usize {
+        constants.push(constant);
+        Ok(constants.len() as u16)
+    } else {
+        Err(Error::new(
+            ErrorKind::MaxConstantsReached(constants.len() as u16),
+            Location::new(),
+        ))
+    }
+}
+
 impl<'a> JvmEmitter<'a> {
     pub(crate) fn new(session: &'a Session, _types: &'a Types) -> JvmEmitter<'a> {
+        let mut constants = vec![
+            Constant::MethodRef(2, 3),                              // 1
+            Constant::ClassInfo(4),                                 // 2
+            Constant::NameAndType(5, 6),                            // 3
+            Constant::Utf8(String::from("java/lang/Object")),       // 4
+            Constant::Utf8(String::from(CTOR_STR)),                 // 5
+            Constant::Utf8(String::from("()V")),                    // 6
+            Constant::ClassInfo(8),                                 // 7
+            Constant::Utf8(String::from("Foo")),                    // 8
+            Constant::Utf8(String::from("Code")),                   // 9
+            Constant::Utf8(String::from("LineNumberTable")),        // 10
+            Constant::Utf8(String::from("main")),                   // 11
+            Constant::Utf8(String::from("([Ljava/lang/String;)V")), // 12
+        ];
+
+        let source_file_constant_index = add_constant(
+            &mut constants,
+            Constant::Utf8(String::from("SourceFile")), // 13
+        )
+        .unwrap();
+        let source_file_name_constant_index = add_constant(
+            &mut constants,
+            Constant::Utf8(String::from("Foo.java")), // 14
+        )
+        .unwrap();
+
         JvmEmitter {
             session,
             _types,
-            constants: vec![
-                Constant::MethodRef(2, 3),                              // 1
-                Constant::ClassInfo(4),                                 // 2
-                Constant::NameAndType(5, 6),                            // 3
-                Constant::Utf8(String::from("java/lang/Object")),       // 4
-                Constant::Utf8(String::from(CTOR_STR)),                 // 5
-                Constant::Utf8(String::from("()V")),                    // 6
-                Constant::ClassInfo(8),                                 // 7
-                Constant::Utf8(String::from("Foo")),                    // 8
-                Constant::Utf8(String::from("Code")),                   // 9
-                Constant::Utf8(String::from("LineNumberTable")),        // 10
-                Constant::Utf8(String::from("main")),                   // 11
-                Constant::Utf8(String::from("([Ljava/lang/String;)V")), // 12
-                Constant::Utf8(String::from("SourceFile")),             // 13
-                Constant::Utf8(String::from("Foo.java")),               // 14
-            ],
+            constants,
+            source_file_constant_index,
+            source_file_name_constant_index,
         }
     }
 
@@ -208,8 +237,8 @@ impl<'a> JvmEmitter<'a> {
         self.methods(&methods, w)?;
 
         let attributes = vec![Attribute::SourceFile {
-            name_index: 13,
-            source_file_index: 14, // Foo.java
+            name_index: self.source_file_constant_index,
+            source_file_index: self.source_file_name_constant_index,
         }];
         self.attributes(&attributes, w)?;
 
