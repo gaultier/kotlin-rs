@@ -234,7 +234,7 @@ impl<'a> JvmEmitter<'a> {
                     code: vec![OP_ALOAD_0, OP_INVOKE_SPECIAL, 0x00, 0x01, OP_RETURN],
                     exception_table: vec![],
                     attributes: vec![Attribute::LineNumberTable {
-                        name_index: 10,
+                        name_index: self.line_table_str_index,
                         line_number_tables: vec![LineNumberTable {
                             start_pc: 0,
                             line_number: 1,
