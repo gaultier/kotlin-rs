@@ -171,7 +171,7 @@ impl<'a> JvmEmitter<'a> {
         let obj_ctor_descriptor_index =
             add_constant(&mut constants, Constant::Utf8(String::from("()V"))).unwrap(); // 6
 
-        let this_class_index = add_constant(&mut constants, Constant::ClassInfo(8)).unwrap(); // 7
+        let this_class_index = add_constant(&mut constants, Constant::ClassInfo(8)).unwrap();
 
         let class_name_index =
             add_constant(&mut constants, Constant::Utf8(String::from("Foo"))).unwrap(); // 8
