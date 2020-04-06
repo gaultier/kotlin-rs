@@ -80,17 +80,17 @@ impl<'a> SexpEmitter<'a> {
         w: &mut W,
     ) -> Result<(), Error> {
         if *op == TokenKind::Equal {
-            write!(w, "(set! ").unwrap();
+            write!(w, "(set! ")?;
             self.expr(target, w)?;
-            write!(w, " ").unwrap();
+            write!(w, " ")?;
             self.expr(value, w)?;
-            writeln!(w, ")").unwrap();
+            writeln!(w, ")")?;
         } else {
-            write!(w, "(set! ").unwrap();
+            write!(w, "(set! ")?;
             self.expr(target, w)?;
-            write!(w, " ({} ", assign_op(op)).unwrap();
+            write!(w, " ({} ", assign_op(op))?;
             self.expr(value, w)?;
-            writeln!(w, "))").unwrap();
+            writeln!(w, "))")?;
         }
 
         Ok(())
@@ -136,7 +136,7 @@ impl<'a> SexpEmitter<'a> {
         w: &mut W,
     ) -> Result<(), Error> {
         self.statement(&block, w)?;
-        writeln!(w).unwrap();
+        writeln!(w)?;
         Ok(())
     }
 
@@ -149,10 +149,9 @@ impl<'a> SexpEmitter<'a> {
                     w,
                     "(define {} ",
                     &self.session.src[identifier.span.start..identifier.span.end]
-                )
-                .unwrap();
+                )?;
                 self.expr(value, w)?;
-                writeln!(w, ")").unwrap();
+                writeln!(w, ")")?;
                 Ok(())
             }
             _ => unreachable!(),
@@ -162,11 +161,11 @@ impl<'a> SexpEmitter<'a> {
     fn do_while_stmt<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeStmt::DoWhile { cond, body, .. } => {
-                write!(w, "(do-while ").unwrap();
+                write!(w, "(do-while ")?;
                 self.statement(body, w)?;
-                write!(w, " (if ").unwrap();
+                write!(w, " (if ")?;
                 self.expr(cond, w)?;
-                writeln!(w, "))").unwrap();
+                writeln!(w, "))")?;
                 Ok(())
             }
             _ => unreachable!(),
@@ -176,11 +175,11 @@ impl<'a> SexpEmitter<'a> {
     fn while_stmt<W: std::io::Write>(&self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
         match ast {
             AstNodeStmt::While { cond, body, .. } => {
-                write!(w, "(while ").unwrap();
+                write!(w, "(while ")?;
                 self.expr(cond, w)?;
-                write!(w, " ").unwrap();
+                write!(w, " ")?;
                 self.statement(body, w)?;
-                writeln!(w, ")").unwrap();
+                writeln!(w, ")")?;
                 Ok(())
             }
             _ => unreachable!(),
@@ -196,7 +195,7 @@ impl<'a> SexpEmitter<'a> {
                 },
                 _,
             ) => {
-                write!(w, "{}", n).unwrap();
+                write!(w, "{}", n)?;
                 Ok(())
             }
             AstNodeExpr::Literal(
@@ -206,7 +205,7 @@ impl<'a> SexpEmitter<'a> {
                 },
                 _,
             ) => {
-                write!(w, "{}", n).unwrap();
+                write!(w, "{}", n)?;
                 Ok(())
             }
             AstNodeExpr::Literal(
@@ -216,7 +215,7 @@ impl<'a> SexpEmitter<'a> {
                 },
                 _,
             ) => {
-                write!(w, "{}", n).unwrap();
+                write!(w, "{}", n)?;
                 Ok(())
             }
             AstNodeExpr::Literal(
@@ -226,7 +225,7 @@ impl<'a> SexpEmitter<'a> {
                 },
                 _,
             ) => {
-                write!(w, "{}", n).unwrap();
+                write!(w, "{}", n)?;
                 Ok(())
             }
             AstNodeExpr::Literal(
@@ -236,7 +235,7 @@ impl<'a> SexpEmitter<'a> {
                 },
                 _,
             ) => {
-                write!(w, "{}", n).unwrap();
+                write!(w, "{}", n)?;
                 Ok(())
             }
             AstNodeExpr::Literal(
@@ -246,7 +245,7 @@ impl<'a> SexpEmitter<'a> {
                 },
                 _,
             ) => {
-                write!(w, "{}", n).unwrap();
+                write!(w, "{}", n)?;
                 Ok(())
             }
             AstNodeExpr::Literal(
@@ -256,7 +255,7 @@ impl<'a> SexpEmitter<'a> {
                 },
                 _,
             ) => {
-                write!(w, "{}", if *b { "#t" } else { "#f" }).unwrap();
+                write!(w, "{}", if *b { "#t" } else { "#f" })?;
                 Ok(())
             }
             AstNodeExpr::Literal(
@@ -266,7 +265,7 @@ impl<'a> SexpEmitter<'a> {
                 },
                 _,
             ) => {
-                write!(w, "'{}'", c).unwrap();
+                write!(w, "'{}'", c)?;
                 Ok(())
             }
             AstNodeExpr::Literal(
@@ -276,7 +275,7 @@ impl<'a> SexpEmitter<'a> {
                 },
                 _,
             ) => {
-                write!(w, "{}", &self.session.src[span.start..span.end]).unwrap();
+                write!(w, "{}", &self.session.src[span.start..span.end])?;
                 Ok(())
             }
             AstNodeExpr::Literal(
@@ -286,7 +285,7 @@ impl<'a> SexpEmitter<'a> {
                 },
                 _,
             ) => {
-                write!(w, "'nil").unwrap();
+                write!(w, "'nil")?;
                 Ok(())
             }
             _ => unreachable!(),
@@ -307,10 +306,9 @@ impl<'a> SexpEmitter<'a> {
                         ""
                     },
                     unary_op(&token.kind)
-                )
-                .unwrap();
+                )?;
                 self.expr(expr, w)?;
-                write!(w, ")").unwrap();
+                write!(w, ")")?;
                 Ok(())
             }
             _ => unreachable!(),
@@ -322,11 +320,11 @@ impl<'a> SexpEmitter<'a> {
             AstNodeExpr::Binary {
                 left, op, right, ..
             } => {
-                write!(w, "({} ", binary_op(&op.kind)).unwrap();
+                write!(w, "({} ", binary_op(&op.kind))?;
                 self.expr(left, w)?;
-                write!(w, " ").unwrap();
+                write!(w, " ")?;
                 self.expr(right, w)?;
-                write!(w, ")").unwrap();
+                write!(w, ")")?;
                 Ok(())
             }
             _ => unreachable!(),
@@ -335,16 +333,16 @@ impl<'a> SexpEmitter<'a> {
 
     fn block<W: std::io::Write>(&self, block: &[AstNodeStmt], w: &mut W) -> Result<(), Error> {
         if block.len() != 1 {
-            write!(w, "(begin ").unwrap();
+            write!(w, "(begin ")?;
         }
 
         for stmt in block.iter() {
             self.statement(&stmt, w)?;
-            write!(w, " ").unwrap();
+            write!(w, " ")?;
         }
 
         if block.len() != 1 {
-            write!(w, ")").unwrap();
+            write!(w, ")")?;
         }
         Ok(())
     }
@@ -355,14 +353,14 @@ impl<'a> SexpEmitter<'a> {
         args: &[AstNodeExpr],
         w: &mut W,
     ) -> Result<(), Error> {
-        write!(w, "(apply ").unwrap();
+        write!(w, "(apply ")?;
         self.expr(fn_name, w)?;
-        write!(w, " (list ").unwrap();
+        write!(w, " (list ")?;
         for arg in args {
             self.expr(arg, w)?;
-            write!(w, " ").unwrap();
+            write!(w, " ")?;
         }
-        write!(w, "))").unwrap();
+        write!(w, "))")?;
 
         Ok(())
     }
@@ -374,18 +372,18 @@ impl<'a> SexpEmitter<'a> {
         body: &AstNodeStmt,
         w: &mut W,
     ) -> Result<(), Error> {
-        write!(w, "(define (").unwrap();
+        write!(w, "(define (")?;
         self.expr(fn_name, w)?;
-        write!(w, " ").unwrap();
+        write!(w, " ")?;
 
         for arg in args {
             self.expr(arg, w)?;
-            write!(w, " ").unwrap();
+            write!(w, " ")?;
         }
-        write!(w, ") ").unwrap();
+        write!(w, ") ")?;
 
         self.statement(body, w)?;
-        writeln!(w, ")").unwrap();
+        writeln!(w, ")")?;
         Ok(())
     }
 
@@ -397,23 +395,23 @@ impl<'a> SexpEmitter<'a> {
                 subject: Some(subject),
                 ..
             } => {
-                write!(w, "(case ").unwrap();
+                write!(w, "(case ")?;
                 self.statement(&subject, w)?;
-                write!(w, " ").unwrap();
+                write!(w, " ")?;
 
                 for entry in entries {
                     self.expr(&entry.cond, w)?;
-                    write!(w, " ").unwrap();
+                    write!(w, " ")?;
                     self.statement(&entry.body, w)?;
-                    write!(w, " ").unwrap();
+                    write!(w, " ")?;
                 }
 
                 if let Some(else_entry) = else_entry {
-                    write!(w, " 'else ").unwrap();
+                    write!(w, " 'else ")?;
                     self.statement(&else_entry, w)?;
                 }
 
-                write!(w, ")").unwrap();
+                write!(w, ")")?;
                 Ok(())
             }
             AstNodeExpr::WhenExpr {
@@ -422,22 +420,22 @@ impl<'a> SexpEmitter<'a> {
                 subject: None,
                 ..
             } => {
-                write!(w, "(cond ").unwrap();
+                write!(w, "(cond ")?;
 
                 for entry in entries {
-                    write!(w, "(").unwrap();
+                    write!(w, "(")?;
                     self.expr(&entry.cond, w)?;
-                    write!(w, " ").unwrap();
+                    write!(w, " ")?;
                     self.statement(&entry.body, w)?;
-                    write!(w, ") ").unwrap();
+                    write!(w, ") ")?;
                 }
 
                 if let Some(else_entry) = else_entry {
-                    write!(w, " 'else ").unwrap();
+                    write!(w, " 'else ")?;
                     self.statement(&else_entry, w)?;
                 }
 
-                write!(w, ")").unwrap();
+                write!(w, ")")?;
                 Ok(())
             }
             _ => unreachable!(),
@@ -452,13 +450,13 @@ impl<'a> SexpEmitter<'a> {
                 else_body,
                 ..
             } => {
-                write!(w, "(if ").unwrap();
+                write!(w, "(if ")?;
                 self.expr(cond, w)?;
-                write!(w, " ").unwrap();
+                write!(w, " ")?;
                 self.statement(&*if_body, w)?;
-                write!(w, " ").unwrap();
+                write!(w, " ")?;
                 self.statement(&*else_body, w)?;
-                write!(w, ")").unwrap();
+                write!(w, ")")?;
 
                 Ok(())
             }
@@ -468,7 +466,7 @@ impl<'a> SexpEmitter<'a> {
 
     fn var_ref<W: std::io::Write>(&self, span: &Span, w: &mut W) -> Result<(), Error> {
         let identifier = &self.session.src[span.start..span.end];
-        write!(w, "{}", identifier).unwrap();
+        write!(w, "{}", identifier)?;
         Ok(())
     }
 
@@ -481,11 +479,11 @@ impl<'a> SexpEmitter<'a> {
         match kind {
             JumpKind::Break | JumpKind::Continue => write!(w, "({})", kind).unwrap(),
             JumpKind::Return => {
-                write!(w, "(return ").unwrap();
+                write!(w, "(return ")?;
                 if let Some(expr) = expr {
                     self.expr(expr, w)?;
                 }
-                write!(w, ")").unwrap();
+                write!(w, ")")?;
             }
             JumpKind::Throw => unimplemented!("Throw expressions"),
         }
@@ -499,14 +497,14 @@ impl<'a> SexpEmitter<'a> {
         w: &mut W,
     ) -> Result<(), Error> {
         if !cond {
-            write!(w, "(not ").unwrap();
+            write!(w, "(not ")?;
         }
-        write!(w, "(in ").unwrap();
+        write!(w, "(in ")?;
         self.expr(range, w)?;
-        write!(w, ")").unwrap();
+        write!(w, ")")?;
 
         if !cond {
-            write!(w, ")").unwrap();
+            write!(w, ")")?;
         }
         Ok(())
     }
@@ -518,14 +516,14 @@ impl<'a> SexpEmitter<'a> {
         w: &mut W,
     ) -> Result<(), Error> {
         if !cond {
-            write!(w, "(not ").unwrap();
+            write!(w, "(not ")?;
         }
-        write!(w, "(is ").unwrap();
+        write!(w, "(is ")?;
         self.expr(identifier, w)?;
-        write!(w, ")").unwrap();
+        write!(w, ")")?;
 
         if !cond {
-            write!(w, ")").unwrap();
+            write!(w, ")")?;
         }
         Ok(())
     }
@@ -537,9 +535,9 @@ impl<'a> SexpEmitter<'a> {
             AstNodeExpr::Unary { .. } => self.unary(ast, w),
             AstNodeExpr::Binary { .. } => self.binary(ast, w),
             AstNodeExpr::Grouping(expr, _) => {
-                write!(w, "(").unwrap();
+                write!(w, "(")?;
                 self.expr(expr, w)?;
-                write!(w, ")").unwrap();
+                write!(w, ")")?;
                 Ok(())
             }
             AstNodeExpr::IfExpr { .. } => self.if_expr(ast, w),
@@ -551,9 +549,9 @@ impl<'a> SexpEmitter<'a> {
                 identifier, cond, ..
             } => self.type_test(identifier, *cond, w),
             AstNodeExpr::Println(expr, _) => {
-                write!(w, "(display ").unwrap();
+                write!(w, "(display ")?;
                 self.expr(expr, w)?;
-                writeln!(w, ")").unwrap();
+                writeln!(w, ")")?;
                 Ok(())
             }
         }
