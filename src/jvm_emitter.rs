@@ -1,44 +1,9 @@
 use crate::error::*;
 // use crate::lex::{Token, TokenKind};
+use crate::jvm_constants::*;
 use crate::parse::*;
 use crate::session::Session;
 use log::debug;
-
-const CTOR_STR: &'static str = "<init>";
-
-const _CLASS_ACC_PUBLIC: u16 = 0x0001; // Declared public; may be accessed from outside its package.
-const _CLASS_ACC_FINAL: u16 = 0x0010; // Declared final; no subclasses allowed.
-const CLASS_ACC_SUPER: u16 = 0x0020; // Treat superclass methods specially when invoked by the invokespecial instruction.
-const _CLASS_ACC_INTERFACE: u16 = 0x0200; // Is an interface, not a class.
-const _CLASS_ACC_ABSTRACT: u16 = 0x0400; // Declared abstract; must not be instantiated.
-const _CLASS_ACC_SYNTHETIC: u16 = 0x1000; // Declared synthetic; not present in the source code.
-const _CLASS_ACC_ANNOTATION: u16 = 0x2000; // Declared as an annotation type.
-const _CLASS_ACC_ENUM: u16 = 0x4000; // Declared as an enum type.
-
-const METHOD_ACC_PUBLIC: u16 = 0x0001; // Declared public; may be accessed from outside its package.
-const _METHOD_ACC_PRIVATE: u16 = 0x0002; // Declared private; usable only within the defining class.
-const _METHOD_ACC_PROTECTED: u16 = 0x0004; // Declared protected; may be accessed within subclasses.
-const METHOD_ACC_STATIC: u16 = 0x0008; // Declared static.
-const _METHOD_ACC_FINAL: u16 = 0x0010; // Declared final; never directly assigned to after object construction (JLS §17.5).
-const _METHOD_ACC_VOLATILE: u16 = 0x0040; // Declared volatile; cannot be cached.
-const _METHOD_ACC_TRANSIENT: u16 = 0x0080; // Declared transient; not written or read by a persistent object manager.
-const _METHOD_ACC_SYNTHETIC: u16 = 0x1000; // Declared synthetic; not present in the source code.
-const _METHOD_ACC_ENUM: u16 = 0x4000; // Declared as an element of an enum.
-
-const CONSTANT_CLASS: u8 = 7;
-const _CONSTANT_FIELDREF: u8 = 9;
-const CONSTANT_METHODREF: u8 = 10;
-const _CONSTANT_INTERFACE_METHODREF: u8 = 11;
-const _CONSTANT_STRING: u8 = 8;
-const _CONSTANT_INTEGER: u8 = 3;
-const _CONSTANT_FLOAT: u8 = 4;
-const _CONSTANT_LONG: u8 = 5;
-const _CONSTANT_DOUBLE: u8 = 6;
-const CONSTANT_NAME_AND_TYPE: u8 = 12;
-const CONSTANT_UTF8: u8 = 1;
-const _CONSTANT_METHOD_HANDLE: u8 = 15;
-const _CONSTANT_METHOD_TYPE: u8 = 16;
-const _CONSTANT_INVOKE_DYNAMIC: u8 = 18;
 
 #[derive(Debug)]
 enum Constant {
@@ -228,7 +193,7 @@ impl<'a> JvmEmitter<'a> {
                     name_index: 9, // Code
                     max_stack: 0,
                     max_locals: 1,
-                    code: vec![0xb1],
+                    code: vec![0xb1], // return
                     exception_table: vec![],
                     attributes: vec![Attribute::LineNumberTable {
                         name_index: 10,

@@ -3,6 +3,7 @@ pub mod compile;
 mod cursor;
 pub mod error;
 pub mod fmt;
+mod jvm_constants;
 pub mod jvm_emitter;
 pub mod lex;
 pub mod mir;
