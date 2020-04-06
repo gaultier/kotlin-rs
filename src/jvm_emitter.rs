@@ -26,6 +26,8 @@ pub(crate) struct JvmEmitter<'a> {
     obj_str_index: u16,
     main_str_index: u16,
     main_descriptor_str_index: u16,
+    super_class_index: u16,
+    this_class_index: u16,
 }
 
 #[derive(Debug)]
@@ -153,9 +155,10 @@ fn add_constant(constants: &mut Vec<Constant>, constant: Constant) -> Result<u16
 impl<'a> JvmEmitter<'a> {
     pub(crate) fn new(session: &'a Session, _types: &'a Types) -> JvmEmitter<'a> {
         let mut constants = Vec::new();
-        add_constant(&mut constants, Constant::MethodRef(2, 3)).unwrap(); // 1
-        add_constant(&mut constants, Constant::ClassInfo(4)).unwrap(); // 2
-        add_constant(&mut constants, Constant::NameAndType(5, 6)).unwrap(); // 3
+        let obj_method_ref_index = add_constant(&mut constants, Constant::MethodRef(2, 3)).unwrap(); // 1
+        let super_class_index = add_constant(&mut constants, Constant::ClassInfo(4)).unwrap(); // 2
+        let obj_name_type_index =
+            add_constant(&mut constants, Constant::NameAndType(5, 6)).unwrap(); // 3
         let obj_str_index = add_constant(
             &mut constants,
             Constant::Utf8(String::from("java/lang/Object")),
@@ -165,11 +168,13 @@ impl<'a> JvmEmitter<'a> {
         let ctor_str_index =
             add_constant(&mut constants, Constant::Utf8(String::from(CTOR_STR))).unwrap();
 
-        add_constant(&mut constants, Constant::Utf8(String::from("()V"))).unwrap(); // 6
+        let obj_ctor_descriptor_index =
+            add_constant(&mut constants, Constant::Utf8(String::from("()V"))).unwrap(); // 6
 
-        add_constant(&mut constants, Constant::ClassInfo(8)).unwrap(); // 7
+        let this_class_index = add_constant(&mut constants, Constant::ClassInfo(8)).unwrap(); // 7
 
-        add_constant(&mut constants, Constant::Utf8(String::from("Foo"))).unwrap(); // 8
+        let class_name_index =
+            add_constant(&mut constants, Constant::Utf8(String::from("Foo"))).unwrap(); // 8
 
         let code_str_index =
             add_constant(&mut constants, Constant::Utf8(String::from("Code"))).unwrap();
@@ -206,6 +211,8 @@ impl<'a> JvmEmitter<'a> {
             obj_str_index,
             main_str_index,
             main_descriptor_str_index,
+            super_class_index,
+            this_class_index,
         }
     }
 
@@ -312,14 +319,12 @@ impl<'a> JvmEmitter<'a> {
     }
 
     fn this_class<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        // FIXME
-        w.write(&[0x00, 0x07])?;
+        w.write(&u16_to_u8s(self.this_class_index))?;
         Ok(())
     }
 
     fn super_class<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        // FIXME
-        w.write(&[0x00, 0x02])?;
+        w.write(&u16_to_u8s(self.super_class_index))?;
         Ok(())
     }
 
