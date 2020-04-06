@@ -23,6 +23,9 @@ pub(crate) struct JvmEmitter<'a> {
     ctor_str_index: u16,
     code_str_index: u16,
     line_table_str_index: u16,
+    obj_str_index: u16,
+    main_str_index: u16,
+    main_descriptor_str_index: u16,
 }
 
 #[derive(Debug)]
@@ -153,7 +156,7 @@ impl<'a> JvmEmitter<'a> {
         add_constant(&mut constants, Constant::MethodRef(2, 3)).unwrap(); // 1
         add_constant(&mut constants, Constant::ClassInfo(4)).unwrap(); // 2
         add_constant(&mut constants, Constant::NameAndType(5, 6)).unwrap(); // 3
-        add_constant(
+        let obj_str_index = add_constant(
             &mut constants,
             Constant::Utf8(String::from("java/lang/Object")),
         )
@@ -177,13 +180,14 @@ impl<'a> JvmEmitter<'a> {
         )
         .unwrap();
 
-        add_constant(&mut constants, Constant::Utf8(String::from("main"))).unwrap(); // 11
+        let main_str_index =
+            add_constant(&mut constants, Constant::Utf8(String::from("main"))).unwrap();
 
-        add_constant(
+        let main_descriptor_str_index = add_constant(
             &mut constants,
             Constant::Utf8(String::from("([Ljava/lang/String;)V")),
         )
-        .unwrap(); // 12
+        .unwrap();
 
         let source_file_constant_index =
             add_constant(&mut constants, Constant::Utf8(String::from("SourceFile"))).unwrap();
@@ -199,6 +203,9 @@ impl<'a> JvmEmitter<'a> {
             code_str_index,
             line_table_str_index,
             ctor_str_index,
+            obj_str_index,
+            main_str_index,
+            main_descriptor_str_index,
         }
     }
 
@@ -237,8 +244,8 @@ impl<'a> JvmEmitter<'a> {
             },
             Function {
                 access_flags: METHOD_ACC_PUBLIC | METHOD_ACC_STATIC,
-                name_index: 11,
-                descriptor_index: 12,
+                name_index: self.main_str_index,
+                descriptor_index: self.main_descriptor_str_index,
                 attributes: vec![Attribute::Code {
                     name_index: self.code_str_index,
                     max_stack: 0,
