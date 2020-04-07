@@ -159,6 +159,29 @@ fn add_constant(constants: &mut Vec<Constant>, constant: Constant) -> Result<u16
     }
 }
 
+fn binary_op(kind: &TokenKind) -> u8 {
+    match kind {
+        TokenKind::Plus => OP_IADD,
+        TokenKind::Star => OP_IMUL,
+        // TokenKind::Minus => "-",
+        // TokenKind::Slash => "/",
+        // TokenKind::Percent => "%",
+        // TokenKind::DotDot => "range",
+        // TokenKind::EqualEqual => "==",
+        // TokenKind::EqualEqualEqual => "===",
+        // TokenKind::PipePipe => "or",
+        // TokenKind::AmpersandAmpersand => "and",
+        // TokenKind::Lesser => "<",
+        // TokenKind::LesserEqual => "<=",
+        // TokenKind::Greater => ">",
+        // TokenKind::GreaterEqual => ">=",
+        _ => {
+            dbg!(kind);
+            unreachable!()
+        }
+    }
+}
+
 impl<'a> JvmEmitter<'a> {
     pub(crate) fn new(session: &'a Session, _types: &'a Types) -> JvmEmitter<'a> {
         let mut constants = Vec::new();
@@ -406,18 +429,11 @@ impl<'a> JvmEmitter<'a> {
     fn binary(&self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
         match expr {
             AstNodeExpr::Binary {
-                left,
-                op:
-                    Token {
-                        kind: TokenKind::Plus,
-                        ..
-                    },
-                right,
-                ..
+                left, op, right, ..
             } => {
                 let mut v = self.expr(left)?;
                 v.append(&mut self.expr(right)?);
-                v.push(OP_IADD);
+                v.push(binary_op(&op.kind));
                 Ok(v)
             }
             _ => unimplemented!(),

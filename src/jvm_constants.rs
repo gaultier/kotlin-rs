@@ -51,3 +51,4 @@ pub(crate) const OP_ICONST_5: u8 = 0x08;
 pub(crate) const OP_BIPUSH: u8 = 0x10;
 pub(crate) const OP_INEG: u8 = 0x74;
 pub(crate) const OP_IADD: u8 = 0x60;
+pub(crate) const OP_IMUL: u8 = 0x68;
