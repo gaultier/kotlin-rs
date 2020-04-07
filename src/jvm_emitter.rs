@@ -342,7 +342,7 @@ impl<'a> JvmEmitter<'a> {
                 descriptor: self.main_descriptor_str,
                 attributes: vec![Attribute::Code {
                     name: self.code_str,
-                    max_stack: 2,
+                    max_stack: 100, // FIXME
                     max_locals: 1,
                     code: self.statement(block)?,
                     exception_table: vec![],
@@ -383,6 +383,7 @@ impl<'a> JvmEmitter<'a> {
         match expr {
             AstNodeExpr::Literal(l, _) => self.literal(l),
             AstNodeExpr::Unary { .. } => self.unary(expr),
+            AstNodeExpr::Binary { .. } => self.binary(expr),
             AstNodeExpr::Println(e, _) => {
                 let mut v = vec![
                     OP_GET_STATIC,
@@ -396,6 +397,27 @@ impl<'a> JvmEmitter<'a> {
                     u16_to_u8s(self.println_methodref)[1],
                     OP_RETURN,
                 ]);
+                Ok(v)
+            }
+            _ => unimplemented!(),
+        }
+    }
+
+    fn binary(&self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
+        match expr {
+            AstNodeExpr::Binary {
+                left,
+                op:
+                    Token {
+                        kind: TokenKind::Plus,
+                        ..
+                    },
+                right,
+                ..
+            } => {
+                let mut v = self.expr(left)?;
+                v.append(&mut self.expr(right)?);
+                v.push(OP_IADD);
                 Ok(v)
             }
             _ => unimplemented!(),
