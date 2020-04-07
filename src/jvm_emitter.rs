@@ -469,7 +469,12 @@ impl<'a> JvmEmitter<'a> {
             TokenKind::Int(3) => Ok(vec![OP_ICONST_3]),
             TokenKind::Int(4) => Ok(vec![OP_ICONST_4]),
             TokenKind::Int(5) => Ok(vec![OP_ICONST_5]),
-            TokenKind::Int(n) if 0 <= n && n <= std::u8::MAX as i32 => Ok(vec![OP_BIPUSH, n as u8]),
+            TokenKind::Int(n) if n <= std::u8::MAX as i32 => Ok(vec![OP_BIPUSH, n as u8]),
+            TokenKind::Int(n) if n <= std::u16::MAX as i32 => {
+                let v = vec![OP_SIPUSH, (n >> 8) as u8, (n & 0xff) as u8];
+                debug!("n={} v={:?}", n, v);
+                Ok(v)
+            }
             _ => unimplemented!(),
         }
     }
