@@ -170,11 +170,16 @@ impl<'a> JvmEmitter<'a> {
         .unwrap();
         let obj_ctor_descriptor =
             add_constant(&mut constants, Constant::Utf8(String::from("()V"))).unwrap();
+
+        let ctor_str =
+            add_constant(&mut constants, Constant::Utf8(String::from(CTOR_STR))).unwrap();
+
         let obj_name_type = add_constant(
             &mut constants,
-            Constant::NameAndType(obj_str, obj_ctor_descriptor),
+            Constant::NameAndType(ctor_str, obj_ctor_descriptor),
         )
         .unwrap();
+
         let super_class = add_constant(&mut constants, Constant::ClassInfo(obj_str)).unwrap();
 
         let obj_method_ref = add_constant(
@@ -182,9 +187,6 @@ impl<'a> JvmEmitter<'a> {
             Constant::MethodRef(super_class, obj_name_type),
         )
         .unwrap();
-        let ctor_str =
-            add_constant(&mut constants, Constant::Utf8(String::from(CTOR_STR))).unwrap();
-
         let this_class_name =
             add_constant(&mut constants, Constant::Utf8(String::from("Foo"))).unwrap();
 
@@ -238,7 +240,7 @@ impl<'a> JvmEmitter<'a> {
 
         let printstream_str_type = add_constant(
             &mut constants,
-            Constant::Utf8(String::from("Ljava/io/PrintStream")),
+            Constant::Utf8(String::from("Ljava/io/PrintStream;")),
         )
         .unwrap();
         let out_name_type = add_constant(
@@ -254,7 +256,7 @@ impl<'a> JvmEmitter<'a> {
         .unwrap();
 
         let class_printstream =
-            add_constant(&mut constants, Constant::ClassInfo(println_str)).unwrap();
+            add_constant(&mut constants, Constant::ClassInfo(printstream_str)).unwrap();
 
         let println_str_type = add_constant(
             &mut constants,
