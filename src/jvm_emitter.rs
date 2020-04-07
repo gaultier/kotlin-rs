@@ -1,6 +1,6 @@
 use crate::error::*;
-// use crate::lex::{Token, TokenKind};
 use crate::jvm_constants::*;
+use crate::lex::{Token, TokenKind};
 use crate::parse::*;
 use crate::session::Session;
 use log::debug;
@@ -299,7 +299,7 @@ impl<'a> JvmEmitter<'a> {
 
     pub(crate) fn statements<W: std::io::Write>(
         &self,
-        _block: &AstNodeStmt,
+        block: &AstNodeStmt,
         w: &mut W,
     ) -> Result<(), Error> {
         self.prologue(w)?;
@@ -344,17 +344,7 @@ impl<'a> JvmEmitter<'a> {
                     name: self.code_str,
                     max_stack: 2,
                     max_locals: 1,
-                    code: vec![
-                        OP_GET_STATIC,
-                        u16_to_u8s(self.out_fieldref)[0],
-                        u16_to_u8s(self.out_fieldref)[1],
-                        OP_LDC,
-                        self.hello_str_string as u8,
-                        OP_INVOKE_VIRTUAL,
-                        u16_to_u8s(self.println_methodref)[0],
-                        u16_to_u8s(self.println_methodref)[1],
-                        OP_RETURN,
-                    ],
+                    code: self.statement(block)?,
                     exception_table: vec![],
                     attributes: vec![Attribute::LineNumberTable {
                         name: self.line_table_str,
@@ -375,6 +365,47 @@ impl<'a> JvmEmitter<'a> {
         self.attributes(&attributes, w)?;
 
         Ok(())
+    }
+
+    fn statement(&self, statement: &AstNodeStmt) -> Result<Vec<u8>, Error> {
+        match statement {
+            AstNodeStmt::Expr(e) => self.expr(e),
+            AstNodeStmt::Block { body, .. } => Ok(body
+                .iter()
+                .map(|stmt| self.statement(stmt))
+                .collect::<Result<Vec<_>, Error>>()?
+                .concat()),
+            _ => unimplemented!(),
+        }
+    }
+
+    fn expr(&self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
+        match expr {
+            AstNodeExpr::Literal(l, _) => self.literal(l),
+            AstNodeExpr::Println(e, _) => {
+                let mut v = vec![
+                    OP_GET_STATIC,
+                    u16_to_u8s(self.out_fieldref)[0],
+                    u16_to_u8s(self.out_fieldref)[1],
+                ];
+                v.append(&mut self.expr(e)?);
+                v.append(&mut vec![
+                    OP_INVOKE_VIRTUAL,
+                    u16_to_u8s(self.println_methodref)[0],
+                    u16_to_u8s(self.println_methodref)[1],
+                    OP_RETURN,
+                ]);
+                Ok(v)
+            }
+            _ => unimplemented!(),
+        }
+    }
+
+    fn literal(&self, literal: &Token) -> Result<Vec<u8>, Error> {
+        match literal.kind {
+            TokenKind::Int(0) => Ok(vec![OP_ICONST_0]),
+            _ => unimplemented!(),
+        }
     }
 
     fn magic_number<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {

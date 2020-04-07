@@ -39,5 +39,6 @@ pub(crate) const _OP_NOP: u8 = 0x00;
 pub(crate) const OP_ALOAD_0: u8 = 0x2a;
 pub(crate) const OP_INVOKE_SPECIAL: u8 = 0xb7;
 pub(crate) const OP_GET_STATIC: u8 = 0xb2;
-pub(crate) const OP_LDC: u8 = 0x12;
+pub(crate) const _OP_LDC: u8 = 0x12;
 pub(crate) const OP_INVOKE_VIRTUAL: u8 = 0xb6;
+pub(crate) const OP_ICONST_0: u8 = 0x03;
