@@ -48,3 +48,5 @@ pub(crate) const OP_ICONST_2: u8 = 0x05;
 pub(crate) const OP_ICONST_3: u8 = 0x06;
 pub(crate) const OP_ICONST_4: u8 = 0x07;
 pub(crate) const OP_ICONST_5: u8 = 0x08;
+pub(crate) const OP_BIPUSH: u8 = 0x10;
+pub(crate) const OP_INEG: u8 = 0x74;

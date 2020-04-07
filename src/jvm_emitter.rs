@@ -382,6 +382,7 @@ impl<'a> JvmEmitter<'a> {
     fn expr(&self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
         match expr {
             AstNodeExpr::Literal(l, _) => self.literal(l),
+            AstNodeExpr::Unary { .. } => self.unary(expr),
             AstNodeExpr::Println(e, _) => {
                 let mut v = vec![
                     OP_GET_STATIC,
@@ -401,6 +402,25 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 
+    fn unary(&self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
+        match expr {
+            AstNodeExpr::Unary {
+                token:
+                    Token {
+                        kind: TokenKind::Minus,
+                        ..
+                    },
+                expr,
+                ..
+            } => {
+                let mut v = self.expr(expr)?;
+                v.push(OP_INEG);
+                Ok(v)
+            }
+            _ => unimplemented!(),
+        }
+    }
+
     fn literal(&self, literal: &Token) -> Result<Vec<u8>, Error> {
         match literal.kind {
             TokenKind::Int(-1) => Ok(vec![OP_ICONST_M1]),
@@ -410,6 +430,7 @@ impl<'a> JvmEmitter<'a> {
             TokenKind::Int(3) => Ok(vec![OP_ICONST_3]),
             TokenKind::Int(4) => Ok(vec![OP_ICONST_4]),
             TokenKind::Int(5) => Ok(vec![OP_ICONST_5]),
+            TokenKind::Int(n) if 0 <= n && n <= std::u8::MAX as i32 => Ok(vec![OP_BIPUSH, n as u8]),
             _ => unimplemented!(),
         }
     }
