@@ -260,7 +260,7 @@ impl<'a> JvmEmitter<'a> {
 
         let println_str_type = add_constant(
             &mut constants,
-            Constant::Utf8(String::from("(Ljava/lang/String;)V")),
+            Constant::Utf8(String::from("(I)V")), // FIXME
         )
         .unwrap();
 
