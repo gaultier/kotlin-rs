@@ -403,7 +403,13 @@ impl<'a> JvmEmitter<'a> {
 
     fn literal(&self, literal: &Token) -> Result<Vec<u8>, Error> {
         match literal.kind {
+            TokenKind::Int(-1) => Ok(vec![OP_ICONST_M1]),
             TokenKind::Int(0) => Ok(vec![OP_ICONST_0]),
+            TokenKind::Int(1) => Ok(vec![OP_ICONST_1]),
+            TokenKind::Int(2) => Ok(vec![OP_ICONST_2]),
+            TokenKind::Int(3) => Ok(vec![OP_ICONST_3]),
+            TokenKind::Int(4) => Ok(vec![OP_ICONST_4]),
+            TokenKind::Int(5) => Ok(vec![OP_ICONST_5]),
             _ => unimplemented!(),
         }
     }
