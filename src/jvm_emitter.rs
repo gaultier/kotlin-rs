@@ -163,7 +163,7 @@ fn binary_op(kind: &TokenKind) -> u8 {
     match kind {
         TokenKind::Plus => OP_IADD,
         TokenKind::Star => OP_IMUL,
-        // TokenKind::Minus => "-",
+        TokenKind::Minus => OP_ISUB,
         // TokenKind::Slash => "/",
         // TokenKind::Percent => "%",
         // TokenKind::DotDot => "range",
