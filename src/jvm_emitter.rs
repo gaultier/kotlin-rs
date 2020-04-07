@@ -238,6 +238,43 @@ impl<'a> JvmEmitter<'a> {
         )
         .unwrap();
 
+        let printstream_str_type_index = add_constant(
+            &mut constants,
+            Constant::Utf8(String::from("Ljava/io/PrintStream")),
+        )
+        .unwrap();
+        let out_name_type_index = add_constant(
+            &mut constants,
+            Constant::NameAndType(out_str_index, printstream_str_type_index),
+        )
+        .unwrap();
+
+        let out_fieldref_index = add_constant(
+            &mut constants,
+            Constant::FieldRef(class_system_index, out_name_type_index),
+        )
+        .unwrap();
+
+        let class_printstream_index =
+            add_constant(&mut constants, Constant::ClassInfo(println_str_index)).unwrap();
+
+        let println_str_type_index = add_constant(
+            &mut constants,
+            Constant::Utf8(String::from("(Ljava/lang/String;)V")),
+        )
+        .unwrap();
+
+        let println_name_type_index = add_constant(
+            &mut constants,
+            Constant::NameAndType(println_str_index, println_str_type_index),
+        )
+        .unwrap();
+        let println_methodref_index = add_constant(
+            &mut constants,
+            Constant::MethodRef(println_str_index, println_name_type_index),
+        )
+        .unwrap();
+
         JvmEmitter {
             session,
             _types,
