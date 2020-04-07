@@ -266,7 +266,7 @@ impl<'a> JvmEmitter<'a> {
         .unwrap();
         let println_methodref = add_constant(
             &mut constants,
-            Constant::MethodRef(println_str, println_name_type),
+            Constant::MethodRef(class_printstream, println_name_type),
         )
         .unwrap();
 
