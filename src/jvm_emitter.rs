@@ -32,6 +32,9 @@ pub(crate) struct JvmEmitter<'a> {
     this_class: u16,
     obj_ctor_descriptor: u16,
     obj_method_ref: u16,
+    out_fieldref: u16,
+    println_methodref: u16,
+    hello_str_string: u16,
 }
 
 #[derive(Debug)]
@@ -286,6 +289,9 @@ impl<'a> JvmEmitter<'a> {
             this_class,
             obj_ctor_descriptor,
             obj_method_ref,
+            out_fieldref,
+            println_methodref,
+            hello_str_string,
         }
     }
 
@@ -334,9 +340,19 @@ impl<'a> JvmEmitter<'a> {
                 descriptor: self.main_descriptor_str,
                 attributes: vec![Attribute::Code {
                     name: self.code_str,
-                    max_stack: 0,
+                    max_stack: 2,
                     max_locals: 1,
-                    code: vec![OP_RETURN],
+                    code: vec![
+                        OP_GET_STATIC,
+                        u16_to_u8s(self.out_fieldref)[0],
+                        u16_to_u8s(self.out_fieldref)[1],
+                        OP_LDC,
+                        self.hello_str_string as u8,
+                        OP_INVOKE_VIRTUAL,
+                        u16_to_u8s(self.println_methodref)[0],
+                        u16_to_u8s(self.println_methodref)[1],
+                        OP_RETURN,
+                    ],
                     exception_table: vec![],
                     attributes: vec![Attribute::LineNumberTable {
                         name: self.line_table_str,
