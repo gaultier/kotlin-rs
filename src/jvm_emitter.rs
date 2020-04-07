@@ -164,7 +164,7 @@ fn binary_op(kind: &TokenKind) -> u8 {
         TokenKind::Plus => OP_IADD,
         TokenKind::Star => OP_IMUL,
         TokenKind::Minus => OP_ISUB,
-        // TokenKind::Slash => "/",
+        TokenKind::Slash => OP_IDIV,
         // TokenKind::Percent => "%",
         // TokenKind::DotDot => "range",
         // TokenKind::EqualEqual => "==",
@@ -407,6 +407,7 @@ impl<'a> JvmEmitter<'a> {
             AstNodeExpr::Literal(l, _) => self.literal(l),
             AstNodeExpr::Unary { .. } => self.unary(expr),
             AstNodeExpr::Binary { .. } => self.binary(expr),
+            AstNodeExpr::Grouping(e, _) => self.expr(e),
             AstNodeExpr::Println(e, _) => {
                 let mut v = vec![
                     OP_GET_STATIC,
