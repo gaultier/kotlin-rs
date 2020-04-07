@@ -20,18 +20,18 @@ pub(crate) struct JvmEmitter<'a> {
     session: &'a Session<'a>,
     _types: &'a Types,
     constants: Vec<Constant>,
-    source_file_constant_index: u16,
-    source_file_name_constant_index: u16,
-    ctor_str_index: u16,
-    code_str_index: u16,
-    line_table_str_index: u16,
-    obj_str_index: u16,
-    main_str_index: u16,
-    main_descriptor_str_index: u16,
-    super_class_index: u16,
-    this_class_index: u16,
-    obj_ctor_descriptor_index: u16,
-    obj_method_ref_index: u16,
+    source_file_constant: u16,
+    source_file_name_constant: u16,
+    ctor_str: u16,
+    code_str: u16,
+    line_table_str: u16,
+    obj_str: u16,
+    main_str: u16,
+    main_descriptor_str: u16,
+    super_class: u16,
+    this_class: u16,
+    obj_ctor_descriptor: u16,
+    obj_method_ref: u16,
 }
 
 #[derive(Debug)]
@@ -43,19 +43,19 @@ struct Class {
 #[derive(Debug)]
 struct Function {
     access_flags: u16,
-    name_index: u16,
-    descriptor_index: u16,
+    name: u16,
+    descriptor: u16,
     attributes: Vec<Attribute>,
 }
 
 #[derive(Debug)]
 enum Attribute {
     SourceFile {
-        name_index: u16,
-        source_file_index: u16,
+        name: u16,
+        source_file: u16,
     },
     Code {
-        name_index: u16,
+        name: u16,
         max_stack: u16,
         max_locals: u16,
         code: Vec<u8>,
@@ -63,7 +63,7 @@ enum Attribute {
         attributes: Vec<Attribute>,
     },
     LineNumberTable {
-        name_index: u16,
+        name: u16,
         line_number_tables: Vec<LineNumberTable>,
     },
 }
@@ -114,7 +114,7 @@ impl Exception {
 impl Attribute {
     fn size(&self) -> u32 {
         match self {
-            Attribute::SourceFile { .. } => 2 + 4 + 2, // source_file_index
+            Attribute::SourceFile { .. } => 2 + 4 + 2, // source_file
             Attribute::LineNumberTable {
                 line_number_tables, ..
             } => {
@@ -160,118 +160,113 @@ impl<'a> JvmEmitter<'a> {
     pub(crate) fn new(session: &'a Session, _types: &'a Types) -> JvmEmitter<'a> {
         let mut constants = Vec::new();
 
-        let obj_str_index = add_constant(
+        let obj_str = add_constant(
             &mut constants,
             Constant::Utf8(String::from("java/lang/Object")),
         )
         .unwrap();
-        let obj_ctor_descriptor_index =
+        let obj_ctor_descriptor =
             add_constant(&mut constants, Constant::Utf8(String::from("()V"))).unwrap();
-        let obj_name_type_index = add_constant(
+        let obj_name_type = add_constant(
             &mut constants,
-            Constant::NameAndType(obj_str_index, obj_ctor_descriptor_index),
+            Constant::NameAndType(obj_str, obj_ctor_descriptor),
         )
         .unwrap();
-        let super_class_index =
-            add_constant(&mut constants, Constant::ClassInfo(obj_str_index)).unwrap();
+        let super_class = add_constant(&mut constants, Constant::ClassInfo(obj_str)).unwrap();
 
-        let obj_method_ref_index = add_constant(
+        let obj_method_ref = add_constant(
             &mut constants,
-            Constant::MethodRef(super_class_index, obj_name_type_index),
+            Constant::MethodRef(super_class, obj_name_type),
         )
         .unwrap();
-        let ctor_str_index =
+        let ctor_str =
             add_constant(&mut constants, Constant::Utf8(String::from(CTOR_STR))).unwrap();
 
-        let this_class_name_index =
+        let this_class_name =
             add_constant(&mut constants, Constant::Utf8(String::from("Foo"))).unwrap();
 
-        let this_class_index =
-            add_constant(&mut constants, Constant::ClassInfo(this_class_name_index)).unwrap();
+        let this_class =
+            add_constant(&mut constants, Constant::ClassInfo(this_class_name)).unwrap();
 
-        let code_str_index =
-            add_constant(&mut constants, Constant::Utf8(String::from("Code"))).unwrap();
+        let code_str = add_constant(&mut constants, Constant::Utf8(String::from("Code"))).unwrap();
 
-        let line_table_str_index = add_constant(
+        let line_table_str = add_constant(
             &mut constants,
             Constant::Utf8(String::from("LineNumberTable")),
         )
         .unwrap();
 
-        let main_str_index =
-            add_constant(&mut constants, Constant::Utf8(String::from("main"))).unwrap();
+        let main_str = add_constant(&mut constants, Constant::Utf8(String::from("main"))).unwrap();
 
-        let main_descriptor_str_index = add_constant(
+        let main_descriptor_str = add_constant(
             &mut constants,
             Constant::Utf8(String::from("([Ljava/lang/String;)V")),
         )
         .unwrap();
 
-        let source_file_constant_index =
+        let source_file_constant =
             add_constant(&mut constants, Constant::Utf8(String::from("SourceFile"))).unwrap();
-        let source_file_name_constant_index =
+        let source_file_name_constant =
             add_constant(&mut constants, Constant::Utf8(String::from("Foo.java"))).unwrap();
 
-        let class_system_str_index = add_constant(
+        let class_system_str = add_constant(
             &mut constants,
             Constant::Utf8(String::from("java/lang/System")),
         )
         .unwrap();
-        let class_system_index =
-            add_constant(&mut constants, Constant::ClassInfo(class_system_str_index)).unwrap();
+        let class_system =
+            add_constant(&mut constants, Constant::ClassInfo(class_system_str)).unwrap();
 
-        let out_str_index =
-            add_constant(&mut constants, Constant::Utf8(String::from("out"))).unwrap();
+        let out_str = add_constant(&mut constants, Constant::Utf8(String::from("out"))).unwrap();
 
-        let hello_str_index =
+        let hello_str =
             add_constant(&mut constants, Constant::Utf8(String::from("Hello!"))).unwrap();
 
-        let hello_str_string_index =
-            add_constant(&mut constants, Constant::CString(hello_str_index)).unwrap();
+        let hello_str_string = add_constant(&mut constants, Constant::CString(hello_str)).unwrap();
 
-        let println_str_index =
+        let println_str =
             add_constant(&mut constants, Constant::Utf8(String::from("println"))).unwrap();
 
-        let printstream_str_index = add_constant(
+        let printstream_str = add_constant(
             &mut constants,
             Constant::Utf8(String::from("java/io/PrintStream")),
         )
         .unwrap();
 
-        let printstream_str_type_index = add_constant(
+        let printstream_str_type = add_constant(
             &mut constants,
             Constant::Utf8(String::from("Ljava/io/PrintStream")),
         )
         .unwrap();
-        let out_name_type_index = add_constant(
+        let out_name_type = add_constant(
             &mut constants,
-            Constant::NameAndType(out_str_index, printstream_str_type_index),
+            Constant::NameAndType(out_str, printstream_str_type),
         )
         .unwrap();
 
-        let out_fieldref_index = add_constant(
+        let out_fieldref = add_constant(
             &mut constants,
-            Constant::FieldRef(class_system_index, out_name_type_index),
+            Constant::FieldRef(class_system, out_name_type),
         )
         .unwrap();
 
-        let class_printstream_index =
-            add_constant(&mut constants, Constant::ClassInfo(println_str_index)).unwrap();
+        let class_printstream =
+            add_constant(&mut constants, Constant::ClassInfo(println_str)).unwrap();
 
-        let println_str_type_index = add_constant(
+        let println_str_type = add_constant(
             &mut constants,
             Constant::Utf8(String::from("(Ljava/lang/String;)V")),
         )
         .unwrap();
 
-        let println_name_type_index = add_constant(
+        let println_name_type = add_constant(
             &mut constants,
-            Constant::NameAndType(println_str_index, println_str_type_index),
+            Constant::NameAndType(println_str, println_str_type),
         )
         .unwrap();
-        let println_methodref_index = add_constant(
+        let println_methodref = add_constant(
             &mut constants,
-            Constant::MethodRef(println_str_index, println_name_type_index),
+            Constant::MethodRef(println_str, println_name_type),
         )
         .unwrap();
 
@@ -279,18 +274,18 @@ impl<'a> JvmEmitter<'a> {
             session,
             _types,
             constants,
-            source_file_constant_index,
-            source_file_name_constant_index,
-            code_str_index,
-            line_table_str_index,
-            ctor_str_index,
-            obj_str_index,
-            main_str_index,
-            main_descriptor_str_index,
-            super_class_index,
-            this_class_index,
-            obj_ctor_descriptor_index,
-            obj_method_ref_index,
+            source_file_constant,
+            source_file_name_constant,
+            code_str,
+            line_table_str,
+            ctor_str,
+            obj_str,
+            main_str,
+            main_descriptor_str,
+            super_class,
+            this_class,
+            obj_ctor_descriptor,
+            obj_method_ref,
         }
     }
 
@@ -310,22 +305,22 @@ impl<'a> JvmEmitter<'a> {
         let methods = vec![
             Function {
                 access_flags: 0,
-                name_index: self.ctor_str_index,
-                descriptor_index: self.obj_ctor_descriptor_index,
+                name: self.ctor_str,
+                descriptor: self.obj_ctor_descriptor,
                 attributes: vec![Attribute::Code {
-                    name_index: self.code_str_index,
+                    name: self.code_str,
                     max_stack: 1,
                     max_locals: 1,
                     code: vec![
                         OP_ALOAD_0,
                         OP_INVOKE_SPECIAL,
-                        u16_to_u8s(self.obj_method_ref_index)[0],
-                        u16_to_u8s(self.obj_method_ref_index)[1],
+                        u16_to_u8s(self.obj_method_ref)[0],
+                        u16_to_u8s(self.obj_method_ref)[1],
                         OP_RETURN,
                     ],
                     exception_table: vec![],
                     attributes: vec![Attribute::LineNumberTable {
-                        name_index: self.line_table_str_index,
+                        name: self.line_table_str,
                         line_number_tables: vec![LineNumberTable {
                             start_pc: 0,
                             line_number: 1,
@@ -335,16 +330,16 @@ impl<'a> JvmEmitter<'a> {
             },
             Function {
                 access_flags: METHOD_ACC_PUBLIC | METHOD_ACC_STATIC,
-                name_index: self.main_str_index,
-                descriptor_index: self.main_descriptor_str_index,
+                name: self.main_str,
+                descriptor: self.main_descriptor_str,
                 attributes: vec![Attribute::Code {
-                    name_index: self.code_str_index,
+                    name: self.code_str,
                     max_stack: 0,
                     max_locals: 1,
                     code: vec![OP_RETURN],
                     exception_table: vec![],
                     attributes: vec![Attribute::LineNumberTable {
-                        name_index: self.line_table_str_index,
+                        name: self.line_table_str,
                         line_number_tables: vec![LineNumberTable {
                             start_pc: 0,
                             line_number: 2,
@@ -356,8 +351,8 @@ impl<'a> JvmEmitter<'a> {
         self.methods(&methods, w)?;
 
         let attributes = vec![Attribute::SourceFile {
-            name_index: self.source_file_constant_index,
-            source_file_index: self.source_file_name_constant_index,
+            name: self.source_file_constant,
+            source_file: self.source_file_name_constant,
         }];
         self.attributes(&attributes, w)?;
 
@@ -403,12 +398,12 @@ impl<'a> JvmEmitter<'a> {
     }
 
     fn this_class<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        w.write(&u16_to_u8s(self.this_class_index))?;
+        w.write(&u16_to_u8s(self.this_class))?;
         Ok(())
     }
 
     fn super_class<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        w.write(&u16_to_u8s(self.super_class_index))?;
+        w.write(&u16_to_u8s(self.super_class))?;
         Ok(())
     }
 
@@ -440,8 +435,8 @@ impl<'a> JvmEmitter<'a> {
         debug!("method={:?}", method);
 
         w.write(&u16_to_u8s(method.access_flags))?;
-        w.write(&u16_to_u8s(method.name_index))?;
-        w.write(&u16_to_u8s(method.descriptor_index))?;
+        w.write(&u16_to_u8s(method.name))?;
+        w.write(&u16_to_u8s(method.descriptor))?;
 
         self.attributes(&method.attributes, w)?;
 
@@ -453,14 +448,14 @@ impl<'a> JvmEmitter<'a> {
 
         match attribute {
             Attribute::Code {
-                name_index,
+                name,
                 max_stack,
                 max_locals,
                 code,
                 exception_table,
                 attributes,
             } => {
-                w.write(&u16_to_u8s(*name_index))?;
+                w.write(&u16_to_u8s(*name))?;
 
                 let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
                 debug!("code size={}", size);
@@ -480,20 +475,17 @@ impl<'a> JvmEmitter<'a> {
 
                 self.attributes(attributes, w)?;
             }
-            Attribute::SourceFile {
-                name_index,
-                source_file_index,
-            } => {
-                w.write(&u16_to_u8s(*name_index))?;
+            Attribute::SourceFile { name, source_file } => {
+                w.write(&u16_to_u8s(*name))?;
                 let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
                 w.write(&u32_to_u8s(size))?;
-                w.write(&u16_to_u8s(*source_file_index))?;
+                w.write(&u16_to_u8s(*source_file))?;
             }
             Attribute::LineNumberTable {
-                name_index,
+                name,
                 line_number_tables,
             } => {
-                w.write(&u16_to_u8s(*name_index))?;
+                w.write(&u16_to_u8s(*name))?;
                 let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
                 w.write(&u32_to_u8s(size))?;
 
