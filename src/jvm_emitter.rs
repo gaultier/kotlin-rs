@@ -10,7 +10,9 @@ enum Constant {
     Utf8(String),
     ClassInfo(u16),
     MethodRef(u16, u16),
+    FieldRef(u16, u16),
     NameAndType(u16, u16),
+    CString(u16),
 }
 
 #[derive(Debug)]
@@ -209,6 +211,32 @@ impl<'a> JvmEmitter<'a> {
             add_constant(&mut constants, Constant::Utf8(String::from("SourceFile"))).unwrap();
         let source_file_name_constant_index =
             add_constant(&mut constants, Constant::Utf8(String::from("Foo.java"))).unwrap();
+
+        let class_system_str_index = add_constant(
+            &mut constants,
+            Constant::Utf8(String::from("java/lang/System")),
+        )
+        .unwrap();
+        let class_system_index =
+            add_constant(&mut constants, Constant::ClassInfo(class_system_str_index)).unwrap();
+
+        let out_str_index =
+            add_constant(&mut constants, Constant::Utf8(String::from("out"))).unwrap();
+
+        let hello_str_index =
+            add_constant(&mut constants, Constant::Utf8(String::from("Hello!"))).unwrap();
+
+        let hello_str_string_index =
+            add_constant(&mut constants, Constant::CString(hello_str_index)).unwrap();
+
+        let println_str_index =
+            add_constant(&mut constants, Constant::Utf8(String::from("println"))).unwrap();
+
+        let printstream_str_index = add_constant(
+            &mut constants,
+            Constant::Utf8(String::from("java/io/PrintStream")),
+        )
+        .unwrap();
 
         JvmEmitter {
             session,
@@ -477,6 +505,15 @@ impl<'a> JvmEmitter<'a> {
                 w.write(&[CONSTANT_METHODREF])?;
                 w.write(&u16_to_u8s(*class))?;
                 w.write(&u16_to_u8s(*name_and_type))?;
+            }
+            Constant::FieldRef(class, name_and_type) => {
+                w.write(&[CONSTANT_FIELDREF])?;
+                w.write(&u16_to_u8s(*class))?;
+                w.write(&u16_to_u8s(*name_and_type))?;
+            }
+            Constant::CString(index) => {
+                w.write(&[CONSTANT_STRING])?;
+                w.write(&u16_to_u8s(*index))?;
             }
         }
         Ok(())

@@ -20,10 +20,10 @@ pub(crate) const _METHOD_ACC_SYNTHETIC: u16 = 0x1000; // Declared synthetic; not
 pub(crate) const _METHOD_ACC_ENUM: u16 = 0x4000; // Declared as an element of an enum.
 
 pub(crate) const CONSTANT_CLASS: u8 = 7;
-pub(crate) const _CONSTANT_FIELDREF: u8 = 9;
+pub(crate) const CONSTANT_FIELDREF: u8 = 9;
 pub(crate) const CONSTANT_METHODREF: u8 = 10;
 pub(crate) const _CONSTANT_INTERFACE_METHODREF: u8 = 11;
-pub(crate) const _CONSTANT_STRING: u8 = 8;
+pub(crate) const CONSTANT_STRING: u8 = 8;
 pub(crate) const _CONSTANT_INTEGER: u8 = 3;
 pub(crate) const _CONSTANT_FLOAT: u8 = 4;
 pub(crate) const _CONSTANT_LONG: u8 = 5;
