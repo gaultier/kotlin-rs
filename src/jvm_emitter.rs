@@ -5,7 +5,7 @@ use crate::parse::*;
 use crate::session::Session;
 use log::debug;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum Constant {
     Utf8(String),
     ClassInfo(u16),
@@ -14,6 +14,7 @@ enum Constant {
     NameAndType(u16, u16),
     CString(u16),
     Int(i32),
+    Long(i64),
 }
 
 #[derive(Debug)]
@@ -99,6 +100,19 @@ fn u32_to_u8s(b: u32) -> [u8; 4] {
     ]
 }
 
+fn u64_to_u8s(b: u64) -> [u8; 8] {
+    [
+        (b >> 56) as u8,
+        (b >> 48) as u8,
+        (b >> 40) as u8,
+        (b >> 32) as u8,
+        (b >> 24) as u8,
+        (b >> 16) as u8,
+        (b >> 8) as u8,
+        (b & 0x00_00_00_ff) as u8,
+    ]
+}
+
 impl LineNumberTable {
     fn size(&self) -> u32 {
         2 // start_pc
@@ -146,11 +160,11 @@ impl Attribute {
     }
 }
 
-fn add_constant(constants: &mut Vec<Constant>, constant: Constant) -> Result<u16, Error> {
+fn add_constant(constants: &mut Vec<Constant>, constant: &Constant) -> Result<u16, Error> {
     // Since `constants` is one-indexed, the max index is `std::u16::MAX+1` but since we
     // can only index it with u16 the real max index is `std::u16::MAX`
     if constants.len() < std::u16::MAX as usize {
-        constants.push(constant);
+        constants.push(constant.clone());
         Ok(constants.len() as u16)
     } else {
         Err(Error::new(
@@ -162,14 +176,14 @@ fn add_constant(constants: &mut Vec<Constant>, constant: Constant) -> Result<u16
 
 fn add_and_push_constant(
     constants: &mut Vec<Constant>,
-    constant: Constant,
+    constant: &Constant,
 ) -> Result<Vec<u8>, Error> {
-    let i = add_constant(constants, constant)?;
+    let i = add_constant(constants, &constant)?;
 
-    if i <= std::u8::MAX as u16 {
-        Ok(vec![OP_LDC, i as u8])
-    } else {
-        Ok(vec![OP_LDC_W, (i >> 8) as u8, (i & 0xff) as u8])
+    match constant {
+        Constant::Long(_) => Ok(vec![OP_LDC2_W, (i >> 8) as u8, (i & 0xff) as u8]),
+        _ if i <= std::u8::MAX as u16 => Ok(vec![OP_LDC, i as u8]),
+        _ => Ok(vec![OP_LDC_W, (i >> 8) as u8, (i & 0xff) as u8]),
     }
 }
 
@@ -230,93 +244,93 @@ impl<'a> JvmEmitter<'a> {
 
         let obj_str = add_constant(
             &mut constants,
-            Constant::Utf8(String::from("java/lang/Object")),
+            &Constant::Utf8(String::from("java/lang/Object")),
         )
         .unwrap();
         let obj_ctor_descriptor =
-            add_constant(&mut constants, Constant::Utf8(String::from("()V"))).unwrap();
+            add_constant(&mut constants, &Constant::Utf8(String::from("()V"))).unwrap();
 
         let ctor_str =
-            add_constant(&mut constants, Constant::Utf8(String::from(CTOR_STR))).unwrap();
+            add_constant(&mut constants, &Constant::Utf8(String::from(CTOR_STR))).unwrap();
 
         let obj_name_type = add_constant(
             &mut constants,
-            Constant::NameAndType(ctor_str, obj_ctor_descriptor),
+            &Constant::NameAndType(ctor_str, obj_ctor_descriptor),
         )
         .unwrap();
 
-        let super_class = add_constant(&mut constants, Constant::ClassInfo(obj_str)).unwrap();
+        let super_class = add_constant(&mut constants, &Constant::ClassInfo(obj_str)).unwrap();
 
         let obj_method_ref = add_constant(
             &mut constants,
-            Constant::MethodRef(super_class, obj_name_type),
+            &Constant::MethodRef(super_class, obj_name_type),
         )
         .unwrap();
         let this_class_name =
-            add_constant(&mut constants, Constant::Utf8(String::from("Foo"))).unwrap();
+            add_constant(&mut constants, &Constant::Utf8(String::from("Foo"))).unwrap();
 
         let this_class =
-            add_constant(&mut constants, Constant::ClassInfo(this_class_name)).unwrap();
+            add_constant(&mut constants, &Constant::ClassInfo(this_class_name)).unwrap();
 
-        let code_str = add_constant(&mut constants, Constant::Utf8(String::from("Code"))).unwrap();
+        let code_str = add_constant(&mut constants, &Constant::Utf8(String::from("Code"))).unwrap();
 
         let line_table_str = add_constant(
             &mut constants,
-            Constant::Utf8(String::from("LineNumberTable")),
+            &Constant::Utf8(String::from("LineNumberTable")),
         )
         .unwrap();
 
-        let main_str = add_constant(&mut constants, Constant::Utf8(String::from("main"))).unwrap();
+        let main_str = add_constant(&mut constants, &Constant::Utf8(String::from("main"))).unwrap();
 
         let main_descriptor_str = add_constant(
             &mut constants,
-            Constant::Utf8(String::from("([Ljava/lang/String;)V")),
+            &Constant::Utf8(String::from("([Ljava/lang/String;)V")),
         )
         .unwrap();
 
         let source_file_constant =
-            add_constant(&mut constants, Constant::Utf8(String::from("SourceFile"))).unwrap();
+            add_constant(&mut constants, &Constant::Utf8(String::from("SourceFile"))).unwrap();
         let source_file_name_constant =
-            add_constant(&mut constants, Constant::Utf8(String::from("Foo.java"))).unwrap();
+            add_constant(&mut constants, &Constant::Utf8(String::from("Foo.java"))).unwrap();
 
         let class_system_str = add_constant(
             &mut constants,
-            Constant::Utf8(String::from("java/lang/System")),
+            &Constant::Utf8(String::from("java/lang/System")),
         )
         .unwrap();
         let class_system =
-            add_constant(&mut constants, Constant::ClassInfo(class_system_str)).unwrap();
+            add_constant(&mut constants, &Constant::ClassInfo(class_system_str)).unwrap();
 
-        let out_str = add_constant(&mut constants, Constant::Utf8(String::from("out"))).unwrap();
+        let out_str = add_constant(&mut constants, &Constant::Utf8(String::from("out"))).unwrap();
 
         let println_str =
-            add_constant(&mut constants, Constant::Utf8(String::from("println"))).unwrap();
+            add_constant(&mut constants, &Constant::Utf8(String::from("println"))).unwrap();
 
         let printstream_str = add_constant(
             &mut constants,
-            Constant::Utf8(String::from("java/io/PrintStream")),
+            &Constant::Utf8(String::from("java/io/PrintStream")),
         )
         .unwrap();
 
         let printstream_str_type = add_constant(
             &mut constants,
-            Constant::Utf8(String::from("Ljava/io/PrintStream;")),
+            &Constant::Utf8(String::from("Ljava/io/PrintStream;")),
         )
         .unwrap();
         let out_name_type = add_constant(
             &mut constants,
-            Constant::NameAndType(out_str, printstream_str_type),
+            &Constant::NameAndType(out_str, printstream_str_type),
         )
         .unwrap();
 
         let out_fieldref = add_constant(
             &mut constants,
-            Constant::FieldRef(class_system, out_name_type),
+            &Constant::FieldRef(class_system, out_name_type),
         )
         .unwrap();
 
         let class_printstream =
-            add_constant(&mut constants, Constant::ClassInfo(printstream_str)).unwrap();
+            add_constant(&mut constants, &Constant::ClassInfo(printstream_str)).unwrap();
 
         JvmEmitter {
             session,
@@ -436,7 +450,7 @@ impl<'a> JvmEmitter<'a> {
 
                 let println_str_type = add_constant(
                     &mut self.constants,
-                    Constant::Utf8(
+                    &Constant::Utf8(
                         Type::Function {
                             args: vec![e_t.clone()],
                             return_t: Box::new(Some(Type::Unit)),
@@ -447,11 +461,11 @@ impl<'a> JvmEmitter<'a> {
 
                 let println_name_type = add_constant(
                     &mut self.constants,
-                    Constant::NameAndType(self.println_str, println_str_type),
+                    &Constant::NameAndType(self.println_str, println_str_type),
                 )?;
                 let println_methodref = add_constant(
                     &mut self.constants,
-                    Constant::MethodRef(self.class_printstream, println_name_type),
+                    &Constant::MethodRef(self.class_printstream, println_name_type),
                 )?;
 
                 let mut v = vec![
@@ -519,14 +533,15 @@ impl<'a> JvmEmitter<'a> {
                 Ok(v)
             }
             TokenKind::Int(n) if n <= std::i32::MAX => {
-                add_and_push_constant(&mut self.constants, Constant::Int(n))
+                add_and_push_constant(&mut self.constants, &Constant::Int(n))
             }
             TokenKind::Long(0) => Ok(vec![OP_LCONST_0]),
             TokenKind::Long(1) => Ok(vec![OP_LCONST_1]),
+            TokenKind::Long(n) => add_and_push_constant(&mut self.constants, &Constant::Long(n)),
             TokenKind::TString => {
                 let s = String::from(&self.session.src[literal.span.start..literal.span.end]);
-                let i = add_constant(&mut self.constants, Constant::Utf8(s))?;
-                add_and_push_constant(&mut self.constants, Constant::CString(i))
+                let i = add_constant(&mut self.constants, &Constant::Utf8(s))?;
+                add_and_push_constant(&mut self.constants, &Constant::CString(i))
             }
             _ => unimplemented!(),
         }
@@ -721,6 +736,10 @@ impl<'a> JvmEmitter<'a> {
                 w.write(&[CONSTANT_INTEGER])?;
                 debug!("const int: n={} v={:?}", n, &u32_to_u8s(*n as u32));
                 w.write(&u32_to_u8s(*n as u32))?;
+            }
+            Constant::Long(n) => {
+                w.write(&[CONSTANT_LONG])?;
+                w.write(&u64_to_u8s(*n as u64))?;
             }
         }
         Ok(())
