@@ -216,12 +216,16 @@ impl Type {
     }
 }
 
-fn binary_op(kind: &TokenKind) -> u8 {
-    match kind {
-        TokenKind::Plus => OP_IADD,
-        TokenKind::Star => OP_IMUL,
-        TokenKind::Minus => OP_ISUB,
-        TokenKind::Slash => OP_IDIV,
+fn binary_op(kind: &TokenKind, t: &Type) -> u8 {
+    match (kind, t) {
+        (TokenKind::Plus, Type::Int) => OP_IADD,
+        (TokenKind::Star, Type::Int) => OP_IMUL,
+        (TokenKind::Minus, Type::Int) => OP_ISUB,
+        (TokenKind::Slash, Type::Int) => OP_IDIV,
+        (TokenKind::Plus, Type::Long) => OP_LADD,
+        (TokenKind::Star, Type::Long) => OP_LMUL,
+        (TokenKind::Minus, Type::Long) => OP_LSUB,
+        (TokenKind::Slash, Type::Long) => OP_LDIV,
         // TokenKind::Percent => "%",
         // TokenKind::DotDot => "range",
         // TokenKind::EqualEqual => "==",
@@ -489,11 +493,17 @@ impl<'a> JvmEmitter<'a> {
     fn binary(&mut self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
         match expr {
             AstNodeExpr::Binary {
-                left, op, right, ..
+                left,
+                op,
+                right,
+                id,
+                ..
             } => {
+                let t = self.types.get(id).unwrap();
                 let mut v = self.expr(left)?;
+
                 v.append(&mut self.expr(right)?);
-                v.push(binary_op(&op.kind));
+                v.push(binary_op(&op.kind, t));
                 Ok(v)
             }
             _ => unimplemented!(),
