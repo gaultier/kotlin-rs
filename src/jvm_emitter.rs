@@ -19,7 +19,7 @@ enum Constant {
 #[derive(Debug)]
 pub(crate) struct JvmEmitter<'a> {
     session: &'a Session<'a>,
-    _types: &'a Types,
+    types: &'a Types,
     constants: Vec<Constant>,
     source_file_constant: u16,
     source_file_name_constant: u16,
@@ -34,8 +34,8 @@ pub(crate) struct JvmEmitter<'a> {
     obj_ctor_descriptor: u16,
     obj_method_ref: u16,
     out_fieldref: u16,
-    println_methodref: u16,
-    hello_str_string: u16,
+    println_str: u16,
+    class_printstream: u16,
 }
 
 #[derive(Debug)]
@@ -225,7 +225,7 @@ fn binary_op(kind: &TokenKind) -> u8 {
 }
 
 impl<'a> JvmEmitter<'a> {
-    pub(crate) fn new(session: &'a Session, _types: &'a Types) -> JvmEmitter<'a> {
+    pub(crate) fn new(session: &'a Session, types: &'a Types) -> JvmEmitter<'a> {
         let mut constants = Vec::new();
 
         let obj_str = add_constant(
@@ -289,11 +289,6 @@ impl<'a> JvmEmitter<'a> {
 
         let out_str = add_constant(&mut constants, Constant::Utf8(String::from("out"))).unwrap();
 
-        let hello_str =
-            add_constant(&mut constants, Constant::Utf8(String::from("Hello!"))).unwrap();
-
-        let hello_str_string = add_constant(&mut constants, Constant::CString(hello_str)).unwrap();
-
         let println_str =
             add_constant(&mut constants, Constant::Utf8(String::from("println"))).unwrap();
 
@@ -323,32 +318,9 @@ impl<'a> JvmEmitter<'a> {
         let class_printstream =
             add_constant(&mut constants, Constant::ClassInfo(printstream_str)).unwrap();
 
-        let println_str_type = add_constant(
-            &mut constants,
-            Constant::Utf8(
-                Type::Function {
-                    args: vec![Type::TString],
-                    return_t: Box::new(Some(Type::Unit)),
-                }
-                .to_jvm_string(),
-            ),
-        )
-        .unwrap();
-
-        let println_name_type = add_constant(
-            &mut constants,
-            Constant::NameAndType(println_str, println_str_type),
-        )
-        .unwrap();
-        let println_methodref = add_constant(
-            &mut constants,
-            Constant::MethodRef(class_printstream, println_name_type),
-        )
-        .unwrap();
-
         JvmEmitter {
             session,
-            _types,
+            types,
             constants,
             source_file_constant,
             source_file_name_constant,
@@ -363,8 +335,8 @@ impl<'a> JvmEmitter<'a> {
             obj_ctor_descriptor,
             obj_method_ref,
             out_fieldref,
-            println_methodref,
-            hello_str_string,
+            println_str,
+            class_printstream,
         }
     }
 
@@ -457,6 +429,28 @@ impl<'a> JvmEmitter<'a> {
             AstNodeExpr::Binary { .. } => self.binary(expr),
             AstNodeExpr::Grouping(e, _) => self.expr(e),
             AstNodeExpr::Println(e, _) => {
+                let e_t = self.types.get(&e.id()).unwrap();
+
+                let println_str_type = add_constant(
+                    &mut self.constants,
+                    Constant::Utf8(
+                        Type::Function {
+                            args: vec![e_t.clone()],
+                            return_t: Box::new(Some(Type::Unit)),
+                        }
+                        .to_jvm_string(),
+                    ),
+                )?;
+
+                let println_name_type = add_constant(
+                    &mut self.constants,
+                    Constant::NameAndType(self.println_str, println_str_type),
+                )?;
+                let println_methodref = add_constant(
+                    &mut self.constants,
+                    Constant::MethodRef(self.class_printstream, println_name_type),
+                )?;
+
                 let mut v = vec![
                     OP_GET_STATIC,
                     u16_to_u8s(self.out_fieldref)[0],
@@ -465,8 +459,8 @@ impl<'a> JvmEmitter<'a> {
                 v.append(&mut self.expr(e)?);
                 v.append(&mut vec![
                     OP_INVOKE_VIRTUAL,
-                    u16_to_u8s(self.println_methodref)[0],
-                    u16_to_u8s(self.println_methodref)[1],
+                    u16_to_u8s(println_methodref)[0],
+                    u16_to_u8s(println_methodref)[1],
                     OP_RETURN,
                 ]);
                 Ok(v)
