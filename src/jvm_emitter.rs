@@ -15,6 +15,8 @@ enum Constant {
     CString(u16),
     Int(i32),
     Long(i64),
+    LongHigh(i32),
+    LongLow(i32),
 }
 
 #[derive(Debug)]
@@ -100,19 +102,6 @@ fn u32_to_u8s(b: u32) -> [u8; 4] {
     ]
 }
 
-fn u64_to_u8s(b: u64) -> [u8; 8] {
-    [
-        (b >> 56) as u8,
-        (b >> 48) as u8,
-        (b >> 40) as u8,
-        (b >> 32) as u8,
-        (b >> 24) as u8,
-        (b >> 16) as u8,
-        (b >> 8) as u8,
-        (b & 0x00_00_00_ff) as u8,
-    ]
-}
-
 impl LineNumberTable {
     fn size(&self) -> u32 {
         2 // start_pc
@@ -166,8 +155,8 @@ fn add_constant(constants: &mut Vec<Constant>, constant: &Constant) -> Result<u1
 
     match constant {
         Constant::Long(n) if (constants.len() + 1) < std::u16::MAX as usize => {
-            constants.push(Constant::Long(n << 32));
-            constants.push(Constant::Long(n & 0xff_ff_ff_ff));
+            constants.push(Constant::LongHigh((*n >> 32) as i32));
+            constants.push(Constant::LongLow((*n & 0xff_ff_ff_ff) as i32));
             Ok((constants.len()) as u16)
         }
         _ if constants.len() < std::u16::MAX as usize => {
@@ -748,10 +737,11 @@ impl<'a> JvmEmitter<'a> {
                 debug!("const int: n={} v={:?}", n, &u32_to_u8s(*n as u32));
                 w.write(&u32_to_u8s(*n as u32))?;
             }
-            Constant::Long(n) => {
+            Constant::LongHigh(n) | Constant::LongLow(n) => {
                 w.write(&[CONSTANT_LONG])?;
-                w.write(&u64_to_u8s(*n as u64))?;
+                w.write(&u32_to_u8s(*n as u32))?;
             }
+            Constant::Long(_) => unimplemented!(),
         }
         Ok(())
     }
