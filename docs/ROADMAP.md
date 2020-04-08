@@ -164,7 +164,7 @@
 - [x] Jvm int math
 - [ ] Jvm float math
 - [ ] Jvm double math
-- [ ] Jvm hello world
+- [x] Jvm hello world
 - [ ] Jvm boolean
 - [ ] Jvm if-else
 - [ ] Jvm while loop
