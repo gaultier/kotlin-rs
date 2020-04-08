@@ -163,14 +163,21 @@ impl Attribute {
 fn add_constant(constants: &mut Vec<Constant>, constant: &Constant) -> Result<u16, Error> {
     // Since `constants` is one-indexed, the max index is `std::u16::MAX+1` but since we
     // can only index it with u16 the real max index is `std::u16::MAX`
-    if constants.len() < std::u16::MAX as usize {
-        constants.push(constant.clone());
-        Ok(constants.len() as u16)
-    } else {
-        Err(Error::new(
+
+    match constant {
+        Constant::Long(n) if (constants.len() + 1) < std::u16::MAX as usize => {
+            constants.push(Constant::Long(n << 32));
+            constants.push(Constant::Long(n & 0xff_ff_ff_ff));
+            Ok((constants.len()) as u16)
+        }
+        _ if constants.len() < std::u16::MAX as usize => {
+            constants.push(constant.clone());
+            Ok(constants.len() as u16)
+        }
+        _ => Err(Error::new(
             ErrorKind::MaxConstantsReached(constants.len() as u16),
             Location::new(),
-        ))
+        )),
     }
 }
 
@@ -181,7 +188,11 @@ fn add_and_push_constant(
     let i = add_constant(constants, &constant)?;
 
     match constant {
-        Constant::Long(_) => Ok(vec![OP_LDC2_W, (i >> 8) as u8, (i & 0xff) as u8]),
+        Constant::Long(_) => Ok(vec![
+            OP_LDC2_W,
+            ((i - 1) >> 8) as u8,
+            ((i - 1) & 0xff) as u8,
+        ]),
         _ if i <= std::u8::MAX as u16 => Ok(vec![OP_LDC, i as u8]),
         _ => Ok(vec![OP_LDC_W, (i >> 8) as u8, (i & 0xff) as u8]),
     }
