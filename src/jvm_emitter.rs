@@ -160,6 +160,19 @@ fn add_constant(constants: &mut Vec<Constant>, constant: Constant) -> Result<u16
     }
 }
 
+fn add_and_push_constant(
+    constants: &mut Vec<Constant>,
+    constant: Constant,
+) -> Result<Vec<u8>, Error> {
+    let i = add_constant(constants, constant)?;
+
+    if i <= std::u8::MAX as u16 {
+        Ok(vec![OP_LDC, i as u8])
+    } else {
+        Ok(vec![OP_LDC_W, (i >> 8) as u8, (i & 0xff) as u8])
+    }
+}
+
 fn binary_op(kind: &TokenKind) -> u8 {
     match kind {
         TokenKind::Plus => OP_IADD,
@@ -476,10 +489,7 @@ impl<'a> JvmEmitter<'a> {
                 Ok(v)
             }
             TokenKind::Int(n) if n <= std::i32::MAX => {
-                let i = add_constant(&mut self.constants, Constant::Int(n))?;
-                let v = vec![OP_LDC, (i & 0xff) as u8]; // FIXME
-                debug!("n={} i={} v={:?}", n, i, v);
-                Ok(v)
+                add_and_push_constant(&mut self.constants, Constant::Int(n))
             }
             _ => unimplemented!(),
         }
