@@ -173,6 +173,34 @@ fn add_and_push_constant(
     }
 }
 
+impl Type {
+    fn to_jvm_string(&self) -> String {
+        match self {
+            Type::Boolean => String::from("Z"),
+            Type::Int => String::from("I"),
+            Type::Long => String::from("J"),
+            Type::Float => String::from("F"),
+            Type::Double => String::from("D"),
+            Type::Char => String::from("C"),
+            Type::Unit => String::from("V"),
+            Type::TString => String::from("Ljava/lang/String;"),
+            Type::Function { args, return_t } => {
+                let args = args
+                    .iter()
+                    .map(|a| a.to_jvm_string())
+                    .collect::<Vec<_>>()
+                    .concat();
+                format!(
+                    "({}){}",
+                    args,
+                    return_t.clone().unwrap_or(Type::Unit).to_jvm_string()
+                )
+            }
+            _ => unimplemented!(),
+        }
+    }
+}
+
 fn binary_op(kind: &TokenKind) -> u8 {
     match kind {
         TokenKind::Plus => OP_IADD,
@@ -297,7 +325,13 @@ impl<'a> JvmEmitter<'a> {
 
         let println_str_type = add_constant(
             &mut constants,
-            Constant::Utf8(String::from("(I)V")), // FIXME
+            Constant::Utf8(
+                Type::Function {
+                    args: vec![Type::TString],
+                    return_t: Box::new(Some(Type::Unit)),
+                }
+                .to_jvm_string(),
+            ),
         )
         .unwrap();
 
