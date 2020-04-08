@@ -13,6 +13,7 @@ enum Constant {
     FieldRef(u16, u16),
     NameAndType(u16, u16),
     CString(u16),
+    Int(i32),
 }
 
 #[derive(Debug)]
@@ -86,14 +87,14 @@ struct Exception {
 }
 
 fn u16_to_u8s(b: u16) -> [u8; 2] {
-    [(b & 0xff_00) as u8, (b & 0x00_ff) as u8]
+    [(b >> 8) as u8, (b & 0x00_ff) as u8]
 }
 
 fn u32_to_u8s(b: u32) -> [u8; 4] {
     [
-        (b & 0xff_00_00_00) as u8,
-        (b & 0x00_ff_00_00) as u8,
-        (b & 0x00_00_ff_00) as u8,
+        (b >> 24) as u8,
+        (b >> 16) as u8,
+        (b >> 8) as u8,
         (b & 0x00_00_00_ff) as u8,
     ]
 }
@@ -321,18 +322,10 @@ impl<'a> JvmEmitter<'a> {
     }
 
     pub(crate) fn statements<W: std::io::Write>(
-        &self,
+        &mut self,
         block: &AstNodeStmt,
         w: &mut W,
     ) -> Result<(), Error> {
-        self.prologue(w)?;
-        self.constant_pool(w)?;
-        self.access_flags(w)?;
-        self.this_class(w)?;
-        self.super_class(w)?;
-        self.interfaces(w)?;
-        self.fields(w)?;
-
         let methods = vec![
             Function {
                 access_flags: 0,
@@ -379,18 +372,26 @@ impl<'a> JvmEmitter<'a> {
                 }],
             },
         ];
-        self.methods(&methods, w)?;
 
         let attributes = vec![Attribute::SourceFile {
             name: self.source_file_constant,
             source_file: self.source_file_name_constant,
         }];
+
+        self.prologue(w)?;
+        self.constant_pool(w)?;
+        self.access_flags(w)?;
+        self.this_class(w)?;
+        self.super_class(w)?;
+        self.interfaces(w)?;
+        self.fields(w)?;
+        self.methods(&methods, w)?;
         self.attributes(&attributes, w)?;
 
         Ok(())
     }
 
-    fn statement(&self, statement: &AstNodeStmt) -> Result<Vec<u8>, Error> {
+    fn statement(&mut self, statement: &AstNodeStmt) -> Result<Vec<u8>, Error> {
         match statement {
             AstNodeStmt::Expr(e) => self.expr(e),
             AstNodeStmt::Block { body, .. } => Ok(body
@@ -402,7 +403,7 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 
-    fn expr(&self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
+    fn expr(&mut self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
         match expr {
             AstNodeExpr::Literal(l, _) => self.literal(l),
             AstNodeExpr::Unary { .. } => self.unary(expr),
@@ -427,7 +428,7 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 
-    fn binary(&self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
+    fn binary(&mut self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
         match expr {
             AstNodeExpr::Binary {
                 left, op, right, ..
@@ -441,7 +442,7 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 
-    fn unary(&self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
+    fn unary(&mut self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
         match expr {
             AstNodeExpr::Unary {
                 token:
@@ -460,7 +461,7 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 
-    fn literal(&self, literal: &Token) -> Result<Vec<u8>, Error> {
+    fn literal(&mut self, literal: &Token) -> Result<Vec<u8>, Error> {
         match literal.kind {
             TokenKind::Int(-1) => Ok(vec![OP_ICONST_M1]),
             TokenKind::Int(0) => Ok(vec![OP_ICONST_0]),
@@ -469,10 +470,15 @@ impl<'a> JvmEmitter<'a> {
             TokenKind::Int(3) => Ok(vec![OP_ICONST_3]),
             TokenKind::Int(4) => Ok(vec![OP_ICONST_4]),
             TokenKind::Int(5) => Ok(vec![OP_ICONST_5]),
-            TokenKind::Int(n) if n <= std::u8::MAX as i32 => Ok(vec![OP_BIPUSH, n as u8]),
-            TokenKind::Int(n) if n <= std::u16::MAX as i32 => {
+            TokenKind::Int(n) if n <= std::i8::MAX as i32 => Ok(vec![OP_BIPUSH, n as u8]),
+            TokenKind::Int(n) if n <= std::i16::MAX as i32 => {
                 let v = vec![OP_SIPUSH, (n >> 8) as u8, (n & 0xff) as u8];
-                debug!("n={} v={:?}", n, v);
+                Ok(v)
+            }
+            TokenKind::Int(n) if n <= std::i32::MAX => {
+                let i = add_constant(&mut self.constants, Constant::Int(n))?;
+                let v = vec![OP_LDC, (i & 0xff) as u8]; // FIXME
+                debug!("n={} i={} v={:?}", n, i, v);
                 Ok(v)
             }
             _ => unimplemented!(),
@@ -663,6 +669,11 @@ impl<'a> JvmEmitter<'a> {
             Constant::CString(index) => {
                 w.write(&[CONSTANT_STRING])?;
                 w.write(&u16_to_u8s(*index))?;
+            }
+            Constant::Int(n) => {
+                w.write(&[CONSTANT_INTEGER])?;
+                debug!("const int: n={} v={:?}", n, &u32_to_u8s(*n as u32));
+                w.write(&u32_to_u8s(*n as u32))?;
             }
         }
         Ok(())
