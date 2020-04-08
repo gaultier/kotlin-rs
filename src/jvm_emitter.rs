@@ -521,6 +521,8 @@ impl<'a> JvmEmitter<'a> {
             TokenKind::Int(n) if n <= std::i32::MAX => {
                 add_and_push_constant(&mut self.constants, Constant::Int(n))
             }
+            TokenKind::Long(0) => Ok(vec![OP_LCONST_0]),
+            TokenKind::Long(1) => Ok(vec![OP_LCONST_1]),
             TokenKind::TString => {
                 let s = String::from(&self.session.src[literal.span.start..literal.span.end]);
                 let i = add_constant(&mut self.constants, Constant::Utf8(s))?;
