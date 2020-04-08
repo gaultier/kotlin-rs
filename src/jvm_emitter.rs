@@ -345,6 +345,9 @@ impl<'a> JvmEmitter<'a> {
         block: &AstNodeStmt,
         w: &mut W,
     ) -> Result<(), Error> {
+        let mut code = self.statement(block)?;
+        code.push(OP_RETURN);
+
         let methods = vec![
             Function {
                 access_flags: 0,
@@ -379,7 +382,7 @@ impl<'a> JvmEmitter<'a> {
                     name: self.code_str,
                     max_stack: 100, // FIXME
                     max_locals: 1,
-                    code: self.statement(block)?,
+                    code,
                     exception_table: vec![],
                     attributes: vec![Attribute::LineNumberTable {
                         name: self.line_table_str,
@@ -461,7 +464,6 @@ impl<'a> JvmEmitter<'a> {
                     OP_INVOKE_VIRTUAL,
                     u16_to_u8s(println_methodref)[0],
                     u16_to_u8s(println_methodref)[1],
-                    OP_RETURN,
                 ]);
                 Ok(v)
             }
