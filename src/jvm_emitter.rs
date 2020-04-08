@@ -175,6 +175,7 @@ fn add_and_push_constant(
     constant: &Constant,
 ) -> Result<Vec<u8>, Error> {
     let i = add_constant(constants, &constant)?;
+    debug!("added constant: constant={:?} i={}", &constant, i);
 
     match constant {
         Constant::Long(_) => Ok(vec![
@@ -646,7 +647,7 @@ impl<'a> JvmEmitter<'a> {
                 w.write(&u16_to_u8s(*name))?;
 
                 let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
-                debug!("code size={}", size);
+                debug!("code: size={} code={:?}", size, code);
                 w.write(&u32_to_u8s(size))?;
 
                 w.write(&u16_to_u8s(*max_stack))?;
@@ -737,8 +738,12 @@ impl<'a> JvmEmitter<'a> {
                 debug!("const int: n={} v={:?}", n, &u32_to_u8s(*n as u32));
                 w.write(&u32_to_u8s(*n as u32))?;
             }
-            Constant::LongHigh(n) | Constant::LongLow(n) => {
+            Constant::LongHigh(n) => {
                 w.write(&[CONSTANT_LONG])?;
+                w.write(&u32_to_u8s(*n as u32))?;
+            }
+            // This is always preceded by LongHigh which carries the tag
+            Constant::LongLow(n) => {
                 w.write(&u32_to_u8s(*n as u32))?;
             }
             Constant::Long(_) => unimplemented!(),
