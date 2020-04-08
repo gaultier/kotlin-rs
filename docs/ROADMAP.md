@@ -151,7 +151,7 @@
 ## Research
 - [x] Type inference
 - [ ] Generics
-- [ ] Java Byte Code
+- [x] Java Byte Code
 - [ ] Varargs
 - [ ] Null safety
 - [ ] Language server (?)
@@ -160,5 +160,12 @@
 
 - [ ] IR (?)
 - [x] Lisp
-- [ ] Jar
+- [x] Jvm println
+- [x] Jvm int math
+- [ ] Jvm float math
+- [ ] Jvm double math
+- [ ] Jvm hello world
+- [ ] Jvm boolean
+- [ ] Jvm if-else
+- [ ] Jvm while loop
 
