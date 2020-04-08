@@ -742,11 +742,11 @@ impl<'a> JvmEmitter<'a> {
                 w.write(&[CONSTANT_LONG])?;
                 w.write(&u32_to_u8s(*n as u32))?;
             }
-            // This is always preceded by LongHigh which carries the tag
+            // This is always preceded by LongHigh which writes the tag
             Constant::LongLow(n) => {
                 w.write(&u32_to_u8s(*n as u32))?;
             }
-            Constant::Long(_) => unimplemented!(),
+            Constant::Long(_) => unreachable!(),
         }
         Ok(())
     }
