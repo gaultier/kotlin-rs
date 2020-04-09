@@ -449,48 +449,50 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 
+    fn println(&mut self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
+        let expr_t = self.types.get(&expr.id()).unwrap();
+
+        let println_str_type = add_constant(
+            &mut self.constants,
+            &Constant::Utf8(
+                Type::Function {
+                    args: vec![expr_t.clone()],
+                    return_t: Box::new(Some(Type::Unit)),
+                }
+                .to_jvm_string(),
+            ),
+        )?;
+
+        let println_name_type = add_constant(
+            &mut self.constants,
+            &Constant::NameAndType(self.println_str, println_str_type),
+        )?;
+        let println_methodref = add_constant(
+            &mut self.constants,
+            &Constant::MethodRef(self.class_printstream, println_name_type),
+        )?;
+
+        let mut v = vec![
+            OP_GET_STATIC,
+            u16_to_u8s(self.out_fieldref)[0],
+            u16_to_u8s(self.out_fieldref)[1],
+        ];
+        v.append(&mut self.expr(expr)?);
+        v.append(&mut vec![
+            OP_INVOKE_VIRTUAL,
+            u16_to_u8s(println_methodref)[0],
+            u16_to_u8s(println_methodref)[1],
+        ]);
+        Ok(v)
+    }
+
     fn expr(&mut self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
         match expr {
             AstNodeExpr::Literal(l, _) => self.literal(l),
             AstNodeExpr::Unary { .. } => self.unary(expr),
             AstNodeExpr::Binary { .. } => self.binary(expr),
             AstNodeExpr::Grouping(e, _) => self.expr(e),
-            AstNodeExpr::Println(e, _) => {
-                let e_t = self.types.get(&e.id()).unwrap();
-
-                let println_str_type = add_constant(
-                    &mut self.constants,
-                    &Constant::Utf8(
-                        Type::Function {
-                            args: vec![e_t.clone()],
-                            return_t: Box::new(Some(Type::Unit)),
-                        }
-                        .to_jvm_string(),
-                    ),
-                )?;
-
-                let println_name_type = add_constant(
-                    &mut self.constants,
-                    &Constant::NameAndType(self.println_str, println_str_type),
-                )?;
-                let println_methodref = add_constant(
-                    &mut self.constants,
-                    &Constant::MethodRef(self.class_printstream, println_name_type),
-                )?;
-
-                let mut v = vec![
-                    OP_GET_STATIC,
-                    u16_to_u8s(self.out_fieldref)[0],
-                    u16_to_u8s(self.out_fieldref)[1],
-                ];
-                v.append(&mut self.expr(e)?);
-                v.append(&mut vec![
-                    OP_INVOKE_VIRTUAL,
-                    u16_to_u8s(println_methodref)[0],
-                    u16_to_u8s(println_methodref)[1],
-                ]);
-                Ok(v)
-            }
+            AstNodeExpr::Println(e, _) => self.println(e),
             _ => unimplemented!(),
         }
     }
