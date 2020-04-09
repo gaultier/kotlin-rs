@@ -169,6 +169,9 @@
 - [ ] Jvm boolean
 - [ ] Jvm char
 - [ ] Conversion between types (?)
+- [ ] Track max stack size
 - [ ] Jvm if-else
 - [ ] Jvm while loop
+- [ ] Locals
+- [ ] Debug information
 
