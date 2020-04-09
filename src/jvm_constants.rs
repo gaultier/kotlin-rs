@@ -71,3 +71,6 @@ pub(crate) const OP_FADD: u8 = 0x62;
 pub(crate) const OP_FSUB: u8 = 0x66;
 pub(crate) const OP_FMUL: u8 = 0x6a;
 pub(crate) const OP_FDIV: u8 = 0x6e;
+
+pub(crate) const OP_IMPDEP1: u8 = 0xfe;
+pub(crate) const _OP_IMPDEP2: u8 = 0xff;
