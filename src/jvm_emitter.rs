@@ -449,6 +449,15 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 
+    fn if_expr(
+        &mut self,
+        cond: &AstNodeExpr,
+        if_body: &AstNodeStmt,
+        else_body: &AstNodeStmt,
+    ) -> Result<Vec<u8>, Error> {
+        Ok(vec![])
+    }
+
     fn println(&mut self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
         let expr_t = self.types.get(&expr.id()).unwrap();
 
@@ -493,6 +502,12 @@ impl<'a> JvmEmitter<'a> {
             AstNodeExpr::Binary { .. } => self.binary(expr),
             AstNodeExpr::Grouping(e, _) => self.expr(e),
             AstNodeExpr::Println(e, _) => self.println(e),
+            AstNodeExpr::IfExpr {
+                cond,
+                if_body,
+                else_body,
+                ..
+            } => self.if_expr(cond, if_body, else_body),
             _ => unimplemented!(),
         }
     }
