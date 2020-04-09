@@ -163,7 +163,7 @@
 - [x] Jvm println
 - [x] Jvm int math
 - [x] Jvm long math
-- [ ] Jvm float math
+- [x] Jvm float math
 - [ ] Jvm double math
 - [x] Jvm hello world
 - [ ] Jvm boolean
