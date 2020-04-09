@@ -167,6 +167,8 @@
 - [ ] Jvm double math
 - [x] Jvm hello world
 - [ ] Jvm boolean
+- [ ] Jvm char
+- [ ] Conversion between types (?)
 - [ ] Jvm if-else
 - [ ] Jvm while loop
 
