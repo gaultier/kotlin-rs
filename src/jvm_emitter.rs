@@ -537,6 +537,15 @@ impl<'a> JvmEmitter<'a> {
                 v.push(OP_INEG);
                 Ok(v)
             }
+            AstNodeExpr::Unary {
+                token:
+                    Token {
+                        kind: TokenKind::Plus,
+                        ..
+                    },
+                expr,
+                ..
+            } => self.expr(expr),
             _ => unimplemented!(),
         }
     }
