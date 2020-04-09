@@ -560,7 +560,7 @@ impl<'a> JvmEmitter<'a> {
             TokenKind::Float(n) if n.to_bits() == 0f32.to_bits() => Ok(vec![OP_FCONST_0]),
             TokenKind::Float(n) if n.to_bits() == 1f32.to_bits() => Ok(vec![OP_FCONST_1]),
             TokenKind::Float(n) if n.to_bits() == 2f32.to_bits() => Ok(vec![OP_FCONST_2]),
-            TokenKind::Float(_) => unimplemented!(),
+            TokenKind::Float(n) => add_and_push_constant(&mut self.constants, &Constant::Float(n)),
             TokenKind::TString => {
                 let s = String::from(&self.session.src[literal.span.start..literal.span.end]);
                 let i = add_constant(&mut self.constants, &Constant::Utf8(s))?;
@@ -764,8 +764,8 @@ impl<'a> JvmEmitter<'a> {
             }
             Constant::Float(n) => {
                 w.write(&[CONSTANT_FLOAT])?;
-                debug!("const float: n={} v={:?}", n, &u32_to_u8s(*n as u32));
-                w.write(&u32_to_u8s(*n as u32))?;
+                debug!("const float: n={} v={:?}", n, n.to_be_bytes());
+                w.write(&n.to_be_bytes())?;
             }
             Constant::LongHigh(n) => {
                 w.write(&[CONSTANT_LONG])?;
