@@ -63,4 +63,4 @@ pub(crate) const OP_LMUL: u8 = 0x69;
 pub(crate) const OP_LDIV: u8 = 0x6d;
 pub(crate) const OP_LCONST_0: u8 = 0x09;
 pub(crate) const OP_LCONST_1: u8 = 0x0a;
-pub(crate) const OP_I2L: u8 = 0x85;
+pub(crate) const _OP_I2L: u8 = 0x85;

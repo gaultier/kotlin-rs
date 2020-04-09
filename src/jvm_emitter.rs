@@ -243,13 +243,6 @@ fn binary_op(kind: &TokenKind, t: &Type) -> u8 {
     }
 }
 
-fn conversion(left_t: &Type, right_t: &Type) -> Vec<u8> {
-    match (left_t, right_t) {
-        (Type::Long, Type::Int) => vec![OP_I2L],
-        _ => unimplemented!(),
-    }
-}
-
 impl<'a> JvmEmitter<'a> {
     pub(crate) fn new(session: &'a Session, types: &'a Types) -> JvmEmitter<'a> {
         let mut constants = Vec::new();
@@ -509,12 +502,13 @@ impl<'a> JvmEmitter<'a> {
                 let t = self.types.get(id).unwrap();
                 let left_t = self.types.get(&left.id()).unwrap();
                 let right_t = self.types.get(&right.id()).unwrap();
+                if left_t != right_t {
+                    unimplemented!("Conversions")
+                }
 
                 let mut v = self.expr(left)?;
 
                 v.append(&mut self.expr(right)?);
-
-                v.append(&mut conversion(&left_t, &right_t));
 
                 v.push(binary_op(&op.kind, t));
                 Ok(v)
