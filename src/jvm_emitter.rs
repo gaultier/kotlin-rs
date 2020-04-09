@@ -14,6 +14,7 @@ enum Constant {
     NameAndType(u16, u16),
     CString(u16),
     Int(i32),
+    Float(f32),
     Long(i64),
     LongHigh(i32),
     LongLow(i32),
@@ -556,12 +557,19 @@ impl<'a> JvmEmitter<'a> {
             TokenKind::Long(0) => Ok(vec![OP_LCONST_0]),
             TokenKind::Long(1) => Ok(vec![OP_LCONST_1]),
             TokenKind::Long(n) => add_and_push_constant(&mut self.constants, &Constant::Long(n)),
+            TokenKind::Float(n) if n.to_bits() == 0f32.to_bits() => Ok(vec![OP_FCONST_0]),
+            TokenKind::Float(n) if n.to_bits() == 1f32.to_bits() => Ok(vec![OP_FCONST_1]),
+            TokenKind::Float(n) if n.to_bits() == 2f32.to_bits() => Ok(vec![OP_FCONST_2]),
+            TokenKind::Float(_) => unimplemented!(),
             TokenKind::TString => {
                 let s = String::from(&self.session.src[literal.span.start..literal.span.end]);
                 let i = add_constant(&mut self.constants, &Constant::Utf8(s))?;
                 add_and_push_constant(&mut self.constants, &Constant::CString(i))
             }
-            _ => unimplemented!(),
+            _ => {
+                dbg!(literal);
+                unimplemented!()
+            }
         }
     }
 
@@ -752,7 +760,11 @@ impl<'a> JvmEmitter<'a> {
             }
             Constant::Int(n) => {
                 w.write(&[CONSTANT_INTEGER])?;
-                debug!("const int: n={} v={:?}", n, &u32_to_u8s(*n as u32));
+                w.write(&u32_to_u8s(*n as u32))?;
+            }
+            Constant::Float(n) => {
+                w.write(&[CONSTANT_FLOAT])?;
+                debug!("const float: n={} v={:?}", n, &u32_to_u8s(*n as u32));
                 w.write(&u32_to_u8s(*n as u32))?;
             }
             Constant::LongHigh(n) => {
