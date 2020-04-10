@@ -405,7 +405,7 @@ impl<'a> JvmEmitter<'a> {
         let attribute_code = Attribute::Code {
             name: self.code_str,
             max_stack: 100, // FIXME
-            max_locals: 2,
+            max_locals: 2,  // FIXME
             code,
             exception_table: Vec::new(),
             attributes: vec![line_table, stack_map_table],
