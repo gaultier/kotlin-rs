@@ -23,6 +23,13 @@ impl StackMapFrame {
         match self {
             StackMapFrame::SameFrame { .. } => 1,
             StackMapFrame::SameLocalsOneStackItemFrame { stack, .. } => 1 + stack.size(),
+            StackMapFrame::FullFrame { locals, stack, .. } => {
+                1 + 2
+                    + 2
+                    + locals.iter().map(|l| l.size()).sum::<u32>()
+                    + 2
+                    + stack.iter().map(|l| l.size()).sum::<u32>()
+            }
         }
     }
 }
@@ -327,6 +334,24 @@ impl<'a> JvmEmitter<'a> {
                 assert!(*offset <= 63);
                 w.write(&[64 + *offset])?;
                 self.verification_type_info(stack, w)?;
+            }
+            StackMapFrame::FullFrame {
+                offset,
+                stack,
+                locals,
+            } => {
+                w.write(&FULL_FRAME.to_be_bytes())?;
+                w.write(&offset.to_be_bytes())?;
+
+                w.write(&(locals.len() as u32).to_be_bytes())?;
+                for v in locals {
+                    self.verification_type_info(v, w)?;
+                }
+
+                w.write(&(stack.len() as u32).to_be_bytes())?;
+                for v in stack {
+                    self.verification_type_info(v, w)?;
+                }
             }
         }
         Ok(())

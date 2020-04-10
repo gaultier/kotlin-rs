@@ -73,7 +73,11 @@ pub(crate) enum StackMapFrame {
         offset: u8,
         stack: VerificationTypeInfo,
     },
-    // More to come
+    FullFrame {
+        offset: u8,
+        locals: Vec<VerificationTypeInfo>,
+        stack: Vec<VerificationTypeInfo>,
+    }, // More to come
 }
 
 #[derive(Debug)]
