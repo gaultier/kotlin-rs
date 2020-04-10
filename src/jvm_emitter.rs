@@ -455,7 +455,36 @@ impl<'a> JvmEmitter<'a> {
         if_body: &AstNodeStmt,
         else_body: &AstNodeStmt,
     ) -> Result<Vec<u8>, Error> {
-        Ok(vec![])
+        let mut v = self.expr(cond)?;
+        v.push(OP_IFNE);
+        v.push(OP_IMPDEP1); // Will be backpatched
+        v.push(OP_IMPDEP2); // Will be backpatched
+        let end_cond = v.len() - 1;
+
+        v.append(&mut self.statement(if_body)?);
+        v.push(OP_GOTO);
+        v.push(OP_IMPDEP1); // Will be backpatched
+        v.push(OP_IMPDEP2); // Will be backpatched
+        let end_if_body = v.len() - 1;
+
+        v.append(&mut self.statement(else_body)?);
+
+        // Voluntarily points to the next instruction after the else body so no `-1`
+        let end = v.len() - 1;
+
+        let start_else_offset = 1 + end_if_body - end_cond;
+        v[end_cond - 1] = (start_else_offset >> 8) as u8;
+        v[end_cond] = (start_else_offset & 0xff) as u8;
+
+        let start_rest_offset = 1 + end - end_if_body;
+        v[end_if_body - 1] = (start_rest_offset >> 8) as u8;
+        v[end_if_body] = (start_rest_offset & 0xff) as u8;
+        debug!(
+            "if_expr: end_cond={} end_if_body={} end={} start_else_offset={} start_rest_offset={}",
+            end_cond, end_if_body, end, start_else_offset, start_rest_offset
+        );
+
+        Ok(v)
     }
 
     fn println(&mut self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
@@ -570,8 +599,8 @@ impl<'a> JvmEmitter<'a> {
     fn literal(&mut self, literal: &Token) -> Result<Vec<u8>, Error> {
         match literal.kind {
             TokenKind::Int(-1) => Ok(vec![OP_ICONST_M1]),
-            TokenKind::Int(0) => Ok(vec![OP_ICONST_0]),
-            TokenKind::Int(1) => Ok(vec![OP_ICONST_1]),
+            TokenKind::Boolean(false) | TokenKind::Int(0) => Ok(vec![OP_ICONST_0]),
+            TokenKind::Boolean(true) | TokenKind::Int(1) => Ok(vec![OP_ICONST_1]),
             TokenKind::Int(2) => Ok(vec![OP_ICONST_2]),
             TokenKind::Int(3) => Ok(vec![OP_ICONST_3]),
             TokenKind::Int(4) => Ok(vec![OP_ICONST_4]),
