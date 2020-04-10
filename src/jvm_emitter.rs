@@ -64,10 +64,10 @@ enum VerificationTypeInfo {
 #[derive(Debug)]
 enum StackMapFrame {
     SameFrame {
-        frame_type: u8,
+        offset: u8,
     },
     SameLocalsOneStackItemFrame {
-        frame_type: u8,
+        offset: u8,
         stack: VerificationTypeInfo,
     },
     // More to come
@@ -885,6 +885,37 @@ impl<'a> JvmEmitter<'a> {
         Ok(())
     }
 
+    fn verification_type_info<W: std::io::Write>(
+        &self,
+        v: &VerificationTypeInfo,
+        w: &mut W,
+    ) -> Result<(), Error> {
+        match v {
+            VerificationTypeInfo::Int => {
+                w.write(&[ITEM_INTEGER])?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn stack_map_frame<W: std::io::Write>(
+        &self,
+        entry: &StackMapFrame,
+        w: &mut W,
+    ) -> Result<(), Error> {
+        match entry {
+            StackMapFrame::SameFrame { offset, .. } => {
+                w.write(&[*offset])?;
+            }
+            StackMapFrame::SameLocalsOneStackItemFrame { offset, stack } => {
+                w.write(&[*offset])?;
+                self.verification_type_info(stack, w)?;
+            }
+        }
+        Ok(())
+    }
+
     fn stack_map_frames<W: std::io::Write>(
         &self,
         entries: &[StackMapFrame],
@@ -893,7 +924,10 @@ impl<'a> JvmEmitter<'a> {
         debug!("stack_map_frames={:?}", entries);
         w.write(&u16_to_u8s(entries.len() as u16))?;
 
-        // FIXME
+        for e in entries {
+            self.stack_map_frame(e, w)?;
+        }
+
         Ok(())
     }
 
