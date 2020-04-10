@@ -57,7 +57,9 @@ struct Function {
 }
 
 #[derive(Debug)]
-struct VerificationTypeInfo {}
+enum VerificationTypeInfo {
+    Int,
+}
 
 #[derive(Debug)]
 enum StackMapFrame {
@@ -129,9 +131,20 @@ impl LineNumberTable {
     }
 }
 
+impl VerificationTypeInfo {
+    fn size(&self) -> u32 {
+        match self {
+            Int => 1,
+        }
+    }
+}
+
 impl StackMapFrame {
     fn size(&self) -> u32 {
-        0 // FIXME
+        match self {
+            StackMapFrame::SameFrame { .. } => 1,
+            StackMapFrame::SameLocalsOneStackItemFrame { stack, .. } => 1 + stack.size(),
+        }
     }
 }
 
