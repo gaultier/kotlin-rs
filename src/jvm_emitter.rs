@@ -61,7 +61,7 @@ pub(crate) struct Function {
 }
 
 #[derive(Debug)]
-enum JumpKind {
+pub(crate) enum JumpKind {
     SameLocalsAndEmptyStack,
     StackAddOne(VerificationTypeInfo),
 }
@@ -81,9 +81,9 @@ impl Jump {
 }
 
 #[derive(Debug)]
-struct Jump {
-    offset: u16,
-    kind: JumpKind,
+pub(crate) struct Jump {
+    pub(crate) offset: u16,
+    pub(crate) kind: JumpKind,
 }
 
 #[derive(Debug, Copy, Clone)]
