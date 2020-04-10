@@ -501,7 +501,7 @@ impl<'a> JvmEmitter<'a> {
         self.jumps.push(Jump {
             // `-1` because the offset_delta will be used by the jvm as `offset_delta + 1`
             offset: (end - end_if_body - 1) as u16,
-            kind: JumpKind::StackAddOne(VerificationTypeInfo::Int),
+            kind: JumpKind::SameLocalsAndEmptyStack, // FIXME
         });
 
         debug!(
@@ -548,7 +548,7 @@ impl<'a> JvmEmitter<'a> {
             OP_INVOKE_VIRTUAL,
             println_methodref.to_be_bytes()[0],
             println_methodref.to_be_bytes()[1],
-            OP_POP, // The result of the call is put onto the stack but it is void so we discard it
+            // OP_POP, // The result of the call is put onto the stack but it is void so we discard it
         ]);
         Ok(v)
     }
