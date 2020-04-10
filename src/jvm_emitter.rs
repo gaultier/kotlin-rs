@@ -40,6 +40,7 @@ pub(crate) struct JvmEmitter<'a> {
     out_fieldref: u16,
     println_str: u16,
     class_printstream: u16,
+    stack_map_table_str: u16,
 }
 
 #[derive(Debug)]
@@ -293,6 +294,12 @@ impl<'a> JvmEmitter<'a> {
     pub(crate) fn new(session: &'a Session, types: &'a Types) -> JvmEmitter<'a> {
         let mut constants = Vec::new();
 
+        let stack_map_table_str = add_constant(
+            &mut constants,
+            &Constant::Utf8(String::from("StackMapTable")),
+        )
+        .unwrap();
+
         let obj_str = add_constant(
             &mut constants,
             &Constant::Utf8(String::from("java/lang/Object")),
@@ -402,6 +409,7 @@ impl<'a> JvmEmitter<'a> {
             out_fieldref,
             println_str,
             class_printstream,
+            stack_map_table_str,
         }
     }
 
@@ -430,13 +438,20 @@ impl<'a> JvmEmitter<'a> {
                         OP_RETURN,
                     ],
                     exception_table: vec![],
-                    attributes: vec![Attribute::LineNumberTable {
-                        name: self.line_table_str,
-                        line_number_tables: vec![LineNumberTable {
-                            start_pc: 0,
-                            line_number: 1,
-                        }],
-                    }],
+                    attributes: vec![
+                        Attribute::LineNumberTable {
+                            // FIXME
+                            name: self.line_table_str,
+                            line_number_tables: vec![LineNumberTable {
+                                start_pc: 0,
+                                line_number: 1,
+                            }],
+                        },
+                        Attribute::StackMapTable {
+                            name: self.stack_map_table_str,
+                            entries: vec![],
+                        },
+                    ],
                 }],
             },
             Function {
