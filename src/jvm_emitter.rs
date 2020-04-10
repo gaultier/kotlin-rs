@@ -469,9 +469,9 @@ impl<'a> JvmEmitter<'a> {
                         Attribute::StackMapTable {
                             name: self.stack_map_table_str,
                             entries: vec![
-                                StackMapFrame::SameFrame { offset: 8 },
+                                StackMapFrame::SameFrame { offset: 7 }, // FIXME
                                 StackMapFrame::SameLocalsOneStackItemFrame {
-                                    offset: 6,
+                                    offset: 4, // FIXME
                                     stack: VerificationTypeInfo::Int,
                                 },
                             ],
