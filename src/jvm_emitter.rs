@@ -129,6 +129,12 @@ impl LineNumberTable {
     }
 }
 
+impl StackMapFrame {
+    fn size(&self) -> u32 {
+        0 // FIXME
+    }
+}
+
 impl Exception {
     fn size(&self) -> u32 {
         2 // start_pc
@@ -164,6 +170,9 @@ impl Attribute {
                     + exception_table.iter().map(|e| e.size()).sum::<u32>()
                     + 2 // attributes len
                     + attributes.iter().map(|a| a.size()).sum::<u32>()
+            }
+            Attribute::StackMapTable { entries, .. } => {
+                2 + 4 + entries.iter().map(|l| l.size()).sum::<u32>()
             }
         }
     }
