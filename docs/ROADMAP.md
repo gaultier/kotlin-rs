@@ -166,11 +166,14 @@
 - [x] Jvm float math
 - [ ] Jvm double math
 - [x] Jvm hello world
+- [ ] Test metadata `size()` calculations
+- [ ] Test metadata serialization
+- [ ] High level API to handle stack/locals/types
 - [ ] Jvm boolean
 - [ ] Jvm char
 - [ ] Conversion between types (?)
 - [ ] Track max stack size
-- [ ] Jvm if-else
+- [x] Jvm if-else
 - [ ] Jvm while loop
 - [ ] Locals
 - [ ] Debug information
