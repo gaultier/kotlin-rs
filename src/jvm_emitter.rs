@@ -74,7 +74,7 @@ pub(crate) enum StackMapFrame {
         stack: VerificationTypeInfo,
     },
     FullFrame {
-        offset: u8,
+        offset: u16,
         locals: Vec<VerificationTypeInfo>,
         stack: Vec<VerificationTypeInfo>,
     }, // More to come
