@@ -3,16 +3,6 @@ use crate::jvm_constants::*;
 use crate::jvm_emitter::*;
 use log::debug;
 
-// FIXME: use std
-fn u32_to_u8s(b: u32) -> [u8; 4] {
-    [
-        (b >> 24) as u8,
-        (b >> 16) as u8,
-        (b >> 8) as u8,
-        (b & 0x00_00_00_ff) as u8,
-    ]
-}
-
 impl LineNumberTable {
     fn size(&self) -> u32 {
         2 // start_pc
@@ -195,13 +185,13 @@ impl<'a> JvmEmitter<'a> {
 
                 let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
                 debug!("code: size={} code={:?}", size, code);
-                w.write(&u32_to_u8s(size))?;
+                w.write(&size.to_be_bytes())?;
 
                 w.write(&max_stack.to_be_bytes())?;
 
                 w.write(&max_locals.to_be_bytes())?;
 
-                w.write(&u32_to_u8s((code.len()) as u32))?;
+                w.write(&(code.len() as u32).to_be_bytes())?;
                 w.write(&code)?;
 
                 w.write(&(exception_table.len() as u16).to_be_bytes())?;
@@ -214,7 +204,7 @@ impl<'a> JvmEmitter<'a> {
             Attribute::SourceFile { name, source_file } => {
                 w.write(&name.to_be_bytes())?;
                 let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
-                w.write(&u32_to_u8s(size))?;
+                w.write(&size.to_be_bytes())?;
                 w.write(&source_file.to_be_bytes())?;
             }
             Attribute::LineNumberTable {
@@ -223,7 +213,7 @@ impl<'a> JvmEmitter<'a> {
             } => {
                 w.write(&name.to_be_bytes())?;
                 let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
-                w.write(&u32_to_u8s(size))?;
+                w.write(&size.to_be_bytes())?;
 
                 self.line_number_tables(line_number_tables, w)?;
             }
@@ -231,7 +221,7 @@ impl<'a> JvmEmitter<'a> {
                 w.write(&name.to_be_bytes())?;
                 let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
                 debug!("attribute stack_map_table: size={}", size);
-                w.write(&u32_to_u8s(size))?;
+                w.write(&size.to_be_bytes())?;
                 self.stack_map_frames(entries, w)?;
             }
         }
@@ -289,7 +279,7 @@ impl<'a> JvmEmitter<'a> {
             }
             Constant::Int(n) => {
                 w.write(&[CONSTANT_INTEGER])?;
-                w.write(&u32_to_u8s(*n as u32))?;
+                w.write(&(*n as u32).to_be_bytes())?;
             }
             Constant::Float(n) => {
                 w.write(&[CONSTANT_FLOAT])?;
@@ -298,11 +288,11 @@ impl<'a> JvmEmitter<'a> {
             }
             Constant::LongHigh(n) => {
                 w.write(&[CONSTANT_LONG])?;
-                w.write(&u32_to_u8s(*n as u32))?;
+                w.write(&(*n as u32).to_be_bytes())?;
             }
             // This is always preceded by LongHigh which writes the tag
             Constant::LongLow(n) => {
-                w.write(&u32_to_u8s(*n as u32))?;
+                w.write(&(*n as u32).to_be_bytes())?;
             }
             Constant::Long(_) => unreachable!(),
         }
