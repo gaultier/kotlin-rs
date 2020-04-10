@@ -24,10 +24,11 @@ impl StackMapFrame {
             StackMapFrame::SameFrame { .. } => 1,
             StackMapFrame::SameLocalsOneStackItemFrame { stack, .. } => 1 + stack.size(),
             StackMapFrame::FullFrame { locals, stack, .. } => {
-                1 + 2
-                    + 2
+                1 + // tag
+                    2 // offset
+                    + 2 // locals len
                     + locals.iter().map(|l| l.size()).sum::<u32>()
-                    + 2
+                    + 2 // stack len
                     + stack.iter().map(|l| l.size()).sum::<u32>()
             }
         }
@@ -340,6 +341,7 @@ impl<'a> JvmEmitter<'a> {
                 stack,
                 locals,
             } => {
+                debug!("full frame: size={}", entry.size());
                 w.write(&FULL_FRAME.to_be_bytes())?;
                 w.write(&offset.to_be_bytes())?;
 
