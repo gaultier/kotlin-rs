@@ -186,7 +186,7 @@ impl Attribute {
                     + attributes.iter().map(|a| a.size()).sum::<u32>()
             }
             Attribute::StackMapTable { entries, .. } => {
-                2 + 4 + entries.iter().map(|l| l.size()).sum::<u32>()
+                2 + 4 + 2 + entries.iter().map(|l| l.size()).sum::<u32>()
             }
         }
     }
