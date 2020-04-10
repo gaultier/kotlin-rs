@@ -6,7 +6,7 @@ use crate::session::Session;
 use log::debug;
 
 #[derive(Debug, Clone)]
-enum Constant {
+pub(crate) enum Constant {
     Utf8(String),
     ClassInfo(u16),
     MethodRef(u16, u16),
@@ -22,50 +22,50 @@ enum Constant {
 
 #[derive(Debug)]
 pub(crate) struct JvmEmitter<'a> {
-pub(crate)     session: &'a Session<'a>,
-pub(crate)     types: &'a Types,
-pub(crate)     constants: Vec<Constant>,
-pub(crate)     methods: Vec<Function>,
-pub(crate)     attributes: Vec<Attribute>,
-pub(crate)     source_file_constant: u16,
-pub(crate)     source_file_name_constant: u16,
-pub(crate)     ctor_str: u16,
-pub(crate)     code_str: u16,
-pub(crate)     line_table_str: u16,
-pub(crate)     obj_str: u16,
-pub(crate)     main_str: u16,
-pub(crate)     main_descriptor_str: u16,
-pub(crate)     super_class: u16,
-pub(crate)     this_class: u16,
-pub(crate)     obj_ctor_descriptor: u16,
-pub(crate)     obj_method_ref: u16,
-pub(crate)     out_fieldref: u16,
-pub(crate)     println_str: u16,
-pub(crate)     class_printstream: u16,
-pub(crate)     stack_map_table_str: u16,
+    pub(crate) session: &'a Session<'a>,
+    pub(crate) types: &'a Types,
+    pub(crate) constants: Vec<Constant>,
+    pub(crate) methods: Vec<Function>,
+    pub(crate) attributes: Vec<Attribute>,
+    pub(crate) source_file_constant: u16,
+    pub(crate) source_file_name_constant: u16,
+    pub(crate) ctor_str: u16,
+    pub(crate) code_str: u16,
+    pub(crate) line_table_str: u16,
+    pub(crate) obj_str: u16,
+    pub(crate) main_str: u16,
+    pub(crate) main_descriptor_str: u16,
+    pub(crate) super_class: u16,
+    pub(crate) this_class: u16,
+    pub(crate) obj_ctor_descriptor: u16,
+    pub(crate) obj_method_ref: u16,
+    pub(crate) out_fieldref: u16,
+    pub(crate) println_str: u16,
+    pub(crate) class_printstream: u16,
+    pub(crate) stack_map_table_str: u16,
 }
 
 #[derive(Debug)]
-struct Class {
-    ctor: Function,
-    methods: Vec<Function>,
+pub(crate) struct Class {
+    pub(crate) ctor: Function,
+    pub(crate) methods: Vec<Function>,
 }
 
 #[derive(Debug)]
-struct Function {
-    access_flags: u16,
-    name: u16,
-    descriptor: u16,
-    attributes: Vec<Attribute>,
+pub(crate) struct Function {
+    pub(crate) access_flags: u16,
+    pub(crate) name: u16,
+    pub(crate) descriptor: u16,
+    pub(crate) attributes: Vec<Attribute>,
 }
 
 #[derive(Debug)]
-enum VerificationTypeInfo {
+pub(crate) enum VerificationTypeInfo {
     Int,
 }
 
 #[derive(Debug)]
-enum StackMapFrame {
+pub(crate) enum StackMapFrame {
     SameFrame {
         offset: u8,
     },
@@ -77,7 +77,7 @@ enum StackMapFrame {
 }
 
 #[derive(Debug)]
-enum Attribute {
+pub(crate) enum Attribute {
     SourceFile {
         name: u16,
         source_file: u16,
@@ -101,85 +101,17 @@ enum Attribute {
 }
 
 #[derive(Debug)]
-struct LineNumberTable {
-    start_pc: u16,
-    line_number: u16,
+pub(crate) struct LineNumberTable {
+    pub(crate) start_pc: u16,
+    pub(crate) line_number: u16,
 }
 
 #[derive(Debug)]
-struct Exception {
-    start_pc: u16,
-    end_pc: u16,
-    handler_pc: u16,
-    catch_type: u16,
-}
-
-
-impl LineNumberTable {
-    fn size(&self) -> u32 {
-        2 // start_pc
-        + 2 // line_number
-    }
-}
-
-impl VerificationTypeInfo {
-    fn size(&self) -> u32 {
-        match self {
-            VerificationTypeInfo::Int => 1,
-        }
-    }
-}
-
-impl StackMapFrame {
-    fn size(&self) -> u32 {
-        match self {
-            StackMapFrame::SameFrame { .. } => 1,
-            StackMapFrame::SameLocalsOneStackItemFrame { stack, .. } => 1 + stack.size(),
-        }
-    }
-}
-
-impl Exception {
-    fn size(&self) -> u32 {
-        2 // start_pc
-            + 2  // end_pc
-            + 2 // handler_pc
-            + 2 // catch_type
-    }
-}
-
-impl Attribute {
-    fn size(&self) -> u32 {
-        match self {
-            Attribute::SourceFile { .. } => 2 + 4 + 2, // source_file
-            Attribute::LineNumberTable {
-                line_number_tables, ..
-            } => {
-                2 + 4 +
-                2 // line_number_tables len
-            + line_number_tables.iter().map(|l| l.size()).sum::<u32>()
-            }
-            Attribute::Code {
-                code,
-                exception_table,
-                attributes,
-                ..
-            } => {
-                2 + 4 +
-                2 // max_stacks
-                    + 2 // max_locals
-                    + 4 // code len
-                    + code.len() as u32
-                    + 2 // exception_table len
-                    + exception_table.iter().map(|e| e.size()).sum::<u32>()
-                    + 2 // attributes len
-                    + attributes.iter().map(|a| a.size()).sum::<u32>()
-            }
-            Attribute::StackMapTable { entries, .. } => {
-                2 + 4 + 2 + entries.iter().map(|l| l.size()).sum::<u32>()
-            }
-        }
-    }
+pub(crate) struct Exception {
+    pub(crate) start_pc: u16,
+    pub(crate) end_pc: u16,
+    pub(crate) handler_pc: u16,
+    pub(crate) catch_type: u16,
 }
 
 fn add_constant(constants: &mut Vec<Constant>, constant: &Constant) -> Result<u16, Error> {
@@ -413,7 +345,7 @@ impl<'a> JvmEmitter<'a> {
         let mut code = self.statement(block)?;
         code.push(OP_RETURN);
 
-        self methods = vec![
+        self.methods = vec![
             Function {
                 access_flags: 0,
                 name: self.ctor_str,
@@ -677,5 +609,4 @@ impl<'a> JvmEmitter<'a> {
             }
         }
     }
-
 }

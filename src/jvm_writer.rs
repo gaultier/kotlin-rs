@@ -18,6 +18,73 @@ fn u32_to_u8s(b: u32) -> [u8; 4] {
     ]
 }
 
+impl LineNumberTable {
+    fn size(&self) -> u32 {
+        2 // start_pc
+        + 2 // line_number
+    }
+}
+
+impl VerificationTypeInfo {
+    fn size(&self) -> u32 {
+        match self {
+            VerificationTypeInfo::Int => 1,
+        }
+    }
+}
+
+impl StackMapFrame {
+    fn size(&self) -> u32 {
+        match self {
+            StackMapFrame::SameFrame { .. } => 1,
+            StackMapFrame::SameLocalsOneStackItemFrame { stack, .. } => 1 + stack.size(),
+        }
+    }
+}
+
+impl Exception {
+    fn size(&self) -> u32 {
+        2 // start_pc
+            + 2  // end_pc
+            + 2 // handler_pc
+            + 2 // catch_type
+    }
+}
+
+impl Attribute {
+    fn size(&self) -> u32 {
+        match self {
+            Attribute::SourceFile { .. } => 2 + 4 + 2, // source_file
+            Attribute::LineNumberTable {
+                line_number_tables, ..
+            } => {
+                2 + 4 +
+                2 // line_number_tables len
+            + line_number_tables.iter().map(|l| l.size()).sum::<u32>()
+            }
+            Attribute::Code {
+                code,
+                exception_table,
+                attributes,
+                ..
+            } => {
+                2 + 4 +
+                2 // max_stacks
+                    + 2 // max_locals
+                    + 4 // code len
+                    + code.len() as u32
+                    + 2 // exception_table len
+                    + exception_table.iter().map(|e| e.size()).sum::<u32>()
+                    + 2 // attributes len
+                    + attributes.iter().map(|a| a.size()).sum::<u32>()
+            }
+            Attribute::StackMapTable { entries, .. } => {
+                2 + 4 + 2 + entries.iter().map(|l| l.size()).sum::<u32>()
+            }
+        }
+    }
+}
+
 impl<'a> JvmEmitter<'a> {
     pub(crate) fn write<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         self.prologue(w)?;
@@ -28,7 +95,7 @@ impl<'a> JvmEmitter<'a> {
         self.interfaces(w)?;
         self.fields(w)?;
         self.methods(w)?;
-        self.attributes(w)?;
+        self.attributes(&self.attributes, w)?;
 
         Ok(())
     }
@@ -98,7 +165,7 @@ impl<'a> JvmEmitter<'a> {
         debug!("methods size={:#04X} {:#04X}", len[0], len[1]);
         w.write(len)?;
 
-        for m in self.methods {
+        for m in &self.methods {
             self.method(m, w)?;
         }
 
