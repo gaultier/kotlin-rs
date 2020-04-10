@@ -383,6 +383,7 @@ impl<'a> JvmEmitter<'a> {
         let mut code = self.statement(block)?;
         code.push(OP_RETURN);
 
+        // FIXME: dummy for now
         let line_table = Attribute::LineNumberTable {
             name: self.line_table_str,
             line_number_tables: vec![LineNumberTable {
