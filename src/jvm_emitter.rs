@@ -86,7 +86,7 @@ struct Jump {
     kind: JumpKind,
 }
 
-#[derive(Debug, Copy)]
+#[derive(Debug, Copy, Clone)]
 pub(crate) enum VerificationTypeInfo {
     Int,
 }
@@ -422,13 +422,11 @@ impl<'a> JvmEmitter<'a> {
 
         let stack_map_table = Attribute::StackMapTable {
             name: self.stack_map_table_str,
-            entries: vec![
-                StackMapFrame::SameFrame { offset: 9 }, // FIXME
-                StackMapFrame::SameLocalsOneStackItemFrame {
-                    offset: 2, // FIXME
-                    stack: VerificationTypeInfo::Int,
-                },
-            ],
+            entries: self
+                .jumps
+                .iter()
+                .map(|j| j.into_stack_map_frame())
+                .collect::<Vec<_>>(),
         };
 
         let attribute_code = Attribute::Code {
@@ -494,8 +492,14 @@ impl<'a> JvmEmitter<'a> {
         v[end_if_body - 1] = start_rest_offset.to_be_bytes()[0];
         v[end_if_body] = start_rest_offset.to_be_bytes()[1];
 
-        // self.register_jump(end_if_body +1);
-        // self.register_jump(end +1);
+        self.jumps.push(Jump {
+            offset: (end_if_body + 1) as u16,
+            kind: JumpKind::SameLocalsAndEmptyStack,
+        });
+        self.jumps.push(Jump {
+            offset: (end + 1) as u16,
+            kind: JumpKind::StackAddOne(VerificationTypeInfo::Int),
+        });
 
         debug!(
             "if_expr: end_cond={} end_if_body={} end={} start_else_offset={} start_rest_offset={}",
