@@ -438,13 +438,32 @@ impl<'a> JvmEmitter<'a> {
                         OP_RETURN,
                     ],
                     exception_table: vec![],
+                    attributes: vec![Attribute::LineNumberTable {
+                        // FIXME
+                        name: self.line_table_str,
+                        line_number_tables: vec![LineNumberTable {
+                            start_pc: 0,
+                            line_number: 1,
+                        }],
+                    }],
+                }],
+            },
+            Function {
+                access_flags: METHOD_ACC_PUBLIC | METHOD_ACC_STATIC,
+                name: self.main_str,
+                descriptor: self.main_descriptor_str,
+                attributes: vec![Attribute::Code {
+                    name: self.code_str,
+                    max_stack: 100, // FIXME
+                    max_locals: 1,
+                    code,
+                    exception_table: vec![],
                     attributes: vec![
                         Attribute::LineNumberTable {
-                            // FIXME
                             name: self.line_table_str,
                             line_number_tables: vec![LineNumberTable {
                                 start_pc: 0,
-                                line_number: 1,
+                                line_number: 2,
                             }],
                         },
                         Attribute::StackMapTable {
@@ -458,25 +477,6 @@ impl<'a> JvmEmitter<'a> {
                             ],
                         },
                     ],
-                }],
-            },
-            Function {
-                access_flags: METHOD_ACC_PUBLIC | METHOD_ACC_STATIC,
-                name: self.main_str,
-                descriptor: self.main_descriptor_str,
-                attributes: vec![Attribute::Code {
-                    name: self.code_str,
-                    max_stack: 100, // FIXME
-                    max_locals: 1,
-                    code,
-                    exception_table: vec![],
-                    attributes: vec![Attribute::LineNumberTable {
-                        name: self.line_table_str,
-                        line_number_tables: vec![LineNumberTable {
-                            start_pc: 0,
-                            line_number: 2,
-                        }],
-                    }],
                 }],
             },
         ];
