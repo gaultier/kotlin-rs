@@ -135,7 +135,7 @@ impl LineNumberTable {
 impl VerificationTypeInfo {
     fn size(&self) -> u32 {
         match self {
-            Int => 1,
+            VerificationTypeInfo::Int => 1,
         }
     }
 }
