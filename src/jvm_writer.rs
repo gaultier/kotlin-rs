@@ -4,11 +4,6 @@ use crate::jvm_emitter::*;
 use log::debug;
 
 // FIXME: use std
-fn u16_to_u8s(b: u16) -> [u8; 2] {
-    [(b >> 8) as u8, (b & 0x00_ff) as u8]
-}
-
-// FIXME: use std
 fn u32_to_u8s(b: u32) -> [u8; 4] {
     [
         (b >> 24) as u8,
@@ -121,7 +116,7 @@ impl<'a> JvmEmitter<'a> {
 
     fn constant_pool<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         // + 1 because it is one-indexed
-        let len = &u16_to_u8s(self.constants.len() as u16 + 1);
+        let len = &(self.constants.len() as u16 + 1).to_be_bytes();
         debug!("constant pool size={:#04X} {:#04X}", len[0], len[1]);
         w.write(len)?;
 
@@ -134,17 +129,17 @@ impl<'a> JvmEmitter<'a> {
 
     fn access_flags<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         // TODO: figure out why
-        w.write(&u16_to_u8s(CLASS_ACC_SUPER))?;
+        w.write(&CLASS_ACC_SUPER.to_be_bytes())?;
         Ok(())
     }
 
     fn this_class<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        w.write(&u16_to_u8s(self.this_class))?;
+        w.write(&self.this_class.to_be_bytes())?;
         Ok(())
     }
 
     fn super_class<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        w.write(&u16_to_u8s(self.super_class))?;
+        w.write(&self.super_class.to_be_bytes())?;
         Ok(())
     }
 
@@ -161,7 +156,7 @@ impl<'a> JvmEmitter<'a> {
     }
 
     fn methods<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        let len = &u16_to_u8s(self.methods.len() as u16);
+        let len = &(self.methods.len() as u16).to_be_bytes();
         debug!("methods size={:#04X} {:#04X}", len[0], len[1]);
         w.write(len)?;
 
@@ -175,9 +170,9 @@ impl<'a> JvmEmitter<'a> {
     fn method<W: std::io::Write>(&self, method: &Function, w: &mut W) -> Result<(), Error> {
         debug!("method={:?}", method);
 
-        w.write(&u16_to_u8s(method.access_flags))?;
-        w.write(&u16_to_u8s(method.name))?;
-        w.write(&u16_to_u8s(method.descriptor))?;
+        w.write(&method.access_flags.to_be_bytes())?;
+        w.write(&method.name.to_be_bytes())?;
+        w.write(&method.descriptor.to_be_bytes())?;
 
         self.attributes(&method.attributes, w)?;
 
@@ -196,20 +191,20 @@ impl<'a> JvmEmitter<'a> {
                 exception_table,
                 attributes,
             } => {
-                w.write(&u16_to_u8s(*name))?;
+                w.write(&name.to_be_bytes())?;
 
                 let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
                 debug!("code: size={} code={:?}", size, code);
                 w.write(&u32_to_u8s(size))?;
 
-                w.write(&u16_to_u8s(*max_stack))?;
+                w.write(&max_stack.to_be_bytes())?;
 
-                w.write(&u16_to_u8s(*max_locals))?;
+                w.write(&max_locals.to_be_bytes())?;
 
                 w.write(&u32_to_u8s((code.len()) as u32))?;
                 w.write(&code)?;
 
-                w.write(&u16_to_u8s(exception_table.len() as u16))?;
+                w.write(&(exception_table.len() as u16).to_be_bytes())?;
                 // TODO
                 assert!(exception_table.is_empty());
                 // w.write(&exception_table)?;
@@ -217,23 +212,23 @@ impl<'a> JvmEmitter<'a> {
                 self.attributes(attributes, w)?;
             }
             Attribute::SourceFile { name, source_file } => {
-                w.write(&u16_to_u8s(*name))?;
+                w.write(&name.to_be_bytes())?;
                 let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
                 w.write(&u32_to_u8s(size))?;
-                w.write(&u16_to_u8s(*source_file))?;
+                w.write(&source_file.to_be_bytes())?;
             }
             Attribute::LineNumberTable {
                 name,
                 line_number_tables,
             } => {
-                w.write(&u16_to_u8s(*name))?;
+                w.write(&name.to_be_bytes())?;
                 let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
                 w.write(&u32_to_u8s(size))?;
 
                 self.line_number_tables(line_number_tables, w)?;
             }
             Attribute::StackMapTable { name, entries } => {
-                w.write(&u16_to_u8s(*name))?;
+                w.write(&name.to_be_bytes())?;
                 let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
                 debug!("attribute stack_map_table: size={}", size);
                 w.write(&u32_to_u8s(size))?;
@@ -249,7 +244,7 @@ impl<'a> JvmEmitter<'a> {
         attributes: &[Attribute],
         w: &mut W,
     ) -> Result<(), Error> {
-        let len = &u16_to_u8s(attributes.len() as u16);
+        let len = &(attributes.len() as u16).to_be_bytes();
         debug!("attributes size={:#04X} {:#04X}", len[0], len[1]);
         w.write(len)?;
 
@@ -266,31 +261,31 @@ impl<'a> JvmEmitter<'a> {
         match constant {
             Constant::Utf8(s) => {
                 w.write(&[CONSTANT_UTF8])?;
-                w.write(&u16_to_u8s(s.len() as u16))?;
+                w.write(&(s.len() as u16).to_be_bytes())?;
                 w.write(&s.as_bytes())?;
             }
             Constant::ClassInfo(index) => {
                 w.write(&[CONSTANT_CLASS])?;
-                w.write(&u16_to_u8s(*index))?;
+                w.write(&index.to_be_bytes())?;
             }
             Constant::NameAndType(name, type_descriptor) => {
                 w.write(&[CONSTANT_NAME_AND_TYPE])?;
-                w.write(&u16_to_u8s(*name))?;
-                w.write(&u16_to_u8s(*type_descriptor))?;
+                w.write(&name.to_be_bytes())?;
+                w.write(&type_descriptor.to_be_bytes())?;
             }
             Constant::MethodRef(class, name_and_type) => {
                 w.write(&[CONSTANT_METHODREF])?;
-                w.write(&u16_to_u8s(*class))?;
-                w.write(&u16_to_u8s(*name_and_type))?;
+                w.write(&class.to_be_bytes())?;
+                w.write(&name_and_type.to_be_bytes())?;
             }
             Constant::FieldRef(class, name_and_type) => {
                 w.write(&[CONSTANT_FIELDREF])?;
-                w.write(&u16_to_u8s(*class))?;
-                w.write(&u16_to_u8s(*name_and_type))?;
+                w.write(&class.to_be_bytes())?;
+                w.write(&name_and_type.to_be_bytes())?;
             }
             Constant::CString(index) => {
                 w.write(&[CONSTANT_STRING])?;
-                w.write(&u16_to_u8s(*index))?;
+                w.write(&index.to_be_bytes())?;
             }
             Constant::Int(n) => {
                 w.write(&[CONSTANT_INTEGER])?;
@@ -353,7 +348,7 @@ impl<'a> JvmEmitter<'a> {
         w: &mut W,
     ) -> Result<(), Error> {
         debug!("stack_map_frames={:?}", entries);
-        w.write(&u16_to_u8s(entries.len() as u16))?;
+        w.write(&(entries.len() as u16).to_be_bytes())?;
 
         for e in entries {
             self.stack_map_frame(e, w)?;
@@ -368,11 +363,11 @@ impl<'a> JvmEmitter<'a> {
         w: &mut W,
     ) -> Result<(), Error> {
         debug!("line_number_tables={:?}", line_number_tables);
-        w.write(&u16_to_u8s(line_number_tables.len() as u16))?;
+        w.write(&(line_number_tables.len() as u16).to_be_bytes())?;
 
         for l in line_number_tables {
-            w.write(&u16_to_u8s(l.start_pc))?;
-            w.write(&u16_to_u8s(l.line_number))?;
+            w.write(&l.start_pc.to_be_bytes())?;
+            w.write(&l.line_number.to_be_bytes())?;
         }
         Ok(())
     }
