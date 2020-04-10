@@ -501,7 +501,7 @@ impl<'a> JvmEmitter<'a> {
         self.jumps.push(Jump {
             // `-1` because the offset_delta will be used by the jvm as `offset_delta + 1`
             offset: (end - end_if_body - 1) as u16,
-            kind: JumpKind::StackAddOne(VerificationTypeInfo::Int),
+            kind: JumpKind::SameLocalsAndEmptyStack,
         });
 
         debug!(
@@ -537,8 +537,8 @@ impl<'a> JvmEmitter<'a> {
 
         let mut v = vec![];
         v.append(&mut self.expr(expr)?);
-        // Workaround due to byte code validation: we empty the stack using the register 0, and we
-        // do the opposite once we have loaded the println reference
+        // Spill the stack to registers, in order to first load the operand (`out` field) and then
+        // load the arguments back to the stack
         v.append(&mut vec![
             OP_ISTORE_0, // FIXME
             OP_GET_STATIC,
