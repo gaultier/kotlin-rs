@@ -43,6 +43,7 @@ pub(crate) struct JvmEmitter<'a> {
     pub(crate) println_str: u16,
     pub(crate) class_printstream: u16,
     pub(crate) stack_map_table_str: u16,
+    pub(crate) jumps: Vec<Jump>,
 }
 
 #[derive(Debug)]
@@ -60,6 +61,32 @@ pub(crate) struct Function {
 }
 
 #[derive(Debug)]
+enum JumpKind {
+    SameLocalsAndEmptyStack,
+    StackAddOne(VerificationTypeInfo),
+}
+
+impl Jump {
+    fn into_stack_map_frame(&self) -> StackMapFrame {
+        match &self.kind {
+            JumpKind::SameLocalsAndEmptyStack => StackMapFrame::SameFrame {
+                offset: self.offset as u8,
+            },
+            JumpKind::StackAddOne(v) => StackMapFrame::SameLocalsOneStackItemFrame {
+                offset: self.offset as u8,
+                stack: *v,
+            },
+        }
+    }
+}
+
+#[derive(Debug)]
+struct Jump {
+    offset: u16,
+    kind: JumpKind,
+}
+
+#[derive(Debug, Copy)]
 pub(crate) enum VerificationTypeInfo {
     Int,
 }
@@ -338,6 +365,7 @@ impl<'a> JvmEmitter<'a> {
             stack_map_table_str,
             methods: Vec::new(),
             attributes: Vec::new(),
+            jumps: Vec::new(),
         }
     }
 
