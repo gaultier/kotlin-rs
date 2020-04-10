@@ -451,13 +451,13 @@ impl<'a> JvmEmitter<'a> {
 
         let end = v.len() - 1;
 
-        let start_else_offset = 3 + end_if_body - end_cond;
-        v[end_cond - 1] = (start_else_offset >> 8) as u8;
-        v[end_cond] = (start_else_offset & 0xff) as u8;
+        let start_else_offset: u16 = (3 + end_if_body - end_cond) as u16;
+        v[end_cond - 1] = start_else_offset.to_be_bytes()[0];
+        v[end_cond] = start_else_offset.to_be_bytes()[1];
 
-        let start_rest_offset = 3 + end - end_if_body;
-        v[end_if_body - 1] = (start_rest_offset >> 8) as u8;
-        v[end_if_body] = (start_rest_offset & 0xff) as u8;
+        let start_rest_offset: u16 = (3 + end - end_if_body) as u16;
+        v[end_if_body - 1] = start_rest_offset.to_be_bytes()[0];
+        v[end_if_body] = start_rest_offset.to_be_bytes()[1];
         debug!(
             "if_expr: end_cond={} end_if_body={} end={} start_else_offset={} start_rest_offset={}",
             end_cond, end_if_body, end, start_else_offset, start_rest_offset
