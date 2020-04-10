@@ -492,12 +492,15 @@ impl<'a> JvmEmitter<'a> {
         v[end_if_body - 1] = start_rest_offset.to_be_bytes()[0];
         v[end_if_body] = start_rest_offset.to_be_bytes()[1];
 
+        // `+1` because we point to the first instruction after the if_body
+        let jump_offset_delta = (end_if_body + 1) as u16;
         self.jumps.push(Jump {
-            offset: (end_if_body + 1) as u16,
+            offset: jump_offset_delta,
             kind: JumpKind::SameLocalsAndEmptyStack,
         });
         self.jumps.push(Jump {
-            offset: (end + 1) as u16,
+            // `-1` because the offset_delta will be used by the jvm as `offset_delta + 1`
+            offset: (end - end_if_body - 1) as u16,
             kind: JumpKind::StackAddOne(VerificationTypeInfo::Int),
         });
 
