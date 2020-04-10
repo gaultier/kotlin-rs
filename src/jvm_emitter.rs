@@ -906,10 +906,12 @@ impl<'a> JvmEmitter<'a> {
     ) -> Result<(), Error> {
         match entry {
             StackMapFrame::SameFrame { offset, .. } => {
+                assert!(*offset <= 63);
                 w.write(&[*offset])?;
             }
             StackMapFrame::SameLocalsOneStackItemFrame { offset, stack } => {
-                w.write(&[*offset])?;
+                assert!(*offset <= 127);
+                w.write(&[64 + *offset])?;
                 self.verification_type_info(stack, w)?;
             }
         }
