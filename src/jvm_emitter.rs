@@ -346,68 +346,74 @@ impl<'a> JvmEmitter<'a> {
         block: &AstNodeStmt,
         w: &mut W,
     ) -> Result<(), Error> {
+        self.methods = vec![Function {
+            access_flags: 0,
+            name: self.ctor_str,
+            descriptor: self.obj_ctor_descriptor,
+            attributes: vec![Attribute::Code {
+                name: self.code_str,
+                max_stack: 1,
+                max_locals: 1,
+                code: vec![
+                    OP_ALOAD_0,
+                    OP_INVOKE_SPECIAL,
+                    self.obj_method_ref.to_be_bytes()[0],
+                    self.obj_method_ref.to_be_bytes()[1],
+                    OP_RETURN,
+                ],
+                exception_table: vec![],
+                attributes: vec![Attribute::LineNumberTable {
+                    // FIXME
+                    name: self.line_table_str,
+                    line_number_tables: vec![LineNumberTable {
+                        start_pc: 0,
+                        line_number: 1,
+                    }],
+                }],
+            }],
+        }];
+
+        let mut f = Function {
+            access_flags: METHOD_ACC_PUBLIC | METHOD_ACC_STATIC,
+            name: self.main_str,
+            descriptor: self.main_descriptor_str,
+            attributes: Vec::new(),
+        };
+
         let mut code = self.statement(block)?;
         code.push(OP_RETURN);
 
-        self.methods = vec![
-            Function {
-                access_flags: 0,
-                name: self.ctor_str,
-                descriptor: self.obj_ctor_descriptor,
-                attributes: vec![Attribute::Code {
-                    name: self.code_str,
-                    max_stack: 1,
-                    max_locals: 1,
-                    code: vec![
-                        OP_ALOAD_0,
-                        OP_INVOKE_SPECIAL,
-                        self.obj_method_ref.to_be_bytes()[0],
-                        self.obj_method_ref.to_be_bytes()[1],
-                        OP_RETURN,
-                    ],
-                    exception_table: vec![],
-                    attributes: vec![Attribute::LineNumberTable {
-                        // FIXME
-                        name: self.line_table_str,
-                        line_number_tables: vec![LineNumberTable {
-                            start_pc: 0,
-                            line_number: 1,
-                        }],
-                    }],
-                }],
-            },
-            Function {
-                access_flags: METHOD_ACC_PUBLIC | METHOD_ACC_STATIC,
-                name: self.main_str,
-                descriptor: self.main_descriptor_str,
-                attributes: vec![Attribute::Code {
-                    name: self.code_str,
-                    max_stack: 100, // FIXME
-                    max_locals: 2,
-                    code,
-                    exception_table: vec![],
-                    attributes: vec![
-                        Attribute::LineNumberTable {
-                            name: self.line_table_str,
-                            line_number_tables: vec![LineNumberTable {
-                                start_pc: 0,
-                                line_number: 2,
-                            }],
-                        },
-                        Attribute::StackMapTable {
-                            name: self.stack_map_table_str,
-                            entries: vec![
-                                StackMapFrame::SameFrame { offset: 9 }, // FIXME
-                                StackMapFrame::SameLocalsOneStackItemFrame {
-                                    offset: 2, // FIXME
-                                    stack: VerificationTypeInfo::Int,
-                                },
-                            ],
-                        },
-                    ],
-                }],
-            },
-        ];
+        let line_table = Attribute::LineNumberTable {
+            name: self.line_table_str,
+            line_number_tables: vec![LineNumberTable {
+                start_pc: 0,
+                line_number: 2,
+            }],
+        };
+
+        let stack_map_table = Attribute::StackMapTable {
+            name: self.stack_map_table_str,
+            entries: vec![
+                StackMapFrame::SameFrame { offset: 9 }, // FIXME
+                StackMapFrame::SameLocalsOneStackItemFrame {
+                    offset: 2, // FIXME
+                    stack: VerificationTypeInfo::Int,
+                },
+            ],
+        };
+
+        let attribute_code = Attribute::Code {
+            name: self.code_str,
+            max_stack: 100, // FIXME
+            max_locals: 2,
+            code,
+            exception_table: Vec::new(),
+            attributes: vec![line_table, stack_map_table],
+        };
+
+        f.attributes.push(attribute_code);
+
+        self.methods.push(f);
 
         self.attributes = vec![Attribute::SourceFile {
             name: self.source_file_constant,
@@ -458,6 +464,10 @@ impl<'a> JvmEmitter<'a> {
         let start_rest_offset: u16 = (3 + end - end_if_body) as u16;
         v[end_if_body - 1] = start_rest_offset.to_be_bytes()[0];
         v[end_if_body] = start_rest_offset.to_be_bytes()[1];
+
+        // self.register_jump(end_if_body +1);
+        // self.register_jump(end +1);
+
         debug!(
             "if_expr: end_cond={} end_if_body={} end={} start_else_offset={} start_rest_offset={}",
             end_cond, end_if_body, end, start_else_offset, start_rest_offset
