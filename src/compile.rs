@@ -24,7 +24,7 @@ pub fn compile<W: io::Write>(src: &str, w: &mut W) -> Result<(), Error> {
     let types = type_checker.check_types(&stmts)?;
 
     let mut emitter = JvmEmitter::new(&session, &types);
-    emitter.statements(&stmts, w)
+    emitter.main(&stmts, w)
 }
 
 pub fn fmt<W: io::Write>(src: &str, w: &mut W) -> Result<(), Error> {

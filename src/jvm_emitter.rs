@@ -364,7 +364,7 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 
-    pub(crate) fn statements<W: std::io::Write>(
+    pub(crate) fn main<W: std::io::Write>(
         &mut self,
         block: &AstNodeStmt,
         w: &mut W,
@@ -469,14 +469,13 @@ impl<'a> JvmEmitter<'a> {
 
         v.append(&mut self.statement(else_body)?);
 
-        // Voluntarily points to the next instruction after the else body so no `-1`
         let end = v.len() - 1;
 
-        let start_else_offset = 1 + end_if_body - end_cond;
+        let start_else_offset = end_if_body - end_cond;
         v[end_cond - 1] = (start_else_offset >> 8) as u8;
         v[end_cond] = (start_else_offset & 0xff) as u8;
 
-        let start_rest_offset = 1 + end - end_if_body;
+        let start_rest_offset = end - end_if_body;
         v[end_if_body - 1] = (start_rest_offset >> 8) as u8;
         v[end_if_body] = (start_rest_offset & 0xff) as u8;
         debug!(
