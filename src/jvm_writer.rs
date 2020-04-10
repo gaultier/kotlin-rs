@@ -343,12 +343,12 @@ impl<'a> JvmEmitter<'a> {
                 w.write(&FULL_FRAME.to_be_bytes())?;
                 w.write(&offset.to_be_bytes())?;
 
-                w.write(&(locals.len() as u32).to_be_bytes())?;
+                w.write(&(locals.len() as u16).to_be_bytes())?;
                 for v in locals {
                     self.verification_type_info(v, w)?;
                 }
 
-                w.write(&(stack.len() as u32).to_be_bytes())?;
+                w.write(&(stack.len() as u16).to_be_bytes())?;
                 for v in stack {
                     self.verification_type_info(v, w)?;
                 }
