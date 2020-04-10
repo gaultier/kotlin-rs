@@ -73,6 +73,8 @@ pub(crate) const OP_FMUL: u8 = 0x6a;
 pub(crate) const OP_FDIV: u8 = 0x6e;
 pub(crate) const OP_IFNE: u8 = 0x9a;
 pub(crate) const OP_GOTO: u8 = 0xa7;
+pub(crate) const OP_ISTORE_0: u8 = 0x3b;
+pub(crate) const OP_ILOAD_0: u8 = 0x1a;
 
 pub(crate) const OP_IMPDEP1: u8 = 0xfe;
 pub(crate) const OP_IMPDEP2: u8 = 0xff;

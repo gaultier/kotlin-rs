@@ -455,7 +455,7 @@ impl<'a> JvmEmitter<'a> {
                 attributes: vec![Attribute::Code {
                     name: self.code_str,
                     max_stack: 100, // FIXME
-                    max_locals: 1,
+                    max_locals: 2,
                     code,
                     exception_table: vec![],
                     attributes: vec![
@@ -469,9 +469,9 @@ impl<'a> JvmEmitter<'a> {
                         Attribute::StackMapTable {
                             name: self.stack_map_table_str,
                             entries: vec![
-                                StackMapFrame::SameFrame { offset: 7 }, // FIXME
+                                StackMapFrame::SameFrame { offset: 9 }, // FIXME
                                 StackMapFrame::SameLocalsOneStackItemFrame {
-                                    offset: 4, // FIXME
+                                    offset: 2, // FIXME
                                     stack: VerificationTypeInfo::Int,
                                 },
                             ],
@@ -571,13 +571,16 @@ impl<'a> JvmEmitter<'a> {
             &Constant::MethodRef(self.class_printstream, println_name_type),
         )?;
 
-        let mut v = vec![
+        let mut v = vec![];
+        v.append(&mut self.expr(expr)?);
+        // Workaround due to byte code validation: we empty the stack using the register 0, and we
+        // do the opposite once we have loaded the println reference
+        v.append(&mut vec![
+            OP_ISTORE_0, // FIXME
             OP_GET_STATIC,
             u16_to_u8s(self.out_fieldref)[0],
             u16_to_u8s(self.out_fieldref)[1],
-        ];
-        v.append(&mut self.expr(expr)?);
-        v.append(&mut vec![
+            OP_ILOAD_0, // FIXME
             OP_INVOKE_VIRTUAL,
             u16_to_u8s(println_methodref)[0],
             u16_to_u8s(println_methodref)[1],
