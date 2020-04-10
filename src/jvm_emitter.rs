@@ -57,6 +57,21 @@ struct Function {
 }
 
 #[derive(Debug)]
+struct VerificationTypeInfo {}
+
+#[derive(Debug)]
+enum StackMapFrame {
+    SameFrame {
+        frame_type: u8,
+    },
+    SameLocalsOneStackItemFrame {
+        frame_type: u8,
+        stack: VerificationTypeInfo,
+    },
+    // More to come
+}
+
+#[derive(Debug)]
 enum Attribute {
     SourceFile {
         name: u16,
@@ -73,6 +88,10 @@ enum Attribute {
     LineNumberTable {
         name: u16,
         line_number_tables: Vec<LineNumberTable>,
+    },
+    StackMapTable {
+        name: u16,
+        entries: Vec<StackMapFrame>,
     },
 }
 
@@ -763,6 +782,12 @@ impl<'a> JvmEmitter<'a> {
 
                 self.line_number_tables(line_number_tables, w)?;
             }
+            Attribute::StackMapTable { name, entries } => {
+                w.write(&u16_to_u8s(*name))?;
+                let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
+                w.write(&u32_to_u8s(size))?;
+                self.stack_map_frames(entries, w)?;
+            }
         }
 
         Ok(())
@@ -835,6 +860,18 @@ impl<'a> JvmEmitter<'a> {
             }
             Constant::Long(_) => unreachable!(),
         }
+        Ok(())
+    }
+
+    fn stack_map_frames<W: std::io::Write>(
+        &self,
+        entries: &[StackMapFrame],
+        w: &mut W,
+    ) -> Result<(), Error> {
+        debug!("stack_map_frames={:?}", entries);
+        w.write(&u16_to_u8s(entries.len() as u16))?;
+
+        // FIXME
         Ok(())
     }
 
