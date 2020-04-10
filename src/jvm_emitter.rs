@@ -357,8 +357,8 @@ impl<'a> JvmEmitter<'a> {
                     code: vec![
                         OP_ALOAD_0,
                         OP_INVOKE_SPECIAL,
-                        u16_to_u8s(self.obj_method_ref)[0],
-                        u16_to_u8s(self.obj_method_ref)[1],
+                        self.obj_method_ref.to_be_bytes()[0],
+                        self.obj_method_ref.to_be_bytes()[1],
                         OP_RETURN,
                     ],
                     exception_table: vec![],
@@ -492,12 +492,12 @@ impl<'a> JvmEmitter<'a> {
         v.append(&mut vec![
             OP_ISTORE_0, // FIXME
             OP_GET_STATIC,
-            u16_to_u8s(self.out_fieldref)[0],
-            u16_to_u8s(self.out_fieldref)[1],
+            self.out_fieldref.to_be_bytes()[0],
+            self.out_fieldref.to_be_bytes()[1],
             OP_ILOAD_0, // FIXME
             OP_INVOKE_VIRTUAL,
-            u16_to_u8s(println_methodref)[0],
-            u16_to_u8s(println_methodref)[1],
+            println_methodref.to_be_bytes()[0],
+            println_methodref.to_be_bytes()[1],
         ]);
         Ok(v)
     }
