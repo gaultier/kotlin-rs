@@ -432,7 +432,7 @@ impl<'a> JvmEmitter<'a> {
         else_body: &AstNodeStmt,
     ) -> Result<Vec<u8>, Error> {
         let mut v = self.expr(cond)?;
-        v.push(OP_IFNE);
+        v.push(OP_IFEQ);
         v.push(OP_IMPDEP1); // Will be backpatched
         v.push(OP_IMPDEP2); // Will be backpatched
         let end_cond = v.len() - 1;
