@@ -828,6 +828,7 @@ impl<'a> JvmEmitter<'a> {
             Attribute::StackMapTable { name, entries } => {
                 w.write(&u16_to_u8s(*name))?;
                 let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
+                debug!("attribute stack_map_table: size={}", size);
                 w.write(&u32_to_u8s(size))?;
                 self.stack_map_frames(entries, w)?;
             }
@@ -926,12 +927,12 @@ impl<'a> JvmEmitter<'a> {
         w: &mut W,
     ) -> Result<(), Error> {
         match entry {
-            StackMapFrame::SameFrame { offset, .. } => {
+            StackMapFrame::SameFrame { offset } => {
                 assert!(*offset <= 63);
                 w.write(&[*offset])?;
             }
             StackMapFrame::SameLocalsOneStackItemFrame { offset, stack } => {
-                assert!(*offset <= 127);
+                assert!(*offset <= 63);
                 w.write(&[64 + *offset])?;
                 self.verification_type_info(stack, w)?;
             }
