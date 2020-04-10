@@ -449,7 +449,13 @@ impl<'a> JvmEmitter<'a> {
                         },
                         Attribute::StackMapTable {
                             name: self.stack_map_table_str,
-                            entries: vec![],
+                            entries: vec![
+                                StackMapFrame::SameFrame { offset: 8 },
+                                StackMapFrame::SameLocalsOneStackItemFrame {
+                                    offset: 6,
+                                    stack: VerificationTypeInfo::Int,
+                                },
+                            ],
                         },
                     ],
                 }],
