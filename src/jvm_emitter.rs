@@ -169,18 +169,21 @@ fn add_constant(constants: &mut Vec<Constant>, constant: &Constant) -> Result<u1
 fn add_and_push_constant(
     constants: &mut Vec<Constant>,
     constant: &Constant,
-) -> Result<Vec<u8>, Error> {
+    code_builder: &mut CodeBuilder,
+) -> Result<(), Error> {
     let i = add_constant(constants, &constant)?;
     debug!("added constant: constant={:?} i={}", &constant, i);
 
     match constant {
-        Constant::Long(_) => Ok(vec![
-            OP_LDC2_W,
-            ((i - 1) >> 8) as u8,
-            ((i - 1) & 0xff) as u8,
-        ]),
-        _ if i <= std::u8::MAX as u16 => Ok(vec![OP_LDC, i as u8]),
-        _ => Ok(vec![OP_LDC_W, (i >> 8) as u8, (i & 0xff) as u8]),
+        Constant::Long(_) => {
+            let bytes = ((i - 1) as u16).to_be_bytes();
+            code_builder.push3(OP_LDC2_W, bytes[0], bytes[1])
+        }
+        _ if i <= std::u8::MAX as u16 => code_builder.push2(OP_LDC, i as u8),
+        _ => {
+            let bytes = ((i - 1) as u16).to_be_bytes();
+            code_builder.push3(OP_LDC_W, bytes[0], bytes[1])
+        }
     }
 }
 
@@ -249,23 +252,6 @@ struct CodeBuilder {
     attributes: Vec<Attribute>,
     stack: Vec<Type>,
     locals: Vec<Type>,
-}
-
-#[derive(Debug)]
-enum Value {
-    I8(i8),
-    I16(i16),
-    I32(i32),
-    F32(f32),
-    I64(i64),
-    F64(f64),
-    Ref(i32),
-}
-
-#[derive(Debug)]
-enum Op {
-    Jump {},
-    Const(Value),
 }
 
 impl CodeBuilder {
@@ -380,38 +366,6 @@ impl CodeBuilder {
         }
 
         Ok(())
-    }
-
-    fn op(&mut self, op: Op) -> Result<(), Error> {
-        match op {
-            Op::Jump { .. } => unimplemented!(),
-            Op::Const(Value::I8(-1)) | Op::Const(Value::I16(-1)) | Op::Const(Value::I32(-1)) => {
-                self.push1(OP_ICONST_M1)
-            }
-            Op::Const(Value::I8(0)) | Op::Const(Value::I16(0)) | Op::Const(Value::I32(0)) => {
-                self.push1(OP_ICONST_0)
-            }
-            Op::Const(Value::I8(1)) | Op::Const(Value::I16(1)) | Op::Const(Value::I32(1)) => {
-                self.push1(OP_ICONST_1)
-            }
-            Op::Const(Value::I8(2)) | Op::Const(Value::I16(2)) | Op::Const(Value::I32(2)) => {
-                self.push1(OP_ICONST_2)
-            }
-            Op::Const(Value::I8(2)) | Op::Const(Value::I16(2)) | Op::Const(Value::I32(2)) => {
-                self.push1(OP_ICONST_2)
-            }
-            Op::Const(Value::I8(4)) | Op::Const(Value::I16(4)) | Op::Const(Value::I32(4)) => {
-                self.push1(OP_ICONST_4)
-            }
-            Op::Const(Value::I8(5)) | Op::Const(Value::I16(5)) | Op::Const(Value::I32(5)) => {
-                self.push1(OP_ICONST_5)
-            }
-            Op::Const(Value::I16(v)) => {
-                self.push3(OP_SIPUSH, v.to_be_bytes()[0], v.to_be_bytes()[1])
-            }
-            Op::Const(Value::I32(v)) => unimplemented!(),
-            _ => unimplemented!(),
-        }
     }
 
     fn end(&mut self) -> Vec<u8> {
@@ -823,26 +777,23 @@ impl<'a> JvmEmitter<'a> {
                 code_builder.push3(OP_SIPUSH, bytes[0], bytes[1])
             }
             TokenKind::Int(n) if n <= std::i32::MAX => {
-                add_and_push_constant(&mut self.constants, &Constant::Int(n))
+                add_and_push_constant(&mut self.constants, &Constant::Int(n), code_builder)
             }
             TokenKind::Long(0) => code_builder.push1(OP_LCONST_0),
             TokenKind::Long(1) => code_builder.push1(OP_LCONST_1),
             TokenKind::Long(n) => {
-                unimplemented!()
-                //add_and_push_constant(&mut self.constants, &Constant::Long(n)),
+                add_and_push_constant(&mut self.constants, &Constant::Long(n), code_builder)
             }
             TokenKind::Float(n) if n.to_bits() == 0f32.to_bits() => code_builder.push1(OP_FCONST_0),
             TokenKind::Float(n) if n.to_bits() == 1f32.to_bits() => code_builder.push1(OP_FCONST_1),
             TokenKind::Float(n) if n.to_bits() == 2f32.to_bits() => code_builder.push1(OP_FCONST_2),
             TokenKind::Float(n) => {
-                unimplemented!()
-                //add_and_push_constant(&mut self.constants, &Constant::Float(n)),
+                add_and_push_constant(&mut self.constants, &Constant::Float(n), code_builder)
             }
             TokenKind::TString => {
-                unimplemented!()
-                // let s = String::from(&self.session.src[literal.span.start..literal.span.end]);
-                // let i = add_constant(&mut self.constants, &Constant::Utf8(s))?;
-                // add_and_push_constant(&mut self.constants, &Constant::CString(i))
+                let s = String::from(&self.session.src[literal.span.start..literal.span.end]);
+                let i = add_constant(&mut self.constants, &Constant::Utf8(s))?;
+                add_and_push_constant(&mut self.constants, &Constant::CString(i), code_builder)
             }
             _ => {
                 dbg!(literal);
