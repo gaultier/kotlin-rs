@@ -51,6 +51,8 @@ pub enum ErrorKind {
     MaxConstantsReached(u16),
     JvmStackUnderflow,
     JvmLocalsUnderflow,
+    JvmStackOverflow,
+    JvmLocalsOverflow,
 }
 
 impl Location {
@@ -146,6 +148,8 @@ impl fmt::Display for ErrorKind {
             ErrorKind::IoError(err) => write!(f, "{}", err),
             ErrorKind::JvmStackUnderflow => write!(f, "Jvm stack underflow"),
             ErrorKind::JvmLocalsUnderflow => write!(f, "Jvm locals underflow"),
+            ErrorKind::JvmStackOverflow => write!(f, "Jvm stack overflow"),
+            ErrorKind::JvmLocalsOverflow => write!(f, "Jvm locals overflow"),
             ErrorKind::MaxConstantsReached(max) => write!(
                 f,
                 "The maximum number of constants has been reached: {}",

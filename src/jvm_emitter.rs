@@ -252,6 +252,8 @@ struct CodeBuilder {
     attributes: Vec<Attribute>,
     stack: Vec<Type>,
     locals: Vec<Type>,
+    stack_max: u16,
+    locals_max: u16,
 }
 
 impl CodeBuilder {
@@ -261,6 +263,8 @@ impl CodeBuilder {
             attributes: Vec::new(),
             stack: Vec::new(),
             locals: Vec::new(),
+            stack_max: 0,
+            locals_max: 0,
         }
     }
 
@@ -277,6 +281,10 @@ impl CodeBuilder {
     }
 
     fn stack_push(&mut self, t: Type) -> Result<(), Error> {
+        if self.stack.len() == std::u8::MAX as usize {
+            return Err(Error::new(ErrorKind::JvmStackOverflow, Location::new()));
+        }
+
         match t {
             Type::Long | Type::TString | Type::Int => {
                 self.stack.push(t);
@@ -302,6 +310,10 @@ impl CodeBuilder {
     }
 
     fn locals_push(&mut self, t: Type) -> Result<(), Error> {
+        if self.locals.len() == std::u8::MAX as usize {
+            return Err(Error::new(ErrorKind::JvmLocalsOverflow, Location::new()));
+        }
+
         match t {
             Type::Long | Type::TString | Type::Int => {
                 self.locals.push(t);
