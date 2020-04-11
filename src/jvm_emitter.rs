@@ -286,7 +286,7 @@ impl CodeBuilder {
         }
 
         match t {
-            Type::Long | Type::TString | Type::Int => {
+            Type::Float | Type::Long | Type::TString | Type::Int => {
                 self.stack.push(t);
             }
             _ => {
@@ -351,10 +351,16 @@ impl CodeBuilder {
 
         match op {
             OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3 | OP_ICONST_4
-            | OP_ICONST_5 | OP_BIPUSH => {
+            | OP_ICONST_5 => {
                 self.stack_push(Type::Int)?;
             }
-            OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV => {
+            OP_BIPUSH => {
+                self.stack_push(t.unwrap())?;
+            }
+            OP_FCONST_0 | OP_FCONST_1 | OP_FCONST_2 => {
+                self.stack_push(Type::Float)?;
+            }
+            OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_FADD | OP_FMUL | OP_FSUB | OP_FDIV => {
                 self.stack_pop()?;
             }
             OP_IFEQ => {
@@ -364,7 +370,7 @@ impl CodeBuilder {
             OP_GET_STATIC => {
                 self.stack_push(Type::TString)?; // FIXME: hardcoded for println
             }
-            OP_ISTORE => {
+            OP_ISTORE | OP_FSTORE => {
                 let v = self.stack_pop()?;
 
                 let op1 = operand1.unwrap() as usize;
@@ -384,7 +390,7 @@ impl CodeBuilder {
                 self.locals[op1] = v1;
                 self.locals[op1 + 1] = v2;
             }
-            OP_ILOAD => {
+            OP_ILOAD | OP_FLOAD => {
                 let v = self.locals[operand1.unwrap() as usize].clone();
                 self.stack_push(v)?;
             }
@@ -428,6 +434,7 @@ impl CodeBuilder {
         let t = self.stack.last().unwrap();
         match t {
             Type::Int => self.push2(OP_ISTORE, 1, Type::Int),
+            Type::Float => self.push2(OP_FSTORE, 1, Type::Float),
             Type::Long => self.push2(OP_LSTORE, 1, Type::Long),
             _ => unimplemented!(),
         }
@@ -437,6 +444,7 @@ impl CodeBuilder {
         let t = self.locals.last().unwrap();
         match t {
             Type::Int => self.push2(OP_ILOAD, 1, Type::Int),
+            Type::Float => self.push2(OP_FLOAD, 1, Type::Float),
             Type::Long => self.push2(OP_LLOAD, 1, Type::Long),
             _ => unimplemented!(),
         }
