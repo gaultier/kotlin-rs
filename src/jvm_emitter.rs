@@ -283,6 +283,28 @@ impl CodeBuilder {
         Ok(())
     }
 
+    fn locals_pop(&mut self) -> Result<Type, Error> {
+        self.locals
+            .pop()
+            .ok_or_else(|| Error::new(ErrorKind::JvmStackUnderflow, Location::new()))
+    }
+
+    fn locals_pop2(&mut self) -> Result<[Type; 2], Error> {
+        let a = self.locals_pop()?;
+        let b = self.locals_pop()?;
+        Ok([a, b])
+    }
+
+    fn locals_push(&mut self, t: Type) -> Result<(), Error> {
+        match t {
+            Type::Int => {
+                self.locals.push(t);
+            }
+            _ => unimplemented!(),
+        }
+        Ok(())
+    }
+
     fn push(&mut self, op: u8, operand1: Option<u8>, operand2: Option<u8>) -> Result<(), Error> {
         match op {
             OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3 | OP_ICONST_4
@@ -295,6 +317,23 @@ impl CodeBuilder {
             OP_IFEQ => {
                 self.stack_pop2()?;
             }
+            OP_GOTO => {}
+            OP_GET_STATIC => {
+                self.stack_push(Type::TString)?; // FIXME: hardcoded for println
+            }
+            OP_ISTORE_0 => {
+                let v = self.stack_pop()?;
+                self.locals_push(v)?;
+            }
+            OP_ILOAD_0 => {
+                let v = self.locals_pop()?;
+                self.stack_push(v)?;
+            }
+            OP_INVOKE_VIRTUAL => {
+                self.stack_pop2()?; // FIXME: hardcoded for println
+            }
+            OP_RETURN => {}
+            OP_INEG => {}
             _ => unimplemented!(),
         }
 
