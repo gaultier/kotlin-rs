@@ -596,7 +596,7 @@ impl<'a> JvmEmitter<'a> {
                 ],
                 exception_table: vec![],
                 attributes: vec![Attribute::LineNumberTable {
-                    // FIXME
+                    // FIXME: dummy for now
                     name: self.line_table_str,
                     line_number_tables: vec![LineNumberTable {
                         start_pc: 0,
@@ -756,7 +756,7 @@ impl<'a> JvmEmitter<'a> {
             OP_GET_STATIC,
             self.out_fieldref.to_be_bytes()[0],
             self.out_fieldref.to_be_bytes()[1],
-            Type::TString, // FIXME
+            Type::TString, // FIXME: for println
         )?;
         code_builder.unspill_stack_top()?;
 
@@ -764,7 +764,7 @@ impl<'a> JvmEmitter<'a> {
             OP_INVOKE_VIRTUAL,
             println_methodref.to_be_bytes()[0],
             println_methodref.to_be_bytes()[1],
-            Type::Any, // FIXME
+            Type::Any, // FIXME: for println
         )
     }
 
