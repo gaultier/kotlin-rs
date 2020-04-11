@@ -43,7 +43,6 @@ pub(crate) struct JvmEmitter<'a> {
     pub(crate) println_str: u16,
     pub(crate) class_printstream: u16,
     pub(crate) stack_map_table_str: u16,
-    pub(crate) jumps: Vec<Jump>,
 }
 
 #[derive(Debug)]
@@ -259,6 +258,7 @@ struct CodeBuilder {
     locals: Vec<Type>,
     stack_max: u16,
     locals_max: u16,
+    jumps: Vec<Jump>,
 }
 
 impl CodeBuilder {
@@ -270,6 +270,7 @@ impl CodeBuilder {
             locals: vec![Type::Any], // FIXME: this
             stack_max: 0,
             locals_max: 0,
+            jumps: Vec::new(),
         }
     }
 
@@ -583,7 +584,6 @@ impl<'a> JvmEmitter<'a> {
             stack_map_table_str,
             methods: Vec::new(),
             attributes: Vec::new(),
-            jumps: Vec::new(),
         }
     }
 
@@ -641,7 +641,7 @@ impl<'a> JvmEmitter<'a> {
 
         let stack_map_table = Attribute::StackMapTable {
             name: self.stack_map_table_str,
-            entries: self
+            entries: code_builder
                 .jumps
                 .iter()
                 .map(|j| j.into_stack_map_frame())
@@ -695,44 +695,42 @@ impl<'a> JvmEmitter<'a> {
     ) -> Result<(), Error> {
         self.expr(cond, code_builder)?;
         code_builder.push3(OP_IFEQ, OP_IMPDEP1, OP_IMPDEP2, Type::Int)?;
-        // let end_cond = v.len() - 1;
+        let end_cond = code_builder.code.len() - 1;
 
         self.statement(if_body, code_builder)?;
         code_builder.push3(OP_GOTO, OP_IMPDEP1, OP_IMPDEP2, Type::Int)?;
-        // let end_if_body = v.len() - 1;
+        let end_if_body = code_builder.code.len() - 1;
 
         self.statement(else_body, code_builder)?;
 
+        let end = code_builder.code.len() - 1;
+
+        let start_else_offset: u16 = (3 + end_if_body - end_cond) as u16;
+        code_builder.code[end_cond - 1] = start_else_offset.to_be_bytes()[0];
+        code_builder.code[end_cond] = start_else_offset.to_be_bytes()[1];
+
+        let start_rest_offset: u16 = (3 + end - end_if_body) as u16;
+        code_builder.code[end_if_body - 1] = start_rest_offset.to_be_bytes()[0];
+        code_builder.code[end_if_body] = start_rest_offset.to_be_bytes()[1];
+
+        // `+1` because we point to the first instruction after the if_body
+        let jump_offset_delta = (end_if_body + 1) as u16;
+        code_builder.jumps.push(Jump {
+            offset: jump_offset_delta,
+            kind: JumpKind::SameLocalsAndEmptyStack,
+        });
+        code_builder.jumps.push(Jump {
+            // `-1` because the offset_delta will be used by the jvm as `offset_delta + 1`
+            offset: (end - end_if_body - 1) as u16,
+            kind: JumpKind::SameLocalsAndEmptyStack, // FIXME
+        });
+
+        debug!(
+            "if_expr: end_cond={} end_if_body={} end={} start_else_offset={} start_rest_offset={}",
+            end_cond, end_if_body, end, start_else_offset, start_rest_offset
+        );
+
         Ok(())
-
-        // let end = v.len() - 1;
-
-        // let start_else_offset: u16 = (3 + end_if_body - end_cond) as u16;
-        // v[end_cond - 1] = start_else_offset.to_be_bytes()[0];
-        // v[end_cond] = start_else_offset.to_be_bytes()[1];
-
-        // let start_rest_offset: u16 = (3 + end - end_if_body) as u16;
-        // v[end_if_body - 1] = start_rest_offset.to_be_bytes()[0];
-        // v[end_if_body] = start_rest_offset.to_be_bytes()[1];
-
-        // // `+1` because we point to the first instruction after the if_body
-        // let jump_offset_delta = (end_if_body + 1) as u16;
-        // self.jumps.push(Jump {
-        //     offset: jump_offset_delta,
-        //     kind: JumpKind::SameLocalsAndEmptyStack,
-        // });
-        // self.jumps.push(Jump {
-        //     // `-1` because the offset_delta will be used by the jvm as `offset_delta + 1`
-        //     offset: (end - end_if_body - 1) as u16,
-        //     kind: JumpKind::SameLocalsAndEmptyStack, // FIXME
-        // });
-
-        // debug!(
-        //     "if_expr: end_cond={} end_if_body={} end={} start_else_offset={} start_rest_offset={}",
-        //     end_cond, end_if_body, end, start_else_offset, start_rest_offset
-        // );
-
-        // Ok(v)
     }
 
     fn println(&mut self, expr: &AstNodeExpr, code_builder: &mut CodeBuilder) -> Result<(), Error> {
