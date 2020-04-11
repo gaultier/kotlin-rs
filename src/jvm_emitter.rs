@@ -44,6 +44,7 @@ pub(crate) struct JvmEmitter<'a> {
     pub(crate) class_printstream: u16,
     pub(crate) stack_map_table_str: u16,
     pub(crate) jumps: Vec<Jump>,
+    code_builder: CodeBuilder,
 }
 
 #[derive(Debug)]
@@ -311,7 +312,7 @@ impl CodeBuilder {
             | OP_ICONST_5 | OP_BIPUSH => {
                 self.stack_push(Type::Int)?;
             }
-            OP_IADD => {
+            OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV => {
                 self.stack_pop2()?;
             }
             OP_IFEQ => {
@@ -337,7 +338,21 @@ impl CodeBuilder {
             _ => unimplemented!(),
         }
 
+        self.code.push(op);
+
+        if let Some(operand1) = operand1 {
+            self.code.push(operand1);
+        }
+        if let Some(operand2) = operand2 {
+            self.code.push(operand2);
+        }
+
         Ok(())
+    }
+
+    fn end(&mut self) -> Vec<u8> {
+        self.code.push(OP_RETURN);
+        self.code
     }
 }
 
@@ -464,6 +479,7 @@ impl<'a> JvmEmitter<'a> {
             methods: Vec::new(),
             attributes: Vec::new(),
             jumps: Vec::new(),
+            code_builder: CodeBuilder::new(),
         }
     }
 
@@ -506,8 +522,8 @@ impl<'a> JvmEmitter<'a> {
             attributes: Vec::new(),
         };
 
-        let mut code = self.statement(block)?;
-        code.push(OP_RETURN);
+        self.statement(block, &mut self.code_builder)?;
+        let code = self.code_builder.end();
 
         // FIXME: dummy for now
         let line_table = Attribute::LineNumberTable {
@@ -548,12 +564,16 @@ impl<'a> JvmEmitter<'a> {
         self.write(w)
     }
 
-    fn statement(&mut self, statement: &AstNodeStmt) -> Result<Vec<u8>, Error> {
+    fn statement(
+        &mut self,
+        statement: &AstNodeStmt,
+        code_builder: &mut CodeBuilder,
+    ) -> Result<Vec<u8>, Error> {
         match statement {
-            AstNodeStmt::Expr(e) => self.expr(e),
+            AstNodeStmt::Expr(e) => self.expr(e, code_builder),
             AstNodeStmt::Block { body, .. } => Ok(body
                 .iter()
-                .map(|stmt| self.statement(stmt))
+                .map(|stmt| self.statement(stmt, code_builder))
                 .collect::<Result<Vec<_>, Error>>()?
                 .concat()),
             _ => unimplemented!(),
@@ -565,52 +585,54 @@ impl<'a> JvmEmitter<'a> {
         cond: &AstNodeExpr,
         if_body: &AstNodeStmt,
         else_body: &AstNodeStmt,
+        code_builder: &mut CodeBuilder,
     ) -> Result<Vec<u8>, Error> {
-        let mut v = self.expr(cond)?;
-        v.push(OP_IFEQ);
-        v.push(OP_IMPDEP1); // Will be backpatched
-        v.push(OP_IMPDEP2); // Will be backpatched
-        let end_cond = v.len() - 1;
+        unimplemented!()
+        // let mut v = self.expr(cond)?;
+        // v.push(OP_IFEQ);
+        // v.push(OP_IMPDEP1); // Will be backpatched
+        // v.push(OP_IMPDEP2); // Will be backpatched
+        // let end_cond = v.len() - 1;
 
-        v.append(&mut self.statement(if_body)?);
-        v.push(OP_GOTO);
-        v.push(OP_IMPDEP1); // Will be backpatched
-        v.push(OP_IMPDEP2); // Will be backpatched
-        let end_if_body = v.len() - 1;
+        // v.append(&mut self.statement(if_body)?);
+        // v.push(OP_GOTO);
+        // v.push(OP_IMPDEP1); // Will be backpatched
+        // v.push(OP_IMPDEP2); // Will be backpatched
+        // let end_if_body = v.len() - 1;
 
-        v.append(&mut self.statement(else_body)?);
+        // v.append(&mut self.statement(else_body)?);
 
-        let end = v.len() - 1;
+        // let end = v.len() - 1;
 
-        let start_else_offset: u16 = (3 + end_if_body - end_cond) as u16;
-        v[end_cond - 1] = start_else_offset.to_be_bytes()[0];
-        v[end_cond] = start_else_offset.to_be_bytes()[1];
+        // let start_else_offset: u16 = (3 + end_if_body - end_cond) as u16;
+        // v[end_cond - 1] = start_else_offset.to_be_bytes()[0];
+        // v[end_cond] = start_else_offset.to_be_bytes()[1];
 
-        let start_rest_offset: u16 = (3 + end - end_if_body) as u16;
-        v[end_if_body - 1] = start_rest_offset.to_be_bytes()[0];
-        v[end_if_body] = start_rest_offset.to_be_bytes()[1];
+        // let start_rest_offset: u16 = (3 + end - end_if_body) as u16;
+        // v[end_if_body - 1] = start_rest_offset.to_be_bytes()[0];
+        // v[end_if_body] = start_rest_offset.to_be_bytes()[1];
 
-        // `+1` because we point to the first instruction after the if_body
-        let jump_offset_delta = (end_if_body + 1) as u16;
-        self.jumps.push(Jump {
-            offset: jump_offset_delta,
-            kind: JumpKind::SameLocalsAndEmptyStack,
-        });
-        self.jumps.push(Jump {
-            // `-1` because the offset_delta will be used by the jvm as `offset_delta + 1`
-            offset: (end - end_if_body - 1) as u16,
-            kind: JumpKind::SameLocalsAndEmptyStack, // FIXME
-        });
+        // // `+1` because we point to the first instruction after the if_body
+        // let jump_offset_delta = (end_if_body + 1) as u16;
+        // self.jumps.push(Jump {
+        //     offset: jump_offset_delta,
+        //     kind: JumpKind::SameLocalsAndEmptyStack,
+        // });
+        // self.jumps.push(Jump {
+        //     // `-1` because the offset_delta will be used by the jvm as `offset_delta + 1`
+        //     offset: (end - end_if_body - 1) as u16,
+        //     kind: JumpKind::SameLocalsAndEmptyStack, // FIXME
+        // });
 
-        debug!(
-            "if_expr: end_cond={} end_if_body={} end={} start_else_offset={} start_rest_offset={}",
-            end_cond, end_if_body, end, start_else_offset, start_rest_offset
-        );
+        // debug!(
+        //     "if_expr: end_cond={} end_if_body={} end={} start_else_offset={} start_rest_offset={}",
+        //     end_cond, end_if_body, end, start_else_offset, start_rest_offset
+        // );
 
-        Ok(v)
+        // Ok(v)
     }
 
-    fn println(&mut self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
+    fn println(&mut self, expr: &AstNodeExpr, code_builder: &mut CodeBuilder) -> Result<(), Error> {
         let expr_t = self.types.get(&expr.id()).unwrap();
 
         let println_str_type = add_constant(
@@ -651,7 +673,7 @@ impl<'a> JvmEmitter<'a> {
         Ok(v)
     }
 
-    fn expr(&mut self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
+    fn expr(&mut self, expr: &AstNodeExpr, code_builder: &mut CodeBuilder) -> Result<(), Error> {
         match expr {
             AstNodeExpr::Literal(l, _) => self.literal(l),
             AstNodeExpr::Unary { .. } => self.unary(expr),
@@ -668,7 +690,7 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 
-    fn binary(&mut self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
+    fn binary(&mut self, expr: &AstNodeExpr, code_builder: &mut CodeBuilder) -> Result<(), Error> {
         match expr {
             AstNodeExpr::Binary {
                 left,
@@ -695,7 +717,7 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 
-    fn unary(&mut self, expr: &AstNodeExpr) -> Result<Vec<u8>, Error> {
+    fn unary(&mut self, expr: &AstNodeExpr, code_builder: &mut CodeBuilder) -> Result<(), Error> {
         match expr {
             AstNodeExpr::Unary {
                 token:
@@ -706,8 +728,8 @@ impl<'a> JvmEmitter<'a> {
                 expr,
                 ..
             } => {
-                let mut v = self.expr(expr)?;
-                v.push(OP_INEG);
+                self.expr(expr, code_builder)?;
+                code_builder.push(OP_INEG, None, None);
                 Ok(v)
             }
             AstNodeExpr::Unary {
@@ -723,7 +745,7 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 
-    fn literal(&mut self, literal: &Token) -> Result<Vec<u8>, Error> {
+    fn literal(&mut self, literal: &Token, code_builder: &mut CodeBuilder) -> Result<(), Error> {
         match literal.kind {
             TokenKind::Int(-1) => Ok(vec![OP_ICONST_M1]),
             TokenKind::Boolean(false) | TokenKind::Int(0) => Ok(vec![OP_ICONST_0]),
