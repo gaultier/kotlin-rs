@@ -369,7 +369,7 @@ impl CodeBuilder {
                 self.stack_pop()?;
             }
             OP_IFEQ => {
-                self.stack_pop2()?;
+                self.stack_pop()?;
             }
             OP_GOTO => {}
             OP_GET_STATIC => {
@@ -693,20 +693,17 @@ impl<'a> JvmEmitter<'a> {
         else_body: &AstNodeStmt,
         code_builder: &mut CodeBuilder,
     ) -> Result<(), Error> {
-        unimplemented!()
-        // let mut v = self.expr(cond)?;
-        // v.push(OP_IFEQ);
-        // v.push(OP_IMPDEP1); // Will be backpatched
-        // v.push(OP_IMPDEP2); // Will be backpatched
+        self.expr(cond, code_builder)?;
+        code_builder.push3(OP_IFEQ, OP_IMPDEP1, OP_IMPDEP2, Type::Int)?;
         // let end_cond = v.len() - 1;
 
-        // v.append(&mut self.statement(if_body)?);
-        // v.push(OP_GOTO);
-        // v.push(OP_IMPDEP1); // Will be backpatched
-        // v.push(OP_IMPDEP2); // Will be backpatched
+        self.statement(if_body, code_builder)?;
+        code_builder.push3(OP_GOTO, OP_IMPDEP1, OP_IMPDEP2, Type::Int)?;
         // let end_if_body = v.len() - 1;
 
-        // v.append(&mut self.statement(else_body)?);
+        self.statement(else_body, code_builder)?;
+
+        Ok(())
 
         // let end = v.len() - 1;
 
