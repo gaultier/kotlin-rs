@@ -343,6 +343,10 @@ impl CodeBuilder {
         self.push(op, Some(operand1), Some(operand2), Some(t))
     }
 
+    fn verify(&mut self) -> Result<(), Error> {
+        unimplemented!()
+    }
+
     fn push(
         &mut self,
         op: u8,
@@ -722,7 +726,7 @@ impl<'a> JvmEmitter<'a> {
         code_builder.jumps.push(Jump {
             // `-1` because the offset_delta will be used by the jvm as `offset_delta + 1`
             offset: (end - end_if_body - 1) as u16,
-            kind: JumpKind::SameLocalsAndEmptyStack, // FIXME
+            kind: JumpKind::StackAddOne(VerificationTypeInfo::Int), // FIXME
         });
 
         debug!(
