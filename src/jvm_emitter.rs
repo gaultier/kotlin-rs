@@ -328,6 +328,7 @@ impl CodeBuilder {
             }
             OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV => {
                 self.stack_pop2()?;
+                self.stack_push(Type::Int)?;
             }
             OP_IFEQ => {
                 self.stack_pop2()?;
