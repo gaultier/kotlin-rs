@@ -580,14 +580,15 @@ impl<'a> JvmEmitter<'a> {
         &mut self,
         statement: &AstNodeStmt,
         code_builder: &mut CodeBuilder,
-    ) -> Result<Vec<u8>, Error> {
+    ) -> Result<(), Error> {
         match statement {
             AstNodeStmt::Expr(e) => self.expr(e, code_builder),
-            AstNodeStmt::Block { body, .. } => Ok(body
-                .iter()
-                .map(|stmt| self.statement(stmt, code_builder))
-                .collect::<Result<Vec<_>, Error>>()?
-                .concat()),
+            AstNodeStmt::Block { body, .. } => {
+                for stmt in body {
+                    self.statement(stmt, code_builder)?;
+                }
+                Ok(())
+            }
             _ => unimplemented!(),
         }
     }
@@ -598,7 +599,7 @@ impl<'a> JvmEmitter<'a> {
         if_body: &AstNodeStmt,
         else_body: &AstNodeStmt,
         code_builder: &mut CodeBuilder,
-    ) -> Result<Vec<u8>, Error> {
+    ) -> Result<(), Error> {
         unimplemented!()
         // let mut v = self.expr(cond)?;
         // v.push(OP_IFEQ);
@@ -667,22 +668,22 @@ impl<'a> JvmEmitter<'a> {
             &Constant::MethodRef(self.class_printstream, println_name_type),
         )?;
 
-        let mut v = vec![];
-        v.append(&mut self.expr(expr)?);
+        self.expr(expr, code_builder)?;
         // Spill the stack to registers, in order to first load the operand (`out` field) and then
         // load the arguments back to the stack
-        v.append(&mut vec![
-            OP_ISTORE_0, // FIXME
+        code_builder.push1(OP_ISTORE_0)?; // FIXME
+        code_builder.push3(
             OP_GET_STATIC,
             self.out_fieldref.to_be_bytes()[0],
             self.out_fieldref.to_be_bytes()[1],
-            OP_ILOAD_0, // FIXME
+        )?;
+        code_builder.push1(OP_ILOAD_0)?; // FIXME
+
+        code_builder.push3(
             OP_INVOKE_VIRTUAL,
             println_methodref.to_be_bytes()[0],
             println_methodref.to_be_bytes()[1],
-            // OP_POP, // The result of the call is put onto the stack but it is void so we discard it
-        ]);
-        Ok(v)
+        )
     }
 
     fn expr(&mut self, expr: &AstNodeExpr, code_builder: &mut CodeBuilder) -> Result<(), Error> {
