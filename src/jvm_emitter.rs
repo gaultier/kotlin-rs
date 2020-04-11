@@ -382,8 +382,8 @@ impl CodeBuilder {
     fn spill_stack_top(&mut self) -> Result<(), Error> {
         let t = self.stack.last().unwrap();
         match t {
-            Type::Int => self.push2(OP_ILOAD, (self.stack.len() - 1) as u8, Type::Int),
-            Type::Long => self.push2(OP_LLOAD, (self.stack.len() - 1) as u8, Type::Long),
+            Type::Int => self.push2(OP_ISTORE, (self.stack.len() - 1) as u8, Type::Int),
+            Type::Long => self.push2(OP_LSTORE, (self.stack.len() - 1) as u8, Type::Long),
             _ => unimplemented!(),
         }
     }
@@ -391,8 +391,8 @@ impl CodeBuilder {
     fn unspill_stack_top(&mut self) -> Result<(), Error> {
         let t = self.locals.last().unwrap();
         match t {
-            Type::Int => self.push2(OP_ISTORE, (self.stack.len() - 1) as u8, Type::Int),
-            Type::Long => self.push2(OP_LSTORE, (self.stack.len() - 1) as u8, Type::Long),
+            Type::Int => self.push2(OP_ILOAD, (self.stack.len() - 1) as u8, Type::Int),
+            Type::Long => self.push2(OP_LLOAD, (self.stack.len() - 1) as u8, Type::Long),
             _ => unimplemented!(),
         }
     }
