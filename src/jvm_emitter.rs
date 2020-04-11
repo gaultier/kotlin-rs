@@ -179,7 +179,12 @@ fn add_and_push_constant(
             let bytes = ((i - 1) as u16).to_be_bytes();
             code_builder.push3(OP_LDC2_W, bytes[0], bytes[1], Type::Long)
         }
-        _ if i <= std::u8::MAX as u16 => code_builder.push2(OP_LDC, i as u8, Type::Int),
+        Constant::Int(_) if i <= std::u8::MAX as u16 => {
+            code_builder.push2(OP_LDC, i as u8, Type::Int)
+        }
+        Constant::Float(_) if i <= std::u8::MAX as u16 => {
+            code_builder.push2(OP_LDC, i as u8, Type::Float)
+        }
         _ => {
             let bytes = ((i - 1) as u16).to_be_bytes();
             code_builder.push3(OP_LDC_W, bytes[0], bytes[1], Type::Long) // FIXME
