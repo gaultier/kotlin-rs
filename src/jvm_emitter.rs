@@ -294,6 +294,7 @@ impl CodeBuilder {
                 unimplemented!()
             }
         }
+        self.stack_max = std::cmp::max(self.stack.len() as u16, self.stack_max);
         Ok(())
     }
 
@@ -320,6 +321,7 @@ impl CodeBuilder {
             }
             _ => unimplemented!(),
         }
+        self.locals_max = std::cmp::max(self.locals.len() as u16, self.locals_max);
         Ok(())
     }
 
@@ -604,8 +606,8 @@ impl<'a> JvmEmitter<'a> {
 
         let attribute_code = Attribute::Code {
             name: self.code_str,
-            max_stack: 100, // FIXME
-            max_locals: 2,  // FIXME
+            max_stack: code_builder.stack_max,
+            max_locals: code_builder.locals_max,
             code,
             exception_table: Vec::new(),
             attributes: vec![line_table, stack_map_table],
