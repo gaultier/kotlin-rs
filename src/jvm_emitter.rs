@@ -177,12 +177,12 @@ fn add_and_push_constant(
     match constant {
         Constant::Long(_) => {
             let bytes = ((i - 1) as u16).to_be_bytes();
-            code_builder.push3(OP_LDC2_W, bytes[0], bytes[1])
+            code_builder.push3(OP_LDC2_W, bytes[0], bytes[1], Type::Long)
         }
-        _ if i <= std::u8::MAX as u16 => code_builder.push2(OP_LDC, i as u8),
+        _ if i <= std::u8::MAX as u16 => code_builder.push2(OP_LDC, i as u8, Type::Int),
         _ => {
             let bytes = ((i - 1) as u16).to_be_bytes();
-            code_builder.push3(OP_LDC_W, bytes[0], bytes[1])
+            code_builder.push3(OP_LDC_W, bytes[0], bytes[1], Type::Long) // FIXME
         }
     }
 }
@@ -278,7 +278,7 @@ impl CodeBuilder {
 
     fn stack_push(&mut self, t: Type) -> Result<(), Error> {
         match t {
-            Type::TString | Type::Int => {
+            Type::Long | Type::TString | Type::Int => {
                 self.stack.push(t);
             }
             _ => {
@@ -292,7 +292,7 @@ impl CodeBuilder {
     fn locals_pop(&mut self) -> Result<Type, Error> {
         self.locals
             .pop()
-            .ok_or_else(|| Error::new(ErrorKind::JvmStackUnderflow, Location::new()))
+            .ok_or_else(|| Error::new(ErrorKind::JvmLocalsUnderflow, Location::new()))
     }
 
     fn locals_pop2(&mut self) -> Result<[Type; 2], Error> {
@@ -303,7 +303,7 @@ impl CodeBuilder {
 
     fn locals_push(&mut self, t: Type) -> Result<(), Error> {
         match t {
-            Type::TString | Type::Int => {
+            Type::Long | Type::TString | Type::Int => {
                 self.locals.push(t);
             }
             _ => unimplemented!(),
@@ -312,26 +312,31 @@ impl CodeBuilder {
     }
 
     fn push1(&mut self, op: u8) -> Result<(), Error> {
-        self.push(op, None, None)
+        self.push(op, None, None, None)
     }
 
-    fn push2(&mut self, op: u8, operand1: u8) -> Result<(), Error> {
-        self.push(op, Some(operand1), None)
+    fn push2(&mut self, op: u8, operand1: u8, t: Type) -> Result<(), Error> {
+        self.push(op, Some(operand1), None, Some(t))
     }
 
-    fn push3(&mut self, op: u8, operand1: u8, operand2: u8) -> Result<(), Error> {
-        self.push(op, Some(operand1), Some(operand2))
+    fn push3(&mut self, op: u8, operand1: u8, operand2: u8, t: Type) -> Result<(), Error> {
+        self.push(op, Some(operand1), Some(operand2), Some(t))
     }
 
-    fn push(&mut self, op: u8, operand1: Option<u8>, operand2: Option<u8>) -> Result<(), Error> {
+    fn push(
+        &mut self,
+        op: u8,
+        operand1: Option<u8>,
+        operand2: Option<u8>,
+        t: Option<Type>,
+    ) -> Result<(), Error> {
         match op {
             OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3 | OP_ICONST_4
             | OP_ICONST_5 | OP_BIPUSH => {
                 self.stack_push(Type::Int)?;
             }
             OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV => {
-                self.stack_pop2()?;
-                self.stack_push(Type::Int)?;
+                self.stack_pop()?;
             }
             OP_IFEQ => {
                 self.stack_pop2()?;
@@ -340,11 +345,11 @@ impl CodeBuilder {
             OP_GET_STATIC => {
                 self.stack_push(Type::TString)?; // FIXME: hardcoded for println
             }
-            OP_ISTORE_0 => {
+            OP_ISTORE | OP_ISTORE_0 | OP_LSTORE => {
                 let v = self.stack_pop()?;
                 self.locals_push(v)?;
             }
-            OP_ILOAD_0 => {
+            OP_ILOAD | OP_ILOAD_0 | OP_LLOAD => {
                 let v = self.locals_pop()?;
                 self.stack_push(v)?;
             }
@@ -353,6 +358,12 @@ impl CodeBuilder {
             }
             OP_RETURN => {}
             OP_INEG => {}
+            OP_LDC | OP_LDC_W | OP_LDC2_W => {
+                self.stack_push(t.unwrap())?;
+            }
+            OP_LADD | OP_LMUL | OP_LSUB | OP_LDIV => {
+                self.stack_push(Type::Long)?;
+            }
             _ => unimplemented!(),
         }
 
@@ -366,6 +377,24 @@ impl CodeBuilder {
         }
 
         Ok(())
+    }
+
+    fn spill_stack_top(&mut self) -> Result<(), Error> {
+        let t = self.stack.last().unwrap();
+        match t {
+            Type::Int => self.push2(OP_ILOAD, (self.stack.len() - 1) as u8, Type::Int),
+            Type::Long => self.push2(OP_LLOAD, (self.stack.len() - 1) as u8, Type::Long),
+            _ => unimplemented!(),
+        }
+    }
+
+    fn unspill_stack_top(&mut self) -> Result<(), Error> {
+        let t = self.locals.last().unwrap();
+        match t {
+            Type::Int => self.push2(OP_ISTORE, (self.stack.len() - 1) as u8, Type::Int),
+            Type::Long => self.push2(OP_LSTORE, (self.stack.len() - 1) as u8, Type::Long),
+            _ => unimplemented!(),
+        }
     }
 
     fn end(&mut self) -> Vec<u8> {
@@ -677,18 +706,20 @@ impl<'a> JvmEmitter<'a> {
         self.expr(expr, code_builder)?;
         // Spill the stack to registers, in order to first load the operand (`out` field) and then
         // load the arguments back to the stack
-        code_builder.push1(OP_ISTORE_0)?; // FIXME
+        code_builder.spill_stack_top()?;
         code_builder.push3(
             OP_GET_STATIC,
             self.out_fieldref.to_be_bytes()[0],
             self.out_fieldref.to_be_bytes()[1],
+            Type::TString, // FIXME
         )?;
-        code_builder.push1(OP_ILOAD_0)?; // FIXME
+        code_builder.unspill_stack_top()?;
 
         code_builder.push3(
             OP_INVOKE_VIRTUAL,
             println_methodref.to_be_bytes()[0],
             println_methodref.to_be_bytes()[1],
+            Type::Any, // FIXME
         )
     }
 
@@ -771,10 +802,12 @@ impl<'a> JvmEmitter<'a> {
             TokenKind::Int(3) => code_builder.push1(OP_ICONST_3),
             TokenKind::Int(4) => code_builder.push1(OP_ICONST_4),
             TokenKind::Int(5) => code_builder.push1(OP_ICONST_5),
-            TokenKind::Int(n) if n <= std::i8::MAX as i32 => code_builder.push2(OP_BIPUSH, n as u8),
+            TokenKind::Int(n) if n <= std::i8::MAX as i32 => {
+                code_builder.push2(OP_BIPUSH, n as u8, Type::Int)
+            }
             TokenKind::Int(n) if n <= std::i16::MAX as i32 => {
                 let bytes = (n as u16).to_be_bytes();
-                code_builder.push3(OP_SIPUSH, bytes[0], bytes[1])
+                code_builder.push3(OP_SIPUSH, bytes[0], bytes[1], Type::Int)
             }
             TokenKind::Int(n) if n <= std::i32::MAX => {
                 add_and_push_constant(&mut self.constants, &Constant::Int(n), code_builder)
