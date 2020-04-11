@@ -275,10 +275,13 @@ impl CodeBuilder {
 
     fn stack_push(&mut self, t: Type) -> Result<(), Error> {
         match t {
-            Type::Int => {
+            Type::TString | Type::Int => {
                 self.stack.push(t);
             }
-            _ => unimplemented!(),
+            _ => {
+                dbg!(t);
+                unimplemented!()
+            }
         }
         Ok(())
     }
@@ -297,7 +300,7 @@ impl CodeBuilder {
 
     fn locals_push(&mut self, t: Type) -> Result<(), Error> {
         match t {
-            Type::Int => {
+            Type::TString | Type::Int => {
                 self.locals.push(t);
             }
             _ => unimplemented!(),
