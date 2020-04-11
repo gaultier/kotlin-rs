@@ -243,6 +243,65 @@ fn binary_op(kind: &TokenKind, t: &Type) -> u8 {
     }
 }
 
+#[derive(Debug)]
+struct CodeBuilder {
+    code: Vec<u8>,
+    attributes: Vec<Attribute>,
+    stack: Vec<Type>,
+    locals: Vec<Type>,
+}
+
+impl CodeBuilder {
+    fn new() -> CodeBuilder {
+        CodeBuilder {
+            code: Vec::new(),
+            attributes: Vec::new(),
+            stack: Vec::new(),
+            locals: Vec::new(),
+        }
+    }
+
+    fn stack_pop(&mut self) -> Result<Type, Error> {
+        self.stack
+            .pop()
+            .ok_or_else(|| Error::new(ErrorKind::JvmStackUnderflow, Location::new()))
+    }
+
+    fn stack_pop2(&mut self) -> Result<[Type; 2], Error> {
+        let a = self.stack_pop()?;
+        let b = self.stack_pop()?;
+        Ok([a, b])
+    }
+
+    fn stack_push(&mut self, t: Type) -> Result<(), Error> {
+        match t {
+            Type::Int => {
+                self.stack.push(t);
+            }
+            _ => unimplemented!(),
+        }
+        Ok(())
+    }
+
+    fn push(&mut self, op: u8, operand1: Option<u8>, operand2: Option<u8>) -> Result<(), Error> {
+        match op {
+            OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3 | OP_ICONST_4
+            | OP_ICONST_5 | OP_BIPUSH => {
+                self.stack_push(Type::Int)?;
+            }
+            OP_IADD => {
+                self.stack_pop2()?;
+            }
+            OP_IFEQ => {
+                self.stack_pop2()?;
+            }
+            _ => unimplemented!(),
+        }
+
+        Ok(())
+    }
+}
+
 impl<'a> JvmEmitter<'a> {
     pub(crate) fn new(session: &'a Session, types: &'a Types) -> JvmEmitter<'a> {
         let mut constants = Vec::new();

@@ -49,6 +49,7 @@ pub enum ErrorKind {
     },
     IoError(std::io::Error),
     MaxConstantsReached(u16),
+    JvmStackUnderflow,
 }
 
 impl Location {
@@ -142,6 +143,7 @@ impl fmt::Display for ErrorKind {
                 *jump_kind, *expected_context, *found_context,
             ),
             ErrorKind::IoError(err) => write!(f, "{}", err),
+            ErrorKind::JvmStackUnderflow => write!(f, "Jvm stack underflow"),
             ErrorKind::MaxConstantsReached(max) => write!(
                 f,
                 "The maximum number of constants has been reached: {}",
