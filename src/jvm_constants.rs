@@ -1,3 +1,5 @@
+use crate::parse::Type;
+
 pub(crate) const CTOR_STR: &'static str = "<init>";
 
 pub(crate) const _CLASS_ACC_PUBLIC: u16 = 0x0001; // Declared public; may be accessed from outside its package.
@@ -34,8 +36,69 @@ pub(crate) const _CONSTANT_METHOD_HANDLE: u8 = 15;
 pub(crate) const _CONSTANT_METHOD_TYPE: u8 = 16;
 pub(crate) const _CONSTANT_INVOKE_DYNAMIC: u8 = 18;
 
+#[derive(Debug, Clone)]
+enum OpCode {
+    Return,
+    Nop,
+    InvokeSpecial(u16),
+    GetStatic(u16),
+    LoadConstant(u16, Type),
+    InvokeVirtual(u16),
+    IPush(i32),
+    FPush(f32),
+    LPush(i64),
+    IAdd,
+    ISub,
+    IMult,
+    IDiv,
+    FAdd,
+    FSub,
+    FMult,
+    FDiv,
+    LAdd,
+    LSub,
+    LMult,
+    LDiv,
+    IfEq,
+    ILoad(u16),
+    IStore(u16),
+    FLoad(u16),
+    FStore(u16),
+    LLoad(u16),
+    LStore(u16),
+}
+
+impl OpCode {
+    fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            OpCode::Return => vec![OP_RETURN],
+            OpCode::Nop => vec![OP_NOP],
+            OpCode::InvokeSpecial(i) => {
+                vec![OP_INVOKE_SPECIAL, i.to_be_bytes()[0], i.to_be_bytes()[1]]
+            }
+            OpCode::InvokeVirtual(i) => {
+                vec![OP_INVOKE_VIRTUAL, i.to_be_bytes()[0], i.to_be_bytes()[1]]
+            }
+            OpCode::GetStatic(i) => vec![OP_GET_STATIC, i.to_be_bytes()[0], i.to_be_bytes()[2]],
+            OpCode::LoadConstant(i, Type::Int) if *i <= std::u8::MAX as u16 => {
+                vec![OP_LDC, i.to_be_bytes()[0], i.to_be_bytes()[2]]
+            }
+            OpCode::LoadConstant(i, Type::Float) if *i <= std::u8::MAX as u16 => {
+                vec![OP_LDC, i.to_be_bytes()[0], i.to_be_bytes()[2]]
+            }
+            OpCode::LoadConstant(i, Type::Long) => {
+                vec![OP_LDC2_W, i.to_be_bytes()[0], i.to_be_bytes()[2]]
+            }
+            OpCode::LoadConstant(i, _) => vec![OP_LDC_W, i.to_be_bytes()[0], i.to_be_bytes()[2]],
+            OpCode::IPush(v) => vec![OP_BIPUSH, i.to_be_bytes()[0], i.to_be_bytes()[2]],
+            OpCode::GetStatic(i) => vec![0xb2, i.to_be_bytes()[0], i.to_be_bytes()[2]],
+            OpCode::GetStatic(i) => vec![0xb2, i.to_be_bytes()[0], i.to_be_bytes()[2]],
+        }
+    }
+}
+
 pub(crate) const OP_RETURN: u8 = 0xb1;
-pub(crate) const _OP_NOP: u8 = 0x00;
+pub(crate) const OP_NOP: u8 = 0x00;
 pub(crate) const OP_ALOAD_0: u8 = 0x2a;
 pub(crate) const OP_INVOKE_SPECIAL: u8 = 0xb7;
 pub(crate) const OP_GET_STATIC: u8 = 0xb2;
