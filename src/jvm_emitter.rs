@@ -362,7 +362,7 @@ impl CodeBuilder {
                 self.stack_push(t.unwrap())?;
             }
             OP_LADD | OP_LMUL | OP_LSUB | OP_LDIV => {
-                self.stack_push(Type::Long)?;
+                self.stack_pop()?;
             }
             _ => unimplemented!(),
         }
