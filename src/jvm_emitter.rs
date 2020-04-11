@@ -306,6 +306,18 @@ impl CodeBuilder {
         Ok(())
     }
 
+    fn push1(&mut self, op: u8) -> Result<(), Error> {
+        self.push(op, None, None)
+    }
+
+    fn push2(&mut self, op: u8, operand1: u8) -> Result<(), Error> {
+        self.push(op, Some(operand1), None)
+    }
+
+    fn push3(&mut self, op: u8, operand1: u8, operand2: u8) -> Result<(), Error> {
+        self.push(op, Some(operand1), Some(operand2))
+    }
+
     fn push(&mut self, op: u8, operand1: Option<u8>, operand2: Option<u8>) -> Result<(), Error> {
         match op {
             OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3 | OP_ICONST_4
@@ -675,17 +687,17 @@ impl<'a> JvmEmitter<'a> {
 
     fn expr(&mut self, expr: &AstNodeExpr, code_builder: &mut CodeBuilder) -> Result<(), Error> {
         match expr {
-            AstNodeExpr::Literal(l, _) => self.literal(l),
-            AstNodeExpr::Unary { .. } => self.unary(expr),
-            AstNodeExpr::Binary { .. } => self.binary(expr),
-            AstNodeExpr::Grouping(e, _) => self.expr(e),
-            AstNodeExpr::Println(e, _) => self.println(e),
+            AstNodeExpr::Literal(l, _) => self.literal(l, code_builder),
+            AstNodeExpr::Unary { .. } => self.unary(expr, code_builder),
+            AstNodeExpr::Binary { .. } => self.binary(expr, code_builder),
+            AstNodeExpr::Grouping(e, _) => self.expr(e, code_builder),
+            AstNodeExpr::Println(e, _) => self.println(e, code_builder),
             AstNodeExpr::IfExpr {
                 cond,
                 if_body,
                 else_body,
                 ..
-            } => self.if_expr(cond, if_body, else_body),
+            } => self.if_expr(cond, if_body, else_body, code_builder),
             _ => unimplemented!(),
         }
     }
@@ -706,12 +718,11 @@ impl<'a> JvmEmitter<'a> {
                     unimplemented!("Conversions")
                 }
 
-                let mut v = self.expr(left)?;
+                self.expr(left, code_builder)?;
 
-                v.append(&mut self.expr(right)?);
+                self.expr(right, code_builder)?;
 
-                v.push(binary_op(&op.kind, t));
-                Ok(v)
+                code_builder.push1(binary_op(&op.kind, t))
             }
             _ => unimplemented!(),
         }
@@ -729,8 +740,7 @@ impl<'a> JvmEmitter<'a> {
                 ..
             } => {
                 self.expr(expr, code_builder)?;
-                code_builder.push(OP_INEG, None, None);
-                Ok(v)
+                code_builder.push1(OP_INEG)
             }
             AstNodeExpr::Unary {
                 token:
@@ -740,39 +750,47 @@ impl<'a> JvmEmitter<'a> {
                     },
                 expr,
                 ..
-            } => self.expr(expr),
+            } => self.expr(expr, code_builder),
             _ => unimplemented!(),
         }
     }
 
     fn literal(&mut self, literal: &Token, code_builder: &mut CodeBuilder) -> Result<(), Error> {
         match literal.kind {
-            TokenKind::Int(-1) => Ok(vec![OP_ICONST_M1]),
-            TokenKind::Boolean(false) | TokenKind::Int(0) => Ok(vec![OP_ICONST_0]),
-            TokenKind::Boolean(true) | TokenKind::Int(1) => Ok(vec![OP_ICONST_1]),
-            TokenKind::Int(2) => Ok(vec![OP_ICONST_2]),
-            TokenKind::Int(3) => Ok(vec![OP_ICONST_3]),
-            TokenKind::Int(4) => Ok(vec![OP_ICONST_4]),
-            TokenKind::Int(5) => Ok(vec![OP_ICONST_5]),
-            TokenKind::Int(n) if n <= std::i8::MAX as i32 => Ok(vec![OP_BIPUSH, n as u8]),
+            TokenKind::Int(-1) => code_builder.push1(OP_ICONST_M1),
+            TokenKind::Boolean(false) | TokenKind::Int(0) => code_builder.push1(OP_ICONST_0),
+            TokenKind::Boolean(true) | TokenKind::Int(1) => code_builder.push1(OP_ICONST_1),
+            TokenKind::Int(2) => code_builder.push1(OP_ICONST_2),
+            TokenKind::Int(3) => code_builder.push1(OP_ICONST_3),
+            TokenKind::Int(4) => code_builder.push1(OP_ICONST_4),
+            TokenKind::Int(5) => code_builder.push1(OP_ICONST_5),
+            TokenKind::Int(n) if n <= std::i8::MAX as i32 => code_builder.push2(OP_BIPUSH, n as u8),
             TokenKind::Int(n) if n <= std::i16::MAX as i32 => {
-                let v = vec![OP_SIPUSH, (n >> 8) as u8, (n & 0xff) as u8];
-                Ok(v)
+                let bytes = (n as u16).to_be_bytes();
+                code_builder.push3(OP_SIPUSH, bytes[0], bytes[1])
             }
             TokenKind::Int(n) if n <= std::i32::MAX => {
-                add_and_push_constant(&mut self.constants, &Constant::Int(n))
+                // add_and_push_constant(&mut self.constants, &Constant::Int(n))
+                unimplemented!()
             }
-            TokenKind::Long(0) => Ok(vec![OP_LCONST_0]),
-            TokenKind::Long(1) => Ok(vec![OP_LCONST_1]),
-            TokenKind::Long(n) => add_and_push_constant(&mut self.constants, &Constant::Long(n)),
-            TokenKind::Float(n) if n.to_bits() == 0f32.to_bits() => Ok(vec![OP_FCONST_0]),
-            TokenKind::Float(n) if n.to_bits() == 1f32.to_bits() => Ok(vec![OP_FCONST_1]),
-            TokenKind::Float(n) if n.to_bits() == 2f32.to_bits() => Ok(vec![OP_FCONST_2]),
-            TokenKind::Float(n) => add_and_push_constant(&mut self.constants, &Constant::Float(n)),
+            TokenKind::Long(0) => code_builder.push1(OP_LCONST_0),
+            TokenKind::Long(1) => code_builder.push1(OP_LCONST_1),
+            TokenKind::Long(n) => {
+                unimplemented!()
+                //add_and_push_constant(&mut self.constants, &Constant::Long(n)),
+            }
+            TokenKind::Float(n) if n.to_bits() == 0f32.to_bits() => code_builder.push1(OP_FCONST_0),
+            TokenKind::Float(n) if n.to_bits() == 1f32.to_bits() => code_builder.push1(OP_FCONST_1),
+            TokenKind::Float(n) if n.to_bits() == 2f32.to_bits() => code_builder.push1(OP_FCONST_2),
+            TokenKind::Float(n) => {
+                unimplemented!()
+                //add_and_push_constant(&mut self.constants, &Constant::Float(n)),
+            }
             TokenKind::TString => {
-                let s = String::from(&self.session.src[literal.span.start..literal.span.end]);
-                let i = add_constant(&mut self.constants, &Constant::Utf8(s))?;
-                add_and_push_constant(&mut self.constants, &Constant::CString(i))
+                unimplemented!()
+                // let s = String::from(&self.session.src[literal.span.start..literal.span.end]);
+                // let i = add_constant(&mut self.constants, &Constant::Utf8(s))?;
+                // add_and_push_constant(&mut self.constants, &Constant::CString(i))
             }
             _ => {
                 dbg!(literal);
