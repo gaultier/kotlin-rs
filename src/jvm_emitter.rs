@@ -44,7 +44,6 @@ pub(crate) struct JvmEmitter<'a> {
     pub(crate) class_printstream: u16,
     pub(crate) stack_map_table_str: u16,
     pub(crate) jumps: Vec<Jump>,
-    code_builder: CodeBuilder,
 }
 
 #[derive(Debug)]
@@ -364,7 +363,7 @@ impl CodeBuilder {
 
     fn end(&mut self) -> Vec<u8> {
         self.code.push(OP_RETURN);
-        self.code
+        self.code.clone()
     }
 }
 
@@ -491,7 +490,6 @@ impl<'a> JvmEmitter<'a> {
             methods: Vec::new(),
             attributes: Vec::new(),
             jumps: Vec::new(),
-            code_builder: CodeBuilder::new(),
         }
     }
 
@@ -534,8 +532,9 @@ impl<'a> JvmEmitter<'a> {
             attributes: Vec::new(),
         };
 
-        self.statement(block, &mut self.code_builder)?;
-        let code = self.code_builder.end();
+        let mut code_builder = CodeBuilder::new();
+        self.statement(block, &mut code_builder)?;
+        let code = code_builder.end();
 
         // FIXME: dummy for now
         let line_table = Attribute::LineNumberTable {
