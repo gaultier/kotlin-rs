@@ -251,6 +251,23 @@ struct CodeBuilder {
     locals: Vec<Type>,
 }
 
+#[derive(Debug)]
+enum Value {
+    I8(i8),
+    I16(i16),
+    I32(i32),
+    F32(f32),
+    I64(i64),
+    F64(f64),
+    Ref(i32),
+}
+
+#[derive(Debug)]
+enum Op {
+    Jump {},
+    Const(Value),
+}
+
 impl CodeBuilder {
     fn new() -> CodeBuilder {
         CodeBuilder {
@@ -363,6 +380,38 @@ impl CodeBuilder {
         }
 
         Ok(())
+    }
+
+    fn op(&mut self, op: Op) -> Result<(), Error> {
+        match op {
+            Op::Jump { .. } => unimplemented!(),
+            Op::Const(Value::I8(-1)) | Op::Const(Value::I16(-1)) | Op::Const(Value::I32(-1)) => {
+                self.push1(OP_ICONST_M1)
+            }
+            Op::Const(Value::I8(0)) | Op::Const(Value::I16(0)) | Op::Const(Value::I32(0)) => {
+                self.push1(OP_ICONST_0)
+            }
+            Op::Const(Value::I8(1)) | Op::Const(Value::I16(1)) | Op::Const(Value::I32(1)) => {
+                self.push1(OP_ICONST_1)
+            }
+            Op::Const(Value::I8(2)) | Op::Const(Value::I16(2)) | Op::Const(Value::I32(2)) => {
+                self.push1(OP_ICONST_2)
+            }
+            Op::Const(Value::I8(2)) | Op::Const(Value::I16(2)) | Op::Const(Value::I32(2)) => {
+                self.push1(OP_ICONST_2)
+            }
+            Op::Const(Value::I8(4)) | Op::Const(Value::I16(4)) | Op::Const(Value::I32(4)) => {
+                self.push1(OP_ICONST_4)
+            }
+            Op::Const(Value::I8(5)) | Op::Const(Value::I16(5)) | Op::Const(Value::I32(5)) => {
+                self.push1(OP_ICONST_5)
+            }
+            Op::Const(Value::I16(v)) => {
+                self.push3(OP_SIPUSH, v.to_be_bytes()[0], v.to_be_bytes()[1])
+            }
+            Op::Const(Value::I32(v)) => unimplemented!(),
+            _ => unimplemented!(),
+        }
     }
 
     fn end(&mut self) -> Vec<u8> {
@@ -774,8 +823,7 @@ impl<'a> JvmEmitter<'a> {
                 code_builder.push3(OP_SIPUSH, bytes[0], bytes[1])
             }
             TokenKind::Int(n) if n <= std::i32::MAX => {
-                // add_and_push_constant(&mut self.constants, &Constant::Int(n))
-                unimplemented!()
+                add_and_push_constant(&mut self.constants, &Constant::Int(n))
             }
             TokenKind::Long(0) => code_builder.push1(OP_LCONST_0),
             TokenKind::Long(1) => code_builder.push1(OP_LCONST_1),
