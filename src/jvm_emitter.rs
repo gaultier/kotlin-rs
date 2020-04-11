@@ -344,97 +344,7 @@ impl CodeBuilder {
     }
 
     fn verify(&mut self) -> Result<(), Error> {
-        let mut i = 0;
-
-        while i < self.code.len() {
-            let op = self.code[i];
-            match op {
-                OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3
-                | OP_ICONST_4 | OP_ICONST_5 => {
-                    self.stack_push(Type::Int)?;
-                }
-                OP_BIPUSH => {
-                    self.stack_push(Type::Int)?;
-                    i += 1;
-                }
-                OP_FCONST_0 | OP_FCONST_1 | OP_FCONST_2 => {
-                    self.stack_push(Type::Float)?;
-                }
-                OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_FADD | OP_FMUL | OP_FSUB | OP_FDIV => {
-                    self.stack_pop()?;
-                }
-                OP_IFEQ => {
-                    self.stack_pop()?;
-                    i += 2;
-                }
-                OP_GOTO => {
-                    i += 1;
-                }
-                OP_GET_STATIC => {
-                    self.stack_push(Type::TString)?; // FIXME: hardcoded for println
-                    i += 2;
-                }
-                OP_ISTORE | OP_FSTORE => {
-                    let v = self.stack_pop()?;
-                    i += 1;
-
-                    let op1 = self.code[i] as usize;
-                    if op1 >= self.locals.len() {
-                        self.locals.resize(1 + op1, Type::Any);
-                        self.locals_max = std::cmp::max(self.locals_max, self.locals.len() as u16);
-                    }
-                    self.locals[op1] = v;
-                }
-                OP_LSTORE => {
-                    let [v1, v2] = self.stack_pop2()?;
-
-                    i += 1;
-                    let op1 = self.code[i] as usize;
-
-                    if op1 >= self.locals.len() {
-                        self.locals.resize(2 + op1, Type::Any);
-                        self.locals_max = std::cmp::max(self.locals_max, self.locals.len() as u16);
-                    }
-                    self.locals[op1] = v1;
-                    self.locals[op1 + 1] = v2;
-                }
-                OP_ILOAD | OP_FLOAD => {
-                    i += 1;
-                    let op1 = self.code[i] as usize;
-                    let v = self.locals[op1].clone();
-                    self.stack_push(v)?;
-                }
-                OP_LLOAD => {
-                    i += 1;
-                    let op1 = self.code[i] as usize;
-                    let v1 = self.locals[op1].clone();
-                    let v2 = self.locals[op1 + 1].clone();
-                    self.stack_push(v1)?;
-                    self.stack_push(v2)?;
-                }
-                OP_INVOKE_VIRTUAL => {
-                    self.stack_pop2()?; // FIXME: hardcoded for println
-                    i += 2;
-                }
-                OP_RETURN => {}
-                OP_INEG => {}
-                OP_LDC | OP_LDC_W => {
-                    i += 1;
-                    self.stack_push(Type::Int)?; // FIXME
-                }
-                OP_LDC2_W => {
-                    i += 2;
-                    self.stack_push(Type::Long)?;
-                    self.stack_push(Type::Long)?;
-                }
-                OP_LADD | OP_LMUL | OP_LSUB | OP_LDIV => {
-                    self.stack_pop2()?;
-                }
-                _ => unimplemented!(),
-            }
-            i += 1;
-        }
-        Ok(())
+        unimplemented!()
     }
 
     fn push(
@@ -448,6 +358,75 @@ impl CodeBuilder {
             "push: op={} operand1={:?} operand2={:?} t={:?} stack={:?} locals={:?}",
             op, operand1, operand2, t, self.stack, self.locals
         );
+
+        match op {
+            OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3 | OP_ICONST_4
+            | OP_ICONST_5 => {
+                self.stack_push(Type::Int)?;
+            }
+            OP_BIPUSH => {
+                self.stack_push(t.unwrap())?;
+            }
+            OP_FCONST_0 | OP_FCONST_1 | OP_FCONST_2 => {
+                self.stack_push(Type::Float)?;
+            }
+            OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_FADD | OP_FMUL | OP_FSUB | OP_FDIV => {
+                self.stack_pop()?;
+            }
+            OP_IFEQ => {
+                self.stack_pop()?;
+            }
+            OP_GOTO => {}
+            OP_GET_STATIC => {
+                self.stack_push(Type::TString)?; // FIXME: hardcoded for println
+            }
+            OP_ISTORE | OP_FSTORE => {
+                let v = self.stack_pop()?;
+
+                let op1 = operand1.unwrap() as usize;
+                if op1 >= self.locals.len() {
+                    self.locals.resize(1 + op1, Type::Any);
+                    self.locals_max = std::cmp::max(self.locals_max, self.locals.len() as u16);
+                }
+                self.locals[op1] = v;
+            }
+            OP_LSTORE => {
+                let [v1, v2] = self.stack_pop2()?;
+                let op1 = operand1.unwrap() as usize;
+                if op1 >= self.locals.len() {
+                    self.locals.resize(2 + op1, Type::Any);
+                    self.locals_max = std::cmp::max(self.locals_max, self.locals.len() as u16);
+                }
+                self.locals[op1] = v1;
+                self.locals[op1 + 1] = v2;
+            }
+            OP_ILOAD | OP_FLOAD => {
+                let v = self.locals[operand1.unwrap() as usize].clone();
+                self.stack_push(v)?;
+            }
+            OP_LLOAD => {
+                let v1 = self.locals[operand1.unwrap() as usize].clone();
+                let v2 = self.locals[operand1.unwrap() as usize + 1].clone();
+                self.stack_push(v1)?;
+                self.stack_push(v2)?;
+            }
+            OP_INVOKE_VIRTUAL => {
+                self.stack_pop2()?; // FIXME: hardcoded for println
+            }
+            OP_RETURN => {}
+            OP_INEG => {}
+            OP_LDC | OP_LDC_W => {
+                self.stack_push(t.unwrap())?;
+            }
+            OP_LDC2_W => {
+                self.stack_push(t.clone().unwrap())?;
+                self.stack_push(t.unwrap())?;
+            }
+            OP_LADD | OP_LMUL | OP_LSUB | OP_LDIV => {
+                self.stack_pop2()?;
+            }
+            _ => unimplemented!(),
+        }
 
         self.code.push(op);
 
@@ -481,12 +460,9 @@ impl CodeBuilder {
         }
     }
 
-    fn end(&mut self) -> Result<Vec<u8>, Error> {
+    fn end(&mut self) -> Vec<u8> {
         self.code.push(OP_RETURN);
-
-        self.verify()?;
-
-        Ok(self.code.clone())
+        self.code.clone()
     }
 }
 
@@ -656,7 +632,7 @@ impl<'a> JvmEmitter<'a> {
 
         let mut code_builder = CodeBuilder::new();
         self.statement(block, &mut code_builder)?;
-        let code = code_builder.end()?;
+        let code = code_builder.end();
 
         // FIXME: dummy for now
         let line_table = Attribute::LineNumberTable {
