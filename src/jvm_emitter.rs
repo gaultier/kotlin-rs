@@ -262,7 +262,7 @@ impl CodeBuilder {
             code: Vec::new(),
             attributes: Vec::new(),
             stack: Vec::new(),
-            locals: Vec::new(),
+            locals: vec![Type::Any], // FIXME: this
             stack_max: 0,
             locals_max: 0,
         }
@@ -344,6 +344,11 @@ impl CodeBuilder {
         operand2: Option<u8>,
         t: Option<Type>,
     ) -> Result<(), Error> {
+        debug!(
+            "push: op={} operand1={:?} operand2={:?} t={:?} stack={:?} locals={:?}",
+            op, operand1, operand2, t, self.stack, self.locals
+        );
+
         match op {
             OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3 | OP_ICONST_4
             | OP_ICONST_5 | OP_BIPUSH => {
@@ -359,24 +364,50 @@ impl CodeBuilder {
             OP_GET_STATIC => {
                 self.stack_push(Type::TString)?; // FIXME: hardcoded for println
             }
-            OP_ISTORE | OP_ISTORE_0 | OP_LSTORE => {
+            OP_ISTORE => {
                 let v = self.stack_pop()?;
-                self.locals_push(v)?;
+
+                let op1 = operand1.unwrap() as usize;
+                if op1 >= self.locals.len() {
+                    self.locals.resize(1 + op1, Type::Any);
+                    self.locals_max = std::cmp::max(self.locals_max, self.locals.len() as u16);
+                }
+                self.locals[op1] = v;
             }
-            OP_ILOAD | OP_ILOAD_0 | OP_LLOAD => {
-                let v = self.locals_pop()?;
+            OP_LSTORE => {
+                let [v1, v2] = self.stack_pop2()?;
+                let op1 = operand1.unwrap() as usize;
+                if op1 >= self.locals.len() {
+                    self.locals.resize(2 + op1, Type::Any);
+                    self.locals_max = std::cmp::max(self.locals_max, self.locals.len() as u16);
+                }
+                self.locals[op1] = v1;
+                self.locals[op1 + 1] = v2;
+            }
+            OP_ILOAD => {
+                let v = self.locals[operand1.unwrap() as usize].clone();
                 self.stack_push(v)?;
+            }
+            OP_LLOAD => {
+                let v1 = self.locals[operand1.unwrap() as usize].clone();
+                let v2 = self.locals[operand1.unwrap() as usize + 1].clone();
+                self.stack_push(v1)?;
+                self.stack_push(v2)?;
             }
             OP_INVOKE_VIRTUAL => {
                 self.stack_pop2()?; // FIXME: hardcoded for println
             }
             OP_RETURN => {}
             OP_INEG => {}
-            OP_LDC | OP_LDC_W | OP_LDC2_W => {
+            OP_LDC | OP_LDC_W => {
+                self.stack_push(t.unwrap())?;
+            }
+            OP_LDC2_W => {
+                self.stack_push(t.clone().unwrap())?;
                 self.stack_push(t.unwrap())?;
             }
             OP_LADD | OP_LMUL | OP_LSUB | OP_LDIV => {
-                self.stack_pop()?;
+                self.stack_pop2()?;
             }
             _ => unimplemented!(),
         }
@@ -396,8 +427,8 @@ impl CodeBuilder {
     fn spill_stack_top(&mut self) -> Result<(), Error> {
         let t = self.stack.last().unwrap();
         match t {
-            Type::Int => self.push2(OP_ISTORE, (self.stack.len() - 1) as u8, Type::Int),
-            Type::Long => self.push2(OP_LSTORE, (self.stack.len() - 1) as u8, Type::Long),
+            Type::Int => self.push2(OP_ISTORE, 1, Type::Int),
+            Type::Long => self.push2(OP_LSTORE, 1, Type::Long),
             _ => unimplemented!(),
         }
     }
@@ -405,8 +436,8 @@ impl CodeBuilder {
     fn unspill_stack_top(&mut self) -> Result<(), Error> {
         let t = self.locals.last().unwrap();
         match t {
-            Type::Int => self.push2(OP_ILOAD, (self.stack.len() - 1) as u8, Type::Int),
-            Type::Long => self.push2(OP_LLOAD, (self.stack.len() - 1) as u8, Type::Long),
+            Type::Int => self.push2(OP_ILOAD, 1, Type::Int),
+            Type::Long => self.push2(OP_LLOAD, 1, Type::Long),
             _ => unimplemented!(),
         }
     }
