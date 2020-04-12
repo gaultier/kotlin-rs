@@ -193,7 +193,11 @@ fn add_and_push_constant(
     debug!("added constant: constant={:?} i={}", &constant, i);
 
     match constant {
-        Constant::Double(_) | Constant::Long(_) => {
+        Constant::Double(_) => {
+            let bytes = ((i - 1) as u16).to_be_bytes();
+            code_builder.push3(OP_LDC2_W, bytes[0], bytes[1], Type::Double)
+        }
+        Constant::Long(_) => {
             let bytes = ((i - 1) as u16).to_be_bytes();
             code_builder.push3(OP_LDC2_W, bytes[0], bytes[1], Type::Long)
         }
@@ -402,7 +406,7 @@ impl CodeBuilder {
                 }
                 self.locals[op1] = v;
             }
-            OP_LSTORE => {
+            OP_DSTORE | OP_LSTORE => {
                 let [v1, v2] = self.stack_pop2()?;
                 let op1 = operand1.unwrap() as usize;
                 if op1 >= self.locals.len() {
@@ -416,7 +420,7 @@ impl CodeBuilder {
                 let v = self.locals[operand1.unwrap() as usize].clone();
                 self.stack_push(v)?;
             }
-            OP_LLOAD => {
+            OP_DLOAD | OP_LLOAD => {
                 let v1 = self.locals[operand1.unwrap() as usize].clone();
                 let v2 = self.locals[operand1.unwrap() as usize + 1].clone();
                 self.stack_push(v1)?;
@@ -435,6 +439,9 @@ impl CodeBuilder {
                 self.stack_push(t.unwrap())?;
             }
             OP_LADD | OP_LMUL | OP_LSUB | OP_LDIV => {
+                self.stack_pop2()?;
+            }
+            OP_DADD | OP_DMUL | OP_DSUB | OP_DDIV => {
                 self.stack_pop2()?;
             }
             _ => {
@@ -461,6 +468,7 @@ impl CodeBuilder {
             Type::Char | Type::Int => self.push2(OP_ISTORE, 1, Type::Int),
             Type::Float => self.push2(OP_FSTORE, 1, Type::Float),
             Type::Long => self.push2(OP_LSTORE, 1, Type::Long),
+            Type::Double => self.push2(OP_DSTORE, 1, Type::Double),
             _ => unimplemented!(),
         }
     }
@@ -471,6 +479,7 @@ impl CodeBuilder {
             Type::Char | Type::Int => self.push2(OP_ILOAD, 1, Type::Int),
             Type::Float => self.push2(OP_FLOAD, 1, Type::Float),
             Type::Long => self.push2(OP_LLOAD, 1, Type::Long),
+            Type::Double => self.push2(OP_DLOAD, 1, Type::Double),
             _ => unimplemented!(),
         }
     }

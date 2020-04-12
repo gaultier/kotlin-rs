@@ -89,6 +89,8 @@ pub(crate) const OP_DADD: u8 = 0x63;
 pub(crate) const OP_DSUB: u8 = 0x67;
 pub(crate) const OP_DMUL: u8 = 0x6b;
 pub(crate) const OP_DDIV: u8 = 0x6f;
+pub(crate) const OP_DSTORE: u8 = 0x39;
+pub(crate) const OP_DLOAD: u8 = 0x18;
 
 pub(crate) const OP_IMPDEP1: u8 = 0xfe;
 pub(crate) const OP_IMPDEP2: u8 = 0xff;
