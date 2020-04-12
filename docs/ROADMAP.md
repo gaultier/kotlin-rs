@@ -177,4 +177,5 @@
 - [ ] Jvm while loop
 - [x] Locals
 - [ ] Debug information
+- [ ] Stack map frames
 
