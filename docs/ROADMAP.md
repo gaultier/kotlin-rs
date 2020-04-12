@@ -164,7 +164,7 @@
 - [x] Jvm int math
 - [x] Jvm long math
 - [x] Jvm float math
-- [ ] Jvm double math
+- [x] Jvm double math
 - [x] Jvm hello world
 - [ ] Test metadata `size()` calculations
 - [ ] Test metadata serialization
