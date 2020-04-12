@@ -291,15 +291,8 @@ impl CodeBuilder {
             return Err(Error::new(ErrorKind::JvmStackOverflow, Location::new()));
         }
 
-        match t {
-            Type::Float | Type::Long | Type::TString | Type::Int => {
-                self.stack.push(t);
-            }
-            _ => {
-                dbg!(t);
-                unimplemented!()
-            }
-        }
+        self.stack.push(t);
+
         self.stack_max = std::cmp::max(self.stack.len() as u16, self.stack_max);
         Ok(())
     }
@@ -364,7 +357,7 @@ impl CodeBuilder {
             | OP_ICONST_5 => {
                 self.stack_push(Type::Int)?;
             }
-            OP_BIPUSH => {
+            OP_SIPUSH | OP_BIPUSH => {
                 self.stack_push(t.unwrap())?;
             }
             OP_FCONST_0 | OP_FCONST_1 | OP_FCONST_2 => {
@@ -425,7 +418,10 @@ impl CodeBuilder {
             OP_LADD | OP_LMUL | OP_LSUB | OP_LDIV => {
                 self.stack_pop2()?;
             }
-            _ => unimplemented!(),
+            _ => {
+                dbg!(op);
+                unimplemented!()
+            }
         }
 
         self.code.push(op);
@@ -443,7 +439,7 @@ impl CodeBuilder {
     fn spill_stack_top(&mut self) -> Result<(), Error> {
         let t = self.stack.last().unwrap();
         match t {
-            Type::Int => self.push2(OP_ISTORE, 1, Type::Int),
+            Type::Char | Type::Int => self.push2(OP_ISTORE, 1, Type::Int),
             Type::Float => self.push2(OP_FSTORE, 1, Type::Float),
             Type::Long => self.push2(OP_LSTORE, 1, Type::Long),
             _ => unimplemented!(),
@@ -453,7 +449,7 @@ impl CodeBuilder {
     fn unspill_stack_top(&mut self) -> Result<(), Error> {
         let t = self.locals.last().unwrap();
         match t {
-            Type::Int => self.push2(OP_ILOAD, 1, Type::Int),
+            Type::Char | Type::Int => self.push2(OP_ILOAD, 1, Type::Int),
             Type::Float => self.push2(OP_FLOAD, 1, Type::Float),
             Type::Long => self.push2(OP_LLOAD, 1, Type::Long),
             _ => unimplemented!(),
@@ -868,6 +864,13 @@ impl<'a> JvmEmitter<'a> {
             }
             TokenKind::Int(n) if n <= std::i32::MAX => {
                 add_and_push_constant(&mut self.constants, &Constant::Int(n), code_builder)
+            }
+            TokenKind::Char(c) if c as u16 as i32 <= std::i8::MAX as i32 => {
+                code_builder.push2(OP_BIPUSH, c as u8, Type::Char)
+            }
+            TokenKind::Char(c) if c as u16 as i32 <= std::i16::MAX as i32 => {
+                let bytes = (c as u16).to_be_bytes();
+                code_builder.push3(OP_SIPUSH, bytes[0], bytes[1], Type::Char)
             }
             TokenKind::Long(0) => code_builder.push1(OP_LCONST_0),
             TokenKind::Long(1) => code_builder.push1(OP_LCONST_1),
