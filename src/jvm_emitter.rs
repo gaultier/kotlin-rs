@@ -160,16 +160,16 @@ fn add_constant(constants: &mut Vec<Constant>, constant: &Constant) -> Result<u1
         Constant::Double(n) if (constants.len() + 1) < std::u16::MAX as usize => {
             let bytes = n.to_be_bytes();
             constants.push(Constant::DoubleHigh(
-                (bytes[0] << 56) as u32
-                    + (bytes[1] << 48) as u32
-                    + (bytes[2] << 40) as u32
-                    + (bytes[3] << 32) as u32,
+                ((bytes[0] as u32) << 24)
+                    + ((bytes[1] as u32) << 16)
+                    + ((bytes[2] as u32) << 8)
+                    + (bytes[3] as u32),
             ));
             constants.push(Constant::DoubleLow(
-                (bytes[4] << 24) as u32
-                    + (bytes[5] << 16) as u32
-                    + (bytes[6] << 8) as u32
-                    + bytes[7] as u32,
+                ((bytes[4] as u32) << 24)
+                    + ((bytes[5] as u32) << 16)
+                    + ((bytes[6] as u32) << 8)
+                    + (bytes[7] as u32),
             ));
             Ok((constants.len()) as u16)
         }
