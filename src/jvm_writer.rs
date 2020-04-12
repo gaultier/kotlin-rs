@@ -303,6 +303,15 @@ impl<'a> JvmEmitter<'a> {
                 w.write(&(*n as u32).to_be_bytes())?;
             }
             Constant::Long(_) => unreachable!(),
+            Constant::DoubleHigh(n) => {
+                w.write(&[CONSTANT_DOUBLE])?;
+                w.write(&(*n as u32).to_be_bytes())?;
+            }
+            // This is always preceded by DoubleHigh which writes the tag
+            Constant::DoubleLow(n) => {
+                w.write(&(*n as u32).to_be_bytes())?;
+            }
+            Constant::Double(_) => unreachable!(),
         }
         Ok(())
     }

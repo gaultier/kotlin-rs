@@ -18,6 +18,9 @@ pub(crate) enum Constant {
     Long(i64),
     LongHigh(i32),
     LongLow(i32),
+    Double(f64),
+    DoubleHigh(u32),
+    DoubleLow(u32),
 }
 
 #[derive(Debug)]
@@ -154,6 +157,22 @@ fn add_constant(constants: &mut Vec<Constant>, constant: &Constant) -> Result<u1
             constants.push(Constant::LongLow((*n & 0xff_ff_ff_ff) as i32));
             Ok((constants.len()) as u16)
         }
+        Constant::Double(n) if (constants.len() + 1) < std::u16::MAX as usize => {
+            let bytes = n.to_be_bytes();
+            constants.push(Constant::DoubleHigh(
+                (bytes[0] << 56) as u32
+                    + (bytes[1] << 48) as u32
+                    + (bytes[2] << 40) as u32
+                    + (bytes[3] << 32) as u32,
+            ));
+            constants.push(Constant::DoubleLow(
+                (bytes[4] << 24) as u32
+                    + (bytes[5] << 16) as u32
+                    + (bytes[6] << 8) as u32
+                    + bytes[7] as u32,
+            ));
+            Ok((constants.len()) as u16)
+        }
         _ if constants.len() < std::u16::MAX as usize => {
             constants.push(constant.clone());
             Ok(constants.len() as u16)
@@ -174,7 +193,7 @@ fn add_and_push_constant(
     debug!("added constant: constant={:?} i={}", &constant, i);
 
     match constant {
-        Constant::Long(_) => {
+        Constant::Double(_) | Constant::Long(_) => {
             let bytes = ((i - 1) as u16).to_be_bytes();
             code_builder.push3(OP_LDC2_W, bytes[0], bytes[1], Type::Long)
         }
@@ -876,6 +895,15 @@ impl<'a> JvmEmitter<'a> {
             TokenKind::Long(1) => code_builder.push1(OP_LCONST_1),
             TokenKind::Long(n) => {
                 add_and_push_constant(&mut self.constants, &Constant::Long(n), code_builder)
+            }
+            TokenKind::Double(n) if n.to_bits() == 0f64.to_bits() => {
+                code_builder.push1(OP_DCONST_0)
+            }
+            TokenKind::Double(n) if n.to_bits() == 1f64.to_bits() => {
+                code_builder.push1(OP_DCONST_1)
+            }
+            TokenKind::Double(n) => {
+                add_and_push_constant(&mut self.constants, &Constant::Double(n), code_builder)
             }
             TokenKind::Float(n) if n.to_bits() == 0f32.to_bits() => code_builder.push1(OP_FCONST_0),
             TokenKind::Float(n) if n.to_bits() == 1f32.to_bits() => code_builder.push1(OP_FCONST_1),
