@@ -169,12 +169,12 @@
 - [ ] Test metadata `size()` calculations
 - [ ] Test metadata serialization
 - [ ] High level API to handle stack/locals/types
-- [ ] Jvm boolean
-- [ ] Jvm char
+- [x] Jvm boolean
+- [x] Jvm char
 - [ ] Conversion between types (?)
-- [ ] Track max stack size
+- [x] Track max stack/locals
 - [x] Jvm if-else
 - [ ] Jvm while loop
-- [ ] Locals
+- [x] Locals
 - [ ] Debug information
 
