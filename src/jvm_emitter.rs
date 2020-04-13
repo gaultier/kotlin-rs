@@ -265,7 +265,6 @@ fn binary_op(kind: &TokenKind, t: &Type) -> u8 {
         (TokenKind::Star, Type::Double) => OP_DMUL,
         (TokenKind::Minus, Type::Double) => OP_DSUB,
         (TokenKind::Percent, Type::Double) => OP_DREM,
-        // TokenKind::Percent => "%",
         // TokenKind::DotDot => "range",
         // TokenKind::EqualEqual => "==",
         // TokenKind::EqualEqualEqual => "===",
@@ -730,25 +729,18 @@ impl<'a> JvmEmitter<'a> {
         else_body: &AstNodeStmt,
         code_builder: &mut CodeBuilder,
     ) -> Result<(), Error> {
+        // Cond
         self.expr(cond, code_builder)?;
         code_builder.push3(OP_IFEQ, OP_IMPDEP1, OP_IMPDEP2, Type::Int)?;
         let end_cond = code_builder.code.len() - 1;
 
+        // If
         self.statement(if_body, code_builder)?;
         code_builder.push3(OP_GOTO, OP_IMPDEP1, OP_IMPDEP2, Type::Int)?;
         let end_if_body = code_builder.code.len() - 1;
-
-        self.statement(else_body, code_builder)?;
-
-        let end = code_builder.code.len() - 1;
-
         let start_else_offset: u16 = (3 + end_if_body - end_cond) as u16;
         code_builder.code[end_cond - 1] = start_else_offset.to_be_bytes()[0];
         code_builder.code[end_cond] = start_else_offset.to_be_bytes()[1];
-
-        let start_rest_offset: u16 = (3 + end - end_if_body) as u16;
-        code_builder.code[end_if_body - 1] = start_rest_offset.to_be_bytes()[0];
-        code_builder.code[end_if_body] = start_rest_offset.to_be_bytes()[1];
 
         // `+1` because we point to the first instruction after the if_body
         let jump_offset_delta = (end_if_body + 1) as u16;
@@ -756,6 +748,16 @@ impl<'a> JvmEmitter<'a> {
             offset: jump_offset_delta,
             kind: JumpKind::SameLocalsAndEmptyStack,
         });
+
+        // Else
+        self.statement(else_body, code_builder)?;
+
+        let end = code_builder.code.len() - 1;
+
+        let start_rest_offset: u16 = (3 + end - end_if_body) as u16;
+        code_builder.code[end_if_body - 1] = start_rest_offset.to_be_bytes()[0];
+        code_builder.code[end_if_body] = start_rest_offset.to_be_bytes()[1];
+
         code_builder.jumps.push(Jump {
             // `-1` because the offset_delta will be used by the jvm as `offset_delta + 1`
             offset: (end - end_if_body - 1) as u16,
