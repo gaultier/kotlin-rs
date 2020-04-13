@@ -395,7 +395,7 @@ impl CodeBuilder {
                 self.stack_pop()?;
             }
             OP_IF_ICMPNE | OP_IFEQ | OP_IFNE | OP_IFGT | OP_IFGE | OP_IF_ICMPGE | OP_IFLE
-            | OP_IF_ICMPLE | OP_IF_ICMPGT => {
+            | OP_IF_ICMPLE | OP_IF_ICMPGT | OP_IFLT | OP_IF_ICMPLT => {
                 self.stack_pop()?;
             }
             OP_LCMP | OP_DCMPL => {
@@ -963,6 +963,34 @@ impl<'a> JvmEmitter<'a> {
                     }
                     (TokenKind::LesserEqual, _, _) => {
                         code_builder.push3(OP_IF_ICMPGT, 0x00, 0x07, Type::Int)?;
+                        code_builder.push1(OP_ICONST_1)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push1(OP_ICONST_0)
+                    }
+
+                    (TokenKind::GreaterEqual, Type::Float, Type::Float) => {
+                        code_builder.push1(OP_FCMPL)?;
+                        code_builder.push3(OP_IFLT, 0x00, 0x07, Type::Int)?;
+                        code_builder.push1(OP_ICONST_1)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push1(OP_ICONST_0)
+                    }
+                    (TokenKind::GreaterEqual, Type::Double, Type::Double) => {
+                        code_builder.push1(OP_DCMPL)?;
+                        code_builder.push3(OP_IFLT, 0x00, 0x07, Type::Int)?;
+                        code_builder.push1(OP_ICONST_1)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push1(OP_ICONST_0)
+                    }
+                    (TokenKind::GreaterEqual, Type::Long, Type::Long) => {
+                        code_builder.push1(OP_LCMP)?;
+                        code_builder.push3(OP_IFLT, 0x00, 0x07, Type::Int)?;
+                        code_builder.push1(OP_ICONST_1)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push1(OP_ICONST_0)
+                    }
+                    (TokenKind::GreaterEqual, _, _) => {
+                        code_builder.push3(OP_IF_ICMPLT, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
                         code_builder.push1(OP_ICONST_0)
