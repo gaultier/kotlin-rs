@@ -249,15 +249,18 @@ fn binary_op(kind: &TokenKind, t: &Type) -> u8 {
         (TokenKind::Minus, Type::Int) => OP_ISUB,
         (TokenKind::Slash, Type::Int) => OP_IDIV,
         (TokenKind::Percent, Type::Int) => OP_IREM,
+
         (TokenKind::Plus, Type::Long) => OP_LADD,
         (TokenKind::Star, Type::Long) => OP_LMUL,
         (TokenKind::Minus, Type::Long) => OP_LSUB,
         (TokenKind::Slash, Type::Long) => OP_LDIV,
         (TokenKind::Percent, Type::Long) => OP_LREM,
+
         (TokenKind::Plus, Type::Float) => OP_FADD,
         (TokenKind::Star, Type::Float) => OP_FMUL,
         (TokenKind::Minus, Type::Float) => OP_FSUB,
         (TokenKind::Percent, Type::Float) => OP_FREM,
+
         (TokenKind::Plus, Type::Double) => OP_DADD,
         (TokenKind::Star, Type::Double) => OP_DMUL,
         (TokenKind::Minus, Type::Double) => OP_DSUB,
