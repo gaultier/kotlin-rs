@@ -710,6 +710,38 @@ impl<'a> JvmEmitter<'a> {
         self.write(w)
     }
 
+    fn while_stmt(
+        &mut self,
+        cond: &AstNodeExpr,
+        body: &AstNodeStmt,
+        code_builder: &mut CodeBuilder,
+    ) -> Result<(), Error> {
+        let before_cond = code_builder.code.len();
+        self.expr(cond, code_builder)?;
+
+        code_builder.push3(OP_IFEQ, OP_IMPDEP1, OP_IMPDEP2, Type::Int)?;
+        let end_if_jump = code_builder.code.len() - 1;
+
+        self.statement(body, code_builder)?;
+        code_builder.push3(OP_GOTO, OP_IMPDEP1, OP_IMPDEP2, Type::Int)?;
+        let end_body = code_builder.code.len() - 1;
+
+        let backwards_offset: i16 = 3 - 1 + -((end_body - before_cond) as i16);
+        let bytes = backwards_offset.to_be_bytes();
+        code_builder.code[end_body - 1] = bytes[0];
+        code_builder.code[end_body] = bytes[1];
+
+        let forwards_offset: i16 = 3 - 1 + (-backwards_offset);
+        debug!(
+            "while: backwards_offset={} forwards_offset={}",
+            backwards_offset, forwards_offset
+        );
+        let bytes = forwards_offset.to_be_bytes();
+        code_builder.code[end_if_jump - 1] = bytes[0];
+        code_builder.code[end_if_jump] = bytes[1];
+        Ok(())
+    }
+
     fn statement(
         &mut self,
         statement: &AstNodeStmt,
@@ -723,6 +755,7 @@ impl<'a> JvmEmitter<'a> {
                 }
                 Ok(())
             }
+            AstNodeStmt::While { cond, body, .. } => self.while_stmt(cond, body, code_builder),
             _ => unimplemented!(),
         }
     }
