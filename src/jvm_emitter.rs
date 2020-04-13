@@ -393,8 +393,11 @@ impl CodeBuilder {
             OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_FADD | OP_FMUL | OP_FSUB | OP_FDIV => {
                 self.stack_pop()?;
             }
-            OP_IF_ICMPNE | OP_IFEQ => {
+            OP_IF_ICMPNE | OP_IFEQ | OP_IFNE => {
                 self.stack_pop()?;
+            }
+            OP_LCMP => {
+                self.stack_pop2()?;
             }
             OP_GOTO => {}
             OP_GET_STATIC => {
@@ -437,6 +440,10 @@ impl CodeBuilder {
             OP_INEG => {}
             OP_LDC | OP_LDC_W => {
                 self.stack_push(t.unwrap())?;
+            }
+            OP_LCONST_0 | OP_LCONST_1 => {
+                self.stack_push(Type::Long)?;
+                self.stack_push(Type::Long)?;
             }
             OP_LDC2_W => {
                 self.stack_push(t.clone().unwrap())?;
@@ -844,13 +851,23 @@ impl<'a> JvmEmitter<'a> {
 
                 self.expr(right, code_builder)?;
 
-                match op.kind {
-                    TokenKind::EqualEqual => {
-                        // FIXME: works only for ints now
+                match (op.kind, left_t, right_t) {
+                    (TokenKind::EqualEqual, Type::Int, Type::Int) => {
                         code_builder.push3(OP_IF_ICMPNE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
                         code_builder.push1(OP_ICONST_0)
+                    }
+                    (TokenKind::EqualEqual, Type::Long, Type::Long) => {
+                        code_builder.push1(OP_LCMP)?;
+                        code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
+                        code_builder.push1(OP_ICONST_1)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push1(OP_ICONST_0)
+                    }
+                    (TokenKind::EqualEqual, _, _) => {
+                        dbg!(t);
+                        unimplemented!()
                     }
                     _ => code_builder.push1(binary_op(&op.kind, t)),
                 }
