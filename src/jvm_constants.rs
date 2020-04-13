@@ -79,6 +79,7 @@ pub(crate) const OP_IFEQ: u8 = 0x99;
 pub(crate) const OP_IF_ICMPNE: u8 = 0xa0;
 pub(crate) const OP_GOTO: u8 = 0xa7;
 pub(crate) const OP_LCMP: u8 = 0x94;
+pub(crate) const OP_FCMPL: u8 = 0x95;
 pub(crate) const _OP_ISTORE_0: u8 = 0x3b;
 pub(crate) const _OP_ILOAD_0: u8 = 0x1a;
 pub(crate) const OP_ILOAD: u8 = 0x15;
