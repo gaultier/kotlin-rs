@@ -882,7 +882,7 @@ impl<'a> JvmEmitter<'a> {
                     }
                     (TokenKind::EqualEqual, _, _) => {
                         dbg!(t);
-                        unimplemented!()
+                        unimplemented!("Conversion in equality check")
                     }
                     _ => code_builder.push1(binary_op(&op.kind, t)),
                 }
