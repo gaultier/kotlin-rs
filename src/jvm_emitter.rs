@@ -390,8 +390,8 @@ impl CodeBuilder {
             OP_FCONST_0 | OP_FCONST_1 | OP_FCONST_2 => {
                 self.stack_push(Type::Float)?;
             }
-            OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_FADD | OP_FMUL | OP_FSUB | OP_FDIV
-            | OP_FCMPL => {
+            OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_IAND | OP_IOR | OP_FADD | OP_FMUL
+            | OP_FSUB | OP_FDIV | OP_FCMPL => {
                 self.stack_pop()?;
             }
             OP_IF_ICMPNE | OP_IFEQ | OP_IFNE => {
@@ -859,6 +859,7 @@ impl<'a> JvmEmitter<'a> {
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
                         code_builder.push1(OP_ICONST_0)
                     }
+                    (TokenKind::PipePipe, _, _) => code_builder.push1(OP_IAND),
                     (TokenKind::EqualEqual, Type::Long, Type::Long) => {
                         code_builder.push1(OP_LCMP)?;
                         code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
