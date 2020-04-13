@@ -394,7 +394,7 @@ impl CodeBuilder {
             | OP_FSUB | OP_FDIV | OP_FCMPL => {
                 self.stack_pop()?;
             }
-            OP_IF_ICMPNE | OP_IFEQ | OP_IFNE | OP_IFGT | OP_IFGE => {
+            OP_IF_ICMPNE | OP_IFEQ | OP_IFNE | OP_IFGT | OP_IFGE | OP_IF_ICMPGE => {
                 self.stack_pop()?;
             }
             OP_LCMP | OP_DCMPL => {
@@ -885,6 +885,12 @@ impl<'a> JvmEmitter<'a> {
                     (TokenKind::EqualEqual, _, _) => {
                         dbg!(t);
                         unimplemented!("Conversion in equality check")
+                    }
+                    (TokenKind::Lesser, Type::Int, Type::Int) => {
+                        code_builder.push3(OP_IF_ICMPGE, 0x00, 0x07, Type::Int)?;
+                        code_builder.push1(OP_ICONST_1)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push1(OP_ICONST_0)
                     }
                     (TokenKind::Lesser, Type::Float, Type::Float) => {
                         code_builder.push1(OP_FCMPL)?;
