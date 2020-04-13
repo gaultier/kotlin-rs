@@ -393,7 +393,7 @@ impl CodeBuilder {
             OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_FADD | OP_FMUL | OP_FSUB | OP_FDIV => {
                 self.stack_pop()?;
             }
-            OP_IFEQ => {
+            OP_IF_ICMPNE | OP_IFEQ => {
                 self.stack_pop()?;
             }
             OP_GOTO => {}
@@ -844,7 +844,15 @@ impl<'a> JvmEmitter<'a> {
 
                 self.expr(right, code_builder)?;
 
-                code_builder.push1(binary_op(&op.kind, t))
+                match op.kind {
+                    TokenKind::EqualEqual => {
+                        code_builder.push3(OP_IF_ICMPNE, 0x00, 0x07, Type::Int)?;
+                        code_builder.push1(OP_ICONST_1)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push1(OP_ICONST_0)
+                    }
+                    _ => code_builder.push1(binary_op(&op.kind, t)),
+                }
             }
             _ => unimplemented!(),
         }
