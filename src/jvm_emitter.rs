@@ -859,7 +859,8 @@ impl<'a> JvmEmitter<'a> {
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
                         code_builder.push1(OP_ICONST_0)
                     }
-                    (TokenKind::PipePipe, _, _) => code_builder.push1(OP_IAND),
+                    (TokenKind::PipePipe, _, _) => code_builder.push1(OP_IOR),
+                    (TokenKind::AmpersandAmpersand, _, _) => code_builder.push1(OP_IAND),
                     (TokenKind::EqualEqual, Type::Long, Type::Long) => {
                         code_builder.push1(OP_LCMP)?;
                         code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
