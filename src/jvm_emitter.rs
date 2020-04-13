@@ -300,7 +300,7 @@ impl CodeBuilder {
             stack: Vec::new(),
             locals: vec![Type::Any], // FIXME: this
             stack_max: 0,
-            locals_max: 0,
+            locals_max: 1,
             jumps: Vec::new(),
         }
     }
@@ -791,17 +791,13 @@ impl<'a> JvmEmitter<'a> {
             &Constant::MethodRef(self.class_printstream, println_name_type),
         )?;
 
-        self.expr(expr, code_builder)?;
-        // Spill the stack to registers, in order to first load the operand (`out` field) and then
-        // load the arguments back to the stack
-        code_builder.spill_stack_top()?;
         code_builder.push3(
             OP_GET_STATIC,
             self.out_fieldref.to_be_bytes()[0],
             self.out_fieldref.to_be_bytes()[1],
             Type::TString, // FIXME: for println
         )?;
-        code_builder.unspill_stack_top()?;
+        self.expr(expr, code_builder)?;
 
         code_builder.push3(
             OP_INVOKE_VIRTUAL,
