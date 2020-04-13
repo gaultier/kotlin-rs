@@ -17,9 +17,9 @@
 - [x] Nested comments
 - [ ] Doc comments
 - [x] Identifiers (potentially with unicode)
-- [ ] Identifiers inside backticks e.g 
-    ``` 
-    `foo bar` 
+- [ ] Identifiers inside backticks e.g
+    ```
+    `foo bar`
     ```
 - [x] Keywords
 - [x] Don’t give out of bounds locations
@@ -166,7 +166,7 @@
 - [x] Jvm float math
 - [x] Jvm double math
 - [x] Jvm hello world
-- [ ] Jvm binary operators (`==`, `!=`, `<=`, `<`, etc) 
+- [x] Jvm binary operators (`==`, `!=`, `<=`, `<`, etc)
 - [ ] Test metadata `size()` calculations
 - [ ] Test metadata serialization
 - [ ] High level API to handle stack/locals/types
@@ -176,7 +176,7 @@
 - [x] Track max stack/locals
 - [x] Jvm if-else
 - [ ] Jvm while loop
-- [x] Locals
+- [ ] Locals
 - [ ] Debug information
 - [ ] Stack map frames
 
