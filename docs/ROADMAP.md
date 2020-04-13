@@ -166,6 +166,7 @@
 - [x] Jvm float math
 - [x] Jvm double math
 - [x] Jvm hello world
+- [ ] Jvm binary operators (`==`, `!=`, `<=`, `<`, etc) 
 - [ ] Test metadata `size()` calculations
 - [ ] Test metadata serialization
 - [ ] High level API to handle stack/locals/types
