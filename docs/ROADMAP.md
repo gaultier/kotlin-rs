@@ -175,7 +175,9 @@
 - [ ] Conversion between types (?)
 - [x] Track max stack/locals
 - [x] Jvm if-else
-- [ ] Jvm while loop
+- [x] Jvm while loop
 - [ ] Locals
+- [ ] Unary increment/decrement
+- [ ] Functions
 - [ ] Debug information
 - [ ] Stack map frames (hard)
