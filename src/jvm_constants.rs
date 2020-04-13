@@ -83,6 +83,7 @@ pub(crate) const OP_IFGE: u8 = 0x9c;
 pub(crate) const OP_IFLE: u8 = 0x9e;
 pub(crate) const OP_IF_ICMPLE: u8 = 0xa4;
 pub(crate) const OP_IF_ICMPGE: u8 = 0xa2;
+pub(crate) const OP_IF_ICMPGT: u8 = 0xa3;
 pub(crate) const OP_IF_ICMPNE: u8 = 0xa0;
 pub(crate) const OP_GOTO: u8 = 0xa7;
 pub(crate) const OP_LCMP: u8 = 0x94;
