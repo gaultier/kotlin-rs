@@ -286,7 +286,7 @@ struct CodeBuilder {
     code: Vec<u8>,
     attributes: Vec<Attribute>,
     stack: Vec<Type>,
-    locals: Vec<Type>,
+    locals: Vec<Option<Type>>,
     stack_max: u16,
     locals_max: u16,
     jumps: Vec<Jump>,
@@ -298,7 +298,7 @@ impl CodeBuilder {
             code: Vec::new(),
             attributes: Vec::new(),
             stack: Vec::new(),
-            locals: vec![Type::Any], // FIXME: this
+            locals: vec![Some(Type::Any)], // FIXME: this
             stack_max: 0,
             locals_max: 1,
             jumps: Vec::new(),
@@ -328,29 +328,21 @@ impl CodeBuilder {
         Ok(())
     }
 
-    fn locals_pop(&mut self) -> Result<Type, Error> {
-        self.locals
-            .pop()
-            .ok_or_else(|| Error::new(ErrorKind::JvmLocalsUnderflow, Location::new()))
+    fn locals_consume(&mut self, i: u16) -> Option<Type> {
+        self.locals[i as usize].take()
     }
 
-    fn locals_pop2(&mut self) -> Result<[Type; 2], Error> {
-        let a = self.locals_pop()?;
-        let b = self.locals_pop()?;
-        Ok([a, b])
-    }
-
-    fn locals_push(&mut self, t: Type) -> Result<(), Error> {
-        if self.locals.len() == std::u8::MAX as usize {
+    fn locals_insert(&mut self, t: Type, i: u16) -> Result<(), Error> {
+        if self.locals.len() == std::u16::MAX as usize {
             return Err(Error::new(ErrorKind::JvmLocalsOverflow, Location::new()));
         }
 
-        match t {
-            Type::Long | Type::TString | Type::Int => {
-                self.locals.push(t);
-            }
-            _ => unimplemented!(),
+        if i as usize >= self.locals.len() {
+            self.locals.resize(1 + i as usize, None);
+            self.locals_max = std::cmp::max(self.locals_max, self.locals.len() as u16);
         }
+
+        self.locals.push(Some(t));
         self.locals_max = std::cmp::max(self.locals.len() as u16, self.locals_max);
         Ok(())
     }
@@ -408,30 +400,23 @@ impl CodeBuilder {
             OP_ISTORE | OP_FSTORE => {
                 let v = self.stack_pop()?;
 
-                let op1 = operand1.unwrap() as usize;
-                if op1 >= self.locals.len() {
-                    self.locals.resize(1 + op1, Type::Any);
-                    self.locals_max = std::cmp::max(self.locals_max, self.locals.len() as u16);
-                }
-                self.locals[op1] = v;
+                let op1 = operand1.unwrap() as u16;
+                self.locals_insert(v, op1)?;
             }
             OP_DSTORE | OP_LSTORE => {
                 let [v1, v2] = self.stack_pop2()?;
-                let op1 = operand1.unwrap() as usize;
-                if op1 >= self.locals.len() {
-                    self.locals.resize(2 + op1, Type::Any);
-                    self.locals_max = std::cmp::max(self.locals_max, self.locals.len() as u16);
-                }
-                self.locals[op1] = v1;
-                self.locals[op1 + 1] = v2;
+                let op1 = operand1.unwrap() as u16;
+                self.locals_insert(v1, op1)?;
+                self.locals_insert(v2, op1 + 1)?;
             }
             OP_ILOAD | OP_FLOAD => {
-                let v = self.locals[operand1.unwrap() as usize].clone();
+                let op1 = operand1.unwrap() as u16;
+                let v = self.locals_consume(op1).unwrap();
                 self.stack_push(v)?;
             }
             OP_DLOAD | OP_LLOAD => {
-                let v1 = self.locals[operand1.unwrap() as usize].clone();
-                let v2 = self.locals[operand1.unwrap() as usize + 1].clone();
+                let v1 = self.locals_consume(operand1.unwrap() as u16).unwrap();
+                let v2 = self.locals_consume(operand1.unwrap() as u16 + 1).unwrap();
                 self.stack_push(v1)?;
                 self.stack_push(v2)?;
             }
@@ -487,7 +472,7 @@ impl CodeBuilder {
     }
 
     fn unspill_stack_top(&mut self) -> Result<(), Error> {
-        let t = self.locals.last().unwrap();
+        let t = self.locals.last().unwrap().clone().unwrap();
         match t {
             Type::Char | Type::Int => self.push2(OP_ILOAD, 1, Type::Int),
             Type::Float => self.push2(OP_FLOAD, 1, Type::Float),
