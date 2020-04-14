@@ -176,7 +176,7 @@
 - [x] Track max stack/locals
 - [x] Jvm if-else
 - [x] Jvm while loop
-- [ ] Locals
+- [x] Locals
 - [ ] Unary increment/decrement
 - [ ] Functions
 - [ ] Debug information

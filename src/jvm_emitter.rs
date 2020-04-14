@@ -1149,13 +1149,15 @@ impl<'a> JvmEmitter<'a> {
                         ..
                     },
                 expr,
-                kind: UnaryKind::Prefix,
+                kind: UnaryKind::Postfix,
                 ..
             } => {
                 self.expr(expr, code_builder)?;
                 let t = self.types.get(&expr.id()).unwrap();
                 assert_eq!(t, &Type::Int);
-                code_builder.push3(OP_IINC, 0x01, 1, Type::Int) // FIXME: int
+                let ref_id = self.resolution.get(&expr.id()).unwrap().node_ref_id;
+                let (i, _) = code_builder.locals_find_by_id(ref_id).unwrap();
+                code_builder.push3(OP_IINC, 0x01, i as u8, Type::Int) // FIXME: int
             }
             _ => unimplemented!(),
         }
