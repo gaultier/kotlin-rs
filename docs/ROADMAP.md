@@ -177,7 +177,6 @@
 - [x] Jvm if-else
 - [x] Jvm while loop
 - [x] Locals
-- [ ] Unary increment/decrement
 - [ ] Functions
 - [ ] Debug information
 - [ ] Stack map frames (hard)
