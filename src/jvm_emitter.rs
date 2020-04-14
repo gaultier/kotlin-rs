@@ -281,12 +281,14 @@ fn binary_op(kind: &TokenKind, t: &Type) -> u8 {
     }
 }
 
+type Local = (NodeId, Type);
+
 #[derive(Debug)]
 struct CodeBuilder {
     code: Vec<u8>,
     attributes: Vec<Attribute>,
     stack: Vec<Type>,
-    locals: Vec<Option<Type>>,
+    locals: Vec<Option<Local>>,
     stack_max: u16,
     locals_max: u16,
     jumps: Vec<Jump>,
@@ -298,7 +300,7 @@ impl CodeBuilder {
             code: Vec::new(),
             attributes: Vec::new(),
             stack: Vec::new(),
-            locals: vec![Some(Type::Any)], // FIXME: this
+            locals: vec![Some((std::usize::MAX, Type::Any))], // FIXME: this
             stack_max: 0,
             locals_max: 1,
             jumps: Vec::new(),
@@ -328,11 +330,20 @@ impl CodeBuilder {
         Ok(())
     }
 
-    fn locals_consume(&mut self, i: u16) -> Option<Type> {
+    fn locals_take(&mut self, i: u16) -> Option<Local> {
         self.locals[i as usize].take()
     }
 
-    fn locals_insert(&mut self, t: Type, i: u16) -> Result<(), Error> {
+    fn locals_find_by_id(&self, id: NodeId) -> Option<Local> {
+        self.locals
+            .iter()
+            .filter(|l| l.is_some())
+            .find(|l| l.as_ref().unwrap().0 == id)
+            .cloned()
+            .flatten()
+    }
+
+    fn locals_insert(&mut self, l: Local, i: u16) -> Result<(), Error> {
         if self.locals.len() == std::u16::MAX as usize {
             return Err(Error::new(ErrorKind::JvmLocalsOverflow, Location::new()));
         }
@@ -342,7 +353,7 @@ impl CodeBuilder {
             self.locals_max = std::cmp::max(self.locals_max, self.locals.len() as u16);
         }
 
-        self.locals.push(Some(t));
+        self.locals.push(Some(l));
         self.locals_max = std::cmp::max(self.locals.len() as u16, self.locals_max);
         Ok(())
     }
@@ -371,82 +382,82 @@ impl CodeBuilder {
             op, operand1, operand2, t, self.stack, self.locals
         );
 
-        match op {
-            OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3 | OP_ICONST_4
-            | OP_ICONST_5 => {
-                self.stack_push(Type::Int)?;
-            }
-            OP_SIPUSH | OP_BIPUSH => {
-                self.stack_push(t.unwrap())?;
-            }
-            OP_FCONST_0 | OP_FCONST_1 | OP_FCONST_2 => {
-                self.stack_push(Type::Float)?;
-            }
-            OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_IAND | OP_IOR | OP_FADD | OP_FMUL
-            | OP_FSUB | OP_FDIV | OP_FCMPL => {
-                self.stack_pop()?;
-            }
-            OP_IF_ICMPNE | OP_IFEQ | OP_IFNE | OP_IFGT | OP_IFGE | OP_IF_ICMPGE | OP_IFLE
-            | OP_IF_ICMPLE | OP_IF_ICMPGT | OP_IFLT | OP_IF_ICMPLT => {
-                self.stack_pop()?;
-            }
-            OP_LCMP | OP_DCMPL => {
-                self.stack_pop2()?;
-            }
-            OP_GOTO => {}
-            OP_GET_STATIC => {
-                self.stack_push(Type::TString)?; // FIXME: hardcoded for println
-            }
-            OP_ISTORE | OP_FSTORE => {
-                let v = self.stack_pop()?;
+        // match op {
+        //     OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3 | OP_ICONST_4
+        //     | OP_ICONST_5 => {
+        //         self.stack_push(Type::Int)?;
+        //     }
+        //     OP_SIPUSH | OP_BIPUSH => {
+        //         self.stack_push(t.unwrap())?;
+        //     }
+        //     OP_FCONST_0 | OP_FCONST_1 | OP_FCONST_2 => {
+        //         self.stack_push(Type::Float)?;
+        //     }
+        //     OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_IAND | OP_IOR | OP_FADD | OP_FMUL
+        //     | OP_FSUB | OP_FDIV | OP_FCMPL => {
+        //         self.stack_pop()?;
+        //     }
+        //     OP_IF_ICMPNE | OP_IFEQ | OP_IFNE | OP_IFGT | OP_IFGE | OP_IF_ICMPGE | OP_IFLE
+        //     | OP_IF_ICMPLE | OP_IF_ICMPGT | OP_IFLT | OP_IF_ICMPLT => {
+        //         self.stack_pop()?;
+        //     }
+        //     OP_LCMP | OP_DCMPL => {
+        //         self.stack_pop2()?;
+        //     }
+        //     OP_GOTO => {}
+        //     OP_GET_STATIC => {
+        //         self.stack_push(Type::TString)?; // FIXME: hardcoded for println
+        //     }
+        //     OP_ISTORE | OP_FSTORE => {
+        //         let v = self.stack_pop()?;
 
-                let op1 = operand1.unwrap() as u16;
-                self.locals_insert(v, op1)?;
-            }
-            OP_DSTORE | OP_LSTORE => {
-                let [v1, v2] = self.stack_pop2()?;
-                let op1 = operand1.unwrap() as u16;
-                self.locals_insert(v1, op1)?;
-                self.locals_insert(v2, op1 + 1)?;
-            }
-            OP_ILOAD | OP_FLOAD => {
-                let op1 = operand1.unwrap() as u16;
-                let v = self.locals_consume(op1).unwrap();
-                self.stack_push(v)?;
-            }
-            OP_DLOAD | OP_LLOAD => {
-                let v1 = self.locals_consume(operand1.unwrap() as u16).unwrap();
-                let v2 = self.locals_consume(operand1.unwrap() as u16 + 1).unwrap();
-                self.stack_push(v1)?;
-                self.stack_push(v2)?;
-            }
-            OP_INVOKE_VIRTUAL => {
-                self.stack_pop2()?; // FIXME: hardcoded for println
-            }
-            OP_RETURN => {}
-            OP_INEG => {}
-            OP_LDC | OP_LDC_W => {
-                self.stack_push(t.unwrap())?;
-            }
-            OP_LCONST_0 | OP_LCONST_1 => {
-                self.stack_push(Type::Long)?;
-                self.stack_push(Type::Long)?;
-            }
-            OP_LDC2_W => {
-                self.stack_push(t.clone().unwrap())?;
-                self.stack_push(t.unwrap())?;
-            }
-            OP_LADD | OP_LMUL | OP_LSUB | OP_LDIV => {
-                self.stack_pop2()?;
-            }
-            OP_DADD | OP_DMUL | OP_DSUB | OP_DDIV => {
-                self.stack_pop2()?;
-            }
-            _ => {
-                dbg!(op);
-                unimplemented!()
-            }
-        }
+        //         let op1 = operand1.unwrap() as u16;
+        //         self.locals_insert(v, op1)?;
+        //     }
+        //     OP_DSTORE | OP_LSTORE => {
+        //         let [v1, v2] = self.stack_pop2()?;
+        //         let op1 = operand1.unwrap() as u16;
+        //         self.locals_insert(v1, op1)?;
+        //         self.locals_insert(v2, op1 + 1)?;
+        //     }
+        //     OP_ILOAD | OP_FLOAD => {
+        //         let op1 = operand1.unwrap() as u16;
+        //         let v = self.locals_take(op1).unwrap();
+        //         self.stack_push(v)?;
+        //     }
+        //     OP_DLOAD | OP_LLOAD => {
+        //         let v1 = self.locals_take(operand1.unwrap() as u16).unwrap();
+        //         let v2 = self.locals_take(operand1.unwrap() as u16 + 1).unwrap();
+        //         self.stack_push(v1)?;
+        //         self.stack_push(v2)?;
+        //     }
+        //     OP_INVOKE_VIRTUAL => {
+        //         self.stack_pop2()?; // FIXME: hardcoded for println
+        //     }
+        //     OP_RETURN => {}
+        //     OP_INEG => {}
+        //     OP_LDC | OP_LDC_W => {
+        //         self.stack_push(t.unwrap())?;
+        //     }
+        //     OP_LCONST_0 | OP_LCONST_1 => {
+        //         self.stack_push(Type::Long)?;
+        //         self.stack_push(Type::Long)?;
+        //     }
+        //     OP_LDC2_W => {
+        //         self.stack_push(t.clone().unwrap())?;
+        //         self.stack_push(t.unwrap())?;
+        //     }
+        //     OP_LADD | OP_LMUL | OP_LSUB | OP_LDIV => {
+        //         self.stack_pop2()?;
+        //     }
+        //     OP_DADD | OP_DMUL | OP_DSUB | OP_DDIV => {
+        //         self.stack_pop2()?;
+        //     }
+        //     _ => {
+        //         dbg!(op);
+        //         unimplemented!()
+        //     }
+        // }
 
         self.code.push(op);
 
@@ -473,7 +484,7 @@ impl CodeBuilder {
 
     fn unspill_stack_top(&mut self) -> Result<(), Error> {
         let t = self.locals.last().unwrap().clone().unwrap();
-        match t {
+        match t.1 {
             Type::Char | Type::Int => self.push2(OP_ILOAD, 1, Type::Int),
             Type::Float => self.push2(OP_FLOAD, 1, Type::Float),
             Type::Long => self.push2(OP_LLOAD, 1, Type::Long),
