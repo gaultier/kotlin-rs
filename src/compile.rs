@@ -23,7 +23,7 @@ pub fn compile<W: io::Write>(src: &str, w: &mut W) -> Result<(), Error> {
     let mut type_checker = TypeChecker::new(&session, &resolution, &mut types);
     let types = type_checker.check_types(&stmts)?;
 
-    let mut emitter = JvmEmitter::new(&session, &types);
+    let mut emitter = JvmEmitter::new(&session, &types, &resolution);
     emitter.main(&stmts, w)
 }
 

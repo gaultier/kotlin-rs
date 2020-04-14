@@ -2,6 +2,7 @@ use crate::error::*;
 use crate::jvm_constants::*;
 use crate::lex::{Token, TokenKind};
 use crate::parse::*;
+use crate::resolver::Resolution;
 use crate::session::Session;
 use log::debug;
 
@@ -27,6 +28,7 @@ pub(crate) enum Constant {
 pub(crate) struct JvmEmitter<'a> {
     pub(crate) session: &'a Session<'a>,
     pub(crate) types: &'a Types,
+    pub(crate) resolution: &'a Resolution,
     pub(crate) constants: Vec<Constant>,
     pub(crate) methods: Vec<Function>,
     pub(crate) attributes: Vec<Attribute>,
@@ -504,7 +506,11 @@ impl CodeBuilder {
 }
 
 impl<'a> JvmEmitter<'a> {
-    pub(crate) fn new(session: &'a Session, types: &'a Types) -> JvmEmitter<'a> {
+    pub(crate) fn new(
+        session: &'a Session,
+        types: &'a Types,
+        resolution: &'a Resolution,
+    ) -> JvmEmitter<'a> {
         let mut constants = Vec::new();
 
         let stack_map_table_str = add_constant(
@@ -606,6 +612,7 @@ impl<'a> JvmEmitter<'a> {
         JvmEmitter {
             session,
             types,
+            resolution,
             constants,
             source_file_constant,
             source_file_name_constant,
@@ -762,7 +769,8 @@ impl<'a> JvmEmitter<'a> {
         let t = self.types.get(&id).unwrap();
         assert_eq!(&Type::Int, t); // FIXME
 
-        let (i, _) = code_builder.locals_find_by_id(id).unwrap();
+        let ref_id = self.resolution.get(&id).unwrap().node_ref_id;
+        let (i, _) = code_builder.locals_find_by_id(ref_id).unwrap();
         debug!("var_ref: id={} i={} t={}", id, i, t);
 
         code_builder.push2(OP_ILOAD, i as u8, Type::Int) // FIXME
