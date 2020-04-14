@@ -73,10 +73,10 @@ pub(crate) enum JumpKind {
 impl Jump {
     fn into_stack_map_frame(&self) -> StackMapFrame {
         match &self.kind {
-            JumpKind::SameLocalsAndEmptyStack => StackMapFrame::SameFrame {
+            JumpKind::SameLocalsAndEmptyStack => StackMapFrame::Same {
                 offset: self.offset as u8,
             },
-            JumpKind::StackAddOne(v) => StackMapFrame::SameLocalsOneStackItemFrame {
+            JumpKind::StackAddOne(v) => StackMapFrame::SameLocalsOneStackItem {
                 offset: self.offset as u8,
                 stack: *v,
             },
@@ -97,14 +97,14 @@ pub(crate) enum VerificationTypeInfo {
 
 #[derive(Debug)]
 pub(crate) enum StackMapFrame {
-    SameFrame {
+    Same {
         offset: u8,
     },
-    SameLocalsOneStackItemFrame {
+    SameLocalsOneStackItem {
         offset: u8,
         stack: VerificationTypeInfo,
     },
-    FullFrame {
+    Full {
         offset: u16,
         locals: Vec<VerificationTypeInfo>,
         stack: Vec<VerificationTypeInfo>,
@@ -261,11 +261,13 @@ fn binary_op(kind: &TokenKind, t: &Type) -> u8 {
         (TokenKind::Plus, Type::Float) => OP_FADD,
         (TokenKind::Star, Type::Float) => OP_FMUL,
         (TokenKind::Minus, Type::Float) => OP_FSUB,
+        (TokenKind::Slash, Type::Float) => OP_FDIV,
         (TokenKind::Percent, Type::Float) => OP_FREM,
 
         (TokenKind::Plus, Type::Double) => OP_DADD,
         (TokenKind::Star, Type::Double) => OP_DMUL,
         (TokenKind::Minus, Type::Double) => OP_DSUB,
+        (TokenKind::Slash, Type::Double) => OP_DDIV,
         (TokenKind::Percent, Type::Double) => OP_DREM,
         // TokenKind::DotDot => "range",
         // TokenKind::EqualEqual => "==",
@@ -309,28 +311,28 @@ impl CodeBuilder {
         }
     }
 
-    fn stack_pop(&mut self) -> Result<Type, Error> {
-        self.stack
-            .pop()
-            .ok_or_else(|| Error::new(ErrorKind::JvmStackUnderflow, Location::new()))
-    }
+    // fn stack_pop(&mut self) -> Result<Type, Error> {
+    //     self.stack
+    //         .pop()
+    //         .ok_or_else(|| Error::new(ErrorKind::JvmStackUnderflow, Location::new()))
+    // }
 
-    fn stack_pop2(&mut self) -> Result<[Type; 2], Error> {
-        let a = self.stack_pop()?;
-        let b = self.stack_pop()?;
-        Ok([a, b])
-    }
+    // fn stack_pop2(&mut self) -> Result<[Type; 2], Error> {
+    //     let a = self.stack_pop()?;
+    //     let b = self.stack_pop()?;
+    //     Ok([a, b])
+    // }
 
-    fn stack_push(&mut self, t: Type) -> Result<(), Error> {
-        if self.stack.len() == std::u8::MAX as usize {
-            return Err(Error::new(ErrorKind::JvmStackOverflow, Location::new()));
-        }
+    // fn stack_push(&mut self, t: Type) -> Result<(), Error> {
+    //     if self.stack.len() == std::u8::MAX as usize {
+    //         return Err(Error::new(ErrorKind::JvmStackOverflow, Location::new()));
+    //     }
 
-        self.stack.push(t);
+    //     self.stack.push(t);
 
-        self.stack_max = std::cmp::max(self.stack.len() as u16, self.stack_max);
-        Ok(())
-    }
+    //     self.stack_max = std::cmp::max(self.stack.len() as u16, self.stack_max);
+    //     Ok(())
+    // }
 
     fn locals_take(&mut self, i: u16) -> Option<Local> {
         self.locals[i as usize].take()
@@ -475,27 +477,27 @@ impl CodeBuilder {
         Ok(())
     }
 
-    fn spill_stack_top(&mut self) -> Result<(), Error> {
-        let t = self.stack.last().unwrap();
-        match t {
-            Type::Char | Type::Int => self.push2(OP_ISTORE, 1, Type::Int),
-            Type::Float => self.push2(OP_FSTORE, 1, Type::Float),
-            Type::Long => self.push2(OP_LSTORE, 1, Type::Long),
-            Type::Double => self.push2(OP_DSTORE, 1, Type::Double),
-            _ => unimplemented!(),
-        }
-    }
+    // fn spill_stack_top(&mut self) -> Result<(), Error> {
+    //     let t = self.stack.last().unwrap();
+    //     match t {
+    //         Type::Char | Type::Int => self.push2(OP_ISTORE, 1, Type::Int),
+    //         Type::Float => self.push2(OP_FSTORE, 1, Type::Float),
+    //         Type::Long => self.push2(OP_LSTORE, 1, Type::Long),
+    //         Type::Double => self.push2(OP_DSTORE, 1, Type::Double),
+    //         _ => unimplemented!(),
+    //     }
+    // }
 
-    fn unspill_stack_top(&mut self) -> Result<(), Error> {
-        let t = self.locals.last().unwrap().clone().unwrap();
-        match t.1 {
-            Type::Char | Type::Int => self.push2(OP_ILOAD, 1, Type::Int),
-            Type::Float => self.push2(OP_FLOAD, 1, Type::Float),
-            Type::Long => self.push2(OP_LLOAD, 1, Type::Long),
-            Type::Double => self.push2(OP_DLOAD, 1, Type::Double),
-            _ => unimplemented!(),
-        }
-    }
+    // fn unspill_stack_top(&mut self) -> Result<(), Error> {
+    //     let t = self.locals.last().unwrap().clone().unwrap();
+    //     match t.1 {
+    //         Type::Char | Type::Int => self.push2(OP_ILOAD, 1, Type::Int),
+    //         Type::Float => self.push2(OP_FLOAD, 1, Type::Float),
+    //         Type::Long => self.push2(OP_LLOAD, 1, Type::Long),
+    //         Type::Double => self.push2(OP_DLOAD, 1, Type::Double),
+    //         _ => unimplemented!(),
+    //     }
+    // }
 
     fn end(&mut self) -> Vec<u8> {
         self.code.push(OP_RETURN);
@@ -1145,7 +1147,7 @@ impl<'a> JvmEmitter<'a> {
                 let bytes = (n as u16).to_be_bytes();
                 code_builder.push3(OP_SIPUSH, bytes[0], bytes[1], Type::Int)
             }
-            TokenKind::Int(n) if n <= std::i32::MAX => {
+            TokenKind::Int(n) => {
                 add_and_push_constant(&mut self.constants, &Constant::Int(n), code_builder)
             }
             TokenKind::Char(c) if c as u16 as i32 <= std::i8::MAX as i32 => {

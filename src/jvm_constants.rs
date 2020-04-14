@@ -1,4 +1,4 @@
-pub(crate) const CTOR_STR: &'static str = "<init>";
+pub(crate) const CTOR_STR: &str = "<init>";
 
 pub(crate) const _CLASS_ACC_PUBLIC: u16 = 0x0001; // Declared public; may be accessed from outside its package.
 pub(crate) const _CLASS_ACC_FINAL: u16 = 0x0010; // Declared final; no subclasses allowed.

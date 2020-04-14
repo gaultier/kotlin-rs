@@ -21,9 +21,9 @@ impl VerificationTypeInfo {
 impl StackMapFrame {
     fn size(&self) -> u32 {
         match self {
-            StackMapFrame::SameFrame { .. } => 1,
-            StackMapFrame::SameLocalsOneStackItemFrame { stack, .. } => 1 + stack.size(),
-            StackMapFrame::FullFrame { locals, stack, .. } => {
+            StackMapFrame::Same { .. } => 1,
+            StackMapFrame::SameLocalsOneStackItem { stack, .. } => 1 + stack.size(),
+            StackMapFrame::Full { locals, stack, .. } => {
                 1 + // tag
                     2 // offset
                     + 2 // locals len
@@ -94,15 +94,15 @@ impl<'a> JvmEmitter<'a> {
     }
 
     fn magic_number<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        w.write(&[0xca, 0xfe, 0xba, 0xbe])?;
+        w.write_all(&[0xca, 0xfe, 0xba, 0xbe])?;
         Ok(())
     }
 
     fn version<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         // Minor
-        w.write(&[0x00, 0x00])?;
+        w.write_all(&[0x00, 0x00])?;
         // Major: 0x32 = 50 => java 6
-        w.write(&[0x00, 0x32])?;
+        w.write_all(&[0x00, 0x32])?;
         Ok(())
     }
 
@@ -116,7 +116,7 @@ impl<'a> JvmEmitter<'a> {
         // + 1 because it is one-indexed
         let len = &(self.constants.len() as u16 + 1).to_be_bytes();
         debug!("constant pool size={:#04X} {:#04X}", len[0], len[1]);
-        w.write(len)?;
+        w.write_all(len)?;
 
         for constant in &self.constants {
             self.constant(constant, w)?;
@@ -127,36 +127,36 @@ impl<'a> JvmEmitter<'a> {
 
     fn access_flags<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         // TODO: figure out why
-        w.write(&CLASS_ACC_SUPER.to_be_bytes())?;
+        w.write_all(&CLASS_ACC_SUPER.to_be_bytes())?;
         Ok(())
     }
 
     fn this_class<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        w.write(&self.this_class.to_be_bytes())?;
+        w.write_all(&self.this_class.to_be_bytes())?;
         Ok(())
     }
 
     fn super_class<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        w.write(&self.super_class.to_be_bytes())?;
+        w.write_all(&self.super_class.to_be_bytes())?;
         Ok(())
     }
 
     fn interfaces<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         // TODO
-        w.write(&[0x00, 0x00])?;
+        w.write_all(&[0x00, 0x00])?;
         Ok(())
     }
 
     fn fields<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         // TODO
-        w.write(&[0x00, 0x00])?;
+        w.write_all(&[0x00, 0x00])?;
         Ok(())
     }
 
     fn methods<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         let len = &(self.methods.len() as u16).to_be_bytes();
         debug!("methods size={:#04X} {:#04X}", len[0], len[1]);
-        w.write(len)?;
+        w.write_all(len)?;
 
         for m in &self.methods {
             self.method(m, w)?;
@@ -168,9 +168,9 @@ impl<'a> JvmEmitter<'a> {
     fn method<W: std::io::Write>(&self, method: &Function, w: &mut W) -> Result<(), Error> {
         debug!("method={:?}", method);
 
-        w.write(&method.access_flags.to_be_bytes())?;
-        w.write(&method.name.to_be_bytes())?;
-        w.write(&method.descriptor.to_be_bytes())?;
+        w.write_all(&method.access_flags.to_be_bytes())?;
+        w.write_all(&method.name.to_be_bytes())?;
+        w.write_all(&method.descriptor.to_be_bytes())?;
 
         self.attributes(&method.attributes, w)?;
 
@@ -189,47 +189,47 @@ impl<'a> JvmEmitter<'a> {
                 exception_table,
                 attributes,
             } => {
-                w.write(&name.to_be_bytes())?;
+                w.write_all(&name.to_be_bytes())?;
 
                 let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
                 debug!("code: size={} code={:?}", size, code);
-                w.write(&size.to_be_bytes())?;
+                w.write_all(&size.to_be_bytes())?;
 
-                w.write(&max_stack.to_be_bytes())?;
+                w.write_all(&max_stack.to_be_bytes())?;
 
-                w.write(&max_locals.to_be_bytes())?;
+                w.write_all(&max_locals.to_be_bytes())?;
 
-                w.write(&(code.len() as u32).to_be_bytes())?;
-                w.write(&code)?;
+                w.write_all(&(code.len() as u32).to_be_bytes())?;
+                w.write_all(&code)?;
 
-                w.write(&(exception_table.len() as u16).to_be_bytes())?;
+                w.write_all(&(exception_table.len() as u16).to_be_bytes())?;
                 // TODO
                 assert!(exception_table.is_empty());
-                // w.write(&exception_table)?;
+                // w.write_all(&exception_table)?;
 
                 self.attributes(attributes, w)?;
             }
             Attribute::SourceFile { name, source_file } => {
-                w.write(&name.to_be_bytes())?;
+                w.write_all(&name.to_be_bytes())?;
                 let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
-                w.write(&size.to_be_bytes())?;
-                w.write(&source_file.to_be_bytes())?;
+                w.write_all(&size.to_be_bytes())?;
+                w.write_all(&source_file.to_be_bytes())?;
             }
             Attribute::LineNumberTable {
                 name,
                 line_number_tables,
             } => {
-                w.write(&name.to_be_bytes())?;
+                w.write_all(&name.to_be_bytes())?;
                 let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
-                w.write(&size.to_be_bytes())?;
+                w.write_all(&size.to_be_bytes())?;
 
                 self.line_number_tables(line_number_tables, w)?;
             }
             Attribute::StackMapTable { name, entries } => {
-                w.write(&name.to_be_bytes())?;
+                w.write_all(&name.to_be_bytes())?;
                 let size: u32 = (attribute.size() as isize - (2 + 4)) as u32;
                 debug!("attribute stack_map_table: size={}", size);
-                w.write(&size.to_be_bytes())?;
+                w.write_all(&size.to_be_bytes())?;
                 self.stack_map_frames(entries, w)?;
             }
         }
@@ -244,7 +244,7 @@ impl<'a> JvmEmitter<'a> {
     ) -> Result<(), Error> {
         let len = &(attributes.len() as u16).to_be_bytes();
         debug!("attributes size={:#04X} {:#04X}", len[0], len[1]);
-        w.write(len)?;
+        w.write_all(len)?;
 
         for a in attributes {
             self.attribute(a, w)?;
@@ -258,58 +258,58 @@ impl<'a> JvmEmitter<'a> {
 
         match constant {
             Constant::Utf8(s) => {
-                w.write(&[CONSTANT_UTF8])?;
-                w.write(&(s.len() as u16).to_be_bytes())?;
-                w.write(&s.as_bytes())?;
+                w.write_all(&[CONSTANT_UTF8])?;
+                w.write_all(&(s.len() as u16).to_be_bytes())?;
+                w.write_all(&s.as_bytes())?;
             }
             Constant::ClassInfo(index) => {
-                w.write(&[CONSTANT_CLASS])?;
-                w.write(&index.to_be_bytes())?;
+                w.write_all(&[CONSTANT_CLASS])?;
+                w.write_all(&index.to_be_bytes())?;
             }
             Constant::NameAndType(name, type_descriptor) => {
-                w.write(&[CONSTANT_NAME_AND_TYPE])?;
-                w.write(&name.to_be_bytes())?;
-                w.write(&type_descriptor.to_be_bytes())?;
+                w.write_all(&[CONSTANT_NAME_AND_TYPE])?;
+                w.write_all(&name.to_be_bytes())?;
+                w.write_all(&type_descriptor.to_be_bytes())?;
             }
             Constant::MethodRef(class, name_and_type) => {
-                w.write(&[CONSTANT_METHODREF])?;
-                w.write(&class.to_be_bytes())?;
-                w.write(&name_and_type.to_be_bytes())?;
+                w.write_all(&[CONSTANT_METHODREF])?;
+                w.write_all(&class.to_be_bytes())?;
+                w.write_all(&name_and_type.to_be_bytes())?;
             }
             Constant::FieldRef(class, name_and_type) => {
-                w.write(&[CONSTANT_FIELDREF])?;
-                w.write(&class.to_be_bytes())?;
-                w.write(&name_and_type.to_be_bytes())?;
+                w.write_all(&[CONSTANT_FIELDREF])?;
+                w.write_all(&class.to_be_bytes())?;
+                w.write_all(&name_and_type.to_be_bytes())?;
             }
             Constant::CString(index) => {
-                w.write(&[CONSTANT_STRING])?;
-                w.write(&index.to_be_bytes())?;
+                w.write_all(&[CONSTANT_STRING])?;
+                w.write_all(&index.to_be_bytes())?;
             }
             Constant::Int(n) => {
-                w.write(&[CONSTANT_INTEGER])?;
-                w.write(&(*n as u32).to_be_bytes())?;
+                w.write_all(&[CONSTANT_INTEGER])?;
+                w.write_all(&(*n as u32).to_be_bytes())?;
             }
             Constant::Float(n) => {
-                w.write(&[CONSTANT_FLOAT])?;
+                w.write_all(&[CONSTANT_FLOAT])?;
                 debug!("const float: n={} v={:?}", n, n.to_be_bytes());
-                w.write(&n.to_be_bytes())?;
+                w.write_all(&n.to_be_bytes())?;
             }
             Constant::LongHigh(n) => {
-                w.write(&[CONSTANT_LONG])?;
-                w.write(&(*n as u32).to_be_bytes())?;
+                w.write_all(&[CONSTANT_LONG])?;
+                w.write_all(&(*n as u32).to_be_bytes())?;
             }
             // This is always preceded by LongHigh which writes the tag
             Constant::LongLow(n) => {
-                w.write(&(*n as u32).to_be_bytes())?;
+                w.write_all(&(*n as u32).to_be_bytes())?;
             }
             Constant::Long(_) => unreachable!(),
             Constant::DoubleHigh(n) => {
-                w.write(&[CONSTANT_DOUBLE])?;
-                w.write(&(*n as u32).to_be_bytes())?;
+                w.write_all(&[CONSTANT_DOUBLE])?;
+                w.write_all(&(*n as u32).to_be_bytes())?;
             }
             // This is always preceded by DoubleHigh which writes the tag
             Constant::DoubleLow(n) => {
-                w.write(&(*n as u32).to_be_bytes())?;
+                w.write_all(&(*n as u32).to_be_bytes())?;
             }
             Constant::Double(_) => unreachable!(),
         }
@@ -323,7 +323,7 @@ impl<'a> JvmEmitter<'a> {
     ) -> Result<(), Error> {
         match v {
             VerificationTypeInfo::Int => {
-                w.write(&[ITEM_INTEGER])?;
+                w.write_all(&[ITEM_INTEGER])?;
             }
         }
 
@@ -336,30 +336,30 @@ impl<'a> JvmEmitter<'a> {
         w: &mut W,
     ) -> Result<(), Error> {
         match entry {
-            StackMapFrame::SameFrame { offset } => {
+            StackMapFrame::Same { offset } => {
                 assert!(*offset <= 63);
-                w.write(&[*offset])?;
+                w.write_all(&[*offset])?;
             }
-            StackMapFrame::SameLocalsOneStackItemFrame { offset, stack } => {
+            StackMapFrame::SameLocalsOneStackItem { offset, stack } => {
                 assert!(*offset <= 63);
-                w.write(&[64 + *offset])?;
+                w.write_all(&[64 + *offset])?;
                 self.verification_type_info(stack, w)?;
             }
-            StackMapFrame::FullFrame {
+            StackMapFrame::Full {
                 offset,
                 stack,
                 locals,
             } => {
                 debug!("full frame: size={}", entry.size());
-                w.write(&FULL_FRAME.to_be_bytes())?;
-                w.write(&offset.to_be_bytes())?;
+                w.write_all(&FULL_FRAME.to_be_bytes())?;
+                w.write_all(&offset.to_be_bytes())?;
 
-                w.write(&(locals.len() as u16).to_be_bytes())?;
+                w.write_all(&(locals.len() as u16).to_be_bytes())?;
                 for v in locals {
                     self.verification_type_info(v, w)?;
                 }
 
-                w.write(&(stack.len() as u16).to_be_bytes())?;
+                w.write_all(&(stack.len() as u16).to_be_bytes())?;
                 for v in stack {
                     self.verification_type_info(v, w)?;
                 }
@@ -374,7 +374,7 @@ impl<'a> JvmEmitter<'a> {
         w: &mut W,
     ) -> Result<(), Error> {
         debug!("stack_map_frames={:?}", entries);
-        w.write(&(entries.len() as u16).to_be_bytes())?;
+        w.write_all(&(entries.len() as u16).to_be_bytes())?;
 
         for e in entries {
             self.stack_map_frame(e, w)?;
@@ -389,11 +389,11 @@ impl<'a> JvmEmitter<'a> {
         w: &mut W,
     ) -> Result<(), Error> {
         debug!("line_number_tables={:?}", line_number_tables);
-        w.write(&(line_number_tables.len() as u16).to_be_bytes())?;
+        w.write_all(&(line_number_tables.len() as u16).to_be_bytes())?;
 
         for l in line_number_tables {
-            w.write(&l.start_pc.to_be_bytes())?;
-            w.write(&l.line_number.to_be_bytes())?;
+            w.write_all(&l.start_pc.to_be_bytes())?;
+            w.write_all(&l.line_number.to_be_bytes())?;
         }
         Ok(())
     }
