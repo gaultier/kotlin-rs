@@ -334,9 +334,9 @@ impl CodeBuilder {
     //     Ok(())
     // }
 
-    fn locals_take(&mut self, i: u16) -> Option<Local> {
-        self.locals[i as usize].take()
-    }
+    // fn locals_take(&mut self, i: u16) -> Option<Local> {
+    //     self.locals[i as usize].take()
+    // }
 
     fn locals_find_by_id(&self, id: NodeId) -> Option<(u16, Local)> {
         self.locals.iter().enumerate().find_map(|(i, l)| match l {
@@ -350,15 +350,14 @@ impl CodeBuilder {
             return Err(Error::new(ErrorKind::JvmLocalsOverflow, Location::new()));
         }
 
-        let i = self.locals.iter().enumerate().find(|(_, l)| l.is_none());
-        let i = if let Some((i, _)) = i {
-            self.locals[i] = Some(l);
-            i
+        let i = if l.1 == Type::Long || l.1 == Type::Double {
+            self.locals.push(Some(l.clone()));
+            self.locals.push(Some(l));
+            self.locals.len() - 2
         } else {
             self.locals.push(Some(l));
             self.locals.len() - 1
         };
-        self.locals_max = std::cmp::max(self.locals_max, self.locals.len() as u16);
 
         self.locals_max = std::cmp::max(self.locals.len() as u16, self.locals_max);
         Ok(i as u16)
@@ -763,6 +762,9 @@ impl<'a> JvmEmitter<'a> {
 
         let op = match t {
             Type::Int => OP_ISTORE,
+            Type::Float => OP_FSTORE,
+            Type::Double => OP_DSTORE,
+            Type::Long => OP_LSTORE,
             _ => todo!(),
         };
 
@@ -771,13 +773,19 @@ impl<'a> JvmEmitter<'a> {
 
     fn var_ref(&mut self, id: NodeId, code_builder: &mut CodeBuilder) -> Result<(), Error> {
         let t = self.types.get(&id).unwrap();
-        assert_eq!(&Type::Int, t); // FIXME
 
         let ref_id = self.resolution.get(&id).unwrap().node_ref_id;
         let (i, _) = code_builder.locals_find_by_id(ref_id).unwrap();
         debug!("var_ref: id={} i={} t={}", id, i, t);
 
-        code_builder.push2(OP_ILOAD, i as u8, Type::Int) // FIXME
+        let op = match t {
+            Type::Int => OP_ILOAD,
+            Type::Float => OP_FLOAD,
+            Type::Double => OP_DLOAD,
+            Type::Long => OP_LLOAD,
+            _ => todo!(),
+        };
+        code_builder.push2(op, i as u8, t.clone())
     }
 
     fn statement(
