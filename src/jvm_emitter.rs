@@ -740,7 +740,7 @@ impl<'a> JvmEmitter<'a> {
         code_builder.code[end_body - 1] = bytes[0];
         code_builder.code[end_body] = bytes[1];
 
-        let forwards_offset: i16 = 3 - 1 + (-backwards_offset);
+        let forwards_offset: i16 = 3 + (end_body - end_if_jump) as i16;
         debug!(
             "while: backwards_offset={} forwards_offset={}",
             backwards_offset, forwards_offset
@@ -827,7 +827,15 @@ impl<'a> JvmEmitter<'a> {
     ) -> Result<(), Error> {
         match statement {
             AstNodeStmt::Expr(e) => self.expr(e, code_builder),
-            AstNodeStmt::Assign { target, value, .. } => self.assign(target, value, code_builder),
+            AstNodeStmt::Assign {
+                op: TokenKind::Equal,
+                target,
+                value,
+                ..
+            } => self.assign(target, value, code_builder),
+            // The MIR should have transformed other assignements e.g `+=` to simpler forms at this
+            // point
+            AstNodeStmt::Assign { .. } => unreachable!(),
             AstNodeStmt::VarDefinition { value, id, .. } => self.var_def(*id, value, code_builder),
             AstNodeStmt::Block { body, .. } => {
                 for stmt in body {
