@@ -101,8 +101,8 @@ impl<'a> JvmEmitter<'a> {
     fn version<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         // Minor
         w.write_all(&[0x00, 0x00])?;
-        // Major: 0x31 = 49 => java 5
-        w.write_all(&[0x00, 0x31])?;
+        // Major: 50 => java 6
+        w.write_all(&50u16.to_be_bytes())?;
         Ok(())
     }
 
