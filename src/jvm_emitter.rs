@@ -774,12 +774,41 @@ impl<'a> JvmEmitter<'a> {
         code_builder.push2(op, i as u8, t.clone())
     }
 
+    fn assign(
+        &mut self,
+        target: &AstNodeExpr,
+        value: &AstNodeExpr,
+        code_builder: &mut CodeBuilder,
+    ) -> Result<(), Error> {
+        self.expr(value, code_builder)?;
+
+        match target {
+            AstNodeExpr::VarRef(_, id) => {
+                let ref_id = self.resolution.get(&id).unwrap().node_ref_id;
+                let (i, _) = code_builder.locals_find_by_id(ref_id).unwrap();
+                let t = self.types.get(&id).unwrap();
+                debug!("assign: id={} i={} t={} ref_id={}", id, i, t, ref_id);
+
+                let op = match t {
+                    Type::Int => OP_ISTORE,
+                    Type::Float => OP_FSTORE,
+                    Type::Double => OP_DSTORE,
+                    Type::Long => OP_LSTORE,
+                    _ => todo!(),
+                };
+
+                code_builder.push2(op, i as u8, t.clone())
+            }
+            _ => todo!(),
+        }
+    }
+
     fn var_ref(&mut self, id: NodeId, code_builder: &mut CodeBuilder) -> Result<(), Error> {
         let t = self.types.get(&id).unwrap();
 
         let ref_id = self.resolution.get(&id).unwrap().node_ref_id;
         let (i, _) = code_builder.locals_find_by_id(ref_id).unwrap();
-        debug!("var_ref: id={} i={} t={}", id, i, t);
+        debug!("var_ref: id={} i={} t={} ref_id={}", id, i, t, ref_id);
 
         let op = match t {
             Type::Int => OP_ILOAD,
@@ -798,6 +827,7 @@ impl<'a> JvmEmitter<'a> {
     ) -> Result<(), Error> {
         match statement {
             AstNodeStmt::Expr(e) => self.expr(e, code_builder),
+            AstNodeStmt::Assign { target, value, .. } => self.assign(target, value, code_builder),
             AstNodeStmt::VarDefinition { value, id, .. } => self.var_def(*id, value, code_builder),
             AstNodeStmt::Block { body, .. } => {
                 for stmt in body {

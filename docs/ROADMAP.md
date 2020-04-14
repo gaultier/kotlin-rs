@@ -177,6 +177,7 @@
 - [x] Jvm if-else
 - [x] Jvm while loop
 - [x] Locals
+- [ ] Assignment
 - [ ] Functions
 - [ ] Debug information
 - [ ] Stack map frames (hard)
