@@ -68,6 +68,7 @@ pub(crate) const OP_LREM: u8 = 0x71;
 pub(crate) const OP_LCONST_0: u8 = 0x09;
 pub(crate) const OP_LCONST_1: u8 = 0x0a;
 pub(crate) const _OP_I2L: u8 = 0x85;
+pub(crate) const OP_IINC: u8 = 0x84;
 pub(crate) const OP_FCONST_0: u8 = 0x0b;
 pub(crate) const OP_FCONST_1: u8 = 0x0c;
 pub(crate) const OP_FCONST_2: u8 = 0x0d;

@@ -1127,6 +1127,21 @@ impl<'a> JvmEmitter<'a> {
                 expr,
                 ..
             } => self.expr(expr, code_builder),
+            AstNodeExpr::Unary {
+                token:
+                    Token {
+                        kind: TokenKind::PlusPlus,
+                        ..
+                    },
+                expr,
+                kind: UnaryKind::Prefix,
+                ..
+            } => {
+                self.expr(expr, code_builder)?;
+                let t = self.types.get(&expr.id()).unwrap();
+                assert_eq!(t, &Type::Int);
+                code_builder.push3(OP_IINC, 0x01, 1, Type::Int) // FIXME: int
+            }
             _ => unimplemented!(),
         }
     }
