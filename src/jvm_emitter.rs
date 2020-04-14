@@ -756,13 +756,17 @@ impl<'a> JvmEmitter<'a> {
         code_builder: &mut CodeBuilder,
     ) -> Result<(), Error> {
         let t = self.types.get(&id).unwrap();
-        assert_eq!(&Type::Int, t); // FIXME
 
         self.expr(value, code_builder)?;
         let i = code_builder.locals_insert((id, t.clone()))?;
         debug!("var_def: id={} i={} t={}", id, i, t);
 
-        code_builder.push2(OP_ISTORE, i as u8, Type::Int) // FIXME
+        let op = match t {
+            Type::Int => OP_ISTORE,
+            _ => todo!(),
+        };
+
+        code_builder.push2(op, i as u8, t.clone())
     }
 
     fn var_ref(&mut self, id: NodeId, code_builder: &mut CodeBuilder) -> Result<(), Error> {
