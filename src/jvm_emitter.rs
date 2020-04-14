@@ -742,6 +742,26 @@ impl<'a> JvmEmitter<'a> {
         Ok(())
     }
 
+    fn var_def(
+        &mut self,
+        id: NodeId,
+        value: &AstNodeExpr,
+        code_builder: &mut CodeBuilder,
+    ) -> Result<(), Error> {
+        let t = self.types.get(&id).unwrap();
+        assert_eq!(&Type::Int, t); // FIXME
+
+        self.expr(value, code_builder)?;
+        code_builder.push2(OP_ISTORE, 0x01, Type::Int) // FIXME
+    }
+
+    fn var_ref(&mut self, id: NodeId, code_builder: &mut CodeBuilder) -> Result<(), Error> {
+        let t = self.types.get(&id).unwrap();
+        assert_eq!(&Type::Int, t); // FIXME
+
+        code_builder.push2(OP_ILOAD, 0x01, Type::Int) // FIXME
+    }
+
     fn statement(
         &mut self,
         statement: &AstNodeStmt,
@@ -749,6 +769,7 @@ impl<'a> JvmEmitter<'a> {
     ) -> Result<(), Error> {
         match statement {
             AstNodeStmt::Expr(e) => self.expr(e, code_builder),
+            AstNodeStmt::VarDefinition { value, id, .. } => self.var_def(*id, value, code_builder),
             AstNodeStmt::Block { body, .. } => {
                 for stmt in body {
                     self.statement(stmt, code_builder)?;
@@ -856,6 +877,7 @@ impl<'a> JvmEmitter<'a> {
             AstNodeExpr::Binary { .. } => self.binary(expr, code_builder),
             AstNodeExpr::Grouping(e, _) => self.expr(e, code_builder),
             AstNodeExpr::Println(e, _) => self.println(e, code_builder),
+            AstNodeExpr::VarRef(_, id) => self.var_ref(*id, code_builder),
             AstNodeExpr::IfExpr {
                 cond,
                 if_body,
