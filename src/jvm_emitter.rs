@@ -343,19 +343,23 @@ impl CodeBuilder {
             .flatten()
     }
 
-    fn locals_insert(&mut self, l: Local, i: u16) -> Result<(), Error> {
+    fn locals_insert(&mut self, l: Local) -> Result<u16, Error> {
         if self.locals.len() == std::u16::MAX as usize {
             return Err(Error::new(ErrorKind::JvmLocalsOverflow, Location::new()));
         }
 
-        if i as usize >= self.locals.len() {
-            self.locals.resize(1 + i as usize, None);
-            self.locals_max = std::cmp::max(self.locals_max, self.locals.len() as u16);
-        }
+        let i = self.locals.iter().enumerate().find(|(_, l)| l.is_none());
+        let i = if let Some((i, _)) = i {
+            self.locals[i] = Some(l);
+            i
+        } else {
+            self.locals.push(Some(l));
+            self.locals.len() - 1
+        };
+        self.locals_max = std::cmp::max(self.locals_max, self.locals.len() as u16);
 
-        self.locals.push(Some(l));
         self.locals_max = std::cmp::max(self.locals.len() as u16, self.locals_max);
-        Ok(())
+        Ok(i as u16)
     }
 
     fn push1(&mut self, op: u8) -> Result<(), Error> {
@@ -748,14 +752,20 @@ impl<'a> JvmEmitter<'a> {
         assert_eq!(&Type::Int, t); // FIXME
 
         self.expr(value, code_builder)?;
-        code_builder.push2(OP_ISTORE, 0x01, Type::Int) // FIXME
+        let i = code_builder.locals_insert((id, t.clone()))?;
+        debug!("var_def: id={} i={} t={}", id, i, t);
+
+        code_builder.push2(OP_ISTORE, i as u8, Type::Int) // FIXME
     }
 
     fn var_ref(&mut self, id: NodeId, code_builder: &mut CodeBuilder) -> Result<(), Error> {
         let t = self.types.get(&id).unwrap();
         assert_eq!(&Type::Int, t); // FIXME
 
-        code_builder.push2(OP_ILOAD, 0x01, Type::Int) // FIXME
+        let (i, _) = code_builder.locals_find_by_id(id).unwrap();
+        debug!("var_ref: id={} i={} t={}", id, i, t);
+
+        code_builder.push2(OP_ILOAD, i as u8, Type::Int) // FIXME
     }
 
     fn statement(
