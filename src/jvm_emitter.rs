@@ -303,7 +303,7 @@ impl CodeBuilder {
             attributes: Vec::new(),
             stack: Vec::new(),
             locals: vec![Some((std::usize::MAX, Type::Any))], // FIXME: this
-            stack_max: 0,
+            stack_max: 100,
             locals_max: 1,
             jumps: Vec::new(),
         }
@@ -336,13 +336,11 @@ impl CodeBuilder {
         self.locals[i as usize].take()
     }
 
-    fn locals_find_by_id(&self, id: NodeId) -> Option<Local> {
-        self.locals
-            .iter()
-            .filter(|l| l.is_some())
-            .find(|l| l.as_ref().unwrap().0 == id)
-            .cloned()
-            .flatten()
+    fn locals_find_by_id(&self, id: NodeId) -> Option<(u16, Local)> {
+        self.locals.iter().enumerate().find_map(|(i, l)| match l {
+            Some((l_id, _)) if *l_id == id => Some((i as u16, l.clone().unwrap())),
+            _ => None,
+        })
     }
 
     fn locals_insert(&mut self, l: Local) -> Result<u16, Error> {
