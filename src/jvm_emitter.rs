@@ -292,7 +292,7 @@ struct CodeBuilder {
     code: Vec<u8>,
     attributes: Vec<Attribute>,
     stack: Vec<Type>,
-    locals: Vec<Option<Local>>,
+    locals: Vec<Local>,
     stack_max: u16,
     locals_max: u16,
     jumps: Vec<Jump>,
@@ -304,7 +304,7 @@ impl CodeBuilder {
             code: Vec::new(),
             attributes: Vec::new(),
             stack: Vec::new(),
-            locals: vec![Some((std::usize::MAX, Type::Any))], // FIXME: this
+            locals: vec![(std::usize::MAX, Type::Any)], // FIXME: this
             stack_max: 100,
             locals_max: 1,
             jumps: Vec::new(),
@@ -339,9 +339,12 @@ impl CodeBuilder {
     // }
 
     fn locals_find_by_id(&self, id: NodeId) -> Option<(u16, Local)> {
-        self.locals.iter().enumerate().find_map(|(i, l)| match l {
-            Some((l_id, _)) if *l_id == id => Some((i as u16, l.clone().unwrap())),
-            _ => None,
+        self.locals.iter().enumerate().find_map(|(i, l)| {
+            if l.0 == id {
+                Some((i as u16, l.clone()))
+            } else {
+                None
+            }
         })
     }
 
@@ -351,11 +354,11 @@ impl CodeBuilder {
         }
 
         let i = if l.1 == Type::Long || l.1 == Type::Double {
-            self.locals.push(Some(l.clone()));
-            self.locals.push(Some(l));
+            self.locals.push(l.clone());
+            self.locals.push(l);
             self.locals.len() - 2
         } else {
-            self.locals.push(Some(l));
+            self.locals.push(l);
             self.locals.len() - 1
         };
 
