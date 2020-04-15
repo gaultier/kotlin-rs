@@ -16,10 +16,15 @@ Prerequisite: a Rust toolchain installed.
 ```sh
 # Build
 $ cargo build --release
+
 # Run with a file
-$ cargo run -- -f /path/to/file.kt
+$ cargo run -- -f e2e/fibonnaci_rec.kts
+10946
+
 # Or with stdin
-$ echo '123' | cargo run
+$ echo 'println(4*5)' | cargo run  > Foo.class && java Foo
+20
+
 ```
 
 ## Format a file
