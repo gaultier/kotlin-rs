@@ -837,12 +837,16 @@ impl<'a> JvmEmitter<'a> {
 
         let fn_t = self.types.get(&id).unwrap();
         let t_i = add_constant(&mut self.constants, &Constant::Utf8(fn_t.to_jvm_string()))?;
-        let descriptor = add_constant(&mut self.constants, &Constant::NameAndType(name, t_i))?;
+        let name_and_type = add_constant(&mut self.constants, &Constant::NameAndType(name, t_i))?;
+        let method_ref = add_constant(
+            &mut self.constants,
+            &Constant::MethodRef(self.this_class, name_and_type),
+        )?;
 
         let mut f = Function {
             access_flags: METHOD_ACC_STATIC, // FIXME: convert `flags`
             name,
-            descriptor,
+            descriptor: t_i,
             attributes: Vec::new(),
         };
 
