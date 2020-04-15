@@ -17,21 +17,20 @@ Prerequisite: a Rust toolchain installed.
 # Build
 $ cargo build --release
 
-# Run with a file
-$ cargo run -- -f e2e/fibonnaci_rec.kts
+# The statically built, self-contained executable can be found in `./target/release/kotlin`.
+# It will be now referred as `kotlin`.
+# Run with a file:
+$ kotlin -f e2e/fibonnaci_rec.kts
 10946
 
-# Or with stdin
-$ echo 'println(4*5)' | cargo run  > Foo.class && java Foo
+# Or with stdin:
+$ echo 'println(4*5)' | kotlin
 20
 
+# Format a file (it does not modify the file in place, just prints on stdout):
+$ kotlin fmt -f e2e/fibonnaci_iter.kts
+
 ```
-
-## Format a file
-
-*Note: this does not modify the file in place (yet)*
-
-`cargo run -- fmt -f /path/to/file/kt`
 
 ## Debugging
 
@@ -52,4 +51,8 @@ $ cargo run -- sexp -f /path/to/file.kt
 
 ## Status
 
-Pre-pre alpha. Do not use yet. See the [roadmap](docs/ROADMAP.md).
+Pre-pre alpha. Do not use yet.
+
+Some full-fledged examples compile though, see the `e2e` directory.
+
+See the [roadmap](docs/ROADMAP.md).
