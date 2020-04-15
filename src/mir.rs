@@ -21,12 +21,15 @@ impl MirTransformer {
 
     fn fn_def(&mut self, body: AstNodeStmt) -> AstNodeStmt {
         match body {
-            AstNodeStmt::Expr(expr) => AstNodeStmt::Expr(AstNodeExpr::Jump {
-                kind: JumpKind::Return,
-                span: Span::new(0, 0),
-                expr: Some(Box::new(expr)),
+            AstNodeStmt::Expr(expr) => AstNodeStmt::Block {
+                body: vec![AstNodeStmt::Expr(AstNodeExpr::Jump {
+                    kind: JumpKind::Return,
+                    span: Span::new(0, 0),
+                    expr: Some(Box::new(expr)),
+                    id: self.next_id(),
+                })],
                 id: self.next_id(),
-            }),
+            },
             _ => body,
         }
     }
