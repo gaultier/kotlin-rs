@@ -829,7 +829,7 @@ impl<'a> JvmEmitter<'a> {
         body: &AstNodeStmt,
     ) -> Result<(), Error> {
         let fn_name_s = match fn_name {
-            AstNodeExpr::VarRef(span, id) => self.session.src[span.start..span.end].to_string(),
+            AstNodeExpr::VarRef(span, _) => self.session.src[span.start..span.end].to_string(),
             _ => unreachable!(),
         };
 
