@@ -11,7 +11,7 @@ use crate::type_check::TypeChecker;
 use std::io;
 use std::path::Path;
 
-pub fn compile<W: io::Write>(src: &str, file_name: &Path, w: &mut W) -> Result<(), Error> {
+pub fn compile(src: &str, file_name: &Path) -> Result<(), Error> {
     let session = Session::new(&src, None);
     let mut lexer = Lexer::new(&session);
     let (tokens, session) = lexer.lex()?;
@@ -28,8 +28,12 @@ pub fn compile<W: io::Write>(src: &str, file_name: &Path, w: &mut W) -> Result<(
     let mut type_checker = TypeChecker::new(&session, &resolution, &mut types);
     let types = type_checker.check_types(&stmts)?;
 
+    let mut class_file_name = file_name.to_path_buf();
+    class_file_name.set_extension("class");
+    let mut class_file = std::fs::File::create(class_file_name)?;
+
     let mut emitter = JvmEmitter::new(&session, &types, &resolution, &file_name);
-    emitter.main(&stmts, w)
+    emitter.main(&stmts, &mut class_file)
 }
 
 pub fn fmt<W: io::Write>(src: &str, w: &mut W) -> Result<(), Error> {

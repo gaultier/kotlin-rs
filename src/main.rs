@@ -78,7 +78,6 @@ fn main() {
             &file_name
                 .unwrap_or_else(|| PathBuf::from("Stdin.kts"))
                 .as_path(),
-            &mut handle,
         ),
         "sexp" => sexp(&src, &mut handle),
         "fmt" => fmt(&src, &mut handle),
