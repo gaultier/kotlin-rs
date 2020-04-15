@@ -601,7 +601,9 @@ impl<'a> TypeChecker<'a> {
                     let found_arg_t = self.expr(arg)?;
                     self.is_type(&found_arg_t, &expected_arg_t, span)?;
                 }
-                Ok(return_t.unwrap_or(Type::Any))
+                let return_t = return_t.unwrap_or(Type::Any);
+                self.types.insert(id, return_t.clone());
+                Ok(return_t)
             }
             _ => Err(Error::new(
                 ErrorKind::NotACallable(t),
