@@ -1,26 +1,65 @@
-// use crate::parse::*;
-// // use crate::resolver::Resolution;
-// // use log::debug;
+use crate::parse::*;
+use crate::session::Span;
+// use log::debug;
 
-// pub(crate) struct MirTransformer {
-//     _current_id: usize,
-// }
+pub(crate) struct MirTransformer {
+    current_id: usize,
+}
 
-// impl MirTransformer {
-//     pub(crate) fn new(_current_id: usize) -> MirTransformer {
-//         MirTransformer { _current_id }
-//     }
+impl MirTransformer {
+    pub(crate) fn new(current_id: usize) -> MirTransformer {
+        MirTransformer { current_id }
+    }
 
-//     fn _next_id(&mut self) -> NodeId {
-//         self._current_id = self
-//             ._current_id
-//             .checked_add(1)
-//             .expect("Out of ids, input too big");
-//         self._current_id
-//     }
+    fn next_id(&mut self) -> NodeId {
+        self.current_id = self
+            .current_id
+            .checked_add(1)
+            .expect("Out of ids, input too big");
+        self.current_id
+    }
 
-//     pub(crate) fn statements(&mut self, block: AstNodeStmt) -> AstNodeStmt {
-//         // self.statement(block)
-//         block
-//     }
-// }
+    fn fn_def(&mut self, body: AstNodeStmt) -> AstNodeStmt {
+        match body {
+            AstNodeStmt::Expr(expr) => AstNodeStmt::Expr(AstNodeExpr::Jump {
+                kind: JumpKind::Return,
+                span: Span::new(0, 0),
+                expr: Some(Box::new(expr)),
+                id: self.next_id(),
+            }),
+            _ => body,
+        }
+    }
+
+    fn statement(&mut self, statement: AstNodeStmt) -> AstNodeStmt {
+        match statement {
+            AstNodeStmt::Block { body, id } => {
+                let body = body
+                    .into_iter()
+                    .map(|stmt| self.statement(stmt))
+                    .collect::<Vec<_>>();
+                AstNodeStmt::Block { body, id }
+            }
+            AstNodeStmt::FnDefinition {
+                fn_name,
+                body,
+                id,
+                args,
+                flags,
+                return_t_span,
+            } => AstNodeStmt::FnDefinition {
+                fn_name,
+                body: Box::new(self.fn_def(*body)),
+                args,
+                id,
+                flags,
+                return_t_span,
+            },
+            _ => statement,
+        }
+    }
+
+    pub(crate) fn statements(&mut self, block: AstNodeStmt) -> AstNodeStmt {
+        self.statement(block)
+    }
+}
