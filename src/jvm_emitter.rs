@@ -1003,6 +1003,16 @@ impl<'a> JvmEmitter<'a> {
         )
     }
 
+    fn fn_call(
+        &mut self,
+        fn_name: &AstNodeExpr,
+        args: &[AstNodeExpr],
+        id: NodeId,
+        code_builder: &mut CodeBuilder,
+    ) -> Result<(), Error> {
+        todo!()
+    }
+
     fn expr(&mut self, expr: &AstNodeExpr, code_builder: &mut CodeBuilder) -> Result<(), Error> {
         match expr {
             AstNodeExpr::Literal(l, _) => self.literal(l, code_builder),
@@ -1011,6 +1021,9 @@ impl<'a> JvmEmitter<'a> {
             AstNodeExpr::Grouping(e, _) => self.expr(e, code_builder),
             AstNodeExpr::Println(e, _) => self.println(e, code_builder),
             AstNodeExpr::VarRef(_, id) => self.var_ref(*id, code_builder),
+            AstNodeExpr::FnCall {
+                fn_name, args, id, ..
+            } => self.fn_call(fn_name, args, *id, code_builder),
             AstNodeExpr::IfExpr {
                 cond,
                 if_body,
