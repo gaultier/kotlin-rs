@@ -1011,12 +1011,11 @@ impl<'a> JvmEmitter<'a> {
         &mut self,
         fn_name: &AstNodeExpr,
         args: &[AstNodeExpr],
-        id: NodeId,
         code_builder: &mut CodeBuilder,
     ) -> Result<(), Error> {
         assert!(args.is_empty()); // FIXME
 
-        let fn_id = self.resolution.get(&id).unwrap().node_ref_id;
+        let fn_id = self.resolution.get(&fn_name.id()).unwrap().node_ref_id;
         let i = self.fn_constant_pool_index.get(&fn_id).unwrap();
         code_builder.push3(
             OP_INVOKE_STATIC,
@@ -1034,9 +1033,7 @@ impl<'a> JvmEmitter<'a> {
             AstNodeExpr::Grouping(e, _) => self.expr(e, code_builder),
             AstNodeExpr::Println(e, _) => self.println(e, code_builder),
             AstNodeExpr::VarRef(_, id) => self.var_ref(*id, code_builder),
-            AstNodeExpr::FnCall {
-                fn_name, args, id, ..
-            } => self.fn_call(fn_name, args, *id, code_builder),
+            AstNodeExpr::FnCall { fn_name, args, .. } => self.fn_call(fn_name, args, code_builder),
             AstNodeExpr::IfExpr {
                 cond,
                 if_body,
