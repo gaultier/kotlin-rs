@@ -306,9 +306,9 @@ impl CodeBuilder {
             code: Vec::new(),
             attributes: Vec::new(),
             stack: Vec::new(),
-            locals: vec![(std::usize::MAX, Type::Any)], // FIXME: this
+            locals: Vec::new(),
             stack_max: 100,
-            locals_max: 1,
+            locals_max: 0,
             jumps: Vec::new(),
         }
     }
@@ -680,6 +680,7 @@ impl<'a> JvmEmitter<'a> {
         };
 
         let mut code_builder = CodeBuilder::new();
+        code_builder.locals_insert((0xdeadbeef, Type::Any))?; // FIXME: this
         self.statement(block, &mut code_builder)?;
         let code = code_builder.end();
 
@@ -855,6 +856,12 @@ impl<'a> JvmEmitter<'a> {
         };
 
         let mut code_builder = CodeBuilder::new();
+        for arg in args {
+            let arg_id = arg.id();
+            let arg_t = self.types.get(&arg_id).unwrap();
+            code_builder.locals_insert((arg_id, arg_t.clone()))?;
+        }
+
         self.statement(body, &mut code_builder)?;
         let code = code_builder.end();
 
@@ -1013,10 +1020,13 @@ impl<'a> JvmEmitter<'a> {
         args: &[AstNodeExpr],
         code_builder: &mut CodeBuilder,
     ) -> Result<(), Error> {
-        assert!(args.is_empty()); // FIXME
-
         let fn_id = self.resolution.get(&fn_name.id()).unwrap().node_ref_id;
-        let i = self.fn_constant_pool_index.get(&fn_id).unwrap();
+        let i: u16 = *self.fn_constant_pool_index.get(&fn_id).unwrap();
+
+        for arg in args {
+            self.expr(arg, code_builder)?;
+        }
+
         code_builder.push3(
             OP_INVOKE_STATIC,
             i.to_be_bytes()[0],
