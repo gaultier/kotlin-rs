@@ -820,6 +820,31 @@ impl<'a> JvmEmitter<'a> {
         code_builder.push2(op, i as u8, t.clone())
     }
 
+    fn fn_def(
+        &mut self,
+        fn_name: &AstNodeExpr,
+        args: &[AstNodeExpr],
+        id: NodeId,
+        flags: u16,
+        body: &AstNodeStmt,
+    ) -> Result<(), Error> {
+        let fn_name_s = match fn_name {
+            AstNodeExpr::VarRef(span, id) => self.session.src[span.start..span.end].to_string(),
+            _ => unreachable!(),
+        };
+
+        let name_i = add_constant(&mut self.constants, &Constant::Utf8(fn_name_s))?;
+
+        let fn_t = self.types.get(&id).unwrap();
+        let t_i = add_constant(&mut self.constants, &Constant::Utf8(fn_t.to_jvm_string()))?;
+        add_constant(&mut self.constants, &Constant::NameAndType(name_i, t_i))?;
+
+        let mut code_builder = CodeBuilder::new();
+
+        code_builder.end();
+        Ok(())
+    }
+
     fn statement(
         &mut self,
         statement: &AstNodeStmt,
@@ -844,6 +869,14 @@ impl<'a> JvmEmitter<'a> {
                 Ok(())
             }
             AstNodeStmt::While { cond, body, .. } => self.while_stmt(cond, body, code_builder),
+            AstNodeStmt::FnDefinition {
+                fn_name,
+                args,
+                id,
+                flags,
+                body,
+                ..
+            } => self.fn_def(fn_name, args, *id, *flags, body),
             _ => unimplemented!(),
         }
     }
