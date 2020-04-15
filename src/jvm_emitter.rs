@@ -833,15 +833,44 @@ impl<'a> JvmEmitter<'a> {
             _ => unreachable!(),
         };
 
-        let name_i = add_constant(&mut self.constants, &Constant::Utf8(fn_name_s))?;
+        let name = add_constant(&mut self.constants, &Constant::Utf8(fn_name_s))?;
 
         let fn_t = self.types.get(&id).unwrap();
         let t_i = add_constant(&mut self.constants, &Constant::Utf8(fn_t.to_jvm_string()))?;
-        add_constant(&mut self.constants, &Constant::NameAndType(name_i, t_i))?;
+        let descriptor = add_constant(&mut self.constants, &Constant::NameAndType(name, t_i))?;
+
+        let mut f = Function {
+            access_flags: METHOD_ACC_STATIC, // FIXME: convert `flags`
+            name,
+            descriptor,
+            attributes: Vec::new(),
+        };
 
         let mut code_builder = CodeBuilder::new();
+        self.statement(body, &mut code_builder)?;
+        let code = code_builder.end();
 
-        code_builder.end();
+        // FIXME: dummy for now
+        let line_table = Attribute::LineNumberTable {
+            name: self.line_table_str,
+            line_number_tables: vec![LineNumberTable {
+                start_pc: 0,
+                line_number: 2,
+            }],
+        };
+
+        let attribute_code = Attribute::Code {
+            name: self.code_str,
+            max_stack: code_builder.stack_max,
+            max_locals: code_builder.locals_max,
+            code,
+            exception_table: Vec::new(),
+            attributes: vec![line_table],
+        };
+
+        f.attributes.push(attribute_code);
+
+        self.methods.push(f);
         Ok(())
     }
 
