@@ -9,8 +9,9 @@ use crate::session::Session;
 use crate::sexp_emitter::SexpEmitter;
 use crate::type_check::TypeChecker;
 use std::io;
+use std::path::Path;
 
-pub fn compile<W: io::Write>(src: &str, w: &mut W) -> Result<(), Error> {
+pub fn compile<W: io::Write>(src: &str, file_name: &Path, w: &mut W) -> Result<(), Error> {
     let session = Session::new(&src, None);
     let mut lexer = Lexer::new(&session);
     let (tokens, session) = lexer.lex()?;
@@ -27,7 +28,7 @@ pub fn compile<W: io::Write>(src: &str, w: &mut W) -> Result<(), Error> {
     let mut type_checker = TypeChecker::new(&session, &resolution, &mut types);
     let types = type_checker.check_types(&stmts)?;
 
-    let mut emitter = JvmEmitter::new(&session, &types, &resolution);
+    let mut emitter = JvmEmitter::new(&session, &types, &resolution, &file_name);
     emitter.main(&stmts, w)
 }
 

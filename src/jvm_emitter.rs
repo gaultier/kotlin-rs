@@ -6,6 +6,7 @@ use crate::resolver::Resolution;
 use crate::session::Session;
 use log::debug;
 use std::collections::BTreeMap;
+use std::path::Path;
 
 #[derive(Debug, Clone)]
 pub(crate) enum Constant {
@@ -49,6 +50,7 @@ pub(crate) struct JvmEmitter<'a> {
     pub(crate) println_str: u16,
     pub(crate) class_printstream: u16,
     pub(crate) stack_map_table_str: u16,
+    pub(crate) file_name: &'a Path,
     fn_constant_pool_index: BTreeMap<NodeId, u16>,
 }
 
@@ -513,6 +515,7 @@ impl<'a> JvmEmitter<'a> {
         session: &'a Session,
         types: &'a Types,
         resolution: &'a Resolution,
+        file_name: &'a Path,
     ) -> JvmEmitter<'a> {
         let mut constants = Vec::new();
 
@@ -546,8 +549,11 @@ impl<'a> JvmEmitter<'a> {
             &Constant::MethodRef(super_class, obj_name_type),
         )
         .unwrap();
-        let this_class_name =
-            add_constant(&mut constants, &Constant::Utf8(String::from("Foo"))).unwrap();
+        let this_class_name = add_constant(
+            &mut constants,
+            &Constant::Utf8(file_name.file_stem().unwrap().to_string_lossy().to_string()),
+        )
+        .unwrap();
 
         let this_class =
             add_constant(&mut constants, &Constant::ClassInfo(this_class_name)).unwrap();
@@ -635,6 +641,7 @@ impl<'a> JvmEmitter<'a> {
             stack_map_table_str,
             methods: Vec::new(),
             attributes: Vec::new(),
+            file_name,
             fn_constant_pool_index: BTreeMap::new(),
         }
     }

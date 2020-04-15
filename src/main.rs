@@ -5,6 +5,7 @@ use kotlin::lex::Lexer;
 use kotlin::parse::Parser;
 use kotlin::session::Session;
 use std::io::prelude::*;
+use std::path::PathBuf;
 
 fn main() {
     pretty_env_logger::init();
@@ -33,19 +34,27 @@ fn main() {
                 .index(1),
         )
         .get_matches();
-    let file_name = matches.value_of("input_file");
+    let file_name = matches.value_of("input_file").map(PathBuf::from);
 
-    let src = if let Some(file_name) = file_name {
+    let src = if let Some(file_name) = &file_name {
         let file = std::fs::File::open(file_name);
         if let Err(err) = file {
-            eprintln!("Could not open file {}: {}", file_name, err);
+            eprintln!(
+                "Could not open file {}: {}",
+                file_name.to_string_lossy(),
+                err
+            );
             std::process::exit(1);
         }
         let mut file = file.unwrap();
 
         let mut src = String::new();
         if let Err(err) = file.read_to_string(&mut src) {
-            eprintln!("Could not read src of file {}: {}", file_name, err);
+            eprintln!(
+                "Could not read src of file {}: {}",
+                file_name.to_string_lossy(),
+                err
+            );
             std::process::exit(1);
         }
 
@@ -64,7 +73,13 @@ fn main() {
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
     let res = match matches.value_of("command").unwrap() {
-        "build" => compile(&src, &mut handle),
+        "build" => compile(
+            &src,
+            &file_name
+                .unwrap_or_else(|| PathBuf::from("Stdin.kts"))
+                .as_path(),
+            &mut handle,
+        ),
         "sexp" => sexp(&src, &mut handle),
         "fmt" => fmt(&src, &mut handle),
         "dump_ast" => dump_ast(&src),
