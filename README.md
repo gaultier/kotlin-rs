@@ -32,6 +32,8 @@ $ kotlin fmt -f e2e/fibonnaci_iter.kts
 
 ```
 
+This project can also be used as a library.
+
 ## Debugging
 
 ```
