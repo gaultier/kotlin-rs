@@ -38,6 +38,7 @@ pub(crate) const OP_RETURN: u8 = 0xb1;
 pub(crate) const _OP_NOP: u8 = 0x00;
 pub(crate) const OP_ALOAD_0: u8 = 0x2a;
 pub(crate) const OP_INVOKE_SPECIAL: u8 = 0xb7;
+pub(crate) const OP_INVOKE_STATIC: u8 = 0xb8;
 pub(crate) const OP_GET_STATIC: u8 = 0xb2;
 pub(crate) const OP_LDC: u8 = 0x12;
 pub(crate) const OP_LDC_W: u8 = 0x13;

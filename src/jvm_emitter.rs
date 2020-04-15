@@ -5,6 +5,7 @@ use crate::parse::*;
 use crate::resolver::Resolution;
 use crate::session::Session;
 use log::debug;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
 pub(crate) enum Constant {
@@ -48,6 +49,7 @@ pub(crate) struct JvmEmitter<'a> {
     pub(crate) println_str: u16,
     pub(crate) class_printstream: u16,
     pub(crate) stack_map_table_str: u16,
+    fn_constant_pool_index: BTreeMap<NodeId, u16>,
 }
 
 #[derive(Debug)]
@@ -634,6 +636,7 @@ impl<'a> JvmEmitter<'a> {
             stack_map_table_str,
             methods: Vec::new(),
             attributes: Vec::new(),
+            fn_constant_pool_index: BTreeMap::new(),
         }
     }
 
@@ -842,6 +845,7 @@ impl<'a> JvmEmitter<'a> {
             &mut self.constants,
             &Constant::MethodRef(self.this_class, name_and_type),
         )?;
+        self.fn_constant_pool_index.insert(id, method_ref);
 
         let mut f = Function {
             access_flags: METHOD_ACC_STATIC, // FIXME: convert `flags`
@@ -1010,7 +1014,16 @@ impl<'a> JvmEmitter<'a> {
         id: NodeId,
         code_builder: &mut CodeBuilder,
     ) -> Result<(), Error> {
-        todo!()
+        assert!(args.is_empty()); // FIXME
+
+        let fn_id = self.resolution.get(&id).unwrap().node_ref_id;
+        let i = self.fn_constant_pool_index.get(&fn_id).unwrap();
+        code_builder.push3(
+            OP_INVOKE_STATIC,
+            i.to_be_bytes()[0],
+            i.to_be_bytes()[1],
+            Type::Any,
+        )
     }
 
     fn expr(&mut self, expr: &AstNodeExpr, code_builder: &mut CodeBuilder) -> Result<(), Error> {
