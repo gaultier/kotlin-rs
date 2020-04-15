@@ -504,7 +504,6 @@ impl CodeBuilder {
     // }
 
     fn end(&mut self) -> Vec<u8> {
-        self.code.push(OP_RETURN);
         self.code.clone()
     }
 }
@@ -682,6 +681,7 @@ impl<'a> JvmEmitter<'a> {
         let mut code_builder = CodeBuilder::new();
         code_builder.locals_insert((0xdeadbeef, Type::Any))?; // FIXME: this
         self.statement(block, &mut code_builder)?;
+        code_builder.code.push(OP_RETURN);
         let code = code_builder.end();
 
         // FIXME: dummy for now
@@ -1035,6 +1035,22 @@ impl<'a> JvmEmitter<'a> {
         )
     }
 
+    fn return_expr(
+        &mut self,
+        expr: &Option<Box<AstNodeExpr>>,
+        id: NodeId,
+        code_builder: &mut CodeBuilder,
+    ) -> Result<(), Error> {
+        if let Some(expr) = expr {
+            self.expr(expr, code_builder)?;
+            let t = self.types.get(&expr.id()).unwrap();
+            assert_eq!(t, &Type::Int);
+            code_builder.push1(OP_IRETURN)
+        } else {
+            code_builder.push1(OP_RETURN)
+        }
+    }
+
     fn expr(&mut self, expr: &AstNodeExpr, code_builder: &mut CodeBuilder) -> Result<(), Error> {
         match expr {
             AstNodeExpr::Literal(l, _) => self.literal(l, code_builder),
@@ -1043,6 +1059,12 @@ impl<'a> JvmEmitter<'a> {
             AstNodeExpr::Grouping(e, _) => self.expr(e, code_builder),
             AstNodeExpr::Println(e, _) => self.println(e, code_builder),
             AstNodeExpr::VarRef(_, id) => self.var_ref(*id, code_builder),
+            AstNodeExpr::Jump {
+                kind: crate::parse::JumpKind::Return,
+                expr,
+                id,
+                ..
+            } => self.return_expr(expr, *id, code_builder),
             AstNodeExpr::FnCall { fn_name, args, .. } => self.fn_call(fn_name, args, code_builder),
             AstNodeExpr::IfExpr {
                 cond,
