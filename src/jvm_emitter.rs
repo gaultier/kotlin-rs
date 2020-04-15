@@ -576,8 +576,11 @@ impl<'a> JvmEmitter<'a> {
 
         let source_file_constant =
             add_constant(&mut constants, &Constant::Utf8(String::from("SourceFile"))).unwrap();
-        let source_file_name_constant =
-            add_constant(&mut constants, &Constant::Utf8(String::from("Foo.java"))).unwrap();
+        let source_file_name_constant = add_constant(
+            &mut constants,
+            &Constant::Utf8(file_name.to_string_lossy().to_string()),
+        )
+        .unwrap();
 
         let class_system_str = add_constant(
             &mut constants,
