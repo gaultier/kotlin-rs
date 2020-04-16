@@ -68,32 +68,6 @@ pub(crate) struct Function {
     pub(crate) attributes: Vec<Attribute>,
 }
 
-#[derive(Debug)]
-pub(crate) enum JumpKind {
-    SameLocalsAndEmptyStack,
-    StackAddOne(VerificationTypeInfo),
-}
-
-impl Jump {
-    fn into_stack_map_frame(&self) -> StackMapFrame {
-        match &self.kind {
-            JumpKind::SameLocalsAndEmptyStack => StackMapFrame::Same {
-                offset: self.offset as u8,
-            },
-            JumpKind::StackAddOne(v) => StackMapFrame::SameLocalsOneStackItem {
-                offset: self.offset as u8,
-                stack: *v,
-            },
-        }
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct Jump {
-    pub(crate) offset: u16,
-    pub(crate) kind: JumpKind,
-}
-
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum VerificationTypeInfo {
     Int,
@@ -299,7 +273,7 @@ struct CodeBuilder {
     locals: Vec<Local>,
     stack_max: u16,
     locals_max: u16,
-    jumps: Vec<Jump>,
+    stack_map_frames: Vec<StackMapFrame>,
 }
 
 impl CodeBuilder {
@@ -311,7 +285,7 @@ impl CodeBuilder {
             locals: Vec::new(),
             stack_max: 100,
             locals_max: 0,
-            jumps: Vec::new(),
+            stack_map_frames: Vec::new(),
         }
     }
 
@@ -410,6 +384,12 @@ impl CodeBuilder {
                 }
                 OP_IF_ICMPNE | OP_IFEQ | OP_IFNE | OP_IFGT | OP_IFGE | OP_IF_ICMPGE | OP_IFLE
                 | OP_IF_ICMPLE | OP_IF_ICMPGT | OP_IFLT | OP_IF_ICMPLT => {
+                    let op1 = self.code[i + 1];
+                    let op2 = self.code[i + 2];
+                    let offset = u16::from_be_bytes([op1, op2]) as u8;
+                    self.stack_map_frames.push(StackMapFrame::Same { offset });
+                    debug!("verify: if offset={}", offset);
+
                     i += 2;
                     self.stack_pop()?;
                 }
@@ -757,11 +737,7 @@ impl<'a> JvmEmitter<'a> {
 
         let stack_map_table = Attribute::StackMapTable {
             name: self.stack_map_table_str,
-            entries: code_builder
-                .jumps
-                .iter()
-                .map(|j| j.into_stack_map_frame())
-                .collect::<Vec<_>>(),
+            entries: code_builder.stack_map_frames,
         };
 
         let attribute_code = Attribute::Code {
