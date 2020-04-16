@@ -50,7 +50,8 @@ pub(crate) struct JvmEmitter<'a> {
     pub(crate) println_str: u16,
     pub(crate) class_printstream: u16,
     pub(crate) stack_map_table_str: u16,
-    fn_constant_pool_index: BTreeMap<NodeId, u16>,
+    fn_id_to_constant_pool_index: BTreeMap<NodeId, u16>,
+    constant_pool_index_to_fn_id: BTreeMap<u16, NodeId>,
 }
 
 #[derive(Debug)]
@@ -381,7 +382,7 @@ impl CodeBuilder {
         self.push(op, Some(operand1), Some(operand2), Some(t))
     }
 
-    fn verify(&mut self, constants: &[Constant]) -> Result<(), Error> {
+    fn verify(&mut self, jvm_emitter: &JvmEmitter) -> Result<(), Error> {
         let mut i = 0;
         while i < self.code.len() {
             let op = self.code[i];
@@ -458,13 +459,27 @@ impl CodeBuilder {
                 OP_INVOKE_STATIC | OP_INVOKE_SPECIAL => {
                     let op1 = self.code[i + 1];
                     let op2 = self.code[i + 2];
+                    i += 2;
+
                     let fn_i: u16 = u16::from_be_bytes([op1, op2]);
                     // The constant pool is one-indexed
-                    let method_ref = constants[fn_i as usize - 1].clone();
-                    debug!("verify: op={} method_ref={:?}", op, method_ref);
+                    let fn_id: NodeId =
+                        *jvm_emitter.constant_pool_index_to_fn_id.get(&fn_i).unwrap();
+                    let fn_t = jvm_emitter.types.get(&fn_id).unwrap();
+                    let return_t = fn_t.fn_return_t();
+                    debug!("verify: op={} return_t={:?}", op, return_t);
 
-                    i += 2;
-                    self.stack_pop()?; // FIXME
+                    match fn_t {
+                        Type::Function { return_t, args, .. } => {
+                            for _ in 0..args.len() {
+                                self.stack_pop()?; // FIXME: Two words types
+                            }
+                            if let Some(return_t) = &**return_t {
+                                self.stack_push(return_t.clone())?; // FIXME: Two words types
+                            }
+                        }
+                        _ => unreachable!(),
+                    }
                 }
                 OP_RETURN | OP_IRETURN => {}
                 OP_INEG => {}
@@ -543,8 +558,8 @@ impl CodeBuilder {
     //     }
     // }
 
-    fn end(&mut self, constants: &[Constant]) -> Result<Vec<u8>, Error> {
-        self.verify(constants)?;
+    fn end(&mut self, jvm_emitter: &JvmEmitter) -> Result<Vec<u8>, Error> {
+        self.verify(jvm_emitter)?;
         Ok(self.code.clone())
     }
 }
@@ -681,7 +696,8 @@ impl<'a> JvmEmitter<'a> {
             stack_map_table_str,
             methods: Vec::new(),
             attributes: Vec::new(),
-            fn_constant_pool_index: BTreeMap::new(),
+            fn_id_to_constant_pool_index: BTreeMap::new(),
+            constant_pool_index_to_fn_id: BTreeMap::new(),
         }
     }
 
@@ -728,7 +744,7 @@ impl<'a> JvmEmitter<'a> {
         code_builder.locals_insert((0xdeadbeef, Type::Any))?; // FIXME: this
         self.statement(block, &mut code_builder)?;
         code_builder.code.push(OP_RETURN);
-        let code = code_builder.end(&self.constants)?;
+        let code = code_builder.end(&self)?;
 
         // FIXME: dummy for now
         let line_table = Attribute::LineNumberTable {
@@ -892,7 +908,8 @@ impl<'a> JvmEmitter<'a> {
             &mut self.constants,
             &Constant::MethodRef(self.this_class, name_and_type),
         )?;
-        self.fn_constant_pool_index.insert(id, method_ref);
+        self.fn_id_to_constant_pool_index.insert(id, method_ref);
+        self.constant_pool_index_to_fn_id.insert(method_ref, id);
 
         let mut f = Function {
             access_flags: METHOD_ACC_STATIC, // FIXME: convert `flags`
@@ -909,7 +926,7 @@ impl<'a> JvmEmitter<'a> {
         }
 
         self.statement(body, &mut code_builder)?;
-        let code = code_builder.end(&self.constants)?;
+        let code = code_builder.end(&self)?;
 
         // FIXME: dummy for now
         let line_table = Attribute::LineNumberTable {
@@ -1067,7 +1084,7 @@ impl<'a> JvmEmitter<'a> {
         code_builder: &mut CodeBuilder,
     ) -> Result<(), Error> {
         let fn_id = self.resolution.get(&fn_name.id()).unwrap().node_ref_id;
-        let i: u16 = *self.fn_constant_pool_index.get(&fn_id).unwrap();
+        let i: u16 = *self.fn_id_to_constant_pool_index.get(&fn_id).unwrap();
 
         for arg in args {
             self.expr(arg, code_builder)?;
