@@ -459,7 +459,8 @@ impl CodeBuilder {
                     let op1 = self.code[i + 1];
                     let op2 = self.code[i + 2];
                     let fn_i: u16 = u16::from_be_bytes([op1, op2]);
-                    let method_ref = constants[fn_i as usize].clone();
+                    // The constant pool is one-indexed
+                    let method_ref = constants[fn_i as usize - 1].clone();
                     debug!("verify: op={} method_ref={:?}", op, method_ref);
 
                     i += 2;
