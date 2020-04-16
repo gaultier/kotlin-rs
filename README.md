@@ -20,7 +20,7 @@ $ cargo build --release
 # The statically built, self-contained executable can be found in `./target/release/kotlin`.
 # It will be now referred as `kotlin`.
 # Run with a file:
-$ kotlin -f e2e/fibonnaci_rec.kts
+$ cd e2e && kotlin -f fibonnaci_rec.kts
 10946
 
 # Or with stdin:
