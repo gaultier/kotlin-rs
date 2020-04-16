@@ -178,6 +178,10 @@
 - [x] Jvm while loop
 - [x] Locals
 - [x] Assignment
-- [ ] Functions
+- [x] Functions
+- [ ] When
+- [ ] Break
+- [ ] Continue
 - [ ] Debug information
+- [ ] Package
 - [ ] Stack map frames (hard)
