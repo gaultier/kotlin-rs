@@ -182,6 +182,7 @@
 - [ ] When
 - [ ] Break
 - [ ] Continue
-- [ ] Debug information
+- [ ] Lines debug information
+- [ ] Local variables debug information
 - [ ] Package
 - [ ] Stack map frames (hard)
