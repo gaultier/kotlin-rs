@@ -9,6 +9,7 @@ use crate::session::Session;
 use crate::sexp_emitter::SexpEmitter;
 use crate::type_check::TypeChecker;
 use heck::CamelCase;
+use log::debug;
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -35,17 +36,24 @@ pub fn compile(src: &str, file_name: &Path) -> Result<(), Error> {
         .unwrap()
         .to_string_lossy()
         .to_camel_case();
-    let fully_qualified_class_name = file_name
+    let fully_qualified_class_name_parent = file_name
         .parent()
-        .unwrap_or(&Path::from("/"))
+        .unwrap_or(PathBuf::from("/").as_path())
         .to_string_lossy()
-        .replace("/", ".");
+        .replace("/", ".")
+        .to_lowercase();
 
     let mut class_file_name = PathBuf::from(file_name);
     class_file_name.set_file_name(&class_name);
     class_file_name.set_extension("class");
     let mut class_file = std::fs::File::create(class_file_name)?;
 
+    debug!(
+        "file_name={} class_name={} fully_qualified_class_name={}",
+        file_name.display(),
+        class_name,
+        fully_qualified_class_name_parent
+    );
     let mut emitter = JvmEmitter::new(&session, &types, &resolution, &file_name, &class_name);
     emitter.main(&stmts, &mut class_file)
 }
