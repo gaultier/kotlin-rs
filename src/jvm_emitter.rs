@@ -377,9 +377,24 @@ impl CodeBuilder {
         // TODO: check overflow
         self.stack_map_frames
             .push(StackMapFrame::SameLocalsOneStackItem {
-                offset: (jump_target - last_offset) as u8,
+                offset: (jump_target - last_offset) as u8 - 1,
                 stack: VerificationTypeInfo::Int,
             });
+    }
+
+    fn stack_map_frame_add_full(&mut self, jump_target: u16) {
+        let last_offset = self
+            .stack_map_frames
+            .last()
+            .map(|smp| smp.offset())
+            .unwrap_or(0);
+
+        // TODO: check overflow
+        self.stack_map_frames.push(StackMapFrame::Full {
+            offset: (jump_target - last_offset) as u16 - 1,
+            stack: vec![],
+            locals: vec![],
+        });
     }
 
     fn push1(&mut self, op: u8) -> Result<(), Error> {
