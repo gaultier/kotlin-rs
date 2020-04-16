@@ -1,4 +1,4 @@
-fun fibonacci(n: Int): Int = if (n <= 1) 1   else
+fun fibonacci(n: Int): Int = if (n < 2) n   else
 fibonacci(n-1) + fibonacci(n-2)
 
-println(fibonacci(20)) // 10946
+println(fibonacci(35)) // 10946
