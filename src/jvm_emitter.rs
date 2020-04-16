@@ -314,28 +314,28 @@ impl CodeBuilder {
         }
     }
 
-    // fn stack_pop(&mut self) -> Result<Type, Error> {
-    //     self.stack
-    //         .pop()
-    //         .ok_or_else(|| Error::new(ErrorKind::JvmStackUnderflow, Location::new()))
-    // }
+    fn stack_pop(&mut self) -> Result<Type, Error> {
+        self.stack
+            .pop()
+            .ok_or_else(|| Error::new(ErrorKind::JvmStackUnderflow, Location::new()))
+    }
 
-    // fn stack_pop2(&mut self) -> Result<[Type; 2], Error> {
-    //     let a = self.stack_pop()?;
-    //     let b = self.stack_pop()?;
-    //     Ok([a, b])
-    // }
+    fn stack_pop2(&mut self) -> Result<[Type; 2], Error> {
+        let a = self.stack_pop()?;
+        let b = self.stack_pop()?;
+        Ok([a, b])
+    }
 
-    // fn stack_push(&mut self, t: Type) -> Result<(), Error> {
-    //     if self.stack.len() == std::u8::MAX as usize {
-    //         return Err(Error::new(ErrorKind::JvmStackOverflow, Location::new()));
-    //     }
+    fn stack_push(&mut self, t: Type) -> Result<(), Error> {
+        if self.stack.len() == std::u8::MAX as usize {
+            return Err(Error::new(ErrorKind::JvmStackOverflow, Location::new()));
+        }
 
-    //     self.stack.push(t);
+        self.stack.push(t);
 
-    //     self.stack_max = std::cmp::max(self.stack.len() as u16, self.stack_max);
-    //     Ok(())
-    // }
+        self.stack_max = std::cmp::max(self.stack.len() as u16, self.stack_max);
+        Ok(())
+    }
 
     // fn locals_take(&mut self, i: u16) -> Option<Local> {
     //     self.locals[i as usize].take()
@@ -381,6 +381,102 @@ impl CodeBuilder {
         self.push(op, Some(operand1), Some(operand2), Some(t))
     }
 
+    fn verify(&mut self) -> Result<(), Error> {
+        let mut i = 0;
+        while i < self.code.len() {
+            let op = self.code[i];
+
+            match op {
+                OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3
+                | OP_ICONST_4 | OP_ICONST_5 => {
+                    self.stack_push(Type::Int)?;
+                }
+                OP_SIPUSH | OP_BIPUSH => {
+                    i += 1;
+                    self.stack_push(Type::Int)?;
+                }
+                OP_FCONST_0 | OP_FCONST_1 | OP_FCONST_2 => {
+                    self.stack_push(Type::Float)?;
+                }
+                OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_IAND | OP_IOR | OP_FADD | OP_FMUL
+                | OP_FSUB | OP_FDIV | OP_FCMPL => {
+                    self.stack_pop()?;
+                }
+                OP_IF_ICMPNE | OP_IFEQ | OP_IFNE | OP_IFGT | OP_IFGE | OP_IF_ICMPGE | OP_IFLE
+                | OP_IF_ICMPLE | OP_IF_ICMPGT | OP_IFLT | OP_IF_ICMPLT => {
+                    self.stack_pop()?;
+                }
+                OP_LCMP | OP_DCMPL => {
+                    self.stack_pop2()?;
+                }
+                OP_GOTO => todo!(),
+                OP_GET_STATIC => {
+                    i += 2;
+                    self.stack_push(Type::TString)?; // FIXME: hardcoded for println
+                }
+                OP_ISTORE => {
+                    i += 1;
+                    self.stack_pop()?;
+                    self.locals_insert((0xdeadbeef, Type::Int))?;
+                }
+                OP_FSTORE => {
+                    i += 1;
+                    self.stack_pop()?;
+                    self.locals_insert((0xdeadbeef, Type::Float))?;
+                }
+                OP_LSTORE => {
+                    i += 1;
+                    self.stack_pop2()?;
+                    self.locals_insert((0xdead_beef_dead, Type::Long))?;
+                }
+                OP_DSTORE => {
+                    i += 1;
+                    self.stack_pop2()?;
+                    self.locals_insert((0xdead_beef_dead, Type::Double))?;
+                }
+                OP_ILOAD => {
+                    i += 1;
+                    self.stack_push(Type::Int)?;
+                }
+                OP_LLOAD => {
+                    i += 1;
+                    self.stack_push(Type::Long)?;
+                    self.stack_push(Type::Long)?;
+                }
+                OP_INVOKE_VIRTUAL => {
+                    self.stack_pop2()?; // FIXME: hardcoded for println
+                }
+                OP_RETURN => {}
+                OP_INEG => {}
+                OP_LDC | OP_LDC_W => {
+                    i += 1;
+                    self.stack_push(Type::Long)?; // FIXME
+                }
+                OP_LCONST_0 | OP_LCONST_1 => {
+                    self.stack_push(Type::Long)?;
+                    self.stack_push(Type::Long)?;
+                }
+                OP_LDC2_W => {
+                    i += 2;
+                    self.stack_push(Type::Long)?; // FIXME
+                    self.stack_push(Type::Long)?; // FIXME
+                }
+                OP_LADD | OP_LMUL | OP_LSUB | OP_LDIV => {
+                    self.stack_pop2()?;
+                }
+                OP_DADD | OP_DMUL | OP_DSUB | OP_DDIV => {
+                    self.stack_pop2()?;
+                }
+                _ => {
+                    dbg!(op);
+                    unimplemented!()
+                }
+            }
+            i += 1;
+        }
+        Ok(())
+    }
+
     fn push(
         &mut self,
         op: u8,
@@ -392,83 +488,6 @@ impl CodeBuilder {
             "push: op={} operand1={:?} operand2={:?} t={:?} stack={:?} locals={:?}",
             op, operand1, operand2, t, self.stack, self.locals
         );
-
-        // match op {
-        //     OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3 | OP_ICONST_4
-        //     | OP_ICONST_5 => {
-        //         self.stack_push(Type::Int)?;
-        //     }
-        //     OP_SIPUSH | OP_BIPUSH => {
-        //         self.stack_push(t.unwrap())?;
-        //     }
-        //     OP_FCONST_0 | OP_FCONST_1 | OP_FCONST_2 => {
-        //         self.stack_push(Type::Float)?;
-        //     }
-        //     OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_IAND | OP_IOR | OP_FADD | OP_FMUL
-        //     | OP_FSUB | OP_FDIV | OP_FCMPL => {
-        //         self.stack_pop()?;
-        //     }
-        //     OP_IF_ICMPNE | OP_IFEQ | OP_IFNE | OP_IFGT | OP_IFGE | OP_IF_ICMPGE | OP_IFLE
-        //     | OP_IF_ICMPLE | OP_IF_ICMPGT | OP_IFLT | OP_IF_ICMPLT => {
-        //         self.stack_pop()?;
-        //     }
-        //     OP_LCMP | OP_DCMPL => {
-        //         self.stack_pop2()?;
-        //     }
-        //     OP_GOTO => {}
-        //     OP_GET_STATIC => {
-        //         self.stack_push(Type::TString)?; // FIXME: hardcoded for println
-        //     }
-        //     OP_ISTORE | OP_FSTORE => {
-        //         let v = self.stack_pop()?;
-
-        //         let op1 = operand1.unwrap() as u16;
-        //         self.locals_insert(v, op1)?;
-        //     }
-        //     OP_DSTORE | OP_LSTORE => {
-        //         let [v1, v2] = self.stack_pop2()?;
-        //         let op1 = operand1.unwrap() as u16;
-        //         self.locals_insert(v1, op1)?;
-        //         self.locals_insert(v2, op1 + 1)?;
-        //     }
-        //     OP_ILOAD | OP_FLOAD => {
-        //         let op1 = operand1.unwrap() as u16;
-        //         let v = self.locals_take(op1).unwrap();
-        //         self.stack_push(v)?;
-        //     }
-        //     OP_DLOAD | OP_LLOAD => {
-        //         let v1 = self.locals_take(operand1.unwrap() as u16).unwrap();
-        //         let v2 = self.locals_take(operand1.unwrap() as u16 + 1).unwrap();
-        //         self.stack_push(v1)?;
-        //         self.stack_push(v2)?;
-        //     }
-        //     OP_INVOKE_VIRTUAL => {
-        //         self.stack_pop2()?; // FIXME: hardcoded for println
-        //     }
-        //     OP_RETURN => {}
-        //     OP_INEG => {}
-        //     OP_LDC | OP_LDC_W => {
-        //         self.stack_push(t.unwrap())?;
-        //     }
-        //     OP_LCONST_0 | OP_LCONST_1 => {
-        //         self.stack_push(Type::Long)?;
-        //         self.stack_push(Type::Long)?;
-        //     }
-        //     OP_LDC2_W => {
-        //         self.stack_push(t.clone().unwrap())?;
-        //         self.stack_push(t.unwrap())?;
-        //     }
-        //     OP_LADD | OP_LMUL | OP_LSUB | OP_LDIV => {
-        //         self.stack_pop2()?;
-        //     }
-        //     OP_DADD | OP_DMUL | OP_DSUB | OP_DDIV => {
-        //         self.stack_pop2()?;
-        //     }
-        //     _ => {
-        //         dbg!(op);
-        //         unimplemented!()
-        //     }
-        // }
 
         self.code.push(op);
 
@@ -504,8 +523,9 @@ impl CodeBuilder {
     //     }
     // }
 
-    fn end(&mut self) -> Vec<u8> {
-        self.code.clone()
+    fn end(&mut self) -> Result<Vec<u8>, Error> {
+        self.verify()?;
+        Ok(self.code.clone())
     }
 }
 
@@ -688,7 +708,7 @@ impl<'a> JvmEmitter<'a> {
         code_builder.locals_insert((0xdeadbeef, Type::Any))?; // FIXME: this
         self.statement(block, &mut code_builder)?;
         code_builder.code.push(OP_RETURN);
-        let code = code_builder.end();
+        let code = code_builder.end()?;
 
         // FIXME: dummy for now
         let line_table = Attribute::LineNumberTable {
@@ -869,7 +889,7 @@ impl<'a> JvmEmitter<'a> {
         }
 
         self.statement(body, &mut code_builder)?;
-        let code = code_builder.end();
+        let code = code_builder.end()?;
 
         // FIXME: dummy for now
         let line_table = Attribute::LineNumberTable {
