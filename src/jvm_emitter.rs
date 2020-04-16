@@ -414,7 +414,9 @@ impl CodeBuilder {
                 OP_LCMP | OP_DCMPL => {
                     self.stack_pop2()?;
                 }
-                OP_GOTO => todo!(),
+                OP_GOTO => {
+                    i += 2;
+                }
                 OP_GET_STATIC => {
                     i += 2;
                     self.stack_push(Type::TString)?; // FIXME: hardcoded for println
@@ -448,11 +450,11 @@ impl CodeBuilder {
                     self.stack_push(Type::Long)?;
                     self.stack_push(Type::Long)?;
                 }
-                OP_INVOKE_VIRTUAL => {
+                OP_INVOKE_VIRTUAL | OP_INVOKE_STATIC | OP_INVOKE_SPECIAL => {
                     i += 2;
                     self.stack_pop2()?; // FIXME: hardcoded for println
                 }
-                OP_RETURN => {}
+                OP_RETURN | OP_IRETURN => {}
                 OP_INEG => {}
                 OP_LDC | OP_LDC_W => {
                     i += 1;
