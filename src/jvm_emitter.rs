@@ -381,10 +381,11 @@ impl CodeBuilder {
         self.push(op, Some(operand1), Some(operand2), Some(t))
     }
 
-    fn verify(&mut self) -> Result<(), Error> {
+    fn verify(&mut self, constants: &[Constant]) -> Result<(), Error> {
         let mut i = 0;
         while i < self.code.len() {
             let op = self.code[i];
+            debug!("verify: op={}", op);
 
             match op {
                 OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3
@@ -450,9 +451,19 @@ impl CodeBuilder {
                     self.stack_push(Type::Long)?;
                     self.stack_push(Type::Long)?;
                 }
-                OP_INVOKE_VIRTUAL | OP_INVOKE_STATIC | OP_INVOKE_SPECIAL => {
+                OP_INVOKE_VIRTUAL => {
                     i += 2;
                     self.stack_pop2()?; // FIXME: hardcoded for println
+                }
+                OP_INVOKE_STATIC | OP_INVOKE_SPECIAL => {
+                    let op1 = self.code[i + 1];
+                    let op2 = self.code[i + 2];
+                    let fn_i: u16 = u16::from_be_bytes([op1, op2]);
+                    let method_ref = constants[fn_i as usize].clone();
+                    debug!("verify: op={} method_ref={:?}", op, method_ref);
+
+                    i += 2;
+                    self.stack_pop()?; // FIXME
                 }
                 OP_RETURN | OP_IRETURN => {}
                 OP_INEG => {}
@@ -531,8 +542,8 @@ impl CodeBuilder {
     //     }
     // }
 
-    fn end(&mut self) -> Result<Vec<u8>, Error> {
-        self.verify()?;
+    fn end(&mut self, constants: &[Constant]) -> Result<Vec<u8>, Error> {
+        self.verify(constants)?;
         Ok(self.code.clone())
     }
 }
@@ -716,7 +727,7 @@ impl<'a> JvmEmitter<'a> {
         code_builder.locals_insert((0xdeadbeef, Type::Any))?; // FIXME: this
         self.statement(block, &mut code_builder)?;
         code_builder.code.push(OP_RETURN);
-        let code = code_builder.end()?;
+        let code = code_builder.end(&self.constants)?;
 
         // FIXME: dummy for now
         let line_table = Attribute::LineNumberTable {
@@ -897,7 +908,7 @@ impl<'a> JvmEmitter<'a> {
         }
 
         self.statement(body, &mut code_builder)?;
-        let code = code_builder.end()?;
+        let code = code_builder.end(&self.constants)?;
 
         // FIXME: dummy for now
         let line_table = Attribute::LineNumberTable {
