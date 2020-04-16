@@ -391,7 +391,11 @@ impl CodeBuilder {
                 | OP_ICONST_4 | OP_ICONST_5 => {
                     self.stack_push(Type::Int)?;
                 }
-                OP_SIPUSH | OP_BIPUSH => {
+                OP_SIPUSH => {
+                    i += 2;
+                    self.stack_push(Type::Int)?;
+                }
+                OP_BIPUSH => {
                     i += 1;
                     self.stack_push(Type::Int)?;
                 }
@@ -404,6 +408,7 @@ impl CodeBuilder {
                 }
                 OP_IF_ICMPNE | OP_IFEQ | OP_IFNE | OP_IFGT | OP_IFGE | OP_IF_ICMPGE | OP_IFLE
                 | OP_IF_ICMPLE | OP_IF_ICMPGT | OP_IFLT | OP_IF_ICMPLT => {
+                    i += 2;
                     self.stack_pop()?;
                 }
                 OP_LCMP | OP_DCMPL => {
@@ -444,6 +449,7 @@ impl CodeBuilder {
                     self.stack_push(Type::Long)?;
                 }
                 OP_INVOKE_VIRTUAL => {
+                    i += 2;
                     self.stack_pop2()?; // FIXME: hardcoded for println
                 }
                 OP_RETURN => {}
