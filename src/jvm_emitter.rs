@@ -367,6 +367,21 @@ impl CodeBuilder {
         });
     }
 
+    fn stack_map_frame_add_one_stack_item(&mut self, jump_target: u16) {
+        let last_offset = self
+            .stack_map_frames
+            .last()
+            .map(|smp| smp.offset())
+            .unwrap_or(0);
+
+        // TODO: check overflow
+        self.stack_map_frames
+            .push(StackMapFrame::SameLocalsOneStackItem {
+                offset: (jump_target - last_offset) as u8,
+                stack: VerificationTypeInfo::Int,
+            });
+    }
+
     fn push1(&mut self, op: u8) -> Result<(), Error> {
         self.push(op, None, None, None)
     }
@@ -420,6 +435,17 @@ impl CodeBuilder {
                     self.stack_pop2()?;
                 }
                 OP_GOTO => {
+                    let op1 = self.code[i + 1];
+                    let op2 = self.code[i + 2];
+
+                    let offset = u16::from_be_bytes([op1, op2]);
+                    self.stack_map_frame_add_one_stack_item(i as u16 + offset);
+                    debug!(
+                        "verify: goto i={} offset={} pos={}",
+                        i,
+                        offset,
+                        i as u16 + offset
+                    );
                     i += 2;
                 }
                 OP_GET_STATIC => {
