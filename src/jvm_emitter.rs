@@ -89,6 +89,16 @@ pub(crate) enum StackMapFrame {
     }, // More to come
 }
 
+impl StackMapFrame {
+    fn offset(&self) -> u16 {
+        match self {
+            StackMapFrame::Same { offset } => *offset as u16,
+            StackMapFrame::SameLocalsOneStackItem { offset, .. } => *offset as u16,
+            StackMapFrame::Full { offset, .. } => *offset,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub(crate) enum Attribute {
     SourceFile {
@@ -344,6 +354,19 @@ impl CodeBuilder {
         Ok(i as u16)
     }
 
+    fn stack_map_frame_add_same(&mut self, jump_target: u16) {
+        let last_offset = self
+            .stack_map_frames
+            .last()
+            .map(|smp| smp.offset())
+            .unwrap_or(0);
+
+        // TODO: check overflow
+        self.stack_map_frames.push(StackMapFrame::Same {
+            offset: (jump_target - last_offset) as u8,
+        });
+    }
+
     fn push1(&mut self, op: u8) -> Result<(), Error> {
         self.push(op, None, None, None)
     }
@@ -387,7 +410,7 @@ impl CodeBuilder {
                     let op1 = self.code[i + 1];
                     let op2 = self.code[i + 2];
                     let offset = u16::from_be_bytes([op1, op2]) as u8;
-                    self.stack_map_frames.push(StackMapFrame::Same { offset });
+                    self.stack_map_frame_add_same(i as u16 + offset as u16);
                     debug!("verify: if offset={}", offset);
 
                     i += 2;
