@@ -12,6 +12,7 @@ use heck::CamelCase;
 use log::debug;
 use std::io;
 use std::path::{Path, PathBuf};
+use std::process::{Command, ExitStatus};
 
 pub fn compile(src: &str, file_name: &Path) -> Result<(), Error> {
     let session = Session::new(&src, None);
@@ -55,7 +56,26 @@ pub fn compile(src: &str, file_name: &Path) -> Result<(), Error> {
         fully_qualified_class_name_parent
     );
     let mut emitter = JvmEmitter::new(&session, &types, &resolution, &file_name, &class_name);
-    emitter.main(&stmts, &mut class_file)
+    emitter.main(&stmts, &mut class_file)?;
+
+    if file_name
+        .extension()
+        .map(|os_str| os_str.to_str())
+        .flatten()
+        .unwrap_or("")
+        .ends_with("kts")
+    {
+        let mut command = Command::new("java");
+        // TODO: classpath, other options
+
+        command
+            // TODO: should be a fully qualified class name once we support packages
+            .arg(class_name)
+            .status()
+            .expect("Failed to run `java`");
+    }
+
+    Ok(())
 }
 
 pub fn fmt<W: io::Write>(src: &str, w: &mut W) -> Result<(), Error> {
