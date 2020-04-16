@@ -12,7 +12,7 @@ use heck::CamelCase;
 use log::debug;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::{Command, ExitStatus};
+use std::process::Command;
 
 pub fn compile(src: &str, file_name: &Path) -> Result<(), Error> {
     let session = Session::new(&src, None);

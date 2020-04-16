@@ -1064,7 +1064,6 @@ impl<'a> JvmEmitter<'a> {
     fn return_expr(
         &mut self,
         expr: &Option<Box<AstNodeExpr>>,
-        id: NodeId,
         code_builder: &mut CodeBuilder,
     ) -> Result<(), Error> {
         if let Some(expr) = expr {
@@ -1088,9 +1087,8 @@ impl<'a> JvmEmitter<'a> {
             AstNodeExpr::Jump {
                 kind: crate::parse::JumpKind::Return,
                 expr,
-                id,
                 ..
-            } => self.return_expr(expr, *id, code_builder),
+            } => self.return_expr(expr, code_builder),
             AstNodeExpr::FnCall { fn_name, args, .. } => self.fn_call(fn_name, args, code_builder),
             AstNodeExpr::IfExpr {
                 cond,
