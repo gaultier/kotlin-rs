@@ -519,8 +519,11 @@ impl CodeBuilder {
                         let op2 = self.code[i as usize + 2];
                         let offset = u16::from_be_bytes([op1, op2]);
 
+                        debug!(
+                            "verify: if i={} offset={} stack={:?}",
+                            i, offset, self.stack
+                        );
                         self.stack_pop()?;
-                        debug!("verify: if i={} offset={}", i, offset);
 
                         if i + offset == *bci {
                             // Finished
