@@ -476,10 +476,14 @@ impl CodeBuilder {
             &self.stack_map_frames_needed
         );
 
-        let mut last_bci_target: u16 = 0;
         let needed = self.stack_map_frames_needed.clone();
+        let cpy_locals = self.locals.clone();
+
         for bci in &needed {
-            let mut i = last_bci_target;
+            let mut i = 0;
+            self.stack = Vec::new();
+            self.locals = cpy_locals.clone();
+
             while i < *bci {
                 let op = self.code[i as usize];
                 debug!("verify: op={}", op);
@@ -513,7 +517,13 @@ impl CodeBuilder {
                         self.stack_pop2()?;
 
                         debug!("verify: if i={} offset={}", i, offset);
-                        i += 2;
+
+                        if i + offset == *bci {
+                            // Jump
+                            i += 2 + offset;
+                        } else {
+                            i += 2;
+                        }
                     }
                     OP_LCMP | OP_DCMPL => {
                         self.stack_pop2()?;
@@ -527,7 +537,12 @@ impl CodeBuilder {
                             "verify: goto i={} offset={} op1={} op2={}",
                             i, offset, op1, op2
                         );
-                        i += 2;
+
+                        if i as isize + offset as isize == *bci as isize {
+                            i = (i as isize + 2 + offset as isize) as u16;
+                        } else {
+                            i += 2;
+                        }
                     }
                     OP_GET_STATIC => {
                         let t = &self.opcode_types[i as usize];
@@ -630,7 +645,6 @@ impl CodeBuilder {
             }
 
             self.stack_map_frame_add_full(*bci);
-            last_bci_target = *bci;
         }
         Ok(())
     }
