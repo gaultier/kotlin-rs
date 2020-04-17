@@ -506,8 +506,8 @@ impl CodeBuilder {
                     OP_FCONST_0 | OP_FCONST_1 | OP_FCONST_2 => {
                         self.stack_push(Type::Float)?;
                     }
-                    OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_IAND | OP_IOR | OP_FADD
-                    | OP_FMUL | OP_FSUB | OP_FDIV => {
+                    OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_IREM | OP_IAND | OP_IOR
+                    | OP_FADD | OP_FMUL | OP_FSUB | OP_FDIV | OP_FREM => {
                         self.stack_pop()?;
                     }
                     OP_FCMPL => {
