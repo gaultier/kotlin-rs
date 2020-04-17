@@ -52,6 +52,7 @@ pub(crate) struct JvmEmitter<'a> {
     pub(crate) stack_map_table_str: u16,
     fn_id_to_constant_pool_index: BTreeMap<NodeId, u16>,
     constant_pool_index_to_fn_id: BTreeMap<u16, NodeId>,
+    class_name: String,
 }
 
 #[derive(Debug)]
@@ -228,7 +229,7 @@ impl Type {
                     return_t.clone().unwrap_or(Type::Unit).to_jvm_string()
                 )
             }
-            Type::Object(class) => class.clone(),
+            Type::Object { class, .. } => class.clone(),
             _ => unimplemented!(),
         }
     }
@@ -239,24 +240,11 @@ impl Type {
             Type::Long => todo!(),
             Type::Float => todo!(),
             Type::Double => todo!(),
-            Type::TString => VerificationTypeInfo::Object(
-                constants
-                    .iter()
-                    .position(|c| match c {
-                        Constant::Utf8(class) if class == "java/lang/String" => true,
-                        _ => false,
-                    })
-                    .unwrap() as u16,
-            ),
-            Type::Object(class) => VerificationTypeInfo::Object(
-                constants
-                    .iter()
-                    .position(|c| match c {
-                        Constant::Utf8(c_class) if c_class == class => true,
-                        _ => false,
-                    })
-                    .unwrap() as u16,
-            ),
+            Type::TString => todo!(),
+            Type::Object {
+                jvm_constant_pool_index,
+                ..
+            } => VerificationTypeInfo::Object(jvm_constant_pool_index.unwrap()),
             _ => {
                 dbg!(self);
                 unreachable!()
@@ -505,9 +493,16 @@ impl CodeBuilder {
                     i += 2;
                 }
                 OP_GET_STATIC => {
+                    let op1 = self.code[i + 1];
+                    let op2 = self.code[i + 2];
+                    let jvm_constant_pool_index = u16::from_be_bytes([op1, op2]);
+
                     i += 2;
                     // FIXME: hardcoded for println
-                    self.stack_push(Type::Object(String::from("java/io/PrintStream")))?;
+                    self.stack_push(Type::Object {
+                        class: String::from("java/io/PrintStream"),
+                        jvm_constant_pool_index: Some(jvm_constant_pool_index),
+                    })?;
                 }
                 OP_ISTORE => {
                     i += 1;
@@ -784,6 +779,7 @@ impl<'a> JvmEmitter<'a> {
             attributes: Vec::new(),
             fn_id_to_constant_pool_index: BTreeMap::new(),
             constant_pool_index_to_fn_id: BTreeMap::new(),
+            class_name: class_name.to_string(),
         }
     }
 
@@ -827,7 +823,13 @@ impl<'a> JvmEmitter<'a> {
         };
 
         let mut code_builder = CodeBuilder::new();
-        code_builder.locals_insert((0xdeadbeef, Type::Any))?; // FIXME: this
+        code_builder.locals_insert((
+            0xdeadbeef,
+            Type::Object {
+                class: self.class_name.clone(),
+                jvm_constant_pool_index: Some(self.this_class),
+            },
+        ))?;
         self.statement(block, &mut code_builder)?;
         code_builder.code.push(OP_RETURN);
         let code = code_builder.end(&self)?;
@@ -1148,7 +1150,10 @@ impl<'a> JvmEmitter<'a> {
             self.out_fieldref.to_be_bytes()[0],
             self.out_fieldref.to_be_bytes()[1],
             // FIXME: for println
-            Type::Object(String::from("java/io/PrintStream")),
+            Type::Object {
+                class: String::from("java/io/PrintStream"),
+                jvm_constant_pool_index: None,
+            },
         )?;
         self.expr(expr, code_builder)?;
 
