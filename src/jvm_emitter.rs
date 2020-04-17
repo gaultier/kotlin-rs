@@ -53,6 +53,7 @@ pub(crate) struct JvmEmitter<'a> {
     fn_id_to_constant_pool_index: BTreeMap<NodeId, u16>,
     constant_pool_index_to_fn_id: BTreeMap<u16, NodeId>,
     class_name: String,
+    class_main_args: u16,
 }
 
 #[derive(Debug)]
@@ -771,6 +772,14 @@ impl<'a> JvmEmitter<'a> {
         let class_printstream =
             add_constant(&mut constants, &Constant::ClassInfo(printstream_str)).unwrap();
 
+        let main_args_str = add_constant(
+            &mut constants,
+            &Constant::Utf8(String::from("[Ljava/lang/String;")),
+        )
+        .unwrap();
+        let class_main_args =
+            add_constant(&mut constants, &Constant::ClassInfo(main_args_str)).unwrap();
+
         JvmEmitter {
             session,
             types,
@@ -797,6 +806,7 @@ impl<'a> JvmEmitter<'a> {
             fn_id_to_constant_pool_index: BTreeMap::new(),
             constant_pool_index_to_fn_id: BTreeMap::new(),
             class_name: class_name.to_string(),
+            class_main_args,
         }
     }
 
@@ -842,9 +852,10 @@ impl<'a> JvmEmitter<'a> {
         let mut code_builder = CodeBuilder::new();
         code_builder.locals_insert((
             0xdeadbeef,
+            // FIXME: hardcoded
             Type::Object {
-                class: self.class_name.clone(),
-                jvm_constant_pool_index: Some(self.this_class),
+                class: String::from("[Ljava/lang/String;"),
+                jvm_constant_pool_index: Some(self.class_main_args),
             },
         ))?;
         self.statement(block, &mut code_builder)?;
