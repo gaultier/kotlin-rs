@@ -1049,13 +1049,18 @@ impl<'a> JvmEmitter<'a> {
             }],
         };
 
+        let stack_map_table = Attribute::StackMapTable {
+            name: self.stack_map_table_str,
+            entries: code_builder.stack_map_frames_compute_delta_offsets(),
+        };
+
         let attribute_code = Attribute::Code {
             name: self.code_str,
             max_stack: code_builder.stack_max,
             max_locals: code_builder.locals_max,
             code,
             exception_table: Vec::new(),
-            attributes: vec![line_table],
+            attributes: vec![line_table, stack_map_table],
         };
 
         f.attributes.push(attribute_code);
