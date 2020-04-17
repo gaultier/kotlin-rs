@@ -96,11 +96,11 @@ pub(crate) enum StackMapFrame {
 }
 
 impl StackMapFrame {
-    fn offset(&self) -> u16 {
+    fn offset(&mut self, offset_to_set: u16) {
         match self {
-            StackMapFrame::Same { offset, .. } => *offset as u16,
-            StackMapFrame::SameLocalsOneStackItem { offset, .. } => *offset as u16,
-            StackMapFrame::Full { offset, .. } => *offset,
+            StackMapFrame::Same { offset, .. } => *offset = offset_to_set as u8,
+            StackMapFrame::SameLocalsOneStackItem { offset, .. } => *offset = offset_to_set as u8,
+            StackMapFrame::Full { offset, .. } => *offset = offset_to_set,
         }
     }
 
@@ -425,31 +425,18 @@ impl CodeBuilder {
     // }
 
     fn stack_map_frame_add_full(&mut self, bci: u16, jump_offset: i32) {
-        let bci_target = (bci as i32 + jump_offset) as u16;
+        let bci_target: u16 = (bci as i32 + jump_offset) as u16;
 
-        let delta_offset: u16 = if self.stack_map_frames.is_empty() {
-            let delta_offset = bci_target as u16;
-            debug!(
-                "stack_map_frame_add_full: bci={} jump_offset={} delta_offset={}",
-                bci, jump_offset, delta_offset
-            );
-            delta_offset
-        } else {
-            let last_bci_target: u16 = *self.stack_map_frames.keys().last().unwrap();
-            let delta_offset =
-                (isize::abs(bci_target as isize - last_bci_target as isize) - 1) as u16;
-            debug!(
-                "stack_map_frame_add_full: bci={} jump_offset={} last_bci_target={} delta_offset={}",
-                bci, jump_offset, last_bci_target, delta_offset
-            );
-            delta_offset
-        };
+        debug!(
+            "stack_map_frame_add_full: bci={} jump_offset={} bci_target={}",
+            bci, jump_offset, bci_target
+        );
 
         // TODO: check overflow
         self.stack_map_frames.insert(
             bci_target,
             StackMapFrame::Full {
-                offset: delta_offset,
+                offset: 0, // Will be computed in a final step
                 bci,
                 stack: self
                     .stack
@@ -463,6 +450,17 @@ impl CodeBuilder {
                     .collect::<Vec<_>>(),
             },
         );
+    }
+
+    fn stack_map_frames_compute_delta_offsets(&mut self) -> Vec<StackMapFrame> {
+        // Conceptually u16 but the first item needs to be off by one
+        let mut last_bci_target: i32 = -1;
+
+        for (bci_target, smp) in self.stack_map_frames.iter_mut() {
+            smp.offset((*bci_target as i32 - last_bci_target - 1) as u16);
+            last_bci_target = *bci_target as i32;
+        }
+        self.stack_map_frames.values().cloned().collect::<Vec<_>>()
     }
 
     fn push1(&mut self, op: u8, t: Type) -> Result<(), Error> {
@@ -875,11 +873,7 @@ impl<'a> JvmEmitter<'a> {
 
         let stack_map_table = Attribute::StackMapTable {
             name: self.stack_map_table_str,
-            entries: code_builder
-                .stack_map_frames
-                .values()
-                .cloned()
-                .collect::<Vec<_>>(),
+            entries: code_builder.stack_map_frames_compute_delta_offsets(),
         };
 
         let attribute_code = Attribute::Code {
