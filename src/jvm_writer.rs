@@ -341,11 +341,11 @@ impl<'a> JvmEmitter<'a> {
         w: &mut W,
     ) -> Result<(), Error> {
         match entry {
-            StackMapFrame::Same { offset } => {
+            StackMapFrame::Same { offset, .. } => {
                 assert!(*offset <= 63);
                 w.write_all(&[*offset])?;
             }
-            StackMapFrame::SameLocalsOneStackItem { offset, stack } => {
+            StackMapFrame::SameLocalsOneStackItem { offset, stack, .. } => {
                 assert!(*offset <= 63);
                 w.write_all(&[64 + *offset])?;
                 self.verification_type_info(stack, w)?;
@@ -354,6 +354,7 @@ impl<'a> JvmEmitter<'a> {
                 offset,
                 stack,
                 locals,
+                ..
             } => {
                 debug!("full frame: size={}", entry.size());
                 w.write_all(&FULL_FRAME.to_be_bytes())?;

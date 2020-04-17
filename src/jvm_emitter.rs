@@ -80,13 +80,16 @@ pub(crate) enum VerificationTypeInfo {
 pub(crate) enum StackMapFrame {
     Same {
         offset: u8,
+        bci: u16,
     },
     SameLocalsOneStackItem {
         offset: u8,
+        bci: u16,
         stack: VerificationTypeInfo,
     },
     Full {
         offset: u16,
+        bci: u16,
         locals: Vec<VerificationTypeInfo>,
         stack: Vec<VerificationTypeInfo>,
     }, // More to come
@@ -95,9 +98,17 @@ pub(crate) enum StackMapFrame {
 impl StackMapFrame {
     fn offset(&self) -> u16 {
         match self {
-            StackMapFrame::Same { offset } => *offset as u16,
+            StackMapFrame::Same { offset, .. } => *offset as u16,
             StackMapFrame::SameLocalsOneStackItem { offset, .. } => *offset as u16,
             StackMapFrame::Full { offset, .. } => *offset,
+        }
+    }
+
+    fn bci(&self) -> u16 {
+        match self {
+            StackMapFrame::Same { bci, .. } => *bci as u16,
+            StackMapFrame::SameLocalsOneStackItem { bci, .. } => *bci as u16,
+            StackMapFrame::Full { bci, .. } => *bci,
         }
     }
 }
@@ -413,16 +424,28 @@ impl CodeBuilder {
     //         });
     // }
 
-    fn stack_map_frame_add_full(&mut self, jump_target: u16) {
-        let offset: u16 = if self.stack_map_frames.is_empty() {
-            jump_target
+    fn stack_map_frame_add_full(&mut self, bci: u16, jump_offset: u16) {
+        let delta_offset: u16 = if self.stack_map_frames.is_empty() {
+            let delta_offset = bci + jump_offset;
+            debug!(
+                "stack_map_frame_add_full: bci={} jump_offset={} delta_offset={}",
+                bci, jump_offset, delta_offset
+            );
+            delta_offset
         } else {
-            jump_target - self.stack_map_frames.last().unwrap().offset() - 1
+            let last_bci = self.stack_map_frames.last().unwrap().bci();
+            let delta_offset = bci + jump_offset - last_bci - 1;
+            debug!(
+                "stack_map_frame_add_full: bci={} jump_offset={} last_bci={} delta_offset={}",
+                bci, jump_offset, last_bci, delta_offset
+            );
+            delta_offset
         };
 
         // TODO: check overflow
         self.stack_map_frames.push(StackMapFrame::Full {
-            offset,
+            offset: delta_offset,
+            bci,
             stack: self
                 .stack
                 .iter()
@@ -482,8 +505,13 @@ impl CodeBuilder {
 
                     self.stack_pop2()?;
 
-                    self.stack_map_frame_add_full(i as u16 + offset);
-                    debug!("verify: if offset={}", offset);
+                    self.stack_map_frame_add_full(i as u16, offset);
+                    debug!(
+                        "verify: if i={} offset={} pos={}",
+                        i,
+                        offset,
+                        i as u16 + offset
+                    );
                     i += 2;
                 }
                 OP_LCMP | OP_DCMPL => {
@@ -494,7 +522,7 @@ impl CodeBuilder {
                     let op2 = self.code[i + 2];
 
                     let offset = u16::from_be_bytes([op1, op2]);
-                    self.stack_map_frame_add_full(i as u16 + offset);
+                    self.stack_map_frame_add_full(i as u16, offset);
                     debug!(
                         "verify: goto i={} offset={} pos={}",
                         i,
