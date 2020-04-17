@@ -511,13 +511,8 @@ impl CodeBuilder {
 
                     self.stack_pop2()?;
 
+                    debug!("verify: if i={} offset={}", i, offset);
                     self.stack_map_frame_add_full(i as u16, offset);
-                    debug!(
-                        "verify: if i={} offset={} pos={}",
-                        i,
-                        offset,
-                        i as u16 + offset
-                    );
                     i += 2;
                 }
                 OP_LCMP | OP_DCMPL => {
@@ -528,13 +523,11 @@ impl CodeBuilder {
                     let op2 = self.code[i + 2];
 
                     let offset = u16::from_be_bytes([op1, op2]);
-                    self.stack_map_frame_add_full(i as u16, offset);
                     debug!(
-                        "verify: goto i={} offset={} pos={}",
-                        i,
-                        offset,
-                        i as u16 + offset
+                        "verify: goto i={} offset={} op1={} op2={}",
+                        i, offset, op1, op2
                     );
+                    self.stack_map_frame_add_full(i as u16, offset);
                     i += 2;
                 }
                 OP_GET_STATIC => {
@@ -1155,13 +1148,6 @@ impl<'a> JvmEmitter<'a> {
         code_builder.code[end_cond - 1] = start_else_offset.to_be_bytes()[0];
         code_builder.code[end_cond] = start_else_offset.to_be_bytes()[1];
 
-        // `+1` because we point to the first instruction after the if_body
-        // let jump_offset_delta = (end_if_body + 1) as u16;
-        // code_builder.jumps.push(Jump {
-        //     offset: jump_offset_delta,
-        //     kind: JumpKind::SameLocalsAndEmptyStack,
-        // });
-
         // Else
         self.statement(else_body, code_builder)?;
 
@@ -1170,12 +1156,6 @@ impl<'a> JvmEmitter<'a> {
         let start_rest_offset: u16 = (3 + end - end_if_body) as u16;
         code_builder.code[end_if_body - 1] = start_rest_offset.to_be_bytes()[0];
         code_builder.code[end_if_body] = start_rest_offset.to_be_bytes()[1];
-
-        // code_builder.jumps.push(Jump {
-        //     // `-1` because the offset_delta will be used by the jvm as `offset_delta + 1`
-        //     offset: (end - end_if_body - 1) as u16,
-        //     kind: JumpKind::StackAddOne(VerificationTypeInfo::Int), // FIXME
-        // });
 
         debug!(
             "if_expr: end_cond={} end_if_body={} end={} start_else_offset={} start_rest_offset={}",
