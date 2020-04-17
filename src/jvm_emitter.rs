@@ -6,6 +6,7 @@ use crate::resolver::Resolution;
 use crate::session::Session;
 use log::debug;
 use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::path::Path;
 
 #[derive(Debug, Clone)]
@@ -80,16 +81,13 @@ pub(crate) enum VerificationTypeInfo {
 pub(crate) enum StackMapFrame {
     Same {
         offset: u8,
-        bci: u16,
     },
     SameLocalsOneStackItem {
         offset: u8,
-        bci: u16,
         stack: VerificationTypeInfo,
     },
     Full {
         offset: u16,
-        bci: u16,
         locals: Vec<VerificationTypeInfo>,
         stack: Vec<VerificationTypeInfo>,
     }, // More to come
@@ -101,14 +99,6 @@ impl StackMapFrame {
             StackMapFrame::Same { offset, .. } => *offset = offset_to_set as u8,
             StackMapFrame::SameLocalsOneStackItem { offset, .. } => *offset = offset_to_set as u8,
             StackMapFrame::Full { offset, .. } => *offset = offset_to_set,
-        }
-    }
-
-    fn bci(&self) -> u16 {
-        match self {
-            StackMapFrame::Same { bci, .. } => *bci as u16,
-            StackMapFrame::SameLocalsOneStackItem { bci, .. } => *bci as u16,
-            StackMapFrame::Full { bci, .. } => *bci,
         }
     }
 }
@@ -325,6 +315,7 @@ struct CodeBuilder {
     locals_max: u16,
     stack_map_frames: BTreeMap<u16, StackMapFrame>,
     opcode_types: Vec<Type>,
+    stack_map_frames_needed: BTreeSet<u16>,
 }
 
 impl CodeBuilder {
@@ -338,6 +329,7 @@ impl CodeBuilder {
             locals_max: 0,
             stack_map_frames: BTreeMap::new(),
             opcode_types: Vec::new(),
+            stack_map_frames_needed: BTreeSet::new(),
         }
     }
 
@@ -424,20 +416,14 @@ impl CodeBuilder {
     //         });
     // }
 
-    fn stack_map_frame_add_full(&mut self, bci: u16, jump_offset: i32) {
-        let bci_target: u16 = (bci as i32 + jump_offset) as u16;
-
-        debug!(
-            "stack_map_frame_add_full: bci={} jump_offset={} bci_target={}",
-            bci, jump_offset, bci_target
-        );
+    fn stack_map_frame_add_full(&mut self, bci_target: u16) {
+        debug!("stack_map_frame_add_full: bci_target={}", bci_target);
 
         // TODO: check overflow
         self.stack_map_frames.insert(
             bci_target,
             StackMapFrame::Full {
                 offset: 0, // Will be computed in a final step
-                bci,
                 stack: self
                     .stack
                     .iter()
@@ -475,157 +461,176 @@ impl CodeBuilder {
         self.push(op, Some(operand1), Some(operand2), t)
     }
 
+    fn need_stack_map_frame_at(&mut self, bci: u16) {
+        self.stack_map_frames_needed.insert(bci);
+    }
+
+    fn need_stack_map_frame_here(&mut self) {
+        self.stack_map_frames_needed
+            .insert(self.code.len() as u16 - 1);
+    }
+
     fn verify(&mut self, jvm_emitter: &JvmEmitter) -> Result<(), Error> {
-        let mut i = 0;
-        while i < self.code.len() {
-            let op = self.code[i];
-            debug!("verify: op={}", op);
+        debug!(
+            "verify: stack_map_frames_needed={:?}",
+            &self.stack_map_frames_needed
+        );
 
-            match op {
-                OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3
-                | OP_ICONST_4 | OP_ICONST_5 => {
-                    self.stack_push(Type::Int)?;
-                }
-                OP_SIPUSH => {
-                    i += 2;
-                    self.stack_push(Type::Int)?;
-                }
-                OP_BIPUSH => {
-                    i += 1;
-                    self.stack_push(Type::Int)?;
-                }
-                OP_FCONST_0 | OP_FCONST_1 | OP_FCONST_2 => {
-                    self.stack_push(Type::Float)?;
-                }
-                OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_IAND | OP_IOR | OP_FADD | OP_FMUL
-                | OP_FSUB | OP_FDIV | OP_FCMPL => {
-                    self.stack_pop()?;
-                }
-                OP_IF_ICMPNE | OP_IFEQ | OP_IFNE | OP_IFGT | OP_IFGE | OP_IF_ICMPGE | OP_IFLE
-                | OP_IF_ICMPLE | OP_IF_ICMPGT | OP_IFLT | OP_IF_ICMPLT => {
-                    let op1 = self.code[i + 1];
-                    let op2 = self.code[i + 2];
-                    let offset = u16::from_be_bytes([op1, op2]);
+        let mut last_bci_target: u16 = 0;
+        let needed = self.stack_map_frames_needed.clone();
+        for bci in &needed {
+            let mut i = last_bci_target;
+            while i < *bci {
+                let op = self.code[i as usize];
+                debug!("verify: op={}", op);
 
-                    self.stack_pop2()?;
+                match op {
+                    OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3
+                    | OP_ICONST_4 | OP_ICONST_5 => {
+                        self.stack_push(Type::Int)?;
+                    }
+                    OP_SIPUSH => {
+                        i += 2;
+                        self.stack_push(Type::Int)?;
+                    }
+                    OP_BIPUSH => {
+                        i += 1;
+                        self.stack_push(Type::Int)?;
+                    }
+                    OP_FCONST_0 | OP_FCONST_1 | OP_FCONST_2 => {
+                        self.stack_push(Type::Float)?;
+                    }
+                    OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_IAND | OP_IOR | OP_FADD
+                    | OP_FMUL | OP_FSUB | OP_FDIV | OP_FCMPL => {
+                        self.stack_pop()?;
+                    }
+                    OP_IF_ICMPNE | OP_IFEQ | OP_IFNE | OP_IFGT | OP_IFGE | OP_IF_ICMPGE
+                    | OP_IFLE | OP_IF_ICMPLE | OP_IF_ICMPGT | OP_IFLT | OP_IF_ICMPLT => {
+                        let op1 = self.code[i as usize + 1];
+                        let op2 = self.code[i as usize + 2];
+                        let offset = u16::from_be_bytes([op1, op2]);
 
-                    debug!("verify: if i={} offset={}", i, offset);
-                    self.stack_map_frame_add_full(i as u16, offset as i32);
-                    i += 2;
-                }
-                OP_LCMP | OP_DCMPL => {
-                    self.stack_pop2()?;
-                }
-                OP_GOTO => {
-                    let op1 = self.code[i + 1];
-                    let op2 = self.code[i + 2];
+                        self.stack_pop2()?;
 
-                    let offset = i16::from_be_bytes([op1, op2]);
-                    debug!(
-                        "verify: goto i={} offset={} op1={} op2={}",
-                        i, offset, op1, op2
-                    );
-                    self.stack_map_frame_add_full(i as u16, offset as i32);
-                    i += 2;
-                }
-                OP_GET_STATIC => {
-                    let t = &self.opcode_types[i];
-                    let jvm_constant_pool_index = match t {
-                        Type::Object {
-                            jvm_constant_pool_index,
-                            ..
-                        } => jvm_constant_pool_index.unwrap(),
-                        _ => unreachable!(),
-                    };
+                        debug!("verify: if i={} offset={}", i, offset);
+                        i += 2;
+                    }
+                    OP_LCMP | OP_DCMPL => {
+                        self.stack_pop2()?;
+                    }
+                    OP_GOTO => {
+                        let op1 = self.code[i as usize + 1];
+                        let op2 = self.code[i as usize + 2];
 
-                    i += 2;
-                    // FIXME: hardcoded for println
-                    self.stack_push(Type::Object {
-                        class: String::from("java/io/PrintStream"),
-                        jvm_constant_pool_index: Some(jvm_constant_pool_index),
-                    })?;
-                }
-                OP_ISTORE => {
-                    i += 1;
-                    self.stack_pop()?;
-                }
-                OP_FSTORE => {
-                    i += 1;
-                    self.stack_pop()?;
-                }
-                OP_LSTORE => {
-                    i += 1;
-                    self.stack_pop2()?;
-                }
-                OP_DSTORE => {
-                    i += 1;
-                    self.stack_pop2()?;
-                }
-                OP_ILOAD => {
-                    i += 1;
-                    self.stack_push(Type::Int)?;
-                }
-                OP_LLOAD => {
-                    i += 1;
-                    self.stack_push(Type::Long)?;
-                    self.stack_push(Type::Long)?;
-                }
-                OP_INVOKE_VIRTUAL => {
-                    i += 2;
-                    self.stack_pop2()?; // FIXME: hardcoded for println
-                }
-                OP_INVOKE_STATIC | OP_INVOKE_SPECIAL => {
-                    let op1 = self.code[i + 1];
-                    let op2 = self.code[i + 2];
-                    i += 2;
+                        let offset = i16::from_be_bytes([op1, op2]);
+                        debug!(
+                            "verify: goto i={} offset={} op1={} op2={}",
+                            i, offset, op1, op2
+                        );
+                        i += 2;
+                    }
+                    OP_GET_STATIC => {
+                        let t = &self.opcode_types[i as usize];
+                        let jvm_constant_pool_index = match t {
+                            Type::Object {
+                                jvm_constant_pool_index,
+                                ..
+                            } => jvm_constant_pool_index.unwrap(),
+                            _ => unreachable!(),
+                        };
 
-                    let fn_i: u16 = u16::from_be_bytes([op1, op2]);
-                    // The constant pool is one-indexed
-                    let fn_id: NodeId =
-                        *jvm_emitter.constant_pool_index_to_fn_id.get(&fn_i).unwrap();
-                    let fn_t = jvm_emitter.types.get(&fn_id).unwrap();
-                    let return_t = fn_t.fn_return_t();
-                    debug!("verify: op={} return_t={:?}", op, return_t);
+                        i += 2;
+                        // FIXME: hardcoded for println
+                        self.stack_push(Type::Object {
+                            class: String::from("java/io/PrintStream"),
+                            jvm_constant_pool_index: Some(jvm_constant_pool_index),
+                        })?;
+                    }
+                    OP_ISTORE => {
+                        i += 1;
+                        self.stack_pop()?;
+                    }
+                    OP_FSTORE => {
+                        i += 1;
+                        self.stack_pop()?;
+                    }
+                    OP_LSTORE => {
+                        i += 1;
+                        self.stack_pop2()?;
+                    }
+                    OP_DSTORE => {
+                        i += 1;
+                        self.stack_pop2()?;
+                    }
+                    OP_ILOAD => {
+                        i += 1;
+                        self.stack_push(Type::Int)?;
+                    }
+                    OP_LLOAD => {
+                        i += 1;
+                        self.stack_push(Type::Long)?;
+                        self.stack_push(Type::Long)?;
+                    }
+                    OP_INVOKE_VIRTUAL => {
+                        i += 2;
+                        self.stack_pop2()?; // FIXME: hardcoded for println
+                    }
+                    OP_INVOKE_STATIC | OP_INVOKE_SPECIAL => {
+                        let op1 = self.code[i as usize + 1];
+                        let op2 = self.code[i as usize + 2];
+                        i += 2;
 
-                    match fn_t {
-                        Type::Function { return_t, args, .. } => {
-                            for _ in 0..args.len() {
-                                self.stack_pop()?; // FIXME: Two words types
+                        let fn_i: u16 = u16::from_be_bytes([op1, op2]);
+                        // The constant pool is one-indexed
+                        let fn_id: NodeId =
+                            *jvm_emitter.constant_pool_index_to_fn_id.get(&fn_i).unwrap();
+                        let fn_t = jvm_emitter.types.get(&fn_id).unwrap();
+                        let return_t = fn_t.fn_return_t();
+                        debug!("verify: op={} return_t={:?}", op, return_t);
+
+                        match fn_t {
+                            Type::Function { return_t, args, .. } => {
+                                for _ in 0..args.len() {
+                                    self.stack_pop()?; // FIXME: Two words types
+                                }
+                                if let Some(return_t) = &**return_t {
+                                    self.stack_push(return_t.clone())?; // FIXME: Two words types
+                                }
                             }
-                            if let Some(return_t) = &**return_t {
-                                self.stack_push(return_t.clone())?; // FIXME: Two words types
-                            }
+                            _ => unreachable!(),
                         }
-                        _ => unreachable!(),
+                    }
+                    OP_RETURN | OP_IRETURN => {}
+                    OP_INEG => {}
+                    OP_LDC | OP_LDC_W => {
+                        i += 1;
+                        self.stack_push(Type::Long)?; // FIXME
+                    }
+                    OP_LCONST_0 | OP_LCONST_1 => {
+                        self.stack_push(Type::Long)?;
+                        self.stack_push(Type::Long)?;
+                    }
+                    OP_LDC2_W => {
+                        i += 2;
+                        self.stack_push(Type::Long)?; // FIXME
+                        self.stack_push(Type::Long)?; // FIXME
+                    }
+                    OP_LADD | OP_LMUL | OP_LSUB | OP_LDIV => {
+                        self.stack_pop2()?;
+                    }
+                    OP_DADD | OP_DMUL | OP_DSUB | OP_DDIV => {
+                        self.stack_pop2()?;
+                    }
+                    _ => {
+                        dbg!(op);
+                        unimplemented!()
                     }
                 }
-                OP_RETURN | OP_IRETURN => {}
-                OP_INEG => {}
-                OP_LDC | OP_LDC_W => {
-                    i += 1;
-                    self.stack_push(Type::Long)?; // FIXME
-                }
-                OP_LCONST_0 | OP_LCONST_1 => {
-                    self.stack_push(Type::Long)?;
-                    self.stack_push(Type::Long)?;
-                }
-                OP_LDC2_W => {
-                    i += 2;
-                    self.stack_push(Type::Long)?; // FIXME
-                    self.stack_push(Type::Long)?; // FIXME
-                }
-                OP_LADD | OP_LMUL | OP_LSUB | OP_LDIV => {
-                    self.stack_pop2()?;
-                }
-                OP_DADD | OP_DMUL | OP_DSUB | OP_DDIV => {
-                    self.stack_pop2()?;
-                }
-                _ => {
-                    dbg!(op);
-                    unimplemented!()
-                }
+                i += 1;
             }
-            i += 1;
+
+            self.stack_map_frame_add_full(*bci);
+            last_bci_target = *bci;
         }
         Ok(())
     }
@@ -904,6 +909,7 @@ impl<'a> JvmEmitter<'a> {
         code_builder: &mut CodeBuilder,
     ) -> Result<(), Error> {
         let before_cond = code_builder.code.len();
+        code_builder.need_stack_map_frame_at(before_cond as u16);
         self.expr(cond, code_builder)?;
 
         code_builder.push3(OP_IFEQ, OP_IMPDEP1, OP_IMPDEP2, Type::Int)?;
@@ -912,6 +918,7 @@ impl<'a> JvmEmitter<'a> {
         self.statement(body, code_builder)?;
         code_builder.push3(OP_GOTO, OP_IMPDEP1, OP_IMPDEP2, Type::Int)?;
         let end_body = code_builder.code.len() - 1;
+        code_builder.need_stack_map_frame_at(end_body as u16 + 1);
 
         let backwards_offset: i16 = 3 - 1 + -((end_body - before_cond) as i16);
         let bytes = backwards_offset.to_be_bytes();
@@ -1121,6 +1128,8 @@ impl<'a> JvmEmitter<'a> {
         self.statement(if_body, code_builder)?;
         code_builder.push3(OP_GOTO, OP_IMPDEP1, OP_IMPDEP2, Type::Nothing)?;
         let end_if_body = code_builder.code.len() - 1;
+        code_builder.need_stack_map_frame_at(end_if_body as u16 + 1);
+
         let start_else_offset: u16 = (3 + end_if_body - end_cond) as u16;
         code_builder.code[end_cond - 1] = start_else_offset.to_be_bytes()[0];
         code_builder.code[end_cond] = start_else_offset.to_be_bytes()[1];
@@ -1129,6 +1138,7 @@ impl<'a> JvmEmitter<'a> {
         self.statement(else_body, code_builder)?;
 
         let end = code_builder.code.len() - 1;
+        code_builder.need_stack_map_frame_at(end as u16 + 1);
 
         let start_rest_offset: u16 = (3 + end - end_if_body) as u16;
         code_builder.code[end_if_body - 1] = start_rest_offset.to_be_bytes()[0];
@@ -1266,34 +1276,46 @@ impl<'a> JvmEmitter<'a> {
                 self.expr(right, code_builder)?;
 
                 match (op.kind, left_t, right_t) {
-                    (TokenKind::PipePipe, _, _) => code_builder.push1(OP_IOR, Type::Int),
-                    (TokenKind::AmpersandAmpersand, _, _) => code_builder.push1(OP_IAND, Type::Int),
+                    (TokenKind::PipePipe, _, _) => {
+                        code_builder.push1(OP_IOR, Type::Int)?;
+                    }
+                    (TokenKind::AmpersandAmpersand, _, _) => {
+                        code_builder.push1(OP_IAND, Type::Int)?;
+                    }
                     (TokenKind::EqualEqual, Type::Long, Type::Long) => {
                         code_builder.push1(OP_LCMP, Type::Int)?;
                         code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
                     (TokenKind::EqualEqual, Type::Float, Type::Float) => {
                         code_builder.push1(OP_FCMPL, Type::Int)?;
                         code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
                     (TokenKind::EqualEqual, Type::Double, Type::Double) => {
                         code_builder.push1(OP_DCMPL, Type::Int)?;
                         code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
                     (TokenKind::EqualEqual, _, _) if left_t == right_t => {
                         code_builder.push3(OP_IF_ICMPNE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
 
                     (TokenKind::BangEqual, Type::Long, Type::Long) => {
@@ -1301,27 +1323,35 @@ impl<'a> JvmEmitter<'a> {
                         code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)
+                        code_builder.push1(OP_ICONST_1, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
                     (TokenKind::BangEqual, Type::Float, Type::Float) => {
                         code_builder.push1(OP_FCMPL, Type::Int)?;
                         code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)
+                        code_builder.push1(OP_ICONST_1, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
                     (TokenKind::BangEqual, Type::Double, Type::Double) => {
                         code_builder.push1(OP_DCMPL, Type::Int)?;
                         code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)
+                        code_builder.push1(OP_ICONST_1, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
                     (TokenKind::BangEqual, _, _) if left_t == right_t => {
                         code_builder.push3(OP_IF_ICMPNE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)
+                        code_builder.push1(OP_ICONST_1, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
 
                     (TokenKind::Lesser, Type::Float, Type::Float) => {
@@ -1329,27 +1359,35 @@ impl<'a> JvmEmitter<'a> {
                         code_builder.push3(OP_IFGE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
                     (TokenKind::Lesser, Type::Double, Type::Double) => {
                         code_builder.push1(OP_DCMPL, Type::Int)?;
                         code_builder.push3(OP_IFGE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
                     (TokenKind::Lesser, Type::Long, Type::Long) => {
                         code_builder.push1(OP_LCMP, Type::Int)?;
                         code_builder.push3(OP_IFGE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
                     (TokenKind::Lesser, _, _) => {
                         code_builder.push3(OP_IF_ICMPGE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
 
                     (TokenKind::Greater, Type::Float, Type::Float) => {
@@ -1357,27 +1395,34 @@ impl<'a> JvmEmitter<'a> {
                         code_builder.push3(OP_IFLE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
                     (TokenKind::Greater, Type::Double, Type::Double) => {
                         code_builder.push1(OP_DCMPL, Type::Int)?;
                         code_builder.push3(OP_IFLE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
                     (TokenKind::Greater, Type::Long, Type::Long) => {
                         code_builder.push1(OP_LCMP, Type::Int)?;
                         code_builder.push3(OP_IFLE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
                     }
                     (TokenKind::Greater, _, _) => {
                         code_builder.push3(OP_IF_ICMPLE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
 
                     (TokenKind::LesserEqual, Type::Float, Type::Float) => {
@@ -1385,27 +1430,34 @@ impl<'a> JvmEmitter<'a> {
                         code_builder.push3(OP_IFGT, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
                     (TokenKind::LesserEqual, Type::Double, Type::Double) => {
                         code_builder.push1(OP_DCMPL, Type::Int)?;
                         code_builder.push3(OP_IFGT, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
                     }
                     (TokenKind::LesserEqual, Type::Long, Type::Long) => {
                         code_builder.push1(OP_LCMP, Type::Int)?;
                         code_builder.push3(OP_IFGT, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
                     (TokenKind::LesserEqual, _, _) => {
                         code_builder.push3(OP_IF_ICMPGT, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
 
                     (TokenKind::GreaterEqual, Type::Float, Type::Float) => {
@@ -1413,35 +1465,45 @@ impl<'a> JvmEmitter<'a> {
                         code_builder.push3(OP_IFLT, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
                     (TokenKind::GreaterEqual, Type::Double, Type::Double) => {
                         code_builder.push1(OP_DCMPL, Type::Int)?;
                         code_builder.push3(OP_IFLT, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
                     }
                     (TokenKind::GreaterEqual, Type::Long, Type::Long) => {
                         code_builder.push1(OP_LCMP, Type::Int)?;
                         code_builder.push3(OP_IFLT, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
                     (TokenKind::GreaterEqual, _, _) => {
                         code_builder.push3(OP_IF_ICMPLT, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
                         code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)
+                        code_builder.push1(OP_ICONST_0, Type::Int)?;
+                        code_builder.need_stack_map_frame_here();
+                        code_builder.need_stack_map_frame_at(code_builder.code.len() as u16);
                     }
 
                     (_, _, _) if left_t != right_t => {
                         dbg!(t);
                         unimplemented!("Conversion in equality check")
                     }
-                    _ => code_builder.push1(binary_op(&op.kind, t), t.clone()),
+                    _ => {
+                        code_builder.push1(binary_op(&op.kind, t), t.clone())?;
+                    }
                 }
+                Ok(())
             }
             _ => unimplemented!(),
         }
