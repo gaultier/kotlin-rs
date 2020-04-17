@@ -502,10 +502,7 @@ impl CodeBuilder {
                     i += 2;
                 }
                 OP_GET_STATIC => {
-                    let op1 = self.code[i + 1];
-                    let op2 = self.code[i + 2];
-                    let ref_i = u16::from_be_bytes([op1, op2]);
-                    let t = &self.opcode_types[ref_i as usize];
+                    let t = &self.opcode_types[i];
                     let jvm_constant_pool_index = match t {
                         Type::Object {
                             jvm_constant_pool_index,
