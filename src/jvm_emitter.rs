@@ -71,6 +71,7 @@ pub(crate) struct Function {
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum VerificationTypeInfo {
     Int,
+    Object(u16),
 }
 
 #[derive(Debug)]
@@ -227,15 +228,35 @@ impl Type {
                     return_t.clone().unwrap_or(Type::Unit).to_jvm_string()
                 )
             }
+            Type::Object(class) => class.clone(),
             _ => unimplemented!(),
         }
     }
 
-    fn to_verification_info(&self) -> VerificationTypeInfo {
+    fn to_verification_info(&self, constants: &[Constant]) -> VerificationTypeInfo {
         match self {
-            Type::Boolean | Type::Int | Type::Char | Type::Float => VerificationTypeInfo::Int,
+            Type::Boolean | Type::Int | Type::Char => VerificationTypeInfo::Int,
             Type::Long => todo!(),
+            Type::Float => todo!(),
             Type::Double => todo!(),
+            Type::TString => VerificationTypeInfo::Object(
+                constants
+                    .iter()
+                    .position(|c| match c {
+                        Constant::Utf8(class) if class == "java/lang/String" => true,
+                        _ => false,
+                    })
+                    .unwrap() as u16,
+            ),
+            Type::Object(class) => VerificationTypeInfo::Object(
+                constants
+                    .iter()
+                    .position(|c| match c {
+                        Constant::Utf8(c_class) if c_class == class => true,
+                        _ => false,
+                    })
+                    .unwrap() as u16,
+            ),
             _ => {
                 dbg!(self);
                 unreachable!()
@@ -394,7 +415,7 @@ impl CodeBuilder {
     //         });
     // }
 
-    fn stack_map_frame_add_full(&mut self, jump_target: u16) {
+    fn stack_map_frame_add_full(&mut self, jump_target: u16, constants: &[Constant]) {
         let offset: u16 = if self.stack_map_frames.is_empty() {
             jump_target
         } else {
@@ -407,12 +428,12 @@ impl CodeBuilder {
             stack: self
                 .stack
                 .iter()
-                .map(|t| t.to_verification_info())
+                .map(|t| t.to_verification_info(constants))
                 .collect::<Vec<_>>(),
             locals: self
                 .locals
                 .iter()
-                .map(|(_, t)| t.to_verification_info())
+                .map(|(_, t)| t.to_verification_info(constants))
                 .collect::<Vec<_>>(),
         });
     }
@@ -460,7 +481,7 @@ impl CodeBuilder {
                     let op1 = self.code[i + 1];
                     let op2 = self.code[i + 2];
                     let offset = u16::from_be_bytes([op1, op2]);
-                    self.stack_map_frame_add_full(i as u16 + offset);
+                    self.stack_map_frame_add_full(i as u16 + offset, &jvm_emitter.constants);
                     debug!("verify: if offset={}", offset);
 
                     i += 2;
@@ -474,7 +495,7 @@ impl CodeBuilder {
                     let op2 = self.code[i + 2];
 
                     let offset = u16::from_be_bytes([op1, op2]);
-                    self.stack_map_frame_add_full(i as u16 + offset);
+                    self.stack_map_frame_add_full(i as u16 + offset, &jvm_emitter.constants);
                     debug!(
                         "verify: goto i={} offset={} pos={}",
                         i,
@@ -485,7 +506,8 @@ impl CodeBuilder {
                 }
                 OP_GET_STATIC => {
                     i += 2;
-                    self.stack_push(Type::TString)?; // FIXME: hardcoded for println
+                    // FIXME: hardcoded for println
+                    self.stack_push(Type::Object(String::from("java/io/PrintStream")))?;
                 }
                 OP_ISTORE => {
                     i += 1;
@@ -1125,7 +1147,8 @@ impl<'a> JvmEmitter<'a> {
             OP_GET_STATIC,
             self.out_fieldref.to_be_bytes()[0],
             self.out_fieldref.to_be_bytes()[1],
-            Type::TString, // FIXME: for println
+            // FIXME: for println
+            Type::Object(String::from("java/io/PrintStream")),
         )?;
         self.expr(expr, code_builder)?;
 
@@ -1133,7 +1156,7 @@ impl<'a> JvmEmitter<'a> {
             OP_INVOKE_VIRTUAL,
             println_methodref.to_be_bytes()[0],
             println_methodref.to_be_bytes()[1],
-            Type::Any, // FIXME: for println
+            Type::Unit, // FIXME: for println
         )
     }
 

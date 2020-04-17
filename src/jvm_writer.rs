@@ -14,6 +14,7 @@ impl VerificationTypeInfo {
     fn size(&self) -> u32 {
         match self {
             VerificationTypeInfo::Int => 1,
+            VerificationTypeInfo::Object(_) => 1 + 2,
         }
     }
 }
@@ -324,6 +325,10 @@ impl<'a> JvmEmitter<'a> {
         match v {
             VerificationTypeInfo::Int => {
                 w.write_all(&[ITEM_INTEGER])?;
+            }
+            VerificationTypeInfo::Object(i) => {
+                w.write_all(&[ITEM_OBJECT])?;
+                w.write_all(&i.to_be_bytes())?;
             }
         }
 

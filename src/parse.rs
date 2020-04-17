@@ -33,6 +33,7 @@ pub enum Type {
         args: Vec<Type>,
         return_t: Box<Option<Type>>,
     },
+    Object(String),
 }
 
 impl fmt::Display for Type {
@@ -72,6 +73,7 @@ impl fmt::Display for Type {
                 write!(f, ") -> ")?;
                 return_t.clone().unwrap_or(Type::Any).fmt(f)
             }
+            Type::Object(class) => write!(f, "class {}", class),
         }
     }
 }

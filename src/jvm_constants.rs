@@ -117,5 +117,6 @@ pub(crate) const OP_IMPDEP1: u8 = 0xfe;
 pub(crate) const OP_IMPDEP2: u8 = 0xff;
 
 pub(crate) const ITEM_INTEGER: u8 = 1;
+pub(crate) const ITEM_OBJECT: u8 = 7;
 
 pub(crate) const FULL_FRAME: u8 = 255;
