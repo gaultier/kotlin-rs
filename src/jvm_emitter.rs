@@ -505,9 +505,13 @@ impl CodeBuilder {
                     let op1 = self.code[i + 1];
                     let op2 = self.code[i + 2];
                     let ref_i = u16::from_be_bytes([op1, op2]);
-                    let jvm_constant_pool_index = match jvm_emitter.constants[ref_i as usize - 1] {
-                        Constant::FieldRef(class_i, _) => class_i,
-                        _ => todo!(),
+                    let t = &self.opcode_types[ref_i as usize];
+                    let jvm_constant_pool_index = match t {
+                        Type::Object {
+                            jvm_constant_pool_index,
+                            ..
+                        } => jvm_constant_pool_index.unwrap(),
+                        _ => unreachable!(),
                     };
 
                     i += 2;
