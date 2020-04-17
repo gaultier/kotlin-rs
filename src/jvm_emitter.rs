@@ -659,28 +659,6 @@ impl CodeBuilder {
         Ok(())
     }
 
-    // fn spill_stack_top(&mut self) -> Result<(), Error> {
-    //     let t = self.stack.last().unwrap();
-    //     match t {
-    //         Type::Char | Type::Int => self.push2(OP_ISTORE, 1, Type::Int),
-    //         Type::Float => self.push2(OP_FSTORE, 1, Type::Float),
-    //         Type::Long => self.push2(OP_LSTORE, 1, Type::Long),
-    //         Type::Double => self.push2(OP_DSTORE, 1, Type::Double),
-    //         _ => unimplemented!(),
-    //     }
-    // }
-
-    // fn unspill_stack_top(&mut self) -> Result<(), Error> {
-    //     let t = self.locals.last().unwrap().clone().unwrap();
-    //     match t.1 {
-    //         Type::Char | Type::Int => self.push2(OP_ILOAD, 1, Type::Int),
-    //         Type::Float => self.push2(OP_FLOAD, 1, Type::Float),
-    //         Type::Long => self.push2(OP_LLOAD, 1, Type::Long),
-    //         Type::Double => self.push2(OP_DLOAD, 1, Type::Double),
-    //         _ => unimplemented!(),
-    //     }
-    // }
-
     fn end(&mut self, jvm_emitter: &JvmEmitter) -> Result<Vec<u8>, Error> {
         self.verify(jvm_emitter)?;
         Ok(self.code.clone())
