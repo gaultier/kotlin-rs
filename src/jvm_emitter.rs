@@ -479,11 +479,12 @@ impl CodeBuilder {
                     let op1 = self.code[i + 1];
                     let op2 = self.code[i + 2];
                     let offset = u16::from_be_bytes([op1, op2]);
+
+                    self.stack_pop2()?;
+
                     self.stack_map_frame_add_full(i as u16 + offset);
                     debug!("verify: if offset={}", offset);
-
                     i += 2;
-                    self.stack_pop()?;
                 }
                 OP_LCMP | OP_DCMPL => {
                     self.stack_pop2()?;
@@ -522,22 +523,18 @@ impl CodeBuilder {
                 OP_ISTORE => {
                     i += 1;
                     self.stack_pop()?;
-                    self.locals_insert((0xdeadbeef, Type::Int))?;
                 }
                 OP_FSTORE => {
                     i += 1;
                     self.stack_pop()?;
-                    self.locals_insert((0xdeadbeef, Type::Float))?;
                 }
                 OP_LSTORE => {
                     i += 1;
                     self.stack_pop2()?;
-                    self.locals_insert((0xdead_beef_dead, Type::Long))?;
                 }
                 OP_DSTORE => {
                     i += 1;
                     self.stack_pop2()?;
-                    self.locals_insert((0xdead_beef_dead, Type::Double))?;
                 }
                 OP_ILOAD => {
                     i += 1;
