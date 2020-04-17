@@ -378,7 +378,7 @@ impl CodeBuilder {
         })
     }
 
-    fn locals_insert(&mut self, l: Local) -> Result<u16, Error> {
+    fn locals_push(&mut self, l: Local) -> Result<u16, Error> {
         if self.locals.len() == std::u16::MAX as usize {
             return Err(Error::new(ErrorKind::JvmLocalsOverflow, Location::new()));
         }
@@ -852,7 +852,7 @@ impl<'a> JvmEmitter<'a> {
         };
 
         let mut code_builder = CodeBuilder::new();
-        code_builder.locals_insert((
+        code_builder.locals_push((
             0xdeadbeef,
             // FIXME: hardcoded
             Type::Object {
@@ -944,7 +944,7 @@ impl<'a> JvmEmitter<'a> {
         let t = self.types.get(&id).unwrap();
 
         self.expr(value, code_builder)?;
-        let i = code_builder.locals_insert((id, t.clone()))?;
+        let i = code_builder.locals_push((id, t.clone()))?;
         debug!("var_def: id={} i={} t={}", id, i, t);
 
         let op = match t {
@@ -1040,7 +1040,7 @@ impl<'a> JvmEmitter<'a> {
         for arg in args {
             let arg_id = arg.id();
             let arg_t = self.types.get(&arg_id).unwrap();
-            code_builder.locals_insert((arg_id, arg_t.clone()))?;
+            code_builder.locals_push((arg_id, arg_t.clone()))?;
         }
 
         self.statement(body, &mut code_builder)?;
