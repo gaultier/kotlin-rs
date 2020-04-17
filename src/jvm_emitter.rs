@@ -76,7 +76,7 @@ pub(crate) enum VerificationTypeInfo {
     Object(u16),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum StackMapFrame {
     Same {
         offset: u8,
@@ -323,7 +323,7 @@ struct CodeBuilder {
     locals: Vec<Local>,
     stack_max: u16,
     locals_max: u16,
-    stack_map_frames: Vec<StackMapFrame>,
+    stack_map_frames: BTreeMap<u16, StackMapFrame>,
     opcode_types: Vec<Type>,
 }
 
@@ -336,7 +336,7 @@ impl CodeBuilder {
             locals: Vec::new(),
             stack_max: 100,
             locals_max: 0,
-            stack_map_frames: Vec::new(),
+            stack_map_frames: BTreeMap::new(),
             opcode_types: Vec::new(),
         }
     }
@@ -425,6 +425,8 @@ impl CodeBuilder {
     // }
 
     fn stack_map_frame_add_full(&mut self, bci: u16, jump_offset: u16) {
+        let bci_target = bci + jump_offset;
+
         let delta_offset: u16 = if self.stack_map_frames.is_empty() {
             let delta_offset = bci + jump_offset;
             debug!(
@@ -433,30 +435,34 @@ impl CodeBuilder {
             );
             delta_offset
         } else {
-            let last_bci = self.stack_map_frames.last().unwrap().bci();
-            let delta_offset = bci + jump_offset - last_bci - 1;
+            let last_bci_target: u16 = *self.stack_map_frames.keys().last().unwrap();
+            let delta_offset =
+                (isize::abs(bci_target as isize - last_bci_target as isize) - 1) as u16;
             debug!(
-                "stack_map_frame_add_full: bci={} jump_offset={} last_bci={} delta_offset={}",
-                bci, jump_offset, last_bci, delta_offset
+                "stack_map_frame_add_full: bci={} jump_offset={} last_bci_target={} delta_offset={}",
+                bci, jump_offset, last_bci_target, delta_offset
             );
             delta_offset
         };
 
         // TODO: check overflow
-        self.stack_map_frames.push(StackMapFrame::Full {
-            offset: delta_offset,
-            bci,
-            stack: self
-                .stack
-                .iter()
-                .map(|t| t.to_verification_info())
-                .collect::<Vec<_>>(),
-            locals: self
-                .locals
-                .iter()
-                .map(|(_, t)| t.to_verification_info())
-                .collect::<Vec<_>>(),
-        });
+        self.stack_map_frames.insert(
+            bci_target,
+            StackMapFrame::Full {
+                offset: delta_offset,
+                bci,
+                stack: self
+                    .stack
+                    .iter()
+                    .map(|t| t.to_verification_info())
+                    .collect::<Vec<_>>(),
+                locals: self
+                    .locals
+                    .iter()
+                    .map(|(_, t)| t.to_verification_info())
+                    .collect::<Vec<_>>(),
+            },
+        );
     }
 
     fn push1(&mut self, op: u8, t: Type) -> Result<(), Error> {
@@ -898,7 +904,11 @@ impl<'a> JvmEmitter<'a> {
 
         let stack_map_table = Attribute::StackMapTable {
             name: self.stack_map_table_str,
-            entries: code_builder.stack_map_frames,
+            entries: code_builder
+                .stack_map_frames
+                .values()
+                .cloned()
+                .collect::<Vec<_>>(),
         };
 
         let attribute_code = Attribute::Code {
