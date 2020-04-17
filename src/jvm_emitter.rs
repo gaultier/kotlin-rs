@@ -424,11 +424,11 @@ impl CodeBuilder {
     //         });
     // }
 
-    fn stack_map_frame_add_full(&mut self, bci: u16, jump_offset: u16) {
-        let bci_target = bci + jump_offset;
+    fn stack_map_frame_add_full(&mut self, bci: u16, jump_offset: i32) {
+        let bci_target = (bci as i32 + jump_offset) as u16;
 
         let delta_offset: u16 = if self.stack_map_frames.is_empty() {
-            let delta_offset = bci + jump_offset;
+            let delta_offset = bci_target as u16;
             debug!(
                 "stack_map_frame_add_full: bci={} jump_offset={} delta_offset={}",
                 bci, jump_offset, delta_offset
@@ -512,7 +512,7 @@ impl CodeBuilder {
                     self.stack_pop2()?;
 
                     debug!("verify: if i={} offset={}", i, offset);
-                    self.stack_map_frame_add_full(i as u16, offset);
+                    self.stack_map_frame_add_full(i as u16, offset as i32);
                     i += 2;
                 }
                 OP_LCMP | OP_DCMPL => {
@@ -522,12 +522,12 @@ impl CodeBuilder {
                     let op1 = self.code[i + 1];
                     let op2 = self.code[i + 2];
 
-                    let offset = u16::from_be_bytes([op1, op2]);
+                    let offset = i16::from_be_bytes([op1, op2]);
                     debug!(
                         "verify: goto i={} offset={} op1={} op2={}",
                         i, offset, op1, op2
                     );
-                    self.stack_map_frame_add_full(i as u16, offset);
+                    self.stack_map_frame_add_full(i as u16, offset as i32);
                     i += 2;
                 }
                 OP_GET_STATIC => {
@@ -1302,20 +1302,20 @@ impl<'a> JvmEmitter<'a> {
                         code_builder.push1(OP_FCMPL, Type::Int)?;
                         code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
                     (TokenKind::EqualEqual, Type::Double, Type::Double) => {
                         code_builder.push1(OP_DCMPL, Type::Int)?;
                         code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
                     (TokenKind::EqualEqual, _, _) if left_t == right_t => {
                         code_builder.push3(OP_IF_ICMPNE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
 
@@ -1323,27 +1323,27 @@ impl<'a> JvmEmitter<'a> {
                         code_builder.push1(OP_LCMP, Type::Int)?;
                         code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)
                     }
                     (TokenKind::BangEqual, Type::Float, Type::Float) => {
                         code_builder.push1(OP_FCMPL, Type::Int)?;
                         code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)
                     }
                     (TokenKind::BangEqual, Type::Double, Type::Double) => {
                         code_builder.push1(OP_DCMPL, Type::Int)?;
                         code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)
                     }
                     (TokenKind::BangEqual, _, _) if left_t == right_t => {
                         code_builder.push3(OP_IF_ICMPNE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)
                     }
 
@@ -1351,27 +1351,27 @@ impl<'a> JvmEmitter<'a> {
                         code_builder.push1(OP_FCMPL, Type::Int)?;
                         code_builder.push3(OP_IFGE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
                     (TokenKind::Lesser, Type::Double, Type::Double) => {
                         code_builder.push1(OP_DCMPL, Type::Int)?;
                         code_builder.push3(OP_IFGE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
                     (TokenKind::Lesser, Type::Long, Type::Long) => {
                         code_builder.push1(OP_LCMP, Type::Int)?;
                         code_builder.push3(OP_IFGE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
                     (TokenKind::Lesser, _, _) => {
                         code_builder.push3(OP_IF_ICMPGE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
 
@@ -1379,27 +1379,27 @@ impl<'a> JvmEmitter<'a> {
                         code_builder.push1(OP_FCMPL, Type::Int)?;
                         code_builder.push3(OP_IFLE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
                     (TokenKind::Greater, Type::Double, Type::Double) => {
                         code_builder.push1(OP_DCMPL, Type::Int)?;
                         code_builder.push3(OP_IFLE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
                     (TokenKind::Greater, Type::Long, Type::Long) => {
                         code_builder.push1(OP_LCMP, Type::Int)?;
                         code_builder.push3(OP_IFLE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
                     (TokenKind::Greater, _, _) => {
                         code_builder.push3(OP_IF_ICMPLE, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
 
@@ -1407,27 +1407,27 @@ impl<'a> JvmEmitter<'a> {
                         code_builder.push1(OP_FCMPL, Type::Int)?;
                         code_builder.push3(OP_IFGT, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
                     (TokenKind::LesserEqual, Type::Double, Type::Double) => {
                         code_builder.push1(OP_DCMPL, Type::Int)?;
                         code_builder.push3(OP_IFGT, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
                     (TokenKind::LesserEqual, Type::Long, Type::Long) => {
                         code_builder.push1(OP_LCMP, Type::Int)?;
                         code_builder.push3(OP_IFGT, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
                     (TokenKind::LesserEqual, _, _) => {
                         code_builder.push3(OP_IF_ICMPGT, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
 
@@ -1435,27 +1435,27 @@ impl<'a> JvmEmitter<'a> {
                         code_builder.push1(OP_FCMPL, Type::Int)?;
                         code_builder.push3(OP_IFLT, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
                     (TokenKind::GreaterEqual, Type::Double, Type::Double) => {
                         code_builder.push1(OP_DCMPL, Type::Int)?;
                         code_builder.push3(OP_IFLT, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
                     (TokenKind::GreaterEqual, Type::Long, Type::Long) => {
                         code_builder.push1(OP_LCMP, Type::Int)?;
                         code_builder.push3(OP_IFLT, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
                     (TokenKind::GreaterEqual, _, _) => {
                         code_builder.push3(OP_IF_ICMPLT, 0x00, 0x07, Type::Int)?;
                         code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Int)?;
+                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
                         code_builder.push1(OP_ICONST_0, Type::Int)
                     }
 
