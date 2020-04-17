@@ -230,6 +230,18 @@ impl Type {
             _ => unimplemented!(),
         }
     }
+
+    fn to_verification_info(&self) -> VerificationTypeInfo {
+        match self {
+            Type::Boolean | Type::Int | Type::Char | Type::Float => VerificationTypeInfo::Int,
+            Type::Long => todo!(),
+            Type::Double => todo!(),
+            _ => {
+                dbg!(self);
+                unreachable!()
+            }
+        }
+    }
 }
 
 fn binary_op(kind: &TokenKind, t: &Type) -> u8 {
@@ -354,46 +366,54 @@ impl CodeBuilder {
         Ok(i as u16)
     }
 
-    fn stack_map_frame_add_same(&mut self, jump_target: u16) {
-        let last_offset = self
-            .stack_map_frames
-            .last()
-            .map(|smp| smp.offset())
-            .unwrap_or(0);
+    // fn stack_map_frame_add_same(&mut self, jump_target: u16) {
+    //     let last_offset = self
+    //         .stack_map_frames
+    //         .last()
+    //         .map(|smp| smp.offset())
+    //         .unwrap_or(0);
 
-        // TODO: check overflow
-        self.stack_map_frames.push(StackMapFrame::Same {
-            offset: (jump_target - last_offset) as u8,
-        });
-    }
+    //     // TODO: check overflow
+    //     self.stack_map_frames.push(StackMapFrame::Same {
+    //         offset: (jump_target - last_offset) as u8,
+    //     });
+    // }
 
-    fn stack_map_frame_add_one_stack_item(&mut self, jump_target: u16) {
-        let last_offset = self
-            .stack_map_frames
-            .last()
-            .map(|smp| smp.offset())
-            .unwrap_or(0);
+    // fn stack_map_frame_add_one_stack_item(&mut self, jump_target: u16) {
+    //     let last_offset = self
+    //         .stack_map_frames
+    //         .last()
+    //         .map(|smp| smp.offset())
+    //         .unwrap_or(0);
 
-        // TODO: check overflow
-        self.stack_map_frames
-            .push(StackMapFrame::SameLocalsOneStackItem {
-                offset: (jump_target - last_offset) as u8 - 1,
-                stack: VerificationTypeInfo::Int,
-            });
-    }
+    //     // TODO: check overflow
+    //     self.stack_map_frames
+    //         .push(StackMapFrame::SameLocalsOneStackItem {
+    //             offset: (jump_target - last_offset) as u8 - 1,
+    //             stack: VerificationTypeInfo::Int,
+    //         });
+    // }
 
     fn stack_map_frame_add_full(&mut self, jump_target: u16) {
-        let last_offset = self
-            .stack_map_frames
-            .last()
-            .map(|smp| smp.offset())
-            .unwrap_or(0);
+        let offset: u16 = if self.stack_map_frames.is_empty() {
+            jump_target
+        } else {
+            jump_target - self.stack_map_frames.last().unwrap().offset() - 1
+        };
 
         // TODO: check overflow
         self.stack_map_frames.push(StackMapFrame::Full {
-            offset: (jump_target - last_offset) as u16 - 1,
-            stack: vec![],
-            locals: vec![],
+            offset,
+            stack: self
+                .stack
+                .iter()
+                .map(|t| t.to_verification_info())
+                .collect::<Vec<_>>(),
+            locals: self
+                .locals
+                .iter()
+                .map(|(_, t)| t.to_verification_info())
+                .collect::<Vec<_>>(),
         });
     }
 
@@ -439,8 +459,8 @@ impl CodeBuilder {
                 | OP_IF_ICMPLE | OP_IF_ICMPGT | OP_IFLT | OP_IF_ICMPLT => {
                     let op1 = self.code[i + 1];
                     let op2 = self.code[i + 2];
-                    let offset = u16::from_be_bytes([op1, op2]) as u8;
-                    self.stack_map_frame_add_same(i as u16 + offset as u16);
+                    let offset = u16::from_be_bytes([op1, op2]);
+                    self.stack_map_frame_add_full(i as u16 + offset);
                     debug!("verify: if offset={}", offset);
 
                     i += 2;
@@ -454,7 +474,7 @@ impl CodeBuilder {
                     let op2 = self.code[i + 2];
 
                     let offset = u16::from_be_bytes([op1, op2]);
-                    self.stack_map_frame_add_one_stack_item(i as u16 + offset);
+                    self.stack_map_frame_add_full(i as u16 + offset);
                     debug!(
                         "verify: goto i={} offset={} pos={}",
                         i,
