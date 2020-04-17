@@ -311,6 +311,7 @@ struct CodeBuilder {
     attributes: Vec<Attribute>,
     stack: Vec<Type>,
     locals: Vec<Local>,
+    starting_locals: Vec<Local>,
     stack_max: u16,
     locals_max: u16,
     stack_map_frames: BTreeMap<u16, StackMapFrame>,
@@ -325,6 +326,7 @@ impl CodeBuilder {
             attributes: Vec::new(),
             stack: Vec::new(),
             locals: Vec::new(),
+            starting_locals: Vec::new(),
             stack_max: 100,
             locals_max: 0,
             stack_map_frames: BTreeMap::new(),
@@ -477,7 +479,7 @@ impl CodeBuilder {
         );
 
         let needed = self.stack_map_frames_needed.clone();
-        let cpy_locals = self.locals.clone();
+        let cpy_locals = self.starting_locals.clone();
 
         for bci in &needed {
             let mut i = 0;
@@ -505,11 +507,29 @@ impl CodeBuilder {
                         self.stack_push(Type::Float)?;
                     }
                     OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_IAND | OP_IOR | OP_FADD
-                    | OP_FMUL | OP_FSUB | OP_FDIV | OP_FCMPL => {
+                    | OP_FMUL | OP_FSUB | OP_FDIV => {
                         self.stack_pop()?;
                     }
-                    OP_IF_ICMPNE | OP_IFEQ | OP_IFNE | OP_IFGT | OP_IFGE | OP_IF_ICMPGE
-                    | OP_IFLE | OP_IF_ICMPLE | OP_IF_ICMPGT | OP_IFLT | OP_IF_ICMPLT => {
+                    OP_FCMPL => {
+                        self.stack_pop2()?;
+                        self.stack_push(Type::Int)?;
+                    }
+                    OP_IFEQ | OP_IFNE | OP_IFGE | OP_IFGT | OP_IFLE | OP_IFLT => {
+                        let op1 = self.code[i as usize + 1];
+                        let op2 = self.code[i as usize + 2];
+                        let offset = u16::from_be_bytes([op1, op2]);
+
+                        self.stack_pop()?;
+                        debug!("verify: if i={} offset={}", i, offset);
+
+                        if i + offset == *bci {
+                            // Finished
+                            break;
+                        } else {
+                            i += 2;
+                        }
+                    }
+                    OP_IF_ICMPNE | OP_IF_ICMPGE | OP_IF_ICMPLE | OP_IF_ICMPGT | OP_IF_ICMPLT => {
                         let op1 = self.code[i as usize + 1];
                         let op2 = self.code[i as usize + 2];
                         let offset = u16::from_be_bytes([op1, op2]);
@@ -519,8 +539,8 @@ impl CodeBuilder {
                         debug!("verify: if i={} offset={}", i, offset);
 
                         if i + offset == *bci {
-                            // Jump
-                            i += 2 + offset;
+                            // Finished
+                            break;
                         } else {
                             i += 2;
                         }
@@ -539,7 +559,8 @@ impl CodeBuilder {
                         );
 
                         if i as isize + offset as isize == *bci as isize {
-                            i = (i as isize + 2 + offset as isize) as u16;
+                            // Finished
+                            break;
                         } else {
                             i += 2;
                         }
@@ -562,24 +583,32 @@ impl CodeBuilder {
                         })?;
                     }
                     OP_ISTORE => {
+                        self.locals_push((0xbeef, Type::Int))?;
                         i += 1;
                         self.stack_pop()?;
                     }
                     OP_FSTORE => {
+                        self.locals_push((0xbeef, Type::Float))?;
                         i += 1;
                         self.stack_pop()?;
                     }
                     OP_LSTORE => {
+                        todo!();
                         i += 1;
                         self.stack_pop2()?;
                     }
                     OP_DSTORE => {
+                        todo!();
                         i += 1;
                         self.stack_pop2()?;
                     }
                     OP_ILOAD => {
                         i += 1;
                         self.stack_push(Type::Int)?;
+                    }
+                    OP_FLOAD => {
+                        i += 1;
+                        self.stack_push(Type::Float)?;
                     }
                     OP_LLOAD => {
                         i += 1;
@@ -877,6 +906,8 @@ impl<'a> JvmEmitter<'a> {
                 jvm_constant_pool_index: Some(self.class_main_args),
             },
         ))?;
+        code_builder.starting_locals = code_builder.locals.clone();
+
         self.statement(block, &mut code_builder)?;
         code_builder.code.push(OP_RETURN);
         let code = code_builder.end(&self)?;
@@ -1057,6 +1088,7 @@ impl<'a> JvmEmitter<'a> {
             let arg_t = self.types.get(&arg_id).unwrap();
             code_builder.locals_push((arg_id, arg_t.clone()))?;
         }
+        code_builder.starting_locals = code_builder.locals.clone();
 
         self.statement(body, &mut code_builder)?;
         let code = code_builder.end(&self)?;
