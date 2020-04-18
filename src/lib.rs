@@ -5,6 +5,7 @@ pub mod error;
 pub mod fmt;
 mod jvm_constants;
 pub mod jvm_emitter;
+mod jvm_stack_map_frame;
 mod jvm_writer;
 pub mod lex;
 pub mod mir;

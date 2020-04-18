@@ -1,5 +1,6 @@
 use crate::error::*;
 use crate::jvm_constants::*;
+use crate::jvm_stack_map_frame::StackMapFrame;
 use crate::lex::{Token, TokenKind};
 use crate::parse::*;
 use crate::resolver::Resolution;
@@ -68,128 +69,6 @@ pub(crate) struct Function {
     pub(crate) name: u16,
     pub(crate) descriptor: u16,
     pub(crate) attributes: Vec<Attribute>,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub(crate) enum VerificationTypeInfo {
-    Int,
-    Object(u16),
-}
-
-#[derive(Debug, Clone)]
-pub(crate) enum StackMapFrame {
-    Same {
-        offset: u8,
-    },
-    SameLocalsOneStackItem {
-        offset: u8,
-        stack: VerificationTypeInfo,
-    },
-    Full {
-        offset: u16,
-        locals: Vec<VerificationTypeInfo>,
-        stack: Vec<VerificationTypeInfo>,
-    }, // More to come
-}
-
-impl StackMapFrame {
-    fn offset(&mut self, offset_to_set: u16) {
-        match self {
-            StackMapFrame::Same { offset, .. } => *offset = offset_to_set as u8,
-            StackMapFrame::SameLocalsOneStackItem { offset, .. } => *offset = offset_to_set as u8,
-            StackMapFrame::Full { offset, .. } => *offset = offset_to_set,
-        }
-    }
-}
-
-#[derive(Debug)]
-struct IfBuilder {
-    if_location: Option<u16>,
-    if_target: Option<u16>,
-    else_location: Option<u16>,
-    else_target: Option<u16>,
-}
-
-impl IfBuilder {
-    fn new() -> IfBuilder {
-        IfBuilder {
-            if_location: None,
-            if_target: None,
-            else_location: None,
-            else_target: None,
-        }
-    }
-
-    fn cond(
-        mut self,
-        cond: &AstNodeExpr,
-        jvm_emitter: &mut JvmEmitter,
-        code_builder: &mut CodeBuilder,
-    ) -> Result<Self, Error> {
-        jvm_emitter.expr(cond, code_builder)?;
-        code_builder.push3(OP_IFEQ, OP_IMPDEP1, OP_IMPDEP2, Type::Nothing)?;
-        self.if_location = Some((code_builder.code.len() - 1) as u16);
-
-        Ok(self)
-    }
-
-    fn if_body(
-        mut self,
-        if_body: &AstNodeStmt,
-        jvm_emitter: &mut JvmEmitter,
-        code_builder: &mut CodeBuilder,
-    ) -> Result<Self, Error> {
-        jvm_emitter.statement(if_body, code_builder)?;
-        code_builder.push3(OP_GOTO, OP_IMPDEP1, OP_IMPDEP2, Type::Nothing)?;
-
-        let end_if_body = (code_builder.code.len() - 1) as u16;
-
-        let start_else_offset: u16 = (3 + end_if_body - self.if_location.unwrap()) as u16;
-        code_builder.code[self.if_location.unwrap() as usize + 1] =
-            start_else_offset.to_be_bytes()[0];
-        code_builder.code[self.if_location.unwrap() as usize + 2] =
-            start_else_offset.to_be_bytes()[1];
-
-        self.else_location = Some(3 + end_if_body);
-        self.else_target = Some(3 + end_if_body);
-
-        Ok(self)
-    }
-
-    fn else_body(
-        mut self,
-        else_body: &AstNodeStmt,
-        jvm_emitter: &mut JvmEmitter,
-        code_builder: &mut CodeBuilder,
-    ) -> Result<Self, Error> {
-        jvm_emitter.statement(else_body, code_builder)?;
-
-        let end = (code_builder.code.len() - 1) as u16;
-
-        let start_rest_offset: u16 = 3 + end - self.else_location.unwrap();
-        code_builder.code[self.else_location.unwrap() as usize + 1] =
-            start_rest_offset.to_be_bytes()[0];
-        code_builder.code[self.else_location.unwrap() as usize + 2] =
-            start_rest_offset.to_be_bytes()[1];
-
-        self.if_target = Some(3 + end);
-
-        Ok(self)
-    }
-
-    fn build(self, code_builder: &mut CodeBuilder) -> Self {
-        code_builder.jump_target_at(
-            self.if_location.unwrap(),
-            JumpTarget::If {
-                if_location: self.if_location.unwrap(),
-                if_target: self.if_target.unwrap(),
-                else_location: self.else_location.unwrap(),
-                else_target: self.else_target.unwrap(),
-            },
-        );
-
-        self
-    }
 }
 
 #[derive(Debug)]
@@ -324,30 +203,108 @@ impl Type {
             _ => unimplemented!(),
         }
     }
+}
 
-    fn to_verification_info(&self) -> VerificationTypeInfo {
-        match self {
-            Type::Boolean | Type::Int | Type::Char => VerificationTypeInfo::Int,
-            Type::Long => todo!(),
-            Type::Float => todo!(),
-            Type::Double => todo!(),
-            Type::TString => todo!(),
-            Type::Object {
-                jvm_constant_pool_index,
-                ..
-            } => {
-                debug!(
-                    "to_verification_info: kind=object jvm_constant_pool_index={:?}",
-                    jvm_constant_pool_index
-                );
+#[derive(Debug, Clone, Copy)]
+enum JumpTarget {
+    If {
+        if_location: u16,
+        if_target: u16,
+        else_location: u16,
+        else_target: u16,
+    },
+    Goto {
+        location: u16,
+        target: u16,
+    },
+}
 
-                VerificationTypeInfo::Object(jvm_constant_pool_index.unwrap())
-            }
-            _ => {
-                dbg!(self);
-                unreachable!()
-            }
+struct IfBuilder {
+    if_location: Option<u16>,
+    if_target: Option<u16>,
+    else_location: Option<u16>,
+    else_target: Option<u16>,
+}
+
+impl IfBuilder {
+    fn new() -> IfBuilder {
+        IfBuilder {
+            if_location: None,
+            if_target: None,
+            else_location: None,
+            else_target: None,
         }
+    }
+
+    fn cond(
+        mut self,
+        cond: &AstNodeExpr,
+        jvm_emitter: &mut JvmEmitter,
+        code_builder: &mut CodeBuilder,
+    ) -> Result<Self, Error> {
+        jvm_emitter.expr(cond, code_builder)?;
+        code_builder.push3(OP_IFEQ, OP_IMPDEP1, OP_IMPDEP2, Type::Nothing)?;
+        self.if_location = Some((code_builder.code.len() - 1) as u16);
+
+        Ok(self)
+    }
+
+    fn if_body(
+        mut self,
+        if_body: &AstNodeStmt,
+        jvm_emitter: &mut JvmEmitter,
+        code_builder: &mut CodeBuilder,
+    ) -> Result<Self, Error> {
+        jvm_emitter.statement(if_body, code_builder)?;
+        code_builder.push3(OP_GOTO, OP_IMPDEP1, OP_IMPDEP2, Type::Nothing)?;
+
+        let end_if_body = (code_builder.code.len() - 1) as u16;
+
+        let start_else_offset: u16 = (3 + end_if_body - self.if_location.unwrap()) as u16;
+        code_builder.code[self.if_location.unwrap() as usize + 1] =
+            start_else_offset.to_be_bytes()[0];
+        code_builder.code[self.if_location.unwrap() as usize + 2] =
+            start_else_offset.to_be_bytes()[1];
+
+        self.else_location = Some(3 + end_if_body);
+        self.else_target = Some(3 + end_if_body);
+
+        Ok(self)
+    }
+
+    fn else_body(
+        mut self,
+        else_body: &AstNodeStmt,
+        jvm_emitter: &mut JvmEmitter,
+        code_builder: &mut CodeBuilder,
+    ) -> Result<Self, Error> {
+        jvm_emitter.statement(else_body, code_builder)?;
+
+        let end = (code_builder.code.len() - 1) as u16;
+
+        let start_rest_offset: u16 = 3 + end - self.else_location.unwrap();
+        code_builder.code[self.else_location.unwrap() as usize + 1] =
+            start_rest_offset.to_be_bytes()[0];
+        code_builder.code[self.else_location.unwrap() as usize + 2] =
+            start_rest_offset.to_be_bytes()[1];
+
+        self.if_target = Some(3 + end);
+
+        Ok(self)
+    }
+
+    fn build(self, code_builder: &mut CodeBuilder) -> Self {
+        code_builder.jump_target_at(
+            self.if_location.unwrap(),
+            JumpTarget::If {
+                if_location: self.if_location.unwrap(),
+                if_target: self.if_target.unwrap(),
+                else_location: self.else_location.unwrap(),
+                else_target: self.else_target.unwrap(),
+            },
+        );
+
+        self
     }
 }
 
@@ -376,15 +333,6 @@ fn binary_op(kind: &TokenKind, t: &Type) -> u8 {
         (TokenKind::Minus, Type::Double) => OP_DSUB,
         (TokenKind::Slash, Type::Double) => OP_DDIV,
         (TokenKind::Percent, Type::Double) => OP_DREM,
-        // TokenKind::DotDot => "range",
-        // TokenKind::EqualEqual => "==",
-        // TokenKind::EqualEqualEqual => "===",
-        // TokenKind::PipePipe => "or",
-        // TokenKind::AmpersandAmpersand => "and",
-        // TokenKind::Lesser => "<",
-        // TokenKind::LesserEqual => "<=",
-        // TokenKind::Greater => ">",
-        // TokenKind::GreaterEqual => ">=",
         _ => {
             dbg!(kind);
             unreachable!()
@@ -393,20 +341,6 @@ fn binary_op(kind: &TokenKind, t: &Type) -> u8 {
 }
 
 type Local = (NodeId, Type);
-
-#[derive(Debug, Clone, Copy)]
-enum JumpTarget {
-    If {
-        if_location: u16,
-        if_target: u16,
-        else_location: u16,
-        else_target: u16,
-    },
-    Goto {
-        location: u16,
-        target: u16,
-    },
-}
 
 #[derive(Debug)]
 struct CodeBuilder {
@@ -461,10 +395,6 @@ impl CodeBuilder {
         Ok(())
     }
 
-    // fn locals_take(&mut self, i: u16) -> Option<Local> {
-    //     self.locals[i as usize].take()
-    // }
-
     fn locals_find_by_id(&self, id: NodeId) -> Option<(u16, Local)> {
         self.locals.iter().enumerate().find_map(|(i, l)| {
             if l.0 == id {
@@ -492,34 +422,6 @@ impl CodeBuilder {
         self.locals_max = std::cmp::max(self.locals.len() as u16, self.locals_max);
         Ok(i as u16)
     }
-
-    // fn stack_map_frame_add_same(&mut self, jump_target: u16) {
-    //     let last_offset = self
-    //         .stack_map_frames
-    //         .last()
-    //         .map(|smp| smp.offset())
-    //         .unwrap_or(0);
-
-    //     // TODO: check overflow
-    //     self.stack_map_frames.push(StackMapFrame::Same {
-    //         offset: (jump_target - last_offset) as u8,
-    //     });
-    // }
-
-    // fn stack_map_frame_add_one_stack_item(&mut self, jump_target: u16) {
-    //     let last_offset = self
-    //         .stack_map_frames
-    //         .last()
-    //         .map(|smp| smp.offset())
-    //         .unwrap_or(0);
-
-    //     // TODO: check overflow
-    //     self.stack_map_frames
-    //         .push(StackMapFrame::SameLocalsOneStackItem {
-    //             offset: (jump_target - last_offset) as u8 - 1,
-    //             stack: VerificationTypeInfo::Int,
-    //         });
-    // }
 
     fn stack_map_frame_add_full(&mut self, bci_target: u16) {
         debug!("stack_map_frame_add_full: bci_target={}", bci_target);
