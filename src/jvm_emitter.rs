@@ -104,6 +104,76 @@ impl StackMapFrame {
 }
 
 #[derive(Debug)]
+struct IfBuilder {
+    end_cond: Option<u16>,
+    end_if_body: Option<u16>,
+    end: Option<u16>,
+}
+
+impl IfBuilder {
+    fn new() -> IfBuilder {
+        IfBuilder {
+            end_cond: None,
+            end_if_body: None,
+            end: None,
+        }
+    }
+
+    fn cond(
+        mut self,
+        cond: &AstNodeExpr,
+        jvm_emitter: &mut JvmEmitter,
+        code_builder: &mut CodeBuilder,
+    ) -> Result<Self, Error> {
+        jvm_emitter.expr(cond, code_builder)?;
+        code_builder.push3(OP_IFEQ, OP_IMPDEP1, OP_IMPDEP2, Type::Nothing)?;
+        self.end_cond = Some((code_builder.code.len() - 1) as u16);
+
+        Ok(self)
+    }
+
+    fn if_body(
+        mut self,
+        if_body: &AstNodeStmt,
+        jvm_emitter: &mut JvmEmitter,
+        code_builder: &mut CodeBuilder,
+    ) -> Result<Self, Error> {
+        jvm_emitter.statement(if_body, code_builder)?;
+        code_builder.push3(OP_GOTO, OP_IMPDEP1, OP_IMPDEP2, Type::Nothing)?;
+
+        self.end_if_body = Some((code_builder.code.len() - 1) as u16);
+        code_builder.need_stack_map_frame_at(self.end_if_body.unwrap() as u16 + 1);
+
+        let start_else_offset: u16 =
+            (3 + self.end_if_body.unwrap() - self.end_cond.unwrap()) as u16;
+        code_builder.code[self.end_cond.unwrap() as usize - 1] = start_else_offset.to_be_bytes()[0];
+        code_builder.code[self.end_cond.unwrap() as usize] = start_else_offset.to_be_bytes()[1];
+
+        Ok(self)
+    }
+
+    fn else_body(
+        mut self,
+        else_body: &AstNodeStmt,
+        jvm_emitter: &mut JvmEmitter,
+        code_builder: &mut CodeBuilder,
+    ) -> Result<Self, Error> {
+        jvm_emitter.statement(else_body, code_builder)?;
+
+        let end = (code_builder.code.len() - 1) as u16;
+        self.end = Some(end + 1);
+        code_builder.need_stack_map_frame_at(end + 1);
+
+        let start_rest_offset: u16 = 3 + end - self.end_if_body.unwrap();
+        code_builder.code[self.end_if_body.unwrap() as usize - 1] =
+            start_rest_offset.to_be_bytes()[0];
+        code_builder.code[self.end_if_body.unwrap() as usize] = start_rest_offset.to_be_bytes()[1];
+
+        Ok(self)
+    }
+}
+
+#[derive(Debug)]
 pub(crate) enum Attribute {
     SourceFile {
         name: u16,
@@ -1168,34 +1238,16 @@ impl<'a> JvmEmitter<'a> {
         else_body: &AstNodeStmt,
         code_builder: &mut CodeBuilder,
     ) -> Result<(), Error> {
-        // Cond
-        self.expr(cond, code_builder)?;
-        code_builder.push3(OP_IFEQ, OP_IMPDEP1, OP_IMPDEP2, Type::Nothing)?;
-        let end_cond = code_builder.code.len() - 1;
-
-        // If
-        self.statement(if_body, code_builder)?;
-        code_builder.push3(OP_GOTO, OP_IMPDEP1, OP_IMPDEP2, Type::Nothing)?;
-        let end_if_body = code_builder.code.len() - 1;
-        code_builder.need_stack_map_frame_at(end_if_body as u16 + 1);
-
-        let start_else_offset: u16 = (3 + end_if_body - end_cond) as u16;
-        code_builder.code[end_cond - 1] = start_else_offset.to_be_bytes()[0];
-        code_builder.code[end_cond] = start_else_offset.to_be_bytes()[1];
-
-        // Else
-        self.statement(else_body, code_builder)?;
-
-        let end = code_builder.code.len() - 1;
-        code_builder.need_stack_map_frame_at(end as u16 + 1);
-
-        let start_rest_offset: u16 = (3 + end - end_if_body) as u16;
-        code_builder.code[end_if_body - 1] = start_rest_offset.to_be_bytes()[0];
-        code_builder.code[end_if_body] = start_rest_offset.to_be_bytes()[1];
+        let builder = IfBuilder::new()
+            .cond(cond, self, code_builder)?
+            .if_body(if_body, self, code_builder)?
+            .else_body(else_body, self, code_builder)?;
 
         debug!(
-            "if_expr: end_cond={} end_if_body={} end={} start_else_offset={} start_rest_offset={}",
-            end_cond, end_if_body, end, start_else_offset, start_rest_offset
+            "if_expr: end_cond={} end_if_body={} end={}",
+            builder.end_cond.unwrap(),
+            builder.end_if_body.unwrap(),
+            builder.end.unwrap(),
         );
 
         Ok(())
