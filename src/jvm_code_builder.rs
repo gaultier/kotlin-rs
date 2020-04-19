@@ -240,206 +240,158 @@ impl CodeBuilder {
     fn verify(&mut self, jvm_emitter: &JvmEmitter) -> Result<(), Error> {
         debug!("verify: jump_targets={:?}", &self.jump_targets);
 
-        // let needed = self.jump_targets.clone();
-        // let cpy_locals = self.starting_locals.clone();
+        let mut i = 0;
+        for (bci, _) in self.jump_targets.clone().iter() {
+            while i < *bci {
+                let op = self.code[i as usize];
+                debug!("verify: op={}", op);
 
-        // for bci in &needed {
-        //     let mut i = 0;
-        //     self.stack = Vec::new();
-        //     self.locals = cpy_locals.clone();
+                match op {
+                    OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3
+                    | OP_ICONST_4 | OP_ICONST_5 => {
+                        self.stack_push(Type::Int)?;
+                    }
+                    OP_SIPUSH => {
+                        i += 2;
+                        self.stack_push(Type::Int)?;
+                    }
+                    OP_BIPUSH => {
+                        i += 1;
+                        self.stack_push(Type::Int)?;
+                    }
+                    OP_FCONST_0 | OP_FCONST_1 | OP_FCONST_2 => {
+                        self.stack_push(Type::Float)?;
+                    }
+                    OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_IREM | OP_IAND | OP_IOR
+                    | OP_FADD | OP_FMUL | OP_FSUB | OP_FDIV | OP_FREM => {
+                        self.stack_pop()?;
+                    }
+                    OP_FCMPL => {
+                        self.stack_pop2()?;
+                        self.stack_push(Type::Int)?;
+                    }
+                    OP_IFEQ | OP_IFNE | OP_IFGE | OP_IFGT | OP_IFLE | OP_IFLT => {
+                        i += 2;
+                    }
+                    OP_IF_ICMPNE | OP_IF_ICMPGE | OP_IF_ICMPLE | OP_IF_ICMPGT | OP_IF_ICMPLT => {
+                        i += 2;
+                    }
+                    OP_LCMP | OP_DCMPL => {
+                        self.stack_pop2()?;
+                    }
+                    OP_GOTO => {
+                        i += 2;
+                    }
+                    OP_GET_STATIC => {
+                        let t = &self.opcode_types[i as usize];
+                        let jvm_constant_pool_index = match t {
+                            Type::Object {
+                                jvm_constant_pool_index,
+                                ..
+                            } => jvm_constant_pool_index.unwrap(),
+                            _ => unreachable!(),
+                        };
 
-        //     while i < *bci {
-        //         let op = self.code[i as usize];
-        //         debug!("verify: op={}", op);
+                        i += 2;
+                        // FIXME: hardcoded for println
+                        self.stack_push(Type::Object {
+                            class: String::from("java/io/PrintStream"),
+                            jvm_constant_pool_index: Some(jvm_constant_pool_index),
+                        })?;
+                    }
+                    OP_ISTORE => {
+                        self.locals_push((0xbeef, Type::Int))?;
+                        i += 1;
+                        self.stack_pop()?;
+                    }
+                    OP_FSTORE => {
+                        self.locals_push((0xbeef, Type::Float))?;
+                        i += 1;
+                        self.stack_pop()?;
+                    }
+                    OP_LSTORE => {
+                        todo!();
+                        i += 1;
+                        self.stack_pop2()?;
+                    }
+                    OP_DSTORE => {
+                        todo!();
+                        i += 1;
+                        self.stack_pop2()?;
+                    }
+                    OP_ILOAD => {
+                        i += 1;
+                        self.stack_push(Type::Int)?;
+                    }
+                    OP_FLOAD => {
+                        i += 1;
+                        self.stack_push(Type::Float)?;
+                    }
+                    OP_LLOAD => {
+                        i += 1;
+                        self.stack_push(Type::Long)?;
+                        self.stack_push(Type::Long)?;
+                    }
+                    OP_INVOKE_VIRTUAL => {
+                        i += 2;
+                        self.stack_pop2()?; // FIXME: hardcoded for println
+                    }
+                    OP_INVOKE_STATIC | OP_INVOKE_SPECIAL => {
+                        let op1 = self.code[i as usize + 1];
+                        let op2 = self.code[i as usize + 2];
+                        i += 2;
 
-        //         match op {
-        //             OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3
-        //             | OP_ICONST_4 | OP_ICONST_5 => {
-        //                 self.stack_push(Type::Int)?;
-        //             }
-        //             OP_SIPUSH => {
-        //                 i += 2;
-        //                 self.stack_push(Type::Int)?;
-        //             }
-        //             OP_BIPUSH => {
-        //                 i += 1;
-        //                 self.stack_push(Type::Int)?;
-        //             }
-        //             OP_FCONST_0 | OP_FCONST_1 | OP_FCONST_2 => {
-        //                 self.stack_push(Type::Float)?;
-        //             }
-        //             OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_IREM | OP_IAND | OP_IOR
-        //             | OP_FADD | OP_FMUL | OP_FSUB | OP_FDIV | OP_FREM => {
-        //                 self.stack_pop()?;
-        //             }
-        //             OP_FCMPL => {
-        //                 self.stack_pop2()?;
-        //                 self.stack_push(Type::Int)?;
-        //             }
-        //             OP_IFEQ | OP_IFNE | OP_IFGE | OP_IFGT | OP_IFLE | OP_IFLT => {
-        //                 let op1 = self.code[i as usize + 1];
-        //                 let op2 = self.code[i as usize + 2];
-        //                 let offset = u16::from_be_bytes([op1, op2]);
+                        let fn_i: u16 = u16::from_be_bytes([op1, op2]);
+                        // The constant pool is one-indexed
+                        let fn_id: NodeId =
+                            *jvm_emitter.constant_pool_index_to_fn_id.get(&fn_i).unwrap();
+                        let fn_t = jvm_emitter.types.get(&fn_id).unwrap();
+                        let return_t = fn_t.fn_return_t();
+                        debug!("verify: op={} return_t={:?}", op, return_t);
 
-        //                 debug!(
-        //                     "verify: if i={} offset={} stack={:?}",
-        //                     i, offset, self.stack
-        //                 );
-        //                 self.stack_pop()?;
+                        match fn_t {
+                            Type::Function { return_t, args, .. } => {
+                                for _ in 0..args.len() {
+                                    self.stack_pop()?; // FIXME: Two words types
+                                }
+                                if let Some(return_t) = &**return_t {
+                                    self.stack_push(return_t.clone())?; // FIXME: Two words types
+                                }
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+                    OP_RETURN | OP_IRETURN => {}
+                    OP_INEG => {}
+                    OP_LDC | OP_LDC_W => {
+                        i += 1;
+                        self.stack_push(Type::Long)?; // FIXME
+                    }
+                    OP_LCONST_0 | OP_LCONST_1 => {
+                        self.stack_push(Type::Long)?;
+                        self.stack_push(Type::Long)?;
+                    }
+                    OP_LDC2_W => {
+                        i += 2;
+                        self.stack_push(Type::Long)?; // FIXME
+                        self.stack_push(Type::Long)?; // FIXME
+                    }
+                    OP_LADD | OP_LMUL | OP_LSUB | OP_LDIV => {
+                        self.stack_pop2()?;
+                    }
+                    OP_DADD | OP_DMUL | OP_DSUB | OP_DDIV => {
+                        self.stack_pop2()?;
+                    }
+                    _ => {
+                        dbg!(op);
+                        unimplemented!()
+                    }
+                }
+                i += 1;
+            }
 
-        //                 if i + offset == *bci {
-        //                     // Finished
-        //                     break;
-        //                 } else {
-        //                     i += 2;
-        //                 }
-        //             }
-        //             OP_IF_ICMPNE | OP_IF_ICMPGE | OP_IF_ICMPLE | OP_IF_ICMPGT | OP_IF_ICMPLT => {
-        //                 let op1 = self.code[i as usize + 1];
-        //                 let op2 = self.code[i as usize + 2];
-        //                 let offset = u16::from_be_bytes([op1, op2]);
-
-        //                 self.stack_pop2()?;
-
-        //                 debug!("verify: if i={} offset={}", i, offset);
-
-        //                 if i + offset == *bci {
-        //                     // Finished
-        //                     break;
-        //                 } else {
-        //                     i += 2;
-        //                 }
-        //             }
-        //             OP_LCMP | OP_DCMPL => {
-        //                 self.stack_pop2()?;
-        //             }
-        //             OP_GOTO => {
-        //                 let op1 = self.code[i as usize + 1];
-        //                 let op2 = self.code[i as usize + 2];
-
-        //                 let offset = i16::from_be_bytes([op1, op2]);
-        //                 debug!(
-        //                     "verify: goto i={} offset={} op1={} op2={}",
-        //                     i, offset, op1, op2
-        //                 );
-
-        //                 if i as isize + offset as isize == *bci as isize {
-        //                     // Finished
-        //                     break;
-        //                 } else {
-        //                     i += 2;
-        //                 }
-        //             }
-        //             OP_GET_STATIC => {
-        //                 let t = &self.opcode_types[i as usize];
-        //                 let jvm_constant_pool_index = match t {
-        //                     Type::Object {
-        //                         jvm_constant_pool_index,
-        //                         ..
-        //                     } => jvm_constant_pool_index.unwrap(),
-        //                     _ => unreachable!(),
-        //                 };
-
-        //                 i += 2;
-        //                 // FIXME: hardcoded for println
-        //                 self.stack_push(Type::Object {
-        //                     class: String::from("java/io/PrintStream"),
-        //                     jvm_constant_pool_index: Some(jvm_constant_pool_index),
-        //                 })?;
-        //             }
-        //             OP_ISTORE => {
-        //                 self.locals_push((0xbeef, Type::Int))?;
-        //                 i += 1;
-        //                 self.stack_pop()?;
-        //             }
-        //             OP_FSTORE => {
-        //                 self.locals_push((0xbeef, Type::Float))?;
-        //                 i += 1;
-        //                 self.stack_pop()?;
-        //             }
-        //             OP_LSTORE => {
-        //                 todo!();
-        //                 i += 1;
-        //                 self.stack_pop2()?;
-        //             }
-        //             OP_DSTORE => {
-        //                 todo!();
-        //                 i += 1;
-        //                 self.stack_pop2()?;
-        //             }
-        //             OP_ILOAD => {
-        //                 i += 1;
-        //                 self.stack_push(Type::Int)?;
-        //             }
-        //             OP_FLOAD => {
-        //                 i += 1;
-        //                 self.stack_push(Type::Float)?;
-        //             }
-        //             OP_LLOAD => {
-        //                 i += 1;
-        //                 self.stack_push(Type::Long)?;
-        //                 self.stack_push(Type::Long)?;
-        //             }
-        //             OP_INVOKE_VIRTUAL => {
-        //                 i += 2;
-        //                 self.stack_pop2()?; // FIXME: hardcoded for println
-        //             }
-        //             OP_INVOKE_STATIC | OP_INVOKE_SPECIAL => {
-        //                 let op1 = self.code[i as usize + 1];
-        //                 let op2 = self.code[i as usize + 2];
-        //                 i += 2;
-
-        //                 let fn_i: u16 = u16::from_be_bytes([op1, op2]);
-        //                 // The constant pool is one-indexed
-        //                 let fn_id: NodeId =
-        //                     *jvm_emitter.constant_pool_index_to_fn_id.get(&fn_i).unwrap();
-        //                 let fn_t = jvm_emitter.types.get(&fn_id).unwrap();
-        //                 let return_t = fn_t.fn_return_t();
-        //                 debug!("verify: op={} return_t={:?}", op, return_t);
-
-        //                 match fn_t {
-        //                     Type::Function { return_t, args, .. } => {
-        //                         for _ in 0..args.len() {
-        //                             self.stack_pop()?; // FIXME: Two words types
-        //                         }
-        //                         if let Some(return_t) = &**return_t {
-        //                             self.stack_push(return_t.clone())?; // FIXME: Two words types
-        //                         }
-        //                     }
-        //                     _ => unreachable!(),
-        //                 }
-        //             }
-        //             OP_RETURN | OP_IRETURN => {}
-        //             OP_INEG => {}
-        //             OP_LDC | OP_LDC_W => {
-        //                 i += 1;
-        //                 self.stack_push(Type::Long)?; // FIXME
-        //             }
-        //             OP_LCONST_0 | OP_LCONST_1 => {
-        //                 self.stack_push(Type::Long)?;
-        //                 self.stack_push(Type::Long)?;
-        //             }
-        //             OP_LDC2_W => {
-        //                 i += 2;
-        //                 self.stack_push(Type::Long)?; // FIXME
-        //                 self.stack_push(Type::Long)?; // FIXME
-        //             }
-        //             OP_LADD | OP_LMUL | OP_LSUB | OP_LDIV => {
-        //                 self.stack_pop2()?;
-        //             }
-        //             OP_DADD | OP_DMUL | OP_DSUB | OP_DDIV => {
-        //                 self.stack_pop2()?;
-        //             }
-        //             _ => {
-        //                 dbg!(op);
-        //                 unimplemented!()
-        //             }
-        //         }
-        //         i += 1;
-        //     }
-
-        //     self.stack_map_frame_add_full(*bci);
-        // }
+            self.stack_map_frame_add_full(*bci);
+        }
         Ok(())
     }
 

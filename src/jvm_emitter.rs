@@ -53,7 +53,7 @@ pub(crate) struct JvmEmitter<'a> {
     pub(crate) class_printstream: u16,
     pub(crate) stack_map_table_str: u16,
     fn_id_to_constant_pool_index: BTreeMap<NodeId, u16>,
-    constant_pool_index_to_fn_id: BTreeMap<u16, NodeId>,
+    pub(crate) constant_pool_index_to_fn_id: BTreeMap<u16, NodeId>,
     class_name: String,
     class_main_args: u16,
 }
