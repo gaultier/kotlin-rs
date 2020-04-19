@@ -455,7 +455,7 @@ impl<'a> JvmEmitter<'a> {
 
         let attribute_code = Attribute::Code {
             name: self.code_str,
-            max_stack: code_builder.stack_max,
+            max_stack: code_builder.stack.count_max(),
             max_locals: code_builder.locals_max,
             code,
             exception_table: Vec::new(),
@@ -634,7 +634,7 @@ impl<'a> JvmEmitter<'a> {
 
         let attribute_code = Attribute::Code {
             name: self.code_str,
-            max_stack: code_builder.stack_max,
+            max_stack: code_builder.stack.count_max(),
             max_locals: code_builder.locals_max,
             code,
             exception_table: Vec::new(),
