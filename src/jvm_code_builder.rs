@@ -37,25 +37,15 @@ impl IfBuilder {
         }
     }
 
-    pub(crate) fn cond(
-        mut self,
-        cond: &AstNodeExpr,
-        jvm_emitter: &mut JvmEmitter,
-        code_builder: &mut CodeBuilder,
-    ) -> Result<Self, Error> {
-        jvm_emitter.expr(cond, code_builder)?;
-        code_builder.push3(OP_IFEQ, OP_IMPDEP1, OP_IMPDEP2, Type::Nothing)?;
-        self.if_location = Some((code_builder.code.len() - 3) as u16);
-
-        Ok(self)
-    }
-
     pub(crate) fn if_body(
         mut self,
         if_body: &AstNodeStmt,
         jvm_emitter: &mut JvmEmitter,
         code_builder: &mut CodeBuilder,
     ) -> Result<Self, Error> {
+        code_builder.push3(OP_IFEQ, OP_IMPDEP1, OP_IMPDEP2, Type::Nothing)?;
+        self.if_location = Some((code_builder.code.len() - 3) as u16);
+
         jvm_emitter.statement(if_body, code_builder)?;
         code_builder.push3(OP_GOTO, OP_IMPDEP1, OP_IMPDEP2, Type::Nothing)?;
 

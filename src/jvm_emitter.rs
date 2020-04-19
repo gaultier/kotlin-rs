@@ -690,8 +690,9 @@ impl<'a> JvmEmitter<'a> {
         else_body: &AstNodeStmt,
         code_builder: &mut CodeBuilder,
     ) -> Result<(), Error> {
+        self.expr(cond, code_builder)?;
+
         IfBuilder::new()
-            .cond(cond, self, code_builder)?
             .if_body(if_body, self, code_builder)?
             .else_body(else_body, self, code_builder)?
             .build(code_builder);
