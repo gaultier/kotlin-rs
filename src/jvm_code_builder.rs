@@ -351,7 +351,7 @@ impl CodeBuilder {
         }
         if let Some(operand2) = operand2 {
             self.code.push(operand2);
-            self.opcode_types.push(t.clone());
+            self.opcode_types.push(t);
         }
 
         Ok(())

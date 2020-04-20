@@ -426,7 +426,7 @@ impl<'a> JvmEmitter<'a> {
 
         let mut code_builder = CodeBuilder::new();
         code_builder.locals.push((
-            0xdeadbeef,
+            0xdead_beef,
             // FIXME: hardcoded
             Type::Object {
                 class: String::from("[Ljava/lang/String;"),
