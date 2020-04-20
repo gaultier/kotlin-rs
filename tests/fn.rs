@@ -1,4 +1,4 @@
-use kotlin::compile::compile;
+use kotlin::compile::sexp;
 use kotlin::error::*;
 use kotlin::parse::{JumpKind, Type};
 use kotlin::resolver::*;
@@ -8,7 +8,7 @@ fn simple_call() {
     let src = "fun a() = 10; a();";
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(sexp(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
         &"(begin (define (a ) 10)\n (apply a (list )) )\n"
@@ -20,7 +20,7 @@ fn assign_to_call_expr() {
     let src = "var a = 1; fun foo() = 99; a = foo();";
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(sexp(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
         &"(begin (define a 1)\n (define (foo ) 99)\n (set! a (apply foo (list )))\n )\n"
@@ -32,7 +32,7 @@ fn call_expr_wrong_type() -> Result<(), String> {
     let src = "var a = \"hello\"; fun foo() = 99; a = foo();";
     let mut out: Vec<u8> = Vec::new();
 
-    match compile(src, &mut out) {
+    match sexp(src, &mut out) {
         Err(Error {
             kind: ErrorKind::IncompatibleTypes(Type::TString, Type::Int),
             ..
@@ -46,7 +46,7 @@ fn not_a_callable() -> Result<(), String> {
     let src = "var a = \"hello\"; a();";
     let mut out: Vec<u8> = Vec::new();
 
-    match compile(src, &mut out) {
+    match sexp(src, &mut out) {
         Err(Error {
             kind: ErrorKind::NotACallable(Type::TString),
             ..
@@ -60,7 +60,7 @@ fn fn_body_block() {
     let src = "fun a() {1; 2; 'a'; true; 10;} var b:Unit = a();";
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(sexp(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_ref().unwrap(),
         &"(begin (define (a ) (begin 1 2 'a' #t 10 ))\n (define b (apply a (list )))\n )\n"
@@ -72,7 +72,7 @@ fn fn_body_block_no_return_type() -> Result<(), String> {
     let src = "fun a() {1} var b= a(); b+=1;";
     let mut out: Vec<u8> = Vec::new();
 
-    match compile(src, &mut out) {
+    match sexp(src, &mut out) {
         Err(Error {
             kind: ErrorKind::IncompatibleTypes(Type::Unit, Type::Int),
             ..
@@ -86,7 +86,7 @@ fn fn_with_args() {
     let src = "fun foo(a:Int, b:Long) = a * b; foo(1, 2L);";
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(sexp(src, &mut out).is_ok());
 
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
@@ -99,7 +99,7 @@ fn fn_with_empty_return() {
     let src = "fun foo(a:Int, b:Long){ if (a< b) return else ;}; val x : Unit = foo(1, 2L);";
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(sexp(src, &mut out).is_ok());
 
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
@@ -112,7 +112,7 @@ fn fn_with_expr_return_body() {
     let src = "fun foo(a:Int, b:Long): Boolean {return if (a < b) true else false }; val a: Boolean = foo(1, 2L);";
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(sexp(src, &mut out).is_ok());
 
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
@@ -125,7 +125,7 @@ fn fn_with_expr_return() -> Result<(), String> {
     let src = "fun foo(a:Int, b:Long): Boolean = if (a < b) return true else return false; val a: Boolean = foo(1, 2L);";
     let mut out: Vec<u8> = Vec::new();
 
-    match compile(src, &mut out) {
+    match sexp(src, &mut out) {
         Err(Error {
             kind: ErrorKind::IncompatibleTypes(Type::Nothing, Type::Boolean),
             ..
@@ -139,7 +139,7 @@ fn fn_with_expr_return_without_explicit_type() -> Result<(), String> {
     let src = "fun foo(a:Int, b:Long)= if (a < b) return true else return false; val a: Boolean = foo(1, 2L);";
     let mut out: Vec<u8> = Vec::new();
 
-    match compile(src, &mut out) {
+    match sexp(src, &mut out) {
         Err(Error {
             kind: ErrorKind::IncompatibleTypes(Type::Nothing, Type::Boolean),
             ..
@@ -153,7 +153,7 @@ fn fn_with_wrong_arg_type() -> Result<(), String> {
     let src = "fun foo(a:Int, b:Long) = a * b; foo(1, true);";
     let mut out: Vec<u8> = Vec::new();
 
-    match compile(src, &mut out) {
+    match sexp(src, &mut out) {
         Err(Error {
             kind: ErrorKind::IncompatibleTypes(Type::Boolean, Type::Long),
             ..
@@ -167,7 +167,7 @@ fn fn_with_wrong_return_type() -> Result<(), String> {
     let src = "fun foo(a:Int, b:Long): String = a * b;";
     let mut out: Vec<u8> = Vec::new();
 
-    match compile(src, &mut out) {
+    match sexp(src, &mut out) {
         Err(Error {
             kind: ErrorKind::IncompatibleTypes(Type::Long, Type::TString),
             ..
@@ -181,7 +181,7 @@ fn fn_with_wrong_return_type_2() -> Result<(), String> {
     let src = "fun foo(a:Int, b:Long): String {return a* b;}";
     let mut out: Vec<u8> = Vec::new();
 
-    match compile(src, &mut out) {
+    match sexp(src, &mut out) {
         Err(Error {
             kind: ErrorKind::IncompatibleTypes(Type::Long, Type::TString),
             ..
@@ -195,7 +195,7 @@ fn fn_with_wrong_return_types() -> Result<(), String> {
     let src = "fun foo(a:Int, b:Long): String {return \"a\"; return a* b;}";
     let mut out: Vec<u8> = Vec::new();
 
-    match compile(src, &mut out) {
+    match sexp(src, &mut out) {
         Err(Error {
             kind: ErrorKind::IncompatibleTypes(Type::Long, Type::TString),
             ..
@@ -209,7 +209,7 @@ fn fn_with_unknown_identifier_for_return_type() -> Result<(), String> {
     let src = "fun foo(a:Int, b:Long): Null = a * b;";
     let mut out: Vec<u8> = Vec::new();
 
-    match compile(src, &mut out) {
+    match sexp(src, &mut out) {
         Err(Error {
             kind: ErrorKind::UnknownIdentifier(identifier),
             ..
@@ -223,7 +223,7 @@ fn return_not_in_fn() -> Result<(), String> {
     let src = "fun foo(a:Int, b:Long): Unit { while(true) {break}} while (true) {return}";
     let mut out: Vec<u8> = Vec::new();
 
-    match compile(src, &mut out) {
+    match sexp(src, &mut out) {
         Err(Error {
             kind:
                 ErrorKind::JumpInInvalidContext {
@@ -242,7 +242,7 @@ fn fn_with_function_definition_in_loop() {
     let src = "var a =1; while (a < 10)  {fun show(x: Int) {println(x); return }; show(a++); if (a==5) break; else ;}";
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(sexp(src, &mut out).is_ok());
 
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
@@ -259,7 +259,7 @@ fn nested_fn() {
     let src = "fun a(): Long {fun b(): Int {return 42}; return 99L * b();}";
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(sexp(src, &mut out).is_ok());
 
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
@@ -273,7 +273,7 @@ fn sum() {
     let src = "fun sum(n: Int, acc: Int): Int = if (n == 0) acc else sum(n - 1, n + acc)";
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(sexp(src, &mut out).is_ok());
 
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
@@ -296,7 +296,7 @@ println(a())
             "##;
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(sexp(src, &mut out).is_ok());
 
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
@@ -320,7 +320,7 @@ println(even(100))
             "##;
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(sexp(src, &mut out).is_ok());
 
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),

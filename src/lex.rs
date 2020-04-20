@@ -1545,13 +1545,21 @@ mod tests {
         let tok = lexer.next_token();
         assert!(tok.is_err());
         let err = tok.unwrap_err();
-        assert_eq!(err.kind, ErrorKind::UnknownChar);
-        assert_eq!(err.location.start_pos, 0);
-        assert_eq!(err.location.start_line, 1);
-        assert_eq!(err.location.start_column, 1);
-        assert_eq!(err.location.end_pos, 2);
-        assert_eq!(err.location.end_line, 1);
-        assert_eq!(err.location.end_column, 2);
+        match tok {
+            Err(Error {
+                kind: ErrorKind::UnknownChar,
+                location:
+                    Location {
+                        start_pos: 0,
+                        start_line: 1,
+                        start_column: 1,
+                        end_pos: 2,
+                        end_line: 1,
+                        end_column: 2,
+                    },
+            }) => (),
+            other => panic!(format!("Should be an error: {:?}", other)),
+        }
 
         let tok = lexer.next_token();
         assert!(tok.is_ok());
@@ -1855,19 +1863,26 @@ mod tests {
     }
 
     #[test]
-    fn hex_number_missing_digits() {
+    fn hex_number_missing_digits() -> Result<(), String> {
         let s = String::from("0x");
         let session = Session::new(&s, None);
         let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
-        assert_eq!(tok.as_ref().is_err(), true);
-        let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, ErrorKind::MissingDigitsInNumber);
-        assert_eq!(tok.location.start_line, 1);
-        assert_eq!(tok.location.start_column, 1);
-        assert_eq!(tok.location.end_line, 1);
-        assert_eq!(tok.location.end_column, 3);
+        match tok {
+            Err(Error {
+                kind: ErrorKind::MissingDigitsInNumber,
+                location:
+                    Location {
+                        start_line: 1,
+                        start_column: 1,
+                        end_line: 1,
+                        end_column: 3,
+                        ..
+                    },
+            }) => Ok(()),
+            other => Err(format!("Should be an error: {:?}", other)),
+        }
     }
 
     #[test]
@@ -2212,7 +2227,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_char_literal_6() {
+    fn invalid_char_literal_6() -> Result<(), String> {
         let s = String::from("'\\Uabcd'");
         let session = Session::new(&s, None);
         let mut lexer = Lexer::new(&session);
@@ -2220,9 +2235,18 @@ mod tests {
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, ErrorKind::InvalidCharLiteral);
-        assert_eq!(tok.location.start_pos, 0);
-        assert_eq!(tok.location.end_pos, 8);
+        match tok {
+            Err(Error {
+                kind: ErrorKind::InvalidCharLiteral,
+                location:
+                    Location {
+                        start_pos: 0,
+                        end_pos: 8,
+                        ..
+                    },
+            }) => Ok(()),
+            other => Err(format!("Should be an error: {:?}", other)),
+        }
     }
 
     #[test]
