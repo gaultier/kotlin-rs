@@ -1,4 +1,4 @@
-use kotlin::compile::compile;
+use kotlin::compile::sexp;
 use kotlin::error::*;
 use kotlin::parse::{JumpKind, Type};
 use kotlin::resolver::LexicalContext;
@@ -8,7 +8,7 @@ fn while_with_body() {
     let src = "while (1 < 10) { 'c' }";
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(sexp(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
         "(while (< 1 10) 'c' )"
@@ -20,7 +20,7 @@ fn while_with_empty_body() {
     let src = "while (1 < 10) {}";
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(sexp(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
         "(while (< 1 10) (begin ))"
@@ -32,7 +32,7 @@ fn while_without_body() {
     let src = "while (1 < 10) ;";
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(sexp(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
         "(while (< 1 10) (begin ))"
@@ -44,7 +44,7 @@ fn while_bad_cond_type() -> Result<(), String> {
     let src = "while\n ('a') ;";
     let mut out: Vec<u8> = Vec::new();
 
-    match compile(src, &mut out) {
+    match sexp(src, &mut out) {
         Err(Error {
             kind: ErrorKind::IncompatibleTypes(Type::Char, Type::Boolean),
             location:
@@ -66,7 +66,7 @@ fn while_bad_body_type() -> Result<(), String> {
     let src = "while\n (true) {1+'c'}";
     let mut out: Vec<u8> = Vec::new();
 
-    match compile(src, &mut out) {
+    match sexp(src, &mut out) {
         Err(Error {
             kind: ErrorKind::IncompatibleTypes(Type::Int, Type::Char),
             location:
@@ -88,7 +88,7 @@ fn while_jumps() {
     let src = "while (1 < 10) {if (true) break else continue}";
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(sexp(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
         "(while (< 1 10) (if #t (break) (continue)) )"
@@ -100,7 +100,7 @@ fn break_not_in_loop() -> Result<(), String> {
     let src = "if (true) break else 1";
     let mut out: Vec<u8> = Vec::new();
 
-    match compile(src, &mut out) {
+    match sexp(src, &mut out) {
         Err(Error {
             kind:
                 ErrorKind::JumpInInvalidContext {
@@ -119,7 +119,7 @@ fn continue_not_in_loop() -> Result<(), String> {
     let src = "if (true) 2 else continue";
     let mut out: Vec<u8> = Vec::new();
 
-    match compile(src, &mut out) {
+    match sexp(src, &mut out) {
         Err(Error {
             kind:
                 ErrorKind::JumpInInvalidContext {
@@ -138,7 +138,7 @@ fn do_while_use_var_in_cond_from_body() {
     let src = "do {val y = 5;} while(y <5)";
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(sexp(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
         "(do-while (define y 5)\n  (if (< y 5)))"
@@ -150,7 +150,7 @@ fn do_while_empty_body() {
     let src = "do while(true)";
     let mut out: Vec<u8> = Vec::new();
 
-    assert!(compile(src, &mut out).is_ok());
+    assert!(sexp(src, &mut out).is_ok());
     assert_eq!(
         std::str::from_utf8(&out).as_mut().unwrap().trim(),
         "(do-while (begin ) (if #t))"
