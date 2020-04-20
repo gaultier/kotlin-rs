@@ -1,6 +1,7 @@
 use crate::error::*;
 use crate::jvm_constants::*;
 use crate::jvm_emitter::{Attribute, JvmEmitter};
+use crate::jvm_locals::Locals;
 use crate::jvm_stack::Stack;
 use crate::jvm_stack_map_frame::StackMapFrame;
 use crate::parse::*;
@@ -100,16 +101,12 @@ impl IfBuilder {
     }
 }
 
-type Local = (NodeId, Type);
-
 #[derive(Debug)]
 pub(crate) struct CodeBuilder {
     pub(crate) code: Vec<u8>,
     pub(crate) attributes: Vec<Attribute>,
     pub(crate) stack: Stack,
-    pub(crate) locals: Vec<Local>,
-    pub(crate) starting_locals: Vec<Local>,
-    pub(crate) locals_max: u16,
+    pub(crate) locals: Locals,
     pub(crate) stack_map_frames: BTreeMap<u16, StackMapFrame>,
     pub(crate) opcode_types: Vec<Type>,
     pub(crate) jump_targets: BTreeMap<u16, JumpTarget>,
@@ -121,41 +118,11 @@ impl CodeBuilder {
             code: Vec::new(),
             attributes: Vec::new(),
             stack: Stack::new(),
-            locals: Vec::new(),
-            starting_locals: Vec::new(),
-            locals_max: 0,
+            locals: Locals::new(),
             stack_map_frames: BTreeMap::new(),
             opcode_types: Vec::new(),
             jump_targets: BTreeMap::new(),
         }
-    }
-
-    pub(crate) fn locals_find_by_id(&self, id: NodeId) -> Option<(u16, Local)> {
-        self.locals.iter().enumerate().find_map(|(i, l)| {
-            if l.0 == id {
-                Some((i as u16, l.clone()))
-            } else {
-                None
-            }
-        })
-    }
-
-    pub(crate) fn locals_push(&mut self, l: Local) -> Result<u16, Error> {
-        if self.locals.len() == std::u16::MAX as usize {
-            return Err(Error::new(ErrorKind::JvmLocalsOverflow, Location::new()));
-        }
-
-        let i = if l.1 == Type::Long || l.1 == Type::Double {
-            self.locals.push(l.clone());
-            self.locals.push(l);
-            self.locals.len() - 2
-        } else {
-            self.locals.push(l);
-            self.locals.len() - 1
-        };
-
-        self.locals_max = std::cmp::max(self.locals.len() as u16, self.locals_max);
-        Ok(i as u16)
     }
 
     fn stack_map_frame_add_full(&mut self, bci_target: u16) {
@@ -167,11 +134,7 @@ impl CodeBuilder {
             StackMapFrame::Full {
                 offset: 0, // Will be computed in a final step
                 stack: self.stack.to_verification_info(),
-                locals: self
-                    .locals
-                    .iter()
-                    .map(|(_, t)| t.to_verification_info())
-                    .collect::<Vec<_>>(),
+                locals: self.locals.to_verification_info(),
             },
         );
     }
@@ -272,12 +235,12 @@ impl CodeBuilder {
                         })?;
                     }
                     OP_ISTORE => {
-                        self.locals_push((0xbeef, Type::Int))?;
+                        self.locals.push((0xbeef, Type::Int))?;
                         i += 1;
                         self.stack.pop()?;
                     }
                     OP_FSTORE => {
-                        self.locals_push((0xbeef, Type::Float))?;
+                        self.locals.push((0xbeef, Type::Float))?;
                         i += 1;
                         self.stack.pop()?;
                     }

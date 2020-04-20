@@ -6,6 +6,7 @@ pub mod fmt;
 mod jvm_code_builder;
 mod jvm_constants;
 pub mod jvm_emitter;
+mod jvm_locals;
 mod jvm_stack;
 mod jvm_stack_map_frame;
 mod jvm_writer;
