@@ -106,7 +106,10 @@ pub(crate) struct CodeBuilder {
     pub(crate) code: Vec<u8>,
     pub(crate) attributes: Vec<Attribute>,
     pub(crate) stack: Stack,
+    pub(crate) stack_max: u16,
     pub(crate) locals: Locals,
+    pub(crate) args_locals: Locals,
+    pub(crate) locals_max: u16,
     pub(crate) stack_map_frames: BTreeMap<u16, StackMapFrame>,
     pub(crate) opcode_types: Vec<Type>,
     pub(crate) jump_targets: BTreeMap<u16, JumpTarget>,
@@ -118,7 +121,10 @@ impl CodeBuilder {
             code: Vec::new(),
             attributes: Vec::new(),
             stack: Stack::new(),
+            stack_max: 0,
             locals: Locals::new(),
+            args_locals: Locals::new(),
+            locals_max: 0,
             stack_map_frames: BTreeMap::new(),
             opcode_types: Vec::new(),
             jump_targets: BTreeMap::new(),
@@ -177,7 +183,7 @@ impl CodeBuilder {
         jvm_emitter: &JvmEmitter,
         mut stack: Stack,
         mut locals: Locals,
-    ) -> Result<(), Error> {
+    ) -> Result<(u16, u16), Error> {
         debug!("verify: jump_targets={:?}", &self.jump_targets);
 
         let mut i = 0;
@@ -332,7 +338,10 @@ impl CodeBuilder {
 
             self.stack_map_frame_add_full(*bci);
         }
-        Ok(())
+
+        let stack_max = stack.count_max();
+        let locals_max = locals.count_max();
+        Ok((stack_max, locals_max))
     }
 
     fn push(
@@ -363,7 +372,10 @@ impl CodeBuilder {
     }
 
     pub(crate) fn end(&mut self, jvm_emitter: &JvmEmitter) -> Result<Vec<u8>, Error> {
-        self.verify(jvm_emitter, Stack::new(), Locals::new())?;
+        let (stack_max, locals_max) =
+            self.verify(jvm_emitter, Stack::new(), self.args_locals.clone())?;
+        self.stack_max = stack_max;
+        self.locals_max = locals_max;
         Ok(self.code.clone())
     }
 }

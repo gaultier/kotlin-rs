@@ -4,7 +4,7 @@ use crate::parse::{NodeId, Type};
 
 type Local = (NodeId, Type);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct Locals {
     values: Vec<Local>,
     count_max: u16,

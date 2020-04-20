@@ -433,6 +433,7 @@ impl<'a> JvmEmitter<'a> {
                 jvm_constant_pool_index: Some(self.class_main_args),
             },
         ))?;
+        code_builder.args_locals = code_builder.locals.clone();
 
         self.statement(block, &mut code_builder)?;
         code_builder.code.push(OP_RETURN);
@@ -454,8 +455,8 @@ impl<'a> JvmEmitter<'a> {
 
         let attribute_code = Attribute::Code {
             name: self.code_str,
-            max_stack: code_builder.stack.count_max(),
-            max_locals: code_builder.locals.count_max(),
+            max_stack: code_builder.stack_max,
+            max_locals: code_builder.locals_max,
             code,
             exception_table: Vec::new(),
             attributes: vec![line_table, stack_map_table],
