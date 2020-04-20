@@ -2171,17 +2171,24 @@ mod tests {
     }
 
     #[test]
-    fn invalid_char_literal() {
+    fn invalid_char_literal()  -> Result<(), String> {
         let s = String::from("'ab'");
         let session = Session::new(&s, None);
         let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
-        assert_eq!(tok.as_ref().is_err(), true);
-        let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, ErrorKind::InvalidCharLiteral);
-        assert_eq!(tok.location.start_pos, 0);
-        assert_eq!(tok.location.end_pos, 4);
+        match tok {
+            Err(Error {
+                kind: ErrorKind::InvalidCharLiteral,
+                location:
+                    Location {
+                        start_pos: 0,
+                        end_pos: 4,
+                        ..
+                    },
+            }) => Ok(()),
+            other => Err(format!("Should be an error: {:?}", other)),
+        }
     }
 
     #[test]
