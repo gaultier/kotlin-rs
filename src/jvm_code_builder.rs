@@ -13,8 +13,8 @@ pub(crate) enum JumpTarget {
     If {
         if_location: u16,
         if_target: u16,
-        else_location: u16,
-        else_target: u16,
+        goto_location: u16,
+        goto_target: u16,
     },
     Goto {
         location: u16,
@@ -92,8 +92,8 @@ impl IfBuilder {
             JumpTarget::If {
                 if_location: self.if_location.unwrap(),
                 if_target: self.if_target.unwrap(),
-                else_location: self.goto_location.unwrap(),
-                else_target: self.goto_target.unwrap(),
+                goto_location: self.goto_location.unwrap(),
+                goto_target: self.goto_target.unwrap(),
             },
         );
 
@@ -178,7 +178,7 @@ impl CodeBuilder {
         self.jump_targets.insert(location, jump_target);
     }
 
-    fn verify(
+    fn generate_stack_map_frames(
         &mut self,
         jvm_emitter: &JvmEmitter,
         mut stack: Stack,
@@ -187,7 +187,19 @@ impl CodeBuilder {
         debug!("verify: jump_targets={:?}", &self.jump_targets);
 
         let mut i = 0;
-        for (bci, _) in self.jump_targets.clone().iter() {
+        for (bci, _jump_target) in self.jump_targets.clone().iter() {
+            // match jump_target {
+            //     JumpTarget::If {
+            //         if_location,
+            //         if_target,
+            //         goto_location,
+            //         goto_target,
+            //     } => {
+            //         // verify(code[if_location..goto_location]);
+            //         // verify(code[if_target..goto_target]);
+            //     }
+            //     _ => todo!(),
+            // }
             while i < *bci {
                 let op = self.code[i as usize];
                 debug!("verify: op={}", op);
@@ -373,7 +385,7 @@ impl CodeBuilder {
 
     pub(crate) fn end(&mut self, jvm_emitter: &JvmEmitter) -> Result<Vec<u8>, Error> {
         let (stack_max, locals_max) =
-            self.verify(jvm_emitter, Stack::new(), self.args_locals.clone())?;
+            self.generate_stack_map_frames(jvm_emitter, Stack::new(), self.args_locals.clone())?;
         self.stack_max = stack_max;
         self.locals_max = locals_max;
         Ok(self.code.clone())
