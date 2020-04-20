@@ -391,3 +391,11 @@ impl CodeBuilder {
         Ok(self.code.clone())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn stack_map_frame_if() {}
+}
