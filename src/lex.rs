@@ -1606,17 +1606,23 @@ mod tests {
     }
 
     #[test]
-    fn int_with_trailing_underscore() {
+    fn int_with_trailing_underscore() -> Result<(), String> {
         let s = String::from("123_000_000_  ");
         let session = Session::new(&s, None);
         let mut lexer = Lexer::new(&session);
         let tok = lexer.next_token();
-
-        assert_eq!(tok.as_ref().is_err(), true);
-        let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, ErrorKind::TrailingUnderscoreInNumber);
-        assert_eq!(tok.location.start_pos, 0);
-        assert_eq!(tok.location.end_pos, 12);
+        match tok {
+            Err(Error {
+                kind: ErrorKind::TrailingUnderscoreInNumber,
+                location:
+                    Location {
+                        start_pos: 0,
+                        end_pos: 12,
+                        ..
+                    },
+            }) => Ok(()),
+            other => Err(format!("Should be an error: {:?}", other)),
+        }
     }
 
     #[test]
