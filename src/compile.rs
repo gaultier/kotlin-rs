@@ -14,6 +14,10 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+pub fn default_path() -> PathBuf {
+    PathBuf::from("Stdin.kts")
+}
+
 pub fn compile(src: &str, file_name: &Path) -> Result<(), Error> {
     let session = Session::new(&src, None);
     let mut lexer = Lexer::new(&session);
