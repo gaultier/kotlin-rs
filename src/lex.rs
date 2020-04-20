@@ -2213,7 +2213,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_char_literal_4() {
+    fn invalid_char_literal_4()  -> Result<(), String> {
         let s = String::from("'\\uab'");
         let session = Session::new(&s, None);
         let mut lexer = Lexer::new(&session);
@@ -2221,23 +2221,39 @@ mod tests {
         let tok = lexer.next_token();
         assert_eq!(tok.as_ref().is_err(), true);
         let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, ErrorKind::InvalidCharLiteral);
-        assert_eq!(tok.location.start_pos, 0);
-        assert_eq!(tok.location.end_pos, 6);
+        match tok {
+            Err(Error {
+                kind: ErrorKind::InvalidCharLiteral,
+                location:
+                    Location {
+                        start_pos: 0,
+                        end_pos: 6,
+                        ..
+                    },
+            }) => Ok(()),
+            other => Err(format!("Should be an error: {:?}", other)),
+        }
     }
 
     #[test]
-    fn invalid_char_literal_5() {
+    fn invalid_char_literal_5()  -> Result<(), String> {
         let s = String::from("'\\uabc'");
         let session = Session::new(&s, None);
         let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
-        assert_eq!(tok.as_ref().is_err(), true);
-        let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, ErrorKind::InvalidCharLiteral);
-        assert_eq!(tok.location.start_pos, 0);
-        assert_eq!(tok.location.end_pos, 7);
+        match tok {
+            Err(Error {
+                kind: ErrorKind::InvalidCharLiteral,
+                location:
+                    Location {
+                        start_pos: 0,
+                        end_pos: 7,
+                        ..
+                    },
+            }) => Ok(()),
+            other => Err(format!("Should be an error: {:?}", other)),
+        }
     }
 
     #[test]
