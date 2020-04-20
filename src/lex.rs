@@ -1543,8 +1543,6 @@ mod tests {
         let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
-        assert!(tok.is_err());
-        let err = tok.unwrap_err();
         match tok {
             Err(Error {
                 kind: ErrorKind::UnknownChar,
