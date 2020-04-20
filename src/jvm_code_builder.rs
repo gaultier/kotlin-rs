@@ -172,7 +172,12 @@ impl CodeBuilder {
         self.jump_targets.insert(location, jump_target);
     }
 
-    fn verify(&mut self, jvm_emitter: &JvmEmitter) -> Result<(), Error> {
+    fn verify(
+        &mut self,
+        jvm_emitter: &JvmEmitter,
+        mut stack: Stack,
+        mut locals: Locals,
+    ) -> Result<(), Error> {
         debug!("verify: jump_targets={:?}", &self.jump_targets);
 
         let mut i = 0;
@@ -184,26 +189,26 @@ impl CodeBuilder {
                 match op {
                     OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3
                     | OP_ICONST_4 | OP_ICONST_5 => {
-                        self.stack.push(Type::Int)?;
+                        stack.push(Type::Int)?;
                     }
                     OP_SIPUSH => {
                         i += 2;
-                        self.stack.push(Type::Int)?;
+                        stack.push(Type::Int)?;
                     }
                     OP_BIPUSH => {
                         i += 1;
-                        self.stack.push(Type::Int)?;
+                        stack.push(Type::Int)?;
                     }
                     OP_FCONST_0 | OP_FCONST_1 | OP_FCONST_2 => {
-                        self.stack.push(Type::Float)?;
+                        stack.push(Type::Float)?;
                     }
                     OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_IREM | OP_IAND | OP_IOR
                     | OP_FADD | OP_FMUL | OP_FSUB | OP_FDIV | OP_FREM => {
-                        self.stack.pop()?;
+                        stack.pop()?;
                     }
                     OP_FCMPL => {
-                        self.stack.pop2()?;
-                        self.stack.push(Type::Int)?;
+                        stack.pop2()?;
+                        stack.push(Type::Int)?;
                     }
                     OP_IFEQ | OP_IFNE | OP_IFGE | OP_IFGT | OP_IFLE | OP_IFLT => {
                         i += 2;
@@ -212,7 +217,7 @@ impl CodeBuilder {
                         i += 2;
                     }
                     OP_LCMP | OP_DCMPL => {
-                        self.stack.pop2()?;
+                        stack.pop2()?;
                     }
                     OP_GOTO => {
                         i += 2;
@@ -229,47 +234,47 @@ impl CodeBuilder {
 
                         i += 2;
                         // FIXME: hardcoded for println
-                        self.stack.push(Type::Object {
+                        stack.push(Type::Object {
                             class: String::from("java/io/PrintStream"),
                             jvm_constant_pool_index: Some(jvm_constant_pool_index),
                         })?;
                     }
                     OP_ISTORE => {
-                        self.locals.push((0xbeef, Type::Int))?;
+                        locals.push((0xbeef, Type::Int))?;
                         i += 1;
-                        self.stack.pop()?;
+                        stack.pop()?;
                     }
                     OP_FSTORE => {
-                        self.locals.push((0xbeef, Type::Float))?;
+                        locals.push((0xbeef, Type::Float))?;
                         i += 1;
-                        self.stack.pop()?;
+                        stack.pop()?;
                     }
                     OP_LSTORE => {
                         todo!();
                         i += 1;
-                        self.stack.pop2()?;
+                        stack.pop2()?;
                     }
                     OP_DSTORE => {
                         todo!();
                         i += 1;
-                        self.stack.pop2()?;
+                        stack.pop2()?;
                     }
                     OP_ILOAD => {
                         i += 1;
-                        self.stack.push(Type::Int)?;
+                        stack.push(Type::Int)?;
                     }
                     OP_FLOAD => {
                         i += 1;
-                        self.stack.push(Type::Float)?;
+                        stack.push(Type::Float)?;
                     }
                     OP_LLOAD => {
                         i += 1;
-                        self.stack.push(Type::Long)?;
-                        self.stack.push(Type::Long)?;
+                        stack.push(Type::Long)?;
+                        stack.push(Type::Long)?;
                     }
                     OP_INVOKE_VIRTUAL => {
                         i += 2;
-                        self.stack.pop2()?; // FIXME: hardcoded for println
+                        stack.pop2()?; // FIXME: hardcoded for println
                     }
                     OP_INVOKE_STATIC | OP_INVOKE_SPECIAL => {
                         let op1 = self.code[i as usize + 1];
@@ -287,10 +292,10 @@ impl CodeBuilder {
                         match fn_t {
                             Type::Function { return_t, args, .. } => {
                                 for _ in 0..args.len() {
-                                    self.stack.pop()?; // FIXME: Two words types
+                                    stack.pop()?; // FIXME: Two words types
                                 }
                                 if let Some(return_t) = &**return_t {
-                                    self.stack.push(return_t.clone())?; // FIXME: Two words types
+                                    stack.push(return_t.clone())?; // FIXME: Two words types
                                 }
                             }
                             _ => unreachable!(),
@@ -300,22 +305,22 @@ impl CodeBuilder {
                     OP_INEG => {}
                     OP_LDC | OP_LDC_W => {
                         i += 1;
-                        self.stack.push(Type::Long)?; // FIXME
+                        stack.push(Type::Long)?; // FIXME
                     }
                     OP_LCONST_0 | OP_LCONST_1 => {
-                        self.stack.push(Type::Long)?;
-                        self.stack.push(Type::Long)?;
+                        stack.push(Type::Long)?;
+                        stack.push(Type::Long)?;
                     }
                     OP_LDC2_W => {
                         i += 2;
-                        self.stack.push(Type::Long)?; // FIXME
-                        self.stack.push(Type::Long)?; // FIXME
+                        stack.push(Type::Long)?; // FIXME
+                        stack.push(Type::Long)?; // FIXME
                     }
                     OP_LADD | OP_LMUL | OP_LSUB | OP_LDIV => {
-                        self.stack.pop2()?;
+                        stack.pop2()?;
                     }
                     OP_DADD | OP_DMUL | OP_DSUB | OP_DDIV => {
-                        self.stack.pop2()?;
+                        stack.pop2()?;
                     }
                     _ => {
                         dbg!(op);
@@ -358,7 +363,7 @@ impl CodeBuilder {
     }
 
     pub(crate) fn end(&mut self, jvm_emitter: &JvmEmitter) -> Result<Vec<u8>, Error> {
-        self.verify(jvm_emitter)?;
+        self.verify(jvm_emitter, Stack::new(), Locals::new())?;
         Ok(self.code.clone())
     }
 }
