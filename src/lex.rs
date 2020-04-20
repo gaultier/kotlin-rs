@@ -1760,17 +1760,24 @@ mod tests {
     }
 
     #[test]
-    fn bin_number_with_suffix_f() {
+    fn bin_number_with_suffix_f()  -> Result<(), String> {
         let s = String::from("0b101F");
         let session = Session::new(&s, None);
         let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
-        assert_eq!(tok.as_ref().is_err(), true);
-        let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, ErrorKind::InvalidNumberSuffix("F".to_string()));
-        assert_eq!(tok.location.start_pos, 0);
-        assert_eq!(tok.location.end_pos, 6);
+        match tok {
+            Err(Error {
+                kind: ErrorKind::InvalidNumberSuffix("F".to_string()),
+                location:
+                    Location {
+                        start_pos: 0,
+                        end_pos: 6,
+                        ..
+                    },
+            }) => Ok(()),
+            other => Err(format!("Should be an error: {:?}", other)),
+        }
     }
 
     #[test]
@@ -2240,8 +2247,6 @@ mod tests {
         let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
-        assert_eq!(tok.as_ref().is_err(), true);
-        let tok = tok.as_ref().unwrap_err();
         match tok {
             Err(Error {
                 kind: ErrorKind::InvalidCharLiteral,
