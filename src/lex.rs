@@ -1732,35 +1732,49 @@ mod tests {
     }
 
     #[test]
-    fn real_number_with_suffix_u() {
+    fn real_number_with_suffix_u() -> Result<(), String> {
         let s = String::from("1.23u");
         let session = Session::new(&s, None);
         let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
-        assert_eq!(tok.as_ref().is_err(), true);
-        let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, ErrorKind::InvalidNumberSuffix("u".to_string()));
-        assert_eq!(tok.location.start_pos, 0);
-        assert_eq!(tok.location.end_pos, 5);
+        match tok {
+            Err(Error {
+                kind: ErrorKind::InvalidNumberSuffix(err),
+                location:
+                    Location {
+                        start_pos: 0,
+                        end_pos: 5,
+                        ..
+                    },
+            }) if err == "u" => Ok(()),
+            other => Err(format!("Should be an error: {:?}", other)),
+        }
     }
 
     #[test]
-    fn real_number_with_suffix_ul() {
+    fn real_number_with_suffix_ul() -> Result<(), String> {
         let s = String::from("1.23uL");
         let session = Session::new(&s, None);
         let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
-        assert_eq!(tok.as_ref().is_err(), true);
-        let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, ErrorKind::InvalidNumberSuffix("uL".to_string()));
-        assert_eq!(tok.location.start_pos, 0);
-        assert_eq!(tok.location.end_pos, 6);
+        match tok {
+            Err(Error {
+                kind: ErrorKind::InvalidNumberSuffix(err),
+                location:
+                    Location {
+                        start_pos: 0,
+                        end_pos: 6,
+                        ..
+                    },
+            }) if err == "uL" => Ok(()),
+            other => Err(format!("Should be an error: {:?}", other)),
+        }
     }
 
     #[test]
-    fn bin_number_with_suffix_f()  -> Result<(), String> {
+    fn bin_number_with_suffix_f() -> Result<(), String> {
         let s = String::from("0b101F");
         let session = Session::new(&s, None);
         let mut lexer = Lexer::new(&session);
@@ -1768,14 +1782,14 @@ mod tests {
         let tok = lexer.next_token();
         match tok {
             Err(Error {
-                kind: ErrorKind::InvalidNumberSuffix("F".to_string()),
+                kind: ErrorKind::InvalidNumberSuffix(err),
                 location:
                     Location {
                         start_pos: 0,
                         end_pos: 6,
                         ..
                     },
-            }) => Ok(()),
+            }) if err == "F" => Ok(()),
             other => Err(format!("Should be an error: {:?}", other)),
         }
     }
@@ -2026,17 +2040,24 @@ mod tests {
     }
 
     #[test]
-    fn double_with_empty_exp() {
+    fn double_with_empty_exp() -> Result<(), String> {
         let s = String::from(".1e");
         let session = Session::new(&s, None);
         let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
-        assert_eq!(tok.as_ref().is_err(), true);
-        let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, ErrorKind::MissingExponentInNumber);
-        assert_eq!(tok.location.start_pos, 0);
-        assert_eq!(tok.location.end_pos, 3);
+        match tok {
+            Err(Error {
+                kind: ErrorKind::MissingExponentInNumber,
+                location:
+                    Location {
+                        start_pos: 0,
+                        end_pos: 3,
+                        ..
+                    },
+            }) => Ok(()),
+            other => Err(format!("Should be an error: {:?}", other)),
+        }
     }
 
     #[test]
@@ -2171,7 +2192,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_char_literal()  -> Result<(), String> {
+    fn invalid_char_literal() -> Result<(), String> {
         let s = String::from("'ab'");
         let session = Session::new(&s, None);
         let mut lexer = Lexer::new(&session);
@@ -2192,7 +2213,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_char_literal_2()  -> Result<(), String> {
+    fn invalid_char_literal_2() -> Result<(), String> {
         let s = String::from("'\\ab'");
         let session = Session::new(&s, None);
         let mut lexer = Lexer::new(&session);
@@ -2213,7 +2234,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_char_literal_3()  -> Result<(), String> {
+    fn invalid_char_literal_3() -> Result<(), String> {
         let s = String::from("'\\ua'");
         let session = Session::new(&s, None);
         let mut lexer = Lexer::new(&session);
@@ -2234,7 +2255,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_char_literal_4()  -> Result<(), String> {
+    fn invalid_char_literal_4() -> Result<(), String> {
         let s = String::from("'\\uab'");
         let session = Session::new(&s, None);
         let mut lexer = Lexer::new(&session);
@@ -2255,7 +2276,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_char_literal_5()  -> Result<(), String> {
+    fn invalid_char_literal_5() -> Result<(), String> {
         let s = String::from("'\\uabc'");
         let session = Session::new(&s, None);
         let mut lexer = Lexer::new(&session);
