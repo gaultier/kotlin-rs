@@ -1847,19 +1847,26 @@ mod tests {
     }
 
     #[test]
-    fn bin_number_missing_digits() {
+    fn bin_number_missing_digits() -> Result<(), String> {
         let s = String::from("0b");
         let session = Session::new(&s, None);
         let mut lexer = Lexer::new(&session);
 
         let tok = lexer.next_token();
-        assert_eq!(tok.as_ref().is_err(), true);
-        let tok = tok.as_ref().unwrap_err();
-        assert_eq!(tok.kind, ErrorKind::MissingDigitsInNumber);
-        assert_eq!(tok.location.start_line, 1);
-        assert_eq!(tok.location.start_column, 1);
-        assert_eq!(tok.location.end_line, 1);
-        assert_eq!(tok.location.end_column, 3);
+        match tok {
+            Err(Error {
+                kind: ErrorKind::MissingDigitsInNumber,
+                location:
+                    Location {
+                        start_line: 1,
+                        start_column: 1,
+                        end_line: 1,
+                        end_column: 3,
+                        ..
+                    },
+            }) => Ok(()),
+            other => Err(format!("Should be an error: {:?}", other)),
+        }
     }
 
     #[test]
