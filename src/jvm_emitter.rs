@@ -1106,3 +1106,62 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::compile::default_path;
+    use crate::lex::Lexer;
+    use crate::mir::MirTransformer;
+    use crate::parse::Parser;
+    use crate::resolver::Resolver;
+    use crate::session::Session;
+    use crate::type_check::TypeChecker;
+    use heck::CamelCase;
+    use std::path::PathBuf;
+
+    #[test]
+    fn add_int() -> Result<(), Error> {
+        let src = "1 + 2";
+        let session = Session::new(&src, None);
+        let mut lexer = Lexer::new(&session);
+        let (tokens, session) = lexer.lex()?;
+        let mut parser = Parser::new(&session, &tokens);
+        let stmts = parser.parse()?;
+        let mut types = parser.types;
+
+        let mut mir_transformer = MirTransformer::new(parser.current_id);
+        let stmts = mir_transformer.statements(stmts);
+
+        let mut resolver = Resolver::new(&session);
+        let resolution = resolver.resolve(&stmts)?;
+
+        let mut type_checker = TypeChecker::new(&session, &resolution, &mut types);
+        let types = type_checker.check_types(&stmts)?;
+
+        let file_name = default_path();
+        let class_name = file_name
+            .to_path_buf()
+            .file_stem()
+            .unwrap()
+            .to_string_lossy()
+            .to_camel_case();
+
+        let mut class_file_name = PathBuf::from(&file_name);
+        class_file_name.set_file_name(&class_name);
+        class_file_name.set_extension("class");
+
+        let mut emitter = JvmEmitter::new(&session, &types, &resolution, &file_name, &class_name);
+        emitter.main(&stmts)?;
+        assert_eq!(emitter.methods.len(), 2);
+
+        let main = &emitter.methods[1];
+        let code = match &main.attributes[1] {
+            Attribute::Code { code, .. } => code,
+            _ => panic!(),
+        };
+
+        assert_eq!(code, &[OP_ICONST_1, OP_ICONST_2, OP_IADD]);
+        Ok(())
+    }
+}

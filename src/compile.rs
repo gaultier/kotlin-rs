@@ -41,6 +41,9 @@ pub fn compile(src: &str, file_name: &Path) -> Result<(), Error> {
         .unwrap()
         .to_string_lossy()
         .to_camel_case();
+    let mut emitter = JvmEmitter::new(&session, &types, &resolution, &file_name, &class_name);
+    emitter.main(&stmts)?;
+
     let fully_qualified_class_name_parent = file_name
         .parent()
         .unwrap_or(PathBuf::from("/").as_path())
@@ -58,8 +61,6 @@ pub fn compile(src: &str, file_name: &Path) -> Result<(), Error> {
         class_name,
         fully_qualified_class_name_parent
     );
-    let mut emitter = JvmEmitter::new(&session, &types, &resolution, &file_name, &class_name);
-    emitter.main(&stmts)?;
 
     let mut class_file = std::fs::File::create(class_file_name)?;
     emitter.write(&mut class_file)?;
