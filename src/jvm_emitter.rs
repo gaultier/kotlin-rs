@@ -385,11 +385,7 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 
-    pub(crate) fn main<W: std::io::Write>(
-        &mut self,
-        block: &AstNodeStmt,
-        w: &mut W,
-    ) -> Result<(), Error> {
+    pub(crate) fn main(&mut self, block: &AstNodeStmt) -> Result<(), Error> {
         self.methods = vec![Function {
             access_flags: 0,
             name: self.ctor_str,
@@ -471,7 +467,7 @@ impl<'a> JvmEmitter<'a> {
             source_file: self.source_file_name_constant,
         }];
 
-        self.write(w)
+        Ok(())
     }
 
     fn while_stmt(

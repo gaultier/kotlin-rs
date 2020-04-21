@@ -51,7 +51,6 @@ pub fn compile(src: &str, file_name: &Path) -> Result<(), Error> {
     let mut class_file_name = PathBuf::from(file_name);
     class_file_name.set_file_name(&class_name);
     class_file_name.set_extension("class");
-    let mut class_file = std::fs::File::create(class_file_name)?;
 
     debug!(
         "file_name={} class_name={} fully_qualified_class_name={}",
@@ -60,7 +59,10 @@ pub fn compile(src: &str, file_name: &Path) -> Result<(), Error> {
         fully_qualified_class_name_parent
     );
     let mut emitter = JvmEmitter::new(&session, &types, &resolution, &file_name, &class_name);
-    emitter.main(&stmts, &mut class_file)?;
+    emitter.main(&stmts)?;
+
+    let mut class_file = std::fs::File::create(class_file_name)?;
+    emitter.write(&mut class_file)?;
 
     if file_name
         .extension()
