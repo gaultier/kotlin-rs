@@ -1156,12 +1156,12 @@ mod tests {
         assert_eq!(emitter.methods.len(), 2);
 
         let main = &emitter.methods[1];
-        let code = match &main.attributes[1] {
+        let code = match &main.attributes[0] {
             Attribute::Code { code, .. } => code,
             _ => panic!(),
         };
 
-        assert_eq!(code, &[OP_ICONST_1, OP_ICONST_2, OP_IADD]);
+        assert_eq!(code, &[OP_ICONST_1, OP_ICONST_2, OP_IADD, OP_RETURN]);
         Ok(())
     }
 }
