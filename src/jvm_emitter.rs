@@ -1241,20 +1241,49 @@ mod tests {
             assert_eq!(
                 code,
                 &[
-                    OP_ICONST_1, // 0
-                    OP_IFEQ,     // 1
-                    0,           // 2
-                    5,           // --|
+                    OP_ICONST_1, //
+                    OP_IFEQ,     //
+                    0,           //
+                    7,           // --|
                     OP_ICONST_3, //   |
                     OP_GOTO,     //   |
                     0,           //   |
-                    1,           // ..|..|
+                    4,           // ..|..|
                     OP_ICONST_4, // <-|  |
-                    OP_IRETURN   // <....|
+                    OP_RETURN    // <....|
                 ]
             );
         }
 
         emitter_assert("if (true) 3 else 4", assert).unwrap();
+    }
+
+    #[test]
+    fn while_stmt() {
+        fn assert(emitter: JvmEmitter) {
+            assert_eq!(emitter.methods.len(), 2);
+
+            let main = &emitter.methods[1];
+            let code = match &main.attributes[0] {
+                Attribute::Code { code, .. } => code,
+                _ => panic!(),
+            };
+
+            assert_eq!(
+                code,
+                &[
+                    OP_ICONST_1, // <....|
+                    OP_IFEQ,     // --|  |
+                    0,           //   |  |
+                    7,           //   |  |
+                    OP_ICONST_5, //   |  |
+                    OP_GOTO,     //   |  |
+                    255,         //   |  |
+                    251,         // ..|..|
+                    OP_RETURN    // <-|
+                ]
+            );
+        }
+        emitter_assert("while (true) { 5 }", assert).unwrap();
     }
 }
