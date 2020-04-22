@@ -1,13 +1,13 @@
 use crate::parse::Type;
 use log::debug;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum VerificationTypeInfo {
     Int,
     Object(u16),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum StackMapFrame {
     Same {
         offset: u8,

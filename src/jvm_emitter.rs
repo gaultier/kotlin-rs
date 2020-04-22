@@ -973,6 +973,7 @@ impl<'a> JvmEmitter<'a> {
 mod tests {
     use super::*;
     use crate::compile::default_path;
+    use crate::jvm_stack_map_frame::VerificationTypeInfo;
     use crate::lex::Lexer;
     use crate::mir::MirTransformer;
     use crate::parse::Parser;
@@ -1095,8 +1096,10 @@ mod tests {
             assert_eq!(emitter.methods.len(), 2);
 
             let main = &emitter.methods[1];
-            let code = match &main.attributes[0] {
-                Attribute::Code { code, .. } => code,
+            let (code, attributes) = match &main.attributes[0] {
+                Attribute::Code {
+                    code, attributes, ..
+                } => (code, attributes),
                 _ => panic!(),
             };
 
@@ -1114,6 +1117,28 @@ mod tests {
                     OP_ICONST_4, // <-|  |
                     OP_RETURN    // <....|
                 ]
+            );
+
+            let stack_map_frames = match &attributes[1] {
+                Attribute::StackMapTable { entries, .. } => entries,
+                _ => panic!(),
+            };
+
+            assert_eq!(
+                stack_map_frames[0],
+                StackMapFrame::Full {
+                    offset: 4,
+                    locals: vec![VerificationTypeInfo::Object(26)],
+                    stack: vec![]
+                }
+            );
+            assert_eq!(
+                stack_map_frames[1],
+                StackMapFrame::Full {
+                    offset: 4,
+                    locals: vec![VerificationTypeInfo::Object(26)],
+                    stack: vec![]
+                }
             );
         }
 
