@@ -1272,15 +1272,15 @@ mod tests {
             assert_eq!(
                 code,
                 &[
-                    OP_ICONST_1, // <....|
-                    OP_IFEQ,     // --|  |
-                    0,           //   |  |
-                    7,           //   |  |
-                    OP_ICONST_5, //   |  |
-                    OP_GOTO,     //...|..|
-                    255,         //   |
-                    251,         //   |
-                    OP_RETURN    // <-|
+                    OP_ICONST_1, // <.....|
+                    OP_IFEQ,     // ---|  |
+                    0,           //    |  |
+                    7,           //    |  |
+                    OP_ICONST_5, //    |  |
+                    OP_GOTO,     // ...|..|
+                    255,         //    |
+                    251,         // -5 |
+                    OP_RETURN    // <--|
                 ]
             );
         }
