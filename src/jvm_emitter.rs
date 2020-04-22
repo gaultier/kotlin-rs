@@ -1246,7 +1246,7 @@ mod tests {
                     0,           //
                     7,           // --|
                     OP_ICONST_3, //   |
-                    OP_GOTO,     //...|..|
+                    OP_GOTO,     // ..|..|
                     0,           //   |  |
                     4,           //   |  |
                     OP_ICONST_4, // <-|  |
