@@ -213,7 +213,6 @@ impl CodeBuilder {
                             init_stack = stack.clone();
                             init_locals = locals.clone();
                         } else if i == *goto_location {
-                            i += 3;
                             stack = init_stack.clone();
                             locals = init_locals.clone();
                             self.stack_map_frame_add_full(*goto_target);

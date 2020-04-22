@@ -1137,7 +1137,7 @@ mod tests {
                 StackMapFrame::Full {
                     offset: 0,
                     locals: vec![VerificationTypeInfo::Object(26)],
-                    stack: vec![]
+                    stack: vec![VerificationTypeInfo::Int]
                 }
             );
         }
