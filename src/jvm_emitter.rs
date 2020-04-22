@@ -1120,9 +1120,7 @@ mod tests {
     use heck::CamelCase;
     use std::path::PathBuf;
 
-    #[test]
-    fn add_int() -> Result<(), Error> {
-        let src = "1 + 2";
+    fn emitter_assert(src: &str, assert: fn(JvmEmitter)) -> Result<(), Error> {
         let session = Session::new(&src, None);
         let mut lexer = Lexer::new(&session);
         let (tokens, session) = lexer.lex()?;
@@ -1153,15 +1151,25 @@ mod tests {
 
         let mut emitter = JvmEmitter::new(&session, &types, &resolution, &file_name, &class_name);
         emitter.main(&stmts)?;
-        assert_eq!(emitter.methods.len(), 2);
 
-        let main = &emitter.methods[1];
-        let code = match &main.attributes[0] {
-            Attribute::Code { code, .. } => code,
-            _ => panic!(),
-        };
-
-        assert_eq!(code, &[OP_ICONST_1, OP_ICONST_2, OP_IADD, OP_RETURN]);
+        assert(emitter);
         Ok(())
+    }
+
+    #[test]
+    fn add_int() {
+        fn assert(emitter: JvmEmitter) {
+            assert_eq!(emitter.methods.len(), 2);
+
+            let main = &emitter.methods[1];
+            let code = match &main.attributes[0] {
+                Attribute::Code { code, .. } => code,
+                _ => panic!(),
+            };
+
+            assert_eq!(code, &[OP_ICONST_1, OP_ICONST_2, OP_IADD, OP_RETURN]);
+        }
+
+        emitter_assert("1+2", assert).unwrap();
     }
 }
