@@ -28,9 +28,11 @@ impl Locals {
         })
     }
 
-    pub(crate) fn push(&mut self, l: Local) -> Result<u16, Error> {
-        if self.values.len() == std::u16::MAX as usize {
-            return Err(Error::new(ErrorKind::JvmLocalsOverflow, Location::new()));
+    pub(crate) fn push(&mut self, l: Local) -> u16 {
+        assert!(self.values.len() <= std::u16::MAX as usize);
+
+        if self.values.len() > std::u8::MAX as usize {
+            unimplemented!()
         }
 
         let i = if l.1 == Type::Long || l.1 == Type::Double {
@@ -43,7 +45,7 @@ impl Locals {
         };
 
         self.count_max = std::cmp::max(self.values.len() as u16, self.count_max);
-        Ok(i as u16)
+        i as u16
     }
 
     pub(crate) fn count_max(&self) -> u16 {

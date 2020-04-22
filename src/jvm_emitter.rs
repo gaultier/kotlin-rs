@@ -428,7 +428,7 @@ impl<'a> JvmEmitter<'a> {
                 class: String::from("[Ljava/lang/String;"),
                 jvm_constant_pool_index: Some(self.class_main_args),
             },
-        ))?;
+        ));
         code_builder.args_locals = code_builder.locals.clone();
 
         self.statement(block, &mut code_builder)?;
@@ -511,7 +511,7 @@ impl<'a> JvmEmitter<'a> {
         let t = self.types.get(&id).unwrap();
 
         self.expr(value, code_builder)?;
-        let i = code_builder.locals.push((id, t.clone()))?;
+        let i = code_builder.locals.push((id, t.clone()));
         debug!("var_def: id={} i={} t={}", id, i, t);
 
         let op = match t {
@@ -607,7 +607,7 @@ impl<'a> JvmEmitter<'a> {
         for arg in args {
             let arg_id = arg.id();
             let arg_t = self.types.get(&arg_id).unwrap();
-            code_builder.locals.push((arg_id, arg_t.clone()))?;
+            code_builder.locals.push((arg_id, arg_t.clone()));
         }
 
         self.statement(body, &mut code_builder)?;

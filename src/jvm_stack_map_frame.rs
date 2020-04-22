@@ -36,6 +36,7 @@ pub(crate) enum JumpTarget {
         target: u16,
     },
 }
+
 impl StackMapFrame {
     pub(crate) fn offset(&mut self, offset_to_set: u16) {
         match self {
