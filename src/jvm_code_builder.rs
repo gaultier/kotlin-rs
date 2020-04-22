@@ -200,11 +200,6 @@ impl CodeBuilder {
 
         let mut i = 0;
         for (bci, jump_target) in self.jump_targets.clone().iter() {
-            if i == *bci {
-                init_stack = stack.clone();
-                init_locals = locals.clone();
-            }
-
             while i < self.code.len() as u16 {
                 match jump_target {
                     JumpTarget::If {
@@ -213,7 +208,11 @@ impl CodeBuilder {
                         goto_location,
                         goto_target,
                     } => {
-                        if i == *goto_location {
+                        if i == *bci + 3 {
+                            // First if-body opcode
+                            init_stack = stack.clone();
+                            init_locals = locals.clone();
+                        } else if i == *goto_location {
                             i += 3;
                             stack = init_stack.clone();
                             locals = init_locals.clone();
@@ -226,7 +225,7 @@ impl CodeBuilder {
                 }
 
                 let op = self.code[i as usize];
-                debug!("verify: op={}", op);
+                debug!("verify: i={} op={}", i, op);
 
                 match op {
                     OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3

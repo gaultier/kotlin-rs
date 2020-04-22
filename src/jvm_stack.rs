@@ -16,9 +16,7 @@ impl Stack {
         }
     }
     pub(crate) fn pop(&mut self) -> Result<Type, Error> {
-        self.values
-            .pop()
-            .ok_or_else(|| Error::new(ErrorKind::JvmStackUnderflow, Location::new()))
+        Ok(self.values.pop().unwrap())
     }
 
     pub(crate) fn pop2(&mut self) -> Result<[Type; 2], Error> {
