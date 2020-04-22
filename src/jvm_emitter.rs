@@ -829,173 +829,35 @@ impl<'a> JvmEmitter<'a> {
                     (TokenKind::AmpersandAmpersand, _, _) => {
                         code_builder.push1(OP_IAND, Type::Int)?;
                     }
-                    (TokenKind::EqualEqual, Type::Long, Type::Long) => {
-                        code_builder.push1(OP_LCMP, Type::Int)?;
-                        code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
-                    (TokenKind::EqualEqual, Type::Float, Type::Float) => {
-                        code_builder.push1(OP_FCMPL, Type::Int)?;
-                        code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
-                    (TokenKind::EqualEqual, Type::Double, Type::Double) => {
-                        code_builder.push1(OP_DCMPL, Type::Int)?;
-                        code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
-                    (TokenKind::EqualEqual, _, _) if left_t == right_t => {
-                        code_builder.push3(OP_IF_ICMPNE, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
+                    (TokenKind::EqualEqual, Type::Long, Type::Long) => todo!(),
+                    (TokenKind::EqualEqual, Type::Float, Type::Float) => todo!(),
+                    (TokenKind::EqualEqual, Type::Double, Type::Double) => todo!(),
+                    (TokenKind::EqualEqual, _, _) if left_t == right_t => todo!(),
 
-                    (TokenKind::BangEqual, Type::Long, Type::Long) => {
-                        code_builder.push1(OP_LCMP, Type::Int)?;
-                        code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                    }
-                    (TokenKind::BangEqual, Type::Float, Type::Float) => {
-                        code_builder.push1(OP_FCMPL, Type::Int)?;
-                        code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                    }
-                    (TokenKind::BangEqual, Type::Double, Type::Double) => {
-                        code_builder.push1(OP_DCMPL, Type::Int)?;
-                        code_builder.push3(OP_IFNE, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                    }
-                    (TokenKind::BangEqual, _, _) if left_t == right_t => {
-                        code_builder.push3(OP_IF_ICMPNE, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                    }
+                    (TokenKind::BangEqual, Type::Long, Type::Long) => todo!(),
+                    (TokenKind::BangEqual, Type::Float, Type::Float) => todo!(),
+                    (TokenKind::BangEqual, Type::Double, Type::Double) => todo!(),
+                    (TokenKind::BangEqual, _, _) if left_t == right_t => todo!(),
 
-                    (TokenKind::Lesser, Type::Float, Type::Float) => {
-                        code_builder.push1(OP_FCMPL, Type::Int)?;
-                        code_builder.push3(OP_IFGE, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
-                    (TokenKind::Lesser, Type::Double, Type::Double) => {
-                        code_builder.push1(OP_DCMPL, Type::Int)?;
-                        code_builder.push3(OP_IFGE, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
-                    (TokenKind::Lesser, Type::Long, Type::Long) => {
-                        code_builder.push1(OP_LCMP, Type::Int)?;
-                        code_builder.push3(OP_IFGE, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
-                    (TokenKind::Lesser, _, _) => {
-                        code_builder.push3(OP_IF_ICMPGE, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
+                    (TokenKind::Lesser, Type::Float, Type::Float) => todo!(),
+                    (TokenKind::Lesser, Type::Double, Type::Double) => todo!(),
+                    (TokenKind::Lesser, Type::Long, Type::Long) => todo!(),
+                    (TokenKind::Lesser, _, _) => todo!(),
 
-                    (TokenKind::Greater, Type::Float, Type::Float) => {
-                        code_builder.push1(OP_FCMPL, Type::Int)?;
-                        code_builder.push3(OP_IFLE, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
-                    (TokenKind::Greater, Type::Double, Type::Double) => {
-                        code_builder.push1(OP_DCMPL, Type::Int)?;
-                        code_builder.push3(OP_IFLE, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
-                    (TokenKind::Greater, Type::Long, Type::Long) => {
-                        code_builder.push1(OP_LCMP, Type::Int)?;
-                        code_builder.push3(OP_IFLE, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
-                    (TokenKind::Greater, _, _) => {
-                        code_builder.push3(OP_IF_ICMPLE, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
+                    (TokenKind::Greater, Type::Float, Type::Float) => todo!(),
+                    (TokenKind::Greater, Type::Double, Type::Double) => todo!(),
+                    (TokenKind::Greater, Type::Long, Type::Long) => todo!(),
+                    (TokenKind::Greater, _, _) => todo!(),
 
-                    (TokenKind::LesserEqual, Type::Float, Type::Float) => {
-                        code_builder.push1(OP_FCMPL, Type::Int)?;
-                        code_builder.push3(OP_IFGT, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
-                    (TokenKind::LesserEqual, Type::Double, Type::Double) => {
-                        code_builder.push1(OP_DCMPL, Type::Int)?;
-                        code_builder.push3(OP_IFGT, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
-                    (TokenKind::LesserEqual, Type::Long, Type::Long) => {
-                        code_builder.push1(OP_LCMP, Type::Int)?;
-                        code_builder.push3(OP_IFGT, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
-                    (TokenKind::LesserEqual, _, _) => {
-                        code_builder.push3(OP_IF_ICMPGT, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
+                    (TokenKind::LesserEqual, Type::Float, Type::Float) => todo!(),
+                    (TokenKind::LesserEqual, Type::Double, Type::Double) => todo!(),
+                    (TokenKind::LesserEqual, Type::Long, Type::Long) => todo!(),
+                    (TokenKind::LesserEqual, _, _) => todo!(),
 
-                    (TokenKind::GreaterEqual, Type::Float, Type::Float) => {
-                        code_builder.push1(OP_FCMPL, Type::Int)?;
-                        code_builder.push3(OP_IFLT, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
-                    (TokenKind::GreaterEqual, Type::Double, Type::Double) => {
-                        code_builder.push1(OP_DCMPL, Type::Int)?;
-                        code_builder.push3(OP_IFLT, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
-                    (TokenKind::GreaterEqual, Type::Long, Type::Long) => {
-                        code_builder.push1(OP_LCMP, Type::Int)?;
-                        code_builder.push3(OP_IFLT, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
-                    (TokenKind::GreaterEqual, _, _) => {
-                        code_builder.push3(OP_IF_ICMPLT, 0x00, 0x07, Type::Int)?;
-                        code_builder.push1(OP_ICONST_1, Type::Int)?;
-                        code_builder.push3(OP_GOTO, 0x00, 0x04, Type::Nothing)?;
-                        code_builder.push1(OP_ICONST_0, Type::Int)?;
-                    }
+                    (TokenKind::GreaterEqual, Type::Float, Type::Float) => todo!(),
+                    (TokenKind::GreaterEqual, Type::Double, Type::Double) => todo!(),
+                    (TokenKind::GreaterEqual, Type::Long, Type::Long) => todo!(),
+                    (TokenKind::GreaterEqual, _, _) => todo!(),
 
                     (_, _, _) if left_t != right_t => {
                         dbg!(t);
