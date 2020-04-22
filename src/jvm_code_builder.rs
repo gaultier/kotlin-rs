@@ -195,21 +195,36 @@ impl CodeBuilder {
     ) -> Result<(u16, u16), Error> {
         debug!("verify: jump_targets={:?}", &self.jump_targets);
 
+        let mut init_stack: Stack = Stack::new();
+        let mut init_locals: Locals = locals.clone();
+
         let mut i = 0;
-        for (bci, _jump_target) in self.jump_targets.clone().iter() {
-            // match jump_target {
-            //     JumpTarget::If {
-            //         if_location,
-            //         if_target,
-            //         goto_location,
-            //         goto_target,
-            //     } => {
-            //         // verify(code[if_location..goto_location]);
-            //         // verify(code[if_target..goto_target]);
-            //     }
-            //     _ => todo!(),
-            // }
-            while i < *bci {
+        for (bci, jump_target) in self.jump_targets.clone().iter() {
+            if i == *bci {
+                init_stack = stack.clone();
+                init_locals = locals.clone();
+            }
+
+            while i < self.code.len() as u16 {
+                match jump_target {
+                    JumpTarget::If {
+                        if_location,
+                        if_target,
+                        goto_location,
+                        goto_target,
+                    } => {
+                        if i == *goto_location {
+                            i += 3;
+                            stack = init_stack.clone();
+                            locals = init_locals.clone();
+                            self.stack_map_frame_add_full(*goto_target);
+                        } else if i == *goto_target {
+                            self.stack_map_frame_add_full(*if_target);
+                        }
+                    }
+                    _ => todo!(),
+                }
+
                 let op = self.code[i as usize];
                 debug!("verify: op={}", op);
 
@@ -356,8 +371,6 @@ impl CodeBuilder {
                 }
                 i += 1;
             }
-
-            self.stack_map_frame_add_full(*bci);
         }
 
         let stack_max = stack.count_max();
