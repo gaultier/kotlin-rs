@@ -1114,8 +1114,8 @@ mod tests {
                     OP_GOTO,     // ..|..|
                     0,           //   |  |
                     4,           //   |  |
-                    OP_ICONST_4, // <-|  |
-                    OP_RETURN    // <....|
+                    OP_ICONST_4, // <-|  |   StackMapFrame #1
+                    OP_RETURN    // <....|   StackMapFrame #2
                 ]
             );
 
@@ -1127,7 +1127,7 @@ mod tests {
             assert_eq!(
                 stack_map_frames[0],
                 StackMapFrame::Full {
-                    offset: 4,
+                    offset: 8,
                     locals: vec![VerificationTypeInfo::Object(26)],
                     stack: vec![]
                 }
@@ -1135,7 +1135,7 @@ mod tests {
             assert_eq!(
                 stack_map_frames[1],
                 StackMapFrame::Full {
-                    offset: 4,
+                    offset: 0,
                     locals: vec![VerificationTypeInfo::Object(26)],
                     stack: vec![]
                 }
