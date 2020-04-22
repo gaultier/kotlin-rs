@@ -54,13 +54,22 @@ impl IfBuilder {
         let end_if_body = (code_builder.code.len() - 1) as u16;
         self.goto_location = Some(end_if_body - 2);
 
-        let start_else_offset: u16 = (3 + 3 + end_if_body - self.goto_location.unwrap()) as u16;
+        let start_else_offset: u16 = (1 + end_if_body - self.if_location.unwrap()) as u16;
         code_builder.code[self.if_location.unwrap() as usize + 1] =
             start_else_offset.to_be_bytes()[0];
         code_builder.code[self.if_location.unwrap() as usize + 2] =
             start_else_offset.to_be_bytes()[1];
 
         self.if_target = Some(1 + end_if_body);
+
+        debug!(
+            "if_builder::if_body: if_location={} goto_location={} if_target={} end_if_body={} offset={}",
+            self.if_location.unwrap(),
+            self.goto_location.unwrap(),
+            self.if_target.unwrap(),
+            end_if_body,
+            start_else_offset,
+        );
 
         Ok(self)
     }

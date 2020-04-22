@@ -1172,4 +1172,89 @@ mod tests {
 
         emitter_assert("1+2", assert).unwrap();
     }
+
+    #[test]
+    fn sub_int() {
+        fn assert(emitter: JvmEmitter) {
+            assert_eq!(emitter.methods.len(), 2);
+
+            let main = &emitter.methods[1];
+            let code = match &main.attributes[0] {
+                Attribute::Code { code, .. } => code,
+                _ => panic!(),
+            };
+
+            assert_eq!(code, &[OP_ICONST_4, OP_ICONST_3, OP_ISUB, OP_RETURN]);
+        }
+
+        emitter_assert("4 - 3", assert).unwrap();
+    }
+
+    #[test]
+    fn mult_int() {
+        fn assert(emitter: JvmEmitter) {
+            assert_eq!(emitter.methods.len(), 2);
+
+            let main = &emitter.methods[1];
+            let code = match &main.attributes[0] {
+                Attribute::Code { code, .. } => code,
+                _ => panic!(),
+            };
+
+            assert_eq!(
+                code,
+                &[OP_ICONST_5, OP_ICONST_1, OP_INEG, OP_IMUL, OP_RETURN]
+            );
+        }
+
+        emitter_assert("5*-1", assert).unwrap();
+    }
+
+    #[test]
+    fn div_int() {
+        fn assert(emitter: JvmEmitter) {
+            assert_eq!(emitter.methods.len(), 2);
+
+            let main = &emitter.methods[1];
+            let code = match &main.attributes[0] {
+                Attribute::Code { code, .. } => code,
+                _ => panic!(),
+            };
+
+            assert_eq!(code, &[OP_ICONST_0, OP_BIPUSH, 6, OP_IDIV, OP_RETURN]);
+        }
+
+        emitter_assert("0/6", assert).unwrap();
+    }
+
+    #[test]
+    fn if_expr() {
+        fn assert(emitter: JvmEmitter) {
+            assert_eq!(emitter.methods.len(), 2);
+
+            let main = &emitter.methods[1];
+            let code = match &main.attributes[0] {
+                Attribute::Code { code, .. } => code,
+                _ => panic!(),
+            };
+
+            assert_eq!(
+                code,
+                &[
+                    OP_ICONST_1,
+                    OP_IFEQ,
+                    0,
+                    5,
+                    OP_ICONST_3,
+                    OP_GOTO,
+                    0,
+                    1,
+                    OP_ICONST_4,
+                    OP_IRETURN
+                ]
+            );
+        }
+
+        emitter_assert("if (true) 3 else 4", assert).unwrap();
+    }
 }
