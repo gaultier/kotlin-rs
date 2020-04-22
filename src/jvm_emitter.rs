@@ -1241,16 +1241,16 @@ mod tests {
             assert_eq!(
                 code,
                 &[
-                    OP_ICONST_1,
-                    OP_IFEQ,
-                    0,
-                    5,
-                    OP_ICONST_3,
-                    OP_GOTO,
-                    0,
-                    1,
-                    OP_ICONST_4,
-                    OP_IRETURN
+                    OP_ICONST_1, // 0
+                    OP_IFEQ,     // 1
+                    0,           // 2
+                    5,           // --|
+                    OP_ICONST_3, //   |
+                    OP_GOTO,     //   |
+                    0,           //   |
+                    1,           // ..|..|
+                    OP_ICONST_4, // <-|  |
+                    OP_IRETURN   // <....|
                 ]
             );
         }
