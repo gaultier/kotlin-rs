@@ -52,7 +52,7 @@ pub(crate) struct JvmEmitter<'a> {
     pub(crate) println_str: u16,
     pub(crate) class_printstream: u16,
     pub(crate) stack_map_table_str: u16,
-    fn_id_to_constant_pool_index: BTreeMap<NodeId, u16>,
+    pub(crate) fn_id_to_constant_pool_index: BTreeMap<NodeId, u16>,
     pub(crate) constant_pool_index_to_fn_id: BTreeMap<u16, NodeId>,
     class_name: String,
     class_main_args: u16,
@@ -183,6 +183,8 @@ fn add_and_push_constant(
     constants: &mut Vec<Constant>,
     constant: &Constant,
     code: &mut Code,
+    constant_pool_index_to_fn_id: &BTreeMap<u16, NodeId>,
+    types: &Types,
 ) -> Result<(), Error> {
     let i = add_constant(constants, &constant)?;
     debug!("added constant: constant={:?} i={}", &constant, i);
@@ -190,17 +192,38 @@ fn add_and_push_constant(
     match constant {
         Constant::Double(_) => {
             let bytes = ((i - 1) as u16).to_be_bytes();
-            code.push3(OP_LDC2_W, bytes[0], bytes[1], Type::Double)
+            code.push3(
+                OP_LDC2_W,
+                bytes[0],
+                bytes[1],
+                Type::Double,
+                constant_pool_index_to_fn_id,
+                types,
+            )
         }
         Constant::Long(_) => {
             let bytes = ((i - 1) as u16).to_be_bytes();
-            code.push3(OP_LDC2_W, bytes[0], bytes[1], Type::Long)
+            code.push3(
+                OP_LDC2_W,
+                bytes[0],
+                bytes[1],
+                Type::Long,
+                constant_pool_index_to_fn_id,
+                types,
+            )
         }
         Constant::Int(_) if i <= std::u8::MAX as u16 => code.push2(OP_LDC, i as u8, Type::Int),
         Constant::Float(_) if i <= std::u8::MAX as u16 => code.push2(OP_LDC, i as u8, Type::Float),
         _ => {
             let bytes = ((i - 1) as u16).to_be_bytes();
-            code.push3(OP_LDC_W, bytes[0], bytes[1], Type::Long) // FIXME
+            code.push3(
+                OP_LDC_W,
+                bytes[0],
+                bytes[1],
+                Type::Long,
+                constant_pool_index_to_fn_id,
+                types,
+            ) // FIXME
         }
     }
 }
@@ -475,11 +498,25 @@ impl<'a> JvmEmitter<'a> {
         let before_cond = code.code.len();
         self.expr(cond, code)?;
 
-        code.push3(OP_IFEQ, OP_IMPDEP1, OP_IMPDEP2, Type::Int)?;
+        code.push3(
+            OP_IFEQ,
+            OP_IMPDEP1,
+            OP_IMPDEP2,
+            Type::Int,
+            &self.constant_pool_index_to_fn_id,
+            &self.types,
+        )?;
         let end_if_jump = code.code.len() - 1;
 
         self.statement(body, code)?;
-        code.push3(OP_GOTO, OP_IMPDEP1, OP_IMPDEP2, Type::Int)?;
+        code.push3(
+            OP_GOTO,
+            OP_IMPDEP1,
+            OP_IMPDEP2,
+            Type::Int,
+            &self.constant_pool_index_to_fn_id,
+            &self.types,
+        )?;
         let end_body = code.code.len() - 1;
 
         let backwards_offset: i16 = 3 - 1 + -((end_body - before_cond) as i16);
@@ -718,6 +755,8 @@ impl<'a> JvmEmitter<'a> {
                 class: String::from("java/io/PrintStream"),
                 jvm_constant_pool_index: Some(self.class_printstream),
             },
+            &self.constant_pool_index_to_fn_id,
+            &self.types,
         )?;
         self.expr(expr, code)?;
 
@@ -726,6 +765,8 @@ impl<'a> JvmEmitter<'a> {
             println_methodref.to_be_bytes()[0],
             println_methodref.to_be_bytes()[1],
             Type::Unit, // FIXME: for println
+            &self.constant_pool_index_to_fn_id,
+            &self.types,
         )
     }
 
@@ -747,6 +788,8 @@ impl<'a> JvmEmitter<'a> {
             i.to_be_bytes()[0],
             i.to_be_bytes()[1],
             Type::Any, // FIXME
+            &self.constant_pool_index_to_fn_id,
+            &self.types,
         )
     }
 
@@ -901,32 +944,58 @@ impl<'a> JvmEmitter<'a> {
             }
             TokenKind::Int(n) if n <= std::i16::MAX as i32 => {
                 let bytes = (n as u16).to_be_bytes();
-                code.push3(OP_SIPUSH, bytes[0], bytes[1], Type::Int)
+                code.push3(
+                    OP_SIPUSH,
+                    bytes[0],
+                    bytes[1],
+                    Type::Int,
+                    &self.constant_pool_index_to_fn_id,
+                    &self.types,
+                )
             }
-            TokenKind::Int(n) => {
-                add_and_push_constant(&mut self.constants, &Constant::Int(n), code)
-            }
+            TokenKind::Int(n) => add_and_push_constant(
+                &mut self.constants,
+                &Constant::Int(n),
+                code,
+                &self.constant_pool_index_to_fn_id,
+                &self.types,
+            ),
             TokenKind::Char(c) if c as u16 as i32 <= std::i8::MAX as i32 => {
                 code.push2(OP_BIPUSH, c as u8, Type::Char)
             }
             TokenKind::Char(c) if c as u16 as i32 <= std::i16::MAX as i32 => {
                 let bytes = (c as u16).to_be_bytes();
-                code.push3(OP_SIPUSH, bytes[0], bytes[1], Type::Char)
+                code.push3(
+                    OP_SIPUSH,
+                    bytes[0],
+                    bytes[1],
+                    Type::Char,
+                    &self.constant_pool_index_to_fn_id,
+                    &self.types,
+                )
             }
             TokenKind::Long(0) => code.push1(OP_LCONST_0, Type::Int),
             TokenKind::Long(1) => code.push1(OP_LCONST_1, Type::Int),
-            TokenKind::Long(n) => {
-                add_and_push_constant(&mut self.constants, &Constant::Long(n), code)
-            }
+            TokenKind::Long(n) => add_and_push_constant(
+                &mut self.constants,
+                &Constant::Long(n),
+                code,
+                &self.constant_pool_index_to_fn_id,
+                &self.types,
+            ),
             TokenKind::Double(n) if n.to_bits() == 0f64.to_bits() => {
                 code.push1(OP_DCONST_0, Type::Int)
             }
             TokenKind::Double(n) if n.to_bits() == 1f64.to_bits() => {
                 code.push1(OP_DCONST_1, Type::Int)
             }
-            TokenKind::Double(n) => {
-                add_and_push_constant(&mut self.constants, &Constant::Double(n), code)
-            }
+            TokenKind::Double(n) => add_and_push_constant(
+                &mut self.constants,
+                &Constant::Double(n),
+                code,
+                &self.constant_pool_index_to_fn_id,
+                &self.types,
+            ),
             TokenKind::Float(n) if n.to_bits() == 0f32.to_bits() => {
                 code.push1(OP_FCONST_0, Type::Float)
             }
@@ -936,13 +1005,23 @@ impl<'a> JvmEmitter<'a> {
             TokenKind::Float(n) if n.to_bits() == 2f32.to_bits() => {
                 code.push1(OP_FCONST_2, Type::Float)
             }
-            TokenKind::Float(n) => {
-                add_and_push_constant(&mut self.constants, &Constant::Float(n), code)
-            }
+            TokenKind::Float(n) => add_and_push_constant(
+                &mut self.constants,
+                &Constant::Float(n),
+                code,
+                &self.constant_pool_index_to_fn_id,
+                &self.types,
+            ),
             TokenKind::TString => {
                 let s = String::from(&self.session.src[literal.span.start..literal.span.end]);
                 let i = add_constant(&mut self.constants, &Constant::Utf8(s))?;
-                add_and_push_constant(&mut self.constants, &Constant::CString(i), code)
+                add_and_push_constant(
+                    &mut self.constants,
+                    &Constant::CString(i),
+                    code,
+                    &self.constant_pool_index_to_fn_id,
+                    &self.types,
+                )
             }
             _ => {
                 dbg!(literal);

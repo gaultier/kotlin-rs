@@ -46,11 +46,25 @@ impl IfBuilder {
         jvm_emitter: &mut JvmEmitter,
         code: &mut Code,
     ) -> Result<Self, Error> {
-        code.push3(OP_IFEQ, OP_IMPDEP1, OP_IMPDEP2, Type::Nothing)?;
+        code.push3(
+            OP_IFEQ,
+            OP_IMPDEP1,
+            OP_IMPDEP2,
+            Type::Nothing,
+            &jvm_emitter.constant_pool_index_to_fn_id,
+            &jvm_emitter.types,
+        )?;
         self.if_location = Some((code.code.len() - 3) as u16);
 
         jvm_emitter.statement(if_body, code)?;
-        code.push3(OP_GOTO, OP_IMPDEP1, OP_IMPDEP2, Type::Nothing)?;
+        code.push3(
+            OP_GOTO,
+            OP_IMPDEP1,
+            OP_IMPDEP2,
+            Type::Nothing,
+            &jvm_emitter.constant_pool_index_to_fn_id,
+            &jvm_emitter.types,
+        )?;
 
         let end_if_body = (code.code.len() - 1) as u16;
         self.goto_location = Some(end_if_body - 2);
@@ -198,6 +212,42 @@ impl Code {
     }
 
     pub(crate) fn push2(&mut self, op: u8, operand1: u8, t: Type) -> Result<(), Error> {
+        match op {
+            OP_BIPUSH => {
+                self.state.stack.push(Type::Int);
+            }
+            OP_ISTORE => {
+                self.state.locals.push((0xbeef, Type::Int));
+                self.state.stack.pop();
+            }
+            OP_FSTORE => {
+                self.state.locals.push((0xbeef, Type::Float));
+                self.state.stack.pop();
+            }
+            OP_LSTORE => {
+                todo!();
+            }
+            OP_DSTORE => {
+                todo!();
+            }
+            OP_ILOAD => {
+                self.state.stack.push(Type::Int);
+            }
+            OP_FLOAD => {
+                self.state.stack.push(Type::Float);
+            }
+            OP_LLOAD => {
+                self.state.stack.push(Type::Long); // FIXME: top
+                self.state.stack.push(Type::Long);
+            }
+            OP_LDC | OP_LDC_W => {
+                self.state.stack.push(Type::Long); // FIXME
+            }
+            _ => {
+                dbg!(op);
+                unimplemented!()
+            }
+        }
         self.push(op, Some(operand1), None, t)
     }
 
@@ -207,7 +257,64 @@ impl Code {
         operand1: u8,
         operand2: u8,
         t: Type,
+        constant_pool_index_to_fn_id: &BTreeMap<u16, NodeId>,
+        types: &Types,
     ) -> Result<(), Error> {
+        match op {
+            OP_SIPUSH => {
+                self.state.stack.push(Type::Int);
+            }
+            OP_IFEQ | OP_IFNE | OP_IFGE | OP_IFGT | OP_IFLE | OP_IFLT => {}
+            OP_IF_ICMPNE | OP_IF_ICMPGE | OP_IF_ICMPLE | OP_IF_ICMPGT | OP_IF_ICMPLT => {}
+            OP_GOTO => {}
+            OP_GET_STATIC => {
+                let t = &self.opcode_types[self.code.len() - 1];
+                let jvm_constant_pool_index = match t {
+                    Type::Object {
+                        jvm_constant_pool_index,
+                        ..
+                    } => jvm_constant_pool_index.unwrap(),
+                    _ => unreachable!(),
+                };
+
+                // FIXME: hardcoded for println
+                self.state.stack.push(Type::Object {
+                    class: String::from("java/io/PrintStream"),
+                    jvm_constant_pool_index: Some(jvm_constant_pool_index),
+                });
+            }
+            OP_INVOKE_VIRTUAL => {
+                self.state.stack.pop2(); // FIXME: hardcoded for println
+            }
+            OP_INVOKE_STATIC | OP_INVOKE_SPECIAL => {
+                let fn_i: u16 = u16::from_be_bytes([operand1, operand2]);
+                // The constant pool is one-indexed
+                let fn_id: NodeId = *constant_pool_index_to_fn_id.get(&fn_i).unwrap();
+                let fn_t = types.get(&fn_id).unwrap();
+                let return_t = fn_t.fn_return_t();
+                debug!("verify: op={} return_t={:?}", op, return_t);
+
+                match fn_t {
+                    Type::Function { return_t, args, .. } => {
+                        for _ in 0..args.len() {
+                            self.state.stack.pop(); // FIXME: Two words types
+                        }
+                        if let Some(return_t) = &**return_t {
+                            self.state.stack.push(return_t.clone()); // FIXME: Two words types
+                        }
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            OP_LDC2_W => {
+                self.state.stack.push(Type::Long); // FIXME
+                self.state.stack.push(Type::Long); // FIXME
+            }
+            _ => {
+                dbg!(op);
+                unimplemented!()
+            }
+        }
         self.push(op, Some(operand1), Some(operand2), t)
     }
 
