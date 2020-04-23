@@ -187,12 +187,7 @@ impl CodeBuilder {
         self.jump_targets.insert(location, jump_target);
     }
 
-    fn generate_stack_map_frames(
-        &mut self,
-        jvm_emitter: &JvmEmitter,
-        mut stack: Stack,
-        mut locals: Locals,
-    ) -> Result<(u16, u16), Error> {
+    fn generate_stack_map_frames(&mut self, jvm_emitter: &JvmEmitter) -> Result<(), Error> {
         // debug!("verify: jump_targets={:?}", &self.jump_targets);
 
         // let mut init_stack: Stack = Stack::new();
@@ -374,6 +369,7 @@ impl CodeBuilder {
         // let stack_max = stack.count_max();
         // let locals_max = locals.count_max();
         // Ok((stack_max, locals_max))
+        Ok(())
     }
 
     fn push(
@@ -404,10 +400,10 @@ impl CodeBuilder {
     }
 
     pub(crate) fn end(&mut self, jvm_emitter: &JvmEmitter) -> Result<Vec<u8>, Error> {
-        let (stack_max, locals_max) =
-            self.generate_stack_map_frames(jvm_emitter, Stack::new(), self.args_locals.clone())?;
-        self.stack_max = stack_max;
-        self.locals_max = locals_max;
+        // let (stack_max, locals_max) =
+        //     self.generate_stack_map_frames(jvm_emitter, Stack::new(), self.args_locals.clone())?;
+        self.stack_max = 100; // FIXME
+        self.locals_max = 100; // FIXME
         Ok(self.code.clone())
     }
 }

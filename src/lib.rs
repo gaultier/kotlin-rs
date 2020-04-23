@@ -9,6 +9,7 @@ pub mod jvm_emitter;
 mod jvm_locals;
 mod jvm_stack;
 mod jvm_stack_map_frame;
+mod jvm_state;
 mod jvm_writer;
 pub mod lex;
 pub mod mir;

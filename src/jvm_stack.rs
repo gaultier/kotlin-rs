@@ -1,7 +1,7 @@
 use crate::jvm_stack_map_frame::VerificationTypeInfo;
 use crate::parse::Type;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Stack {
     values: Vec<Type>,
     count_max: u16,

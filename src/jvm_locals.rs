@@ -1,10 +1,9 @@
-use crate::error::{Error, ErrorKind, Location};
 use crate::jvm_stack_map_frame::VerificationTypeInfo;
 use crate::parse::{NodeId, Type};
 
 type Local = (NodeId, Type);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Locals {
     values: Vec<Local>,
     count_max: u16,
