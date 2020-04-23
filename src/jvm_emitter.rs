@@ -421,7 +421,7 @@ impl<'a> JvmEmitter<'a> {
         };
 
         let mut code_builder = CodeBuilder::new();
-        code_builder.locals.push((
+        code_builder.state.locals.push((
             0xdead_beef,
             // FIXME: hardcoded
             Type::Object {
@@ -429,7 +429,7 @@ impl<'a> JvmEmitter<'a> {
                 jvm_constant_pool_index: Some(self.class_main_args),
             },
         ));
-        code_builder.args_locals = code_builder.locals.clone();
+        code_builder.args_locals = code_builder.state.locals.clone();
 
         self.statement(block, &mut code_builder)?;
         code_builder.code.push(OP_RETURN);
@@ -511,7 +511,7 @@ impl<'a> JvmEmitter<'a> {
         let t = self.types.get(&id).unwrap();
 
         self.expr(value, code_builder)?;
-        let i = code_builder.locals.push((id, t.clone()));
+        let i = code_builder.state.locals.push((id, t.clone()));
         debug!("var_def: id={} i={} t={}", id, i, t);
 
         let op = match t {
@@ -536,7 +536,7 @@ impl<'a> JvmEmitter<'a> {
         match target {
             AstNodeExpr::VarRef(_, id) => {
                 let ref_id = self.resolution.get(&id).unwrap().node_ref_id;
-                let (i, _) = code_builder.locals.find_by_id(ref_id).unwrap();
+                let (i, _) = code_builder.state.locals.find_by_id(ref_id).unwrap();
                 let t = self.types.get(&id).unwrap();
                 debug!("assign: id={} i={} t={} ref_id={}", id, i, t, ref_id);
 
@@ -558,7 +558,7 @@ impl<'a> JvmEmitter<'a> {
         let t = self.types.get(&id).unwrap();
 
         let ref_id = self.resolution.get(&id).unwrap().node_ref_id;
-        let (i, _) = code_builder.locals.find_by_id(ref_id).unwrap();
+        let (i, _) = code_builder.state.locals.find_by_id(ref_id).unwrap();
         debug!("var_ref: id={} i={} t={} ref_id={}", id, i, t, ref_id);
 
         let op = match t {
@@ -607,7 +607,7 @@ impl<'a> JvmEmitter<'a> {
         for arg in args {
             let arg_id = arg.id();
             let arg_t = self.types.get(&arg_id).unwrap();
-            code_builder.locals.push((arg_id, arg_t.clone()));
+            code_builder.state.locals.push((arg_id, arg_t.clone()));
         }
 
         self.statement(body, &mut code_builder)?;
@@ -629,8 +629,8 @@ impl<'a> JvmEmitter<'a> {
 
         let attribute_code = Attribute::Code {
             name: self.code_str,
-            max_stack: code_builder.stack.count_max(),
-            max_locals: code_builder.locals.count_max(),
+            max_stack: code_builder.state.stack.count_max(),
+            max_locals: code_builder.state.locals.count_max(),
             code,
             exception_table: Vec::new(),
             attributes: vec![line_table, stack_map_table],

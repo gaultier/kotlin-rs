@@ -4,6 +4,7 @@ use crate::jvm_emitter::{Attribute, JvmEmitter};
 use crate::jvm_locals::Locals;
 use crate::jvm_stack::Stack;
 use crate::jvm_stack_map_frame::StackMapFrame;
+use crate::jvm_state::State;
 use crate::parse::*;
 use log::debug;
 use std::collections::BTreeMap;
@@ -114,9 +115,8 @@ impl IfBuilder {
 pub(crate) struct CodeBuilder {
     pub(crate) code: Vec<u8>,
     pub(crate) attributes: Vec<Attribute>,
-    pub(crate) stack: Stack,
+    pub(crate) state: State, // FIXME: branching
     pub(crate) stack_max: u16,
-    pub(crate) locals: Locals,
     pub(crate) args_locals: Locals,
     pub(crate) locals_max: u16,
     pub(crate) stack_map_frames: BTreeMap<u16, StackMapFrame>,
@@ -129,9 +129,8 @@ impl CodeBuilder {
         CodeBuilder {
             code: Vec::new(),
             attributes: Vec::new(),
-            stack: Stack::new(),
+            state: State::new(),
             stack_max: 0,
-            locals: Locals::new(),
             args_locals: Locals::new(),
             locals_max: 0,
             stack_map_frames: BTreeMap::new(),
@@ -148,8 +147,8 @@ impl CodeBuilder {
             bci_target,
             StackMapFrame::Full {
                 offset: 0, // Will be computed in a final step
-                stack: self.stack.to_verification_info(),
-                locals: self.locals.to_verification_info(),
+                stack: self.state.stack.to_verification_info(),
+                locals: self.state.locals.to_verification_info(),
             },
         );
     }
@@ -381,7 +380,7 @@ impl CodeBuilder {
     ) -> Result<(), Error> {
         debug!(
             "push: op={} operand1={:?} operand2={:?} t={:?} stack={:?} locals={:?}",
-            op, operand1, operand2, t, self.stack, self.locals
+            op, operand1, operand2, t, self.state.stack, self.state.locals
         );
 
         self.code.push(op);
