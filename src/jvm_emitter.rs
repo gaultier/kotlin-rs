@@ -1,5 +1,5 @@
 use crate::error::*;
-use crate::jvm_code_builder::{CodeBuilder, IfBuilder};
+use crate::jvm_code::{Code, IfBuilder};
 use crate::jvm_constants::*;
 use crate::jvm_stack_map_frame::StackMapFrame;
 use crate::lex::{Token, TokenKind};
@@ -182,7 +182,7 @@ fn add_constant(constants: &mut Vec<Constant>, constant: &Constant) -> Result<u1
 fn add_and_push_constant(
     constants: &mut Vec<Constant>,
     constant: &Constant,
-    code_builder: &mut CodeBuilder,
+    code: &mut Code,
 ) -> Result<(), Error> {
     let i = add_constant(constants, &constant)?;
     debug!("added constant: constant={:?} i={}", &constant, i);
@@ -190,21 +190,17 @@ fn add_and_push_constant(
     match constant {
         Constant::Double(_) => {
             let bytes = ((i - 1) as u16).to_be_bytes();
-            code_builder.push3(OP_LDC2_W, bytes[0], bytes[1], Type::Double)
+            code.push3(OP_LDC2_W, bytes[0], bytes[1], Type::Double)
         }
         Constant::Long(_) => {
             let bytes = ((i - 1) as u16).to_be_bytes();
-            code_builder.push3(OP_LDC2_W, bytes[0], bytes[1], Type::Long)
+            code.push3(OP_LDC2_W, bytes[0], bytes[1], Type::Long)
         }
-        Constant::Int(_) if i <= std::u8::MAX as u16 => {
-            code_builder.push2(OP_LDC, i as u8, Type::Int)
-        }
-        Constant::Float(_) if i <= std::u8::MAX as u16 => {
-            code_builder.push2(OP_LDC, i as u8, Type::Float)
-        }
+        Constant::Int(_) if i <= std::u8::MAX as u16 => code.push2(OP_LDC, i as u8, Type::Int),
+        Constant::Float(_) if i <= std::u8::MAX as u16 => code.push2(OP_LDC, i as u8, Type::Float),
         _ => {
             let bytes = ((i - 1) as u16).to_be_bytes();
-            code_builder.push3(OP_LDC_W, bytes[0], bytes[1], Type::Long) // FIXME
+            code.push3(OP_LDC_W, bytes[0], bytes[1], Type::Long) // FIXME
         }
     }
 }
@@ -420,8 +416,8 @@ impl<'a> JvmEmitter<'a> {
             attributes: Vec::new(),
         };
 
-        let mut code_builder = CodeBuilder::new();
-        code_builder.state.locals.push((
+        let mut code = Code::new();
+        code.state.locals.push((
             0xdead_beef,
             // FIXME: hardcoded
             Type::Object {
@@ -429,11 +425,11 @@ impl<'a> JvmEmitter<'a> {
                 jvm_constant_pool_index: Some(self.class_main_args),
             },
         ));
-        code_builder.args_locals = code_builder.state.locals.clone();
+        code.args_locals = code.state.locals.clone();
 
-        self.statement(block, &mut code_builder)?;
-        code_builder.code.push(OP_RETURN);
-        let code = code_builder.end(&self)?;
+        self.statement(block, &mut code)?;
+        code.code.push(OP_RETURN);
+        let bytecode = code.end(&self)?;
 
         // FIXME: dummy for now
         let line_table = Attribute::LineNumberTable {
@@ -446,14 +442,14 @@ impl<'a> JvmEmitter<'a> {
 
         let stack_map_table = Attribute::StackMapTable {
             name: self.stack_map_table_str,
-            entries: code_builder.stack_map_frames_compute_delta_offsets(),
+            entries: code.stack_map_frames_compute_delta_offsets(),
         };
 
         let attribute_code = Attribute::Code {
             name: self.code_str,
-            max_stack: code_builder.stack_max,
-            max_locals: code_builder.locals_max,
-            code,
+            max_stack: code.stack_max,
+            max_locals: code.locals_max,
+            code: bytecode,
             exception_table: Vec::new(),
             attributes: vec![line_table, stack_map_table],
         };
@@ -474,22 +470,22 @@ impl<'a> JvmEmitter<'a> {
         &mut self,
         cond: &AstNodeExpr,
         body: &AstNodeStmt,
-        code_builder: &mut CodeBuilder,
+        code: &mut Code,
     ) -> Result<(), Error> {
-        let before_cond = code_builder.code.len();
-        self.expr(cond, code_builder)?;
+        let before_cond = code.code.len();
+        self.expr(cond, code)?;
 
-        code_builder.push3(OP_IFEQ, OP_IMPDEP1, OP_IMPDEP2, Type::Int)?;
-        let end_if_jump = code_builder.code.len() - 1;
+        code.push3(OP_IFEQ, OP_IMPDEP1, OP_IMPDEP2, Type::Int)?;
+        let end_if_jump = code.code.len() - 1;
 
-        self.statement(body, code_builder)?;
-        code_builder.push3(OP_GOTO, OP_IMPDEP1, OP_IMPDEP2, Type::Int)?;
-        let end_body = code_builder.code.len() - 1;
+        self.statement(body, code)?;
+        code.push3(OP_GOTO, OP_IMPDEP1, OP_IMPDEP2, Type::Int)?;
+        let end_body = code.code.len() - 1;
 
         let backwards_offset: i16 = 3 - 1 + -((end_body - before_cond) as i16);
         let bytes = backwards_offset.to_be_bytes();
-        code_builder.code[end_body - 1] = bytes[0];
-        code_builder.code[end_body] = bytes[1];
+        code.code[end_body - 1] = bytes[0];
+        code.code[end_body] = bytes[1];
 
         let forwards_offset: i16 = 3 + (end_body - end_if_jump) as i16;
         debug!(
@@ -497,21 +493,16 @@ impl<'a> JvmEmitter<'a> {
             backwards_offset, forwards_offset
         );
         let bytes = forwards_offset.to_be_bytes();
-        code_builder.code[end_if_jump - 1] = bytes[0];
-        code_builder.code[end_if_jump] = bytes[1];
+        code.code[end_if_jump - 1] = bytes[0];
+        code.code[end_if_jump] = bytes[1];
         Ok(())
     }
 
-    fn var_def(
-        &mut self,
-        id: NodeId,
-        value: &AstNodeExpr,
-        code_builder: &mut CodeBuilder,
-    ) -> Result<(), Error> {
+    fn var_def(&mut self, id: NodeId, value: &AstNodeExpr, code: &mut Code) -> Result<(), Error> {
         let t = self.types.get(&id).unwrap();
 
-        self.expr(value, code_builder)?;
-        let i = code_builder.state.locals.push((id, t.clone()));
+        self.expr(value, code)?;
+        let i = code.state.locals.push((id, t.clone()));
         debug!("var_def: id={} i={} t={}", id, i, t);
 
         let op = match t {
@@ -522,21 +513,21 @@ impl<'a> JvmEmitter<'a> {
             _ => todo!(),
         };
 
-        code_builder.push2(op, i as u8, t.clone())
+        code.push2(op, i as u8, t.clone())
     }
 
     fn assign(
         &mut self,
         target: &AstNodeExpr,
         value: &AstNodeExpr,
-        code_builder: &mut CodeBuilder,
+        code: &mut Code,
     ) -> Result<(), Error> {
-        self.expr(value, code_builder)?;
+        self.expr(value, code)?;
 
         match target {
             AstNodeExpr::VarRef(_, id) => {
                 let ref_id = self.resolution.get(&id).unwrap().node_ref_id;
-                let (i, _) = code_builder.state.locals.find_by_id(ref_id).unwrap();
+                let (i, _) = code.state.locals.find_by_id(ref_id).unwrap();
                 let t = self.types.get(&id).unwrap();
                 debug!("assign: id={} i={} t={} ref_id={}", id, i, t, ref_id);
 
@@ -548,17 +539,17 @@ impl<'a> JvmEmitter<'a> {
                     _ => todo!(),
                 };
 
-                code_builder.push2(op, i as u8, t.clone())
+                code.push2(op, i as u8, t.clone())
             }
             _ => todo!(),
         }
     }
 
-    fn var_ref(&mut self, id: NodeId, code_builder: &mut CodeBuilder) -> Result<(), Error> {
+    fn var_ref(&mut self, id: NodeId, code: &mut Code) -> Result<(), Error> {
         let t = self.types.get(&id).unwrap();
 
         let ref_id = self.resolution.get(&id).unwrap().node_ref_id;
-        let (i, _) = code_builder.state.locals.find_by_id(ref_id).unwrap();
+        let (i, _) = code.state.locals.find_by_id(ref_id).unwrap();
         debug!("var_ref: id={} i={} t={} ref_id={}", id, i, t, ref_id);
 
         let op = match t {
@@ -568,7 +559,7 @@ impl<'a> JvmEmitter<'a> {
             Type::Long => OP_LLOAD,
             _ => todo!(),
         };
-        code_builder.push2(op, i as u8, t.clone())
+        code.push2(op, i as u8, t.clone())
     }
 
     fn fn_def(
@@ -603,15 +594,15 @@ impl<'a> JvmEmitter<'a> {
             attributes: Vec::new(),
         };
 
-        let mut code_builder = CodeBuilder::new();
+        let mut code = Code::new();
         for arg in args {
             let arg_id = arg.id();
             let arg_t = self.types.get(&arg_id).unwrap();
-            code_builder.state.locals.push((arg_id, arg_t.clone()));
+            code.state.locals.push((arg_id, arg_t.clone()));
         }
 
-        self.statement(body, &mut code_builder)?;
-        let code = code_builder.end(&self)?;
+        self.statement(body, &mut code)?;
+        let bytecode = code.end(&self)?;
 
         // FIXME: dummy for now
         let line_table = Attribute::LineNumberTable {
@@ -624,14 +615,14 @@ impl<'a> JvmEmitter<'a> {
 
         let stack_map_table = Attribute::StackMapTable {
             name: self.stack_map_table_str,
-            entries: code_builder.stack_map_frames_compute_delta_offsets(),
+            entries: code.stack_map_frames_compute_delta_offsets(),
         };
 
         let attribute_code = Attribute::Code {
             name: self.code_str,
-            max_stack: code_builder.state.stack.count_max(),
-            max_locals: code_builder.state.locals.count_max(),
-            code,
+            max_stack: code.state.stack.count_max(),
+            max_locals: code.state.locals.count_max(),
+            code: bytecode,
             exception_table: Vec::new(),
             attributes: vec![line_table, stack_map_table],
         };
@@ -645,27 +636,27 @@ impl<'a> JvmEmitter<'a> {
     pub(crate) fn statement(
         &mut self,
         statement: &AstNodeStmt,
-        code_builder: &mut CodeBuilder,
+        code: &mut Code,
     ) -> Result<(), Error> {
         match statement {
-            AstNodeStmt::Expr(e) => self.expr(e, code_builder),
+            AstNodeStmt::Expr(e) => self.expr(e, code),
             AstNodeStmt::Assign {
                 op: TokenKind::Equal,
                 target,
                 value,
                 ..
-            } => self.assign(target, value, code_builder),
+            } => self.assign(target, value, code),
             // The MIR should have transformed other assignements e.g `+=` to simpler forms at this
             // point
             AstNodeStmt::Assign { .. } => unreachable!(),
-            AstNodeStmt::VarDefinition { value, id, .. } => self.var_def(*id, value, code_builder),
+            AstNodeStmt::VarDefinition { value, id, .. } => self.var_def(*id, value, code),
             AstNodeStmt::Block { body, .. } => {
                 for stmt in body {
-                    self.statement(stmt, code_builder)?;
+                    self.statement(stmt, code)?;
                 }
                 Ok(())
             }
-            AstNodeStmt::While { cond, body, .. } => self.while_stmt(cond, body, code_builder),
+            AstNodeStmt::While { cond, body, .. } => self.while_stmt(cond, body, code),
             AstNodeStmt::FnDefinition {
                 fn_name,
                 args,
@@ -683,19 +674,19 @@ impl<'a> JvmEmitter<'a> {
         cond: &AstNodeExpr,
         if_body: &AstNodeStmt,
         else_body: &AstNodeStmt,
-        code_builder: &mut CodeBuilder,
+        code: &mut Code,
     ) -> Result<(), Error> {
-        self.expr(cond, code_builder)?;
+        self.expr(cond, code)?;
 
         IfBuilder::new()
-            .if_body(if_body, self, code_builder)?
-            .else_body(else_body, self, code_builder)?
-            .build(code_builder);
+            .if_body(if_body, self, code)?
+            .else_body(else_body, self, code)?
+            .build(code);
 
         Ok(())
     }
 
-    fn println(&mut self, expr: &AstNodeExpr, code_builder: &mut CodeBuilder) -> Result<(), Error> {
+    fn println(&mut self, expr: &AstNodeExpr, code: &mut Code) -> Result<(), Error> {
         let expr_t = self.types.get(&expr.id()).unwrap();
 
         let println_str_type = add_constant(
@@ -718,7 +709,7 @@ impl<'a> JvmEmitter<'a> {
             &Constant::MethodRef(self.class_printstream, println_name_type),
         )?;
 
-        code_builder.push3(
+        code.push3(
             OP_GET_STATIC,
             self.out_fieldref.to_be_bytes()[0],
             self.out_fieldref.to_be_bytes()[1],
@@ -728,9 +719,9 @@ impl<'a> JvmEmitter<'a> {
                 jvm_constant_pool_index: Some(self.class_printstream),
             },
         )?;
-        self.expr(expr, code_builder)?;
+        self.expr(expr, code)?;
 
-        code_builder.push3(
+        code.push3(
             OP_INVOKE_VIRTUAL,
             println_methodref.to_be_bytes()[0],
             println_methodref.to_be_bytes()[1],
@@ -742,16 +733,16 @@ impl<'a> JvmEmitter<'a> {
         &mut self,
         fn_name: &AstNodeExpr,
         args: &[AstNodeExpr],
-        code_builder: &mut CodeBuilder,
+        code: &mut Code,
     ) -> Result<(), Error> {
         let fn_id = self.resolution.get(&fn_name.id()).unwrap().node_ref_id;
         let i: u16 = *self.fn_id_to_constant_pool_index.get(&fn_id).unwrap();
 
         for arg in args {
-            self.expr(arg, code_builder)?;
+            self.expr(arg, code)?;
         }
 
-        code_builder.push3(
+        code.push3(
             OP_INVOKE_STATIC,
             i.to_be_bytes()[0],
             i.to_be_bytes()[1],
@@ -762,47 +753,43 @@ impl<'a> JvmEmitter<'a> {
     fn return_expr(
         &mut self,
         expr: &Option<Box<AstNodeExpr>>,
-        code_builder: &mut CodeBuilder,
+        code: &mut Code,
     ) -> Result<(), Error> {
         if let Some(expr) = expr {
-            self.expr(expr, code_builder)?;
+            self.expr(expr, code)?;
             let t = self.types.get(&expr.id()).unwrap();
             assert_eq!(t, &Type::Int);
-            code_builder.push1(OP_IRETURN, Type::Int)
+            code.push1(OP_IRETURN, Type::Int)
         } else {
-            code_builder.push1(OP_RETURN, Type::Unit)
+            code.push1(OP_RETURN, Type::Unit)
         }
     }
 
-    pub(crate) fn expr(
-        &mut self,
-        expr: &AstNodeExpr,
-        code_builder: &mut CodeBuilder,
-    ) -> Result<(), Error> {
+    pub(crate) fn expr(&mut self, expr: &AstNodeExpr, code: &mut Code) -> Result<(), Error> {
         match expr {
-            AstNodeExpr::Literal(l, _) => self.literal(l, code_builder),
-            AstNodeExpr::Unary { .. } => self.unary(expr, code_builder),
-            AstNodeExpr::Binary { .. } => self.binary(expr, code_builder),
-            AstNodeExpr::Grouping(e, _) => self.expr(e, code_builder),
-            AstNodeExpr::Println(e, _) => self.println(e, code_builder),
-            AstNodeExpr::VarRef(_, id) => self.var_ref(*id, code_builder),
+            AstNodeExpr::Literal(l, _) => self.literal(l, code),
+            AstNodeExpr::Unary { .. } => self.unary(expr, code),
+            AstNodeExpr::Binary { .. } => self.binary(expr, code),
+            AstNodeExpr::Grouping(e, _) => self.expr(e, code),
+            AstNodeExpr::Println(e, _) => self.println(e, code),
+            AstNodeExpr::VarRef(_, id) => self.var_ref(*id, code),
             AstNodeExpr::Jump {
                 kind: crate::parse::JumpKind::Return,
                 expr,
                 ..
-            } => self.return_expr(expr, code_builder),
-            AstNodeExpr::FnCall { fn_name, args, .. } => self.fn_call(fn_name, args, code_builder),
+            } => self.return_expr(expr, code),
+            AstNodeExpr::FnCall { fn_name, args, .. } => self.fn_call(fn_name, args, code),
             AstNodeExpr::IfExpr {
                 cond,
                 if_body,
                 else_body,
                 ..
-            } => self.if_expr(cond, if_body, else_body, code_builder),
+            } => self.if_expr(cond, if_body, else_body, code),
             _ => unimplemented!(),
         }
     }
 
-    fn binary(&mut self, expr: &AstNodeExpr, code_builder: &mut CodeBuilder) -> Result<(), Error> {
+    fn binary(&mut self, expr: &AstNodeExpr, code: &mut Code) -> Result<(), Error> {
         match expr {
             AstNodeExpr::Binary {
                 left,
@@ -818,16 +805,16 @@ impl<'a> JvmEmitter<'a> {
                     unimplemented!("Conversions")
                 }
 
-                self.expr(left, code_builder)?;
+                self.expr(left, code)?;
 
-                self.expr(right, code_builder)?;
+                self.expr(right, code)?;
 
                 match (op.kind, left_t, right_t) {
                     (TokenKind::PipePipe, _, _) => {
-                        code_builder.push1(OP_IOR, Type::Int)?;
+                        code.push1(OP_IOR, Type::Int)?;
                     }
                     (TokenKind::AmpersandAmpersand, _, _) => {
-                        code_builder.push1(OP_IAND, Type::Int)?;
+                        code.push1(OP_IAND, Type::Int)?;
                     }
                     (TokenKind::EqualEqual, Type::Long, Type::Long) => todo!(),
                     (TokenKind::EqualEqual, Type::Float, Type::Float) => todo!(),
@@ -864,7 +851,7 @@ impl<'a> JvmEmitter<'a> {
                         unimplemented!("Conversion in equality check")
                     }
                     _ => {
-                        code_builder.push1(binary_op(&op.kind, t), t.clone())?;
+                        code.push1(binary_op(&op.kind, t), t.clone())?;
                     }
                 }
                 Ok(())
@@ -873,7 +860,7 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 
-    fn unary(&mut self, expr: &AstNodeExpr, code_builder: &mut CodeBuilder) -> Result<(), Error> {
+    fn unary(&mut self, expr: &AstNodeExpr, code: &mut Code) -> Result<(), Error> {
         match expr {
             AstNodeExpr::Unary {
                 token:
@@ -884,8 +871,8 @@ impl<'a> JvmEmitter<'a> {
                 expr,
                 ..
             } => {
-                self.expr(expr, code_builder)?;
-                code_builder.push1(OP_INEG, Type::Int)
+                self.expr(expr, code)?;
+                code.push1(OP_INEG, Type::Int)
             }
             AstNodeExpr::Unary {
                 token:
@@ -895,71 +882,67 @@ impl<'a> JvmEmitter<'a> {
                     },
                 expr,
                 ..
-            } => self.expr(expr, code_builder),
+            } => self.expr(expr, code),
             _ => unimplemented!(),
         }
     }
 
-    fn literal(&mut self, literal: &Token, code_builder: &mut CodeBuilder) -> Result<(), Error> {
+    fn literal(&mut self, literal: &Token, code: &mut Code) -> Result<(), Error> {
         match literal.kind {
-            TokenKind::Int(-1) => code_builder.push1(OP_ICONST_M1, Type::Int),
-            TokenKind::Boolean(false) | TokenKind::Int(0) => {
-                code_builder.push1(OP_ICONST_0, Type::Int)
-            }
-            TokenKind::Boolean(true) | TokenKind::Int(1) => {
-                code_builder.push1(OP_ICONST_1, Type::Int)
-            }
-            TokenKind::Int(2) => code_builder.push1(OP_ICONST_2, Type::Int),
-            TokenKind::Int(3) => code_builder.push1(OP_ICONST_3, Type::Int),
-            TokenKind::Int(4) => code_builder.push1(OP_ICONST_4, Type::Int),
-            TokenKind::Int(5) => code_builder.push1(OP_ICONST_5, Type::Int),
+            TokenKind::Int(-1) => code.push1(OP_ICONST_M1, Type::Int),
+            TokenKind::Boolean(false) | TokenKind::Int(0) => code.push1(OP_ICONST_0, Type::Int),
+            TokenKind::Boolean(true) | TokenKind::Int(1) => code.push1(OP_ICONST_1, Type::Int),
+            TokenKind::Int(2) => code.push1(OP_ICONST_2, Type::Int),
+            TokenKind::Int(3) => code.push1(OP_ICONST_3, Type::Int),
+            TokenKind::Int(4) => code.push1(OP_ICONST_4, Type::Int),
+            TokenKind::Int(5) => code.push1(OP_ICONST_5, Type::Int),
             TokenKind::Int(n) if n <= std::i8::MAX as i32 => {
-                code_builder.push2(OP_BIPUSH, n as u8, Type::Int)
+                code.push2(OP_BIPUSH, n as u8, Type::Int)
             }
             TokenKind::Int(n) if n <= std::i16::MAX as i32 => {
                 let bytes = (n as u16).to_be_bytes();
-                code_builder.push3(OP_SIPUSH, bytes[0], bytes[1], Type::Int)
+                code.push3(OP_SIPUSH, bytes[0], bytes[1], Type::Int)
             }
             TokenKind::Int(n) => {
-                add_and_push_constant(&mut self.constants, &Constant::Int(n), code_builder)
+                add_and_push_constant(&mut self.constants, &Constant::Int(n), code)
             }
             TokenKind::Char(c) if c as u16 as i32 <= std::i8::MAX as i32 => {
-                code_builder.push2(OP_BIPUSH, c as u8, Type::Char)
+                code.push2(OP_BIPUSH, c as u8, Type::Char)
             }
             TokenKind::Char(c) if c as u16 as i32 <= std::i16::MAX as i32 => {
                 let bytes = (c as u16).to_be_bytes();
-                code_builder.push3(OP_SIPUSH, bytes[0], bytes[1], Type::Char)
+                code.push3(OP_SIPUSH, bytes[0], bytes[1], Type::Char)
             }
-            TokenKind::Long(0) => code_builder.push1(OP_LCONST_0, Type::Int),
-            TokenKind::Long(1) => code_builder.push1(OP_LCONST_1, Type::Int),
+            TokenKind::Long(0) => code.push1(OP_LCONST_0, Type::Int),
+            TokenKind::Long(1) => code.push1(OP_LCONST_1, Type::Int),
             TokenKind::Long(n) => {
-                add_and_push_constant(&mut self.constants, &Constant::Long(n), code_builder)
+                add_and_push_constant(&mut self.constants, &Constant::Long(n), code)
             }
             TokenKind::Double(n) if n.to_bits() == 0f64.to_bits() => {
-                code_builder.push1(OP_DCONST_0, Type::Int)
+                code.push1(OP_DCONST_0, Type::Int)
             }
             TokenKind::Double(n) if n.to_bits() == 1f64.to_bits() => {
-                code_builder.push1(OP_DCONST_1, Type::Int)
+                code.push1(OP_DCONST_1, Type::Int)
             }
             TokenKind::Double(n) => {
-                add_and_push_constant(&mut self.constants, &Constant::Double(n), code_builder)
+                add_and_push_constant(&mut self.constants, &Constant::Double(n), code)
             }
             TokenKind::Float(n) if n.to_bits() == 0f32.to_bits() => {
-                code_builder.push1(OP_FCONST_0, Type::Float)
+                code.push1(OP_FCONST_0, Type::Float)
             }
             TokenKind::Float(n) if n.to_bits() == 1f32.to_bits() => {
-                code_builder.push1(OP_FCONST_1, Type::Float)
+                code.push1(OP_FCONST_1, Type::Float)
             }
             TokenKind::Float(n) if n.to_bits() == 2f32.to_bits() => {
-                code_builder.push1(OP_FCONST_2, Type::Float)
+                code.push1(OP_FCONST_2, Type::Float)
             }
             TokenKind::Float(n) => {
-                add_and_push_constant(&mut self.constants, &Constant::Float(n), code_builder)
+                add_and_push_constant(&mut self.constants, &Constant::Float(n), code)
             }
             TokenKind::TString => {
                 let s = String::from(&self.session.src[literal.span.start..literal.span.end]);
                 let i = add_constant(&mut self.constants, &Constant::Utf8(s))?;
-                add_and_push_constant(&mut self.constants, &Constant::CString(i), code_builder)
+                add_and_push_constant(&mut self.constants, &Constant::CString(i), code)
             }
             _ => {
                 dbg!(literal);

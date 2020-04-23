@@ -3,7 +3,7 @@ pub mod compile;
 mod cursor;
 pub mod error;
 pub mod fmt;
-mod jvm_code_builder;
+mod jvm_code;
 mod jvm_constants;
 pub mod jvm_emitter;
 mod jvm_locals;
