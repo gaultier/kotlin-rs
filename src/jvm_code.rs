@@ -161,6 +161,39 @@ impl Code {
     }
 
     pub(crate) fn push1(&mut self, op: u8, t: Type) -> Result<(), Error> {
+        match op {
+            OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3 | OP_ICONST_4
+            | OP_ICONST_5 => {
+                self.state.stack.push(Type::Int);
+            }
+            OP_FCONST_0 | OP_FCONST_1 | OP_FCONST_2 => {
+                self.state.stack.push(Type::Float);
+            }
+            OP_IADD | OP_IMUL | OP_ISUB | OP_IDIV | OP_IREM | OP_IAND | OP_IOR | OP_FADD
+            | OP_FMUL | OP_FSUB | OP_FDIV | OP_FREM => {
+                self.state.stack.pop();
+            }
+            OP_FCMPL => {
+                self.state.stack.pop2();
+                self.state.stack.push(Type::Int);
+            }
+            OP_RETURN | OP_IRETURN => {}
+            OP_INEG => {}
+            OP_LCONST_0 | OP_LCONST_1 => {
+                self.state.stack.push(Type::Long);
+                self.state.stack.push(Type::Long);
+            }
+            OP_LADD | OP_LMUL | OP_LSUB | OP_LDIV => {
+                self.state.stack.pop2();
+            }
+            OP_DADD | OP_DMUL | OP_DSUB | OP_DDIV => {
+                self.state.stack.pop2();
+            }
+            _ => {
+                dbg!(op);
+                unimplemented!()
+            }
+        }
         self.push(op, None, None, t)
     }
 
