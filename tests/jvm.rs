@@ -208,3 +208,19 @@ fn float_gt_false() {
     let output = compile(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
 }
+
+#[test]
+fn double_gt_true() {
+    let src = "println(if (2.0 > 2.0) 10 else -10)";
+    let path = Path::new("DoubleGtTrue.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+}
+
+#[test]
+fn double_gt_false() {
+    let src = "println(if (2.0 > 3.0) 10 else -10)";
+    let path = Path::new("DoubleGtFalse.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+}
