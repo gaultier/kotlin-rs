@@ -41,7 +41,6 @@ impl IfBuilder {
     }
 
     pub(crate) fn simple_expr(
-        &mut self,
         if_opcode: u8,
         if_body_value: u8,
         else_body_value: u8,
@@ -49,6 +48,8 @@ impl IfBuilder {
         jvm_emitter: &mut JvmEmitter,
         code: &mut Code,
     ) -> Result<(), Error> {
+        let mut builder = IfBuilder::new();
+
         code.push3(
             if_opcode,
             OP_IMPDEP1,
@@ -57,7 +58,7 @@ impl IfBuilder {
             &jvm_emitter.constant_pool_index_to_fn_id,
             &jvm_emitter.types,
         )?;
-        self.if_location = Some((code.code.len() - 3) as u16);
+        builder.if_location = Some((code.code.len() - 3) as u16);
 
         code.push1(if_body_value, t.clone())?;
         code.push3(
@@ -70,31 +71,31 @@ impl IfBuilder {
         )?;
 
         let end_if_body = (code.code.len() - 1) as u16;
-        self.goto_location = Some(end_if_body - 2);
+        builder.goto_location = Some(end_if_body - 2);
 
-        let start_else_offset: u16 = (1 + end_if_body - self.if_location.unwrap()) as u16;
-        code.code[self.if_location.unwrap() as usize + 1] = start_else_offset.to_be_bytes()[0];
-        code.code[self.if_location.unwrap() as usize + 2] = start_else_offset.to_be_bytes()[1];
+        let start_else_offset: u16 = (1 + end_if_body - builder.if_location.unwrap()) as u16;
+        code.code[builder.if_location.unwrap() as usize + 1] = start_else_offset.to_be_bytes()[0];
+        code.code[builder.if_location.unwrap() as usize + 2] = start_else_offset.to_be_bytes()[1];
 
-        self.if_target = Some(1 + end_if_body);
+        builder.if_target = Some(1 + end_if_body);
 
         code.push1(else_body_value, t)?;
 
         let end = (code.code.len() - 1) as u16;
 
-        let start_rest_offset: u16 = 1 + end - self.goto_location.unwrap();
-        code.code[self.goto_location.unwrap() as usize + 1] = start_rest_offset.to_be_bytes()[0];
-        code.code[self.goto_location.unwrap() as usize + 2] = start_rest_offset.to_be_bytes()[1];
+        let start_rest_offset: u16 = 1 + end - builder.goto_location.unwrap();
+        code.code[builder.goto_location.unwrap() as usize + 1] = start_rest_offset.to_be_bytes()[0];
+        code.code[builder.goto_location.unwrap() as usize + 2] = start_rest_offset.to_be_bytes()[1];
 
-        self.goto_target = Some(1 + end);
+        builder.goto_target = Some(1 + end);
 
         code.jump_target_at(
-            self.if_location.unwrap(),
+            builder.if_location.unwrap(),
             JumpTarget::If {
-                if_location: self.if_location.unwrap(),
-                if_target: self.if_target.unwrap(),
-                goto_location: self.goto_location.unwrap(),
-                goto_target: self.goto_target.unwrap(),
+                if_location: builder.if_location.unwrap(),
+                if_target: builder.if_target.unwrap(),
+                goto_location: builder.goto_location.unwrap(),
+                goto_target: builder.goto_target.unwrap(),
             },
         );
 
