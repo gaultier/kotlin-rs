@@ -1,4 +1,4 @@
-use kotlin::compile::{compile, default_path};
+use kotlin::compile::compile;
 use std::path::Path;
 
 #[test]
@@ -138,9 +138,25 @@ fn int_lt_true() {
 }
 
 #[test]
-fn int_lesser_false() {
+fn int_lt_false() {
     let src = "println(if (2 < 3) 10 else -10)";
     let path = Path::new("IntLtFalse.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "10");
+}
+
+#[test]
+fn float_lt_true() {
+    let src = "println(if (2f < 2f) 10 else -10)";
+    let path = Path::new("FloatLtTrue.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+}
+
+#[test]
+fn float_lt_false() {
+    let src = "println(if (2f < 3f) 10 else -10)";
+    let path = Path::new("FloatLtFalse.kts");
     let output = compile(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "10");
 }
