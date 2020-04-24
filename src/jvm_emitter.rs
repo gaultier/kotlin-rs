@@ -956,7 +956,7 @@ impl<'a> JvmEmitter<'a> {
 
                     (TokenKind::Lesser, Type::Float, Type::Float) => {
                         code.push1(OP_FCMPL, Type::Int)?;
-                        code.push1(OP_ICONST_1, Type::Int)?;
+                        code.push1(OP_ICONST_M1, Type::Int)?;
 
                         IfBuilder::simple_expr(
                             OP_IF_ICMPNE,
