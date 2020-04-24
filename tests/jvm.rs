@@ -288,3 +288,19 @@ fn double_le_false() {
     let output = compile(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
 }
+
+#[test]
+fn long_le_true() {
+    let src = "println(if (2L <= 2L) 10 else -10);println(if (2L <= 3L) 10 else -10)";
+    let path = Path::new("LongLeTrue.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "10\n10");
+}
+
+#[test]
+fn long_le_false() {
+    let src = "println(if (2L <= 1L) 10 else -10)";
+    let path = Path::new("LongLeFalse.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+}

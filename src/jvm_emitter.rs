@@ -1080,7 +1080,19 @@ impl<'a> JvmEmitter<'a> {
                             code,
                         )?;
                     }
-                    (TokenKind::LesserEqual, Type::Long, Type::Long) => todo!(),
+                    (TokenKind::LesserEqual, Type::Long, Type::Long) => {
+                        code.push1(OP_LCMP, Type::Int)?;
+                        code.push1(OP_ICONST_1, Type::Int)?;
+
+                        IfBuilder::simple_expr(
+                            OP_IF_ICMPEQ,
+                            OP_ICONST_1,
+                            OP_ICONST_0,
+                            Type::Int,
+                            self,
+                            code,
+                        )?;
+                    }
                     (TokenKind::LesserEqual, _, _) => todo!(),
 
                     (TokenKind::GreaterEqual, Type::Float, Type::Float) => todo!(),
