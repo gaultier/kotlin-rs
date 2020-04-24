@@ -1045,7 +1045,7 @@ impl<'a> JvmEmitter<'a> {
                     }
                     (TokenKind::Greater, _, _) => {
                         IfBuilder::simple_expr(
-                            OP_IF_ICMPLT,
+                            OP_IF_ICMPLE,
                             OP_ICONST_1,
                             OP_ICONST_0,
                             Type::Int,
