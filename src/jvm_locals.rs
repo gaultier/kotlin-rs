@@ -27,6 +27,10 @@ impl Locals {
         })
     }
 
+    pub(crate) fn at(&self, i: u16) -> &Local {
+        &self.values[i as usize]
+    }
+
     pub(crate) fn push(&mut self, l: Local) -> u16 {
         assert!(self.values.len() <= std::u16::MAX as usize);
 

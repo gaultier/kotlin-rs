@@ -746,6 +746,9 @@ impl<'a> JvmEmitter<'a> {
             &Constant::MethodRef(self.class_printstream, println_name_type),
         )?;
 
+        self.expr(expr, code)?;
+        code.push1(OP_ISTORE_0, Type::Int)?;
+
         code.push3(
             OP_GET_STATIC,
             self.out_fieldref.to_be_bytes()[0],
@@ -758,7 +761,7 @@ impl<'a> JvmEmitter<'a> {
             &self.constant_pool_index_to_fn_id,
             &self.types,
         )?;
-        self.expr(expr, code)?;
+        code.push1(OP_ILOAD_0, Type::Int)?;
 
         code.push3(
             OP_INVOKE_VIRTUAL,
