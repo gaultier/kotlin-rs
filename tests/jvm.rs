@@ -235,10 +235,10 @@ fn long_gt_true() {
 
 #[test]
 fn long_gt_false() {
-    let src = "println(if (2L > 3L) 10 else -10)";
+    let src = "println(if (2L > 3L) 10 else -10); println(if (2 > 2) 10 else -10)";
     let path = Path::new("LongGtFalse.kts");
     let output = compile(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10\n-10");
 }
 
 #[test]
