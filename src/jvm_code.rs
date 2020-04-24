@@ -267,7 +267,8 @@ impl Code {
             OP_DADD | OP_DMUL | OP_DSUB | OP_DDIV => {
                 self.state.stack.pop2();
             }
-            OP_FCMPL => {
+            OP_LCMP => {
+                self.state.stack.pop2();
                 self.state.stack.pop2();
                 self.state.stack.push(Type::Int);
             }

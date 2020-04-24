@@ -859,9 +859,20 @@ impl<'a> JvmEmitter<'a> {
                     (TokenKind::AmpersandAmpersand, _, _) => {
                         code.push1(OP_IAND, Type::Int)?;
                     }
-                    (TokenKind::EqualEqual, Type::Long, Type::Long) => todo!(),
+                    (TokenKind::EqualEqual, Type::Long, Type::Long) => {
+                        code.push1(OP_LCMP, Type::Int)?;
+
+                        IfBuilder::simple_expr(
+                            OP_IFNE,
+                            OP_ICONST_1,
+                            OP_ICONST_0,
+                            Type::Int,
+                            self,
+                            code,
+                        )?;
+                    }
                     (TokenKind::EqualEqual, Type::Float, Type::Float) => {
-                        code.push1(OP_FCMPL, Type::Float)?;
+                        code.push1(OP_FCMPL, Type::Int)?;
 
                         IfBuilder::simple_expr(
                             OP_IFNE,
