@@ -1117,9 +1117,42 @@ impl<'a> JvmEmitter<'a> {
                             code,
                         )?;
                     }
-                    (TokenKind::GreaterEqual, Type::Double, Type::Double) => todo!(),
-                    (TokenKind::GreaterEqual, Type::Long, Type::Long) => todo!(),
-                    (TokenKind::GreaterEqual, _, _) => todo!(),
+                    (TokenKind::GreaterEqual, Type::Double, Type::Double) => {
+                        code.push1(OP_DCMPL, Type::Int)?;
+                        code.push1(OP_ICONST_M1, Type::Int)?;
+
+                        IfBuilder::simple_expr(
+                            OP_IF_ICMPEQ,
+                            OP_ICONST_1,
+                            OP_ICONST_0,
+                            Type::Int,
+                            self,
+                            code,
+                        )?;
+                    }
+                    (TokenKind::GreaterEqual, Type::Long, Type::Long) => {
+                        code.push1(OP_LCMP, Type::Int)?;
+                        code.push1(OP_ICONST_M1, Type::Int)?;
+
+                        IfBuilder::simple_expr(
+                            OP_IF_ICMPEQ,
+                            OP_ICONST_1,
+                            OP_ICONST_0,
+                            Type::Int,
+                            self,
+                            code,
+                        )?;
+                    }
+                    (TokenKind::GreaterEqual, _, _) => {
+                        IfBuilder::simple_expr(
+                            OP_IF_ICMPLT,
+                            OP_ICONST_1,
+                            OP_ICONST_0,
+                            Type::Int,
+                            self,
+                            code,
+                        )?;
+                    }
 
                     (_, _, _) if left_t != right_t => {
                         dbg!(t);
