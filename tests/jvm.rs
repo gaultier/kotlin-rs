@@ -131,10 +131,10 @@ fn double_not_eq_false() {
 
 #[test]
 fn int_lt_true() {
-    let src = "println(if (2 < 2) 10 else -10)";
+    let src = "println(if (2 < 2) 10 else -10); println(if (2 < 1) 10 else -10)";
     let path = Path::new("IntLtTrue.kts");
     let output = compile(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10\n-10");
 }
 
 #[test]
