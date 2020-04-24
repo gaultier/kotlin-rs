@@ -195,10 +195,10 @@ fn long_lt_false() {
 
 #[test]
 fn float_gt_true() {
-    let src = "println(if (2f > 2f) 10 else -10)";
+    let src = "println(if (2f > 1f) 10 else -10)";
     let path = Path::new("FloatGtTrue.kts");
     let output = compile(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "10");
 }
 
 #[test]
@@ -211,10 +211,10 @@ fn float_gt_false() {
 
 #[test]
 fn double_gt_true() {
-    let src = "println(if (2.0 > 2.0) 10 else -10); println(if (2.0 > 3.0) 10 else -10)";
+    let src = "println(if (2.0 > 1.0) 10 else -10)";
     let path = Path::new("DoubleGtTrue.kts");
     let output = compile(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10\n-10");
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "10");
 }
 
 #[test]
@@ -227,10 +227,10 @@ fn double_gt_false() {
 
 #[test]
 fn long_gt_true() {
-    let src = "println(if (2L > 2L) 10 else -10)";
+    let src = "println(if (2L > 1L) 10 else -10)";
     let path = Path::new("LongGtTrue.kts");
     let output = compile(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "10");
 }
 
 #[test]

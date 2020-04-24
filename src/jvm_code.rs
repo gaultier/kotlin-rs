@@ -257,8 +257,12 @@ impl Code {
             OP_RETURN | OP_IRETURN => {}
             OP_INEG => {}
             OP_LCONST_0 | OP_LCONST_1 => {
+                self.state.stack.push(Type::Long); // FIXME: top
                 self.state.stack.push(Type::Long);
-                self.state.stack.push(Type::Long);
+            }
+            OP_DCONST_0 | OP_DCONST_1 => {
+                self.state.stack.push(Type::Double); // FIXME: top
+                self.state.stack.push(Type::Double);
             }
             OP_LADD | OP_LMUL | OP_LSUB | OP_LDIV => {
                 self.state.stack.pop2();
