@@ -272,6 +272,11 @@ impl Code {
                 self.state.stack.pop2();
                 self.state.stack.push(Type::Int);
             }
+            OP_DCMPL => {
+                self.state.stack.pop2();
+                self.state.stack.pop2();
+                self.state.stack.push(Type::Int);
+            }
             _ => {
                 dbg!(op);
                 unimplemented!()

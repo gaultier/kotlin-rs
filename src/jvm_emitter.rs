@@ -883,7 +883,18 @@ impl<'a> JvmEmitter<'a> {
                             code,
                         )?;
                     }
-                    (TokenKind::EqualEqual, Type::Double, Type::Double) => todo!(),
+                    (TokenKind::EqualEqual, Type::Double, Type::Double) => {
+                        code.push1(OP_DCMPL, Type::Int)?;
+
+                        IfBuilder::simple_expr(
+                            OP_IFNE,
+                            OP_ICONST_1,
+                            OP_ICONST_0,
+                            Type::Int,
+                            self,
+                            code,
+                        )?;
+                    }
                     (TokenKind::EqualEqual, _, _) if left_t == right_t => IfBuilder::simple_expr(
                         OP_IF_ICMPNE,
                         OP_ICONST_1,
