@@ -40,6 +40,67 @@ impl IfBuilder {
         }
     }
 
+    pub(crate) fn simple_expr(
+        &mut self,
+        if_opcode: u8,
+        if_body_value: u8,
+        else_body_value: u8,
+        t: Type,
+        jvm_emitter: &mut JvmEmitter,
+        code: &mut Code,
+    ) -> Result<(), Error> {
+        code.push3(
+            if_opcode,
+            OP_IMPDEP1,
+            OP_IMPDEP2,
+            Type::Nothing,
+            &jvm_emitter.constant_pool_index_to_fn_id,
+            &jvm_emitter.types,
+        )?;
+        self.if_location = Some((code.code.len() - 3) as u16);
+
+        code.push1(if_body_value, t.clone())?;
+        code.push3(
+            OP_GOTO,
+            OP_IMPDEP1,
+            OP_IMPDEP2,
+            Type::Nothing,
+            &jvm_emitter.constant_pool_index_to_fn_id,
+            &jvm_emitter.types,
+        )?;
+
+        let end_if_body = (code.code.len() - 1) as u16;
+        self.goto_location = Some(end_if_body - 2);
+
+        let start_else_offset: u16 = (1 + end_if_body - self.if_location.unwrap()) as u16;
+        code.code[self.if_location.unwrap() as usize + 1] = start_else_offset.to_be_bytes()[0];
+        code.code[self.if_location.unwrap() as usize + 2] = start_else_offset.to_be_bytes()[1];
+
+        self.if_target = Some(1 + end_if_body);
+
+        code.push1(else_body_value, t)?;
+
+        let end = (code.code.len() - 1) as u16;
+
+        let start_rest_offset: u16 = 1 + end - self.goto_location.unwrap();
+        code.code[self.goto_location.unwrap() as usize + 1] = start_rest_offset.to_be_bytes()[0];
+        code.code[self.goto_location.unwrap() as usize + 2] = start_rest_offset.to_be_bytes()[1];
+
+        self.goto_target = Some(1 + end);
+
+        code.jump_target_at(
+            self.if_location.unwrap(),
+            JumpTarget::If {
+                if_location: self.if_location.unwrap(),
+                if_target: self.if_target.unwrap(),
+                goto_location: self.goto_location.unwrap(),
+                goto_target: self.goto_target.unwrap(),
+            },
+        );
+
+        Ok(())
+    }
+
     pub(crate) fn if_body(
         mut self,
         if_body: &AstNodeStmt,
@@ -175,6 +236,8 @@ impl Code {
     }
 
     pub(crate) fn push1(&mut self, op: u8, t: Type) -> Result<(), Error> {
+        self.push(op, None, None, t)?;
+
         match op {
             OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3 | OP_ICONST_4
             | OP_ICONST_5 => {
@@ -208,10 +271,12 @@ impl Code {
                 unimplemented!()
             }
         }
-        self.push(op, None, None, t)
+        Ok(())
     }
 
     pub(crate) fn push2(&mut self, op: u8, operand1: u8, t: Type) -> Result<(), Error> {
+        self.push(op, Some(operand1), None, t)?;
+
         match op {
             OP_BIPUSH => {
                 self.state.stack.push(Type::Int);
@@ -248,7 +313,7 @@ impl Code {
                 unimplemented!()
             }
         }
-        self.push(op, Some(operand1), None, t)
+        Ok(())
     }
 
     pub(crate) fn push3(
@@ -260,6 +325,8 @@ impl Code {
         constant_pool_index_to_fn_id: &BTreeMap<u16, NodeId>,
         types: &Types,
     ) -> Result<(), Error> {
+        self.push(op, Some(operand1), Some(operand2), t)?;
+
         match op {
             OP_SIPUSH => {
                 self.state.stack.push(Type::Int);
@@ -268,7 +335,7 @@ impl Code {
             OP_IF_ICMPNE | OP_IF_ICMPGE | OP_IF_ICMPLE | OP_IF_ICMPGT | OP_IF_ICMPLT => {}
             OP_GOTO => {}
             OP_GET_STATIC => {
-                let t = &self.opcode_types[self.code.len() - 1];
+                let t = &self.opcode_types.last().unwrap();
                 let jvm_constant_pool_index = match t {
                     Type::Object {
                         jvm_constant_pool_index,
@@ -315,7 +382,7 @@ impl Code {
                 unimplemented!()
             }
         }
-        self.push(op, Some(operand1), Some(operand2), t)
+        Ok(())
     }
 
     fn jump_target_at(&mut self, location: u16, jump_target: JumpTarget) {
