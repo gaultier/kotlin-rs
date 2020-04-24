@@ -1004,7 +1004,19 @@ impl<'a> JvmEmitter<'a> {
                         )?;
                     }
 
-                    (TokenKind::Greater, Type::Float, Type::Float) => todo!(),
+                    (TokenKind::Greater, Type::Float, Type::Float) => {
+                        code.push1(OP_FCMPL, Type::Int)?;
+                        code.push1(OP_ICONST_1, Type::Int)?;
+
+                        IfBuilder::simple_expr(
+                            OP_IF_ICMPNE,
+                            OP_ICONST_1,
+                            OP_ICONST_0,
+                            Type::Int,
+                            self,
+                            code,
+                        )?;
+                    }
                     (TokenKind::Greater, Type::Double, Type::Double) => todo!(),
                     (TokenKind::Greater, Type::Long, Type::Long) => todo!(),
                     (TokenKind::Greater, _, _) => todo!(),

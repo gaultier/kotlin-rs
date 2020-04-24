@@ -192,3 +192,19 @@ fn long_lt_false() {
     let output = compile(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "10");
 }
+
+#[test]
+fn float_gt_true() {
+    let src = "println(if (2f > 2f) 10 else -10)";
+    let path = Path::new("FloatGtTrue.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+}
+
+#[test]
+fn float_gt_false() {
+    let src = "println(if (2f > 3f) 10 else -10)";
+    let path = Path::new("FloatGtFalse.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+}
