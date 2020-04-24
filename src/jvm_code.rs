@@ -362,7 +362,8 @@ impl Code {
                 self.state.stack.push(Type::Int);
             }
             OP_IFEQ | OP_IFNE | OP_IFGE | OP_IFGT | OP_IFLE | OP_IFLT => {}
-            OP_IF_ICMPEQ | OP_IF_ICMPGE | OP_IF_ICMPLE | OP_IF_ICMPGT | OP_IF_ICMPLT => {}
+            OP_IF_ICMPEQ | OP_IF_ICMPNE | OP_IF_ICMPGE | OP_IF_ICMPLE | OP_IF_ICMPGT
+            | OP_IF_ICMPLT => {}
             OP_GOTO => {}
             OP_GET_STATIC => {
                 let t = &self.opcode_types.last().unwrap();
