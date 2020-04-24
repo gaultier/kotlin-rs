@@ -2,7 +2,6 @@ use crate::error::*;
 use crate::jvm_constants::*;
 use crate::jvm_emitter::{Attribute, JvmEmitter};
 use crate::jvm_locals::Locals;
-use crate::jvm_stack::Stack;
 use crate::jvm_stack_map_frame::StackMapFrame;
 use crate::jvm_state::State;
 use crate::parse::*;
