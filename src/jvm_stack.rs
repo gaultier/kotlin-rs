@@ -14,7 +14,13 @@ impl Stack {
             count_max: 0,
         }
     }
+
+    pub(crate) fn is_empty(&self) -> bool {
+        self.values.is_empty()
+    }
+
     pub(crate) fn pop(&mut self) -> Type {
+        assert!(!self.is_empty());
         self.values.pop().unwrap()
     }
 

@@ -27,7 +27,12 @@ impl Locals {
         })
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.values.is_empty()
+    }
+
     pub(crate) fn at(&self, i: u16) -> &Local {
+        assert!(self.values.len() > i as usize);
         &self.values[i as usize]
     }
 
