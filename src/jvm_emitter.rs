@@ -921,7 +921,16 @@ impl<'a> JvmEmitter<'a> {
                     }
                     (TokenKind::BangEqual, Type::Float, Type::Float) => todo!(),
                     (TokenKind::BangEqual, Type::Double, Type::Double) => todo!(),
-                    (TokenKind::BangEqual, _, _) if left_t == right_t => todo!(),
+                    (TokenKind::BangEqual, _, _) if left_t == right_t => {
+                        IfBuilder::simple_expr(
+                            OP_IF_ICMPEQ,
+                            OP_ICONST_1,
+                            OP_ICONST_0,
+                            Type::Int,
+                            self,
+                            code,
+                        )?;
+                    }
 
                     (TokenKind::Lesser, Type::Float, Type::Float) => todo!(),
                     (TokenKind::Lesser, Type::Double, Type::Double) => todo!(),
