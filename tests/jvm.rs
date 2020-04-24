@@ -272,3 +272,19 @@ fn float_le_false() {
     let output = compile(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
 }
+
+#[test]
+fn double_le_true() {
+    let src = "println(if (2.0 <= 2.0) 10 else -10);println(if (2.0 <= 3.0) 10 else -10)";
+    let path = Path::new("DoubleLeTrue.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "10\n10");
+}
+
+#[test]
+fn double_le_false() {
+    let src = "println(if (2f <= 1f) 10 else -10)";
+    let path = Path::new("DoubleLeFalse.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+}
