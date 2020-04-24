@@ -112,3 +112,19 @@ fn long_not_eq_false() {
     let output = compile(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "10");
 }
+
+#[test]
+fn double_not_eq_true() {
+    let src = "println(if (2.0 != 2.0) 10 else -10)";
+    let path = Path::new("DoubleNotEqTrue.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+}
+
+#[test]
+fn double_not_eq_false() {
+    let src = "println(if (2.0 != 3.0) 10 else -10)";
+    let path = Path::new("DoubleNotEqFalse.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "10");
+}
