@@ -224,3 +224,19 @@ fn double_gt_false() {
     let output = compile(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
 }
+
+#[test]
+fn long_gt_true() {
+    let src = "println(if (2L > 2L) 10 else -10)";
+    let path = Path::new("LongGtTrue.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+}
+
+#[test]
+fn long_gt_false() {
+    let src = "println(if (2L > 3L) 10 else -10)";
+    let path = Path::new("LongGtFalse.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+}
