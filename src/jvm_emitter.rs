@@ -860,7 +860,18 @@ impl<'a> JvmEmitter<'a> {
                         code.push1(OP_IAND, Type::Int)?;
                     }
                     (TokenKind::EqualEqual, Type::Long, Type::Long) => todo!(),
-                    (TokenKind::EqualEqual, Type::Float, Type::Float) => todo!(),
+                    (TokenKind::EqualEqual, Type::Float, Type::Float) => {
+                        code.push1(OP_FCMPL, Type::Float)?;
+
+                        IfBuilder::simple_expr(
+                            OP_IFNE,
+                            OP_ICONST_1,
+                            OP_ICONST_0,
+                            Type::Int,
+                            self,
+                            code,
+                        )?;
+                    }
                     (TokenKind::EqualEqual, Type::Double, Type::Double) => todo!(),
                     (TokenKind::EqualEqual, _, _) if left_t == right_t => IfBuilder::simple_expr(
                         OP_IF_ICMPNE,
