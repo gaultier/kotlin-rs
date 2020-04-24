@@ -12,13 +12,13 @@ use heck::CamelCase;
 use log::debug;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Output};
 
 pub fn default_path() -> PathBuf {
     PathBuf::from("Stdin.kts")
 }
 
-pub fn compile(src: &str, file_name: &Path) -> Result<(), Error> {
+pub fn compile(src: &str, file_name: &Path) -> Result<Option<Output>, Error> {
     let session = Session::new(&src, None);
     let mut lexer = Lexer::new(&session);
     let (tokens, session) = lexer.lex()?;
@@ -75,14 +75,15 @@ pub fn compile(src: &str, file_name: &Path) -> Result<(), Error> {
         let mut command = Command::new("java");
         // TODO: classpath, other options
 
-        command
-            // TODO: should be a fully qualified class name once we support packages
-            .arg(class_name)
-            .status()
-            .expect("Failed to run `java`");
+        Ok(Some(
+            command
+                // TODO: should be a fully qualified class name once we support packages
+                .arg(class_name)
+                .output()?,
+        ))
+    } else {
+        Ok(None)
     }
-
-    Ok(())
 }
 
 pub fn fmt<W: io::Write>(src: &str, w: &mut W) -> Result<(), Error> {
