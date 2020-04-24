@@ -243,18 +243,18 @@ fn long_gt_false() {
 
 #[test]
 fn int_gt_true() {
-    let src = "println(if (2 > 2) 10 else -10)";
+    let src = "println(if (2 > 1) 10 else -10)";
     let path = Path::new("IntGtTrue.kts");
     let output = compile(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "10");
 }
 
 #[test]
 fn int_gt_false() {
-    let src = "println(if (2 > 3) 10 else -10)";
+    let src = "println(if (2 > 3) 10 else -10); println(if (2 > 2) 10 else -10)";
     let path = Path::new("IntGtFalse.kts");
     let output = compile(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10\n-10");
 }
 
 #[test]
