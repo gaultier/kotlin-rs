@@ -73,7 +73,11 @@ fn main() {
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
     let res = match matches.value_of("command").unwrap() {
-        "build" => compile(&src, &file_name.unwrap_or_else(default_path).as_path()).map(|_| ()),
+        "build" => compile(&src, &file_name.unwrap_or_else(default_path).as_path()).map(|output| {
+            if let Some(output) = output {
+                print!("{}", String::from_utf8_lossy(&output.stdout));
+            }
+        }),
         "sexp" => sexp(&src, &mut handle),
         "fmt" => fmt(&src, &mut handle),
         "dump_ast" => dump_ast(&src),
