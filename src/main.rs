@@ -76,6 +76,7 @@ fn main() {
         "build" => compile(&src, &file_name.unwrap_or_else(default_path).as_path()).map(|output| {
             if let Some(output) = output {
                 print!("{}", String::from_utf8_lossy(&output.stdout));
+                eprint!("{}", String::from_utf8_lossy(&output.stderr));
             }
         }),
         "sexp" => sexp(&src, &mut handle),
