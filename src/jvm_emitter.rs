@@ -1093,7 +1093,16 @@ impl<'a> JvmEmitter<'a> {
                             code,
                         )?;
                     }
-                    (TokenKind::LesserEqual, _, _) => todo!(),
+                    (TokenKind::LesserEqual, _, _) => {
+                        IfBuilder::simple_expr(
+                            OP_IF_ICMPGT,
+                            OP_ICONST_1,
+                            OP_ICONST_0,
+                            Type::Int,
+                            self,
+                            code,
+                        )?;
+                    }
 
                     (TokenKind::GreaterEqual, Type::Float, Type::Float) => todo!(),
                     (TokenKind::GreaterEqual, Type::Double, Type::Double) => todo!(),
