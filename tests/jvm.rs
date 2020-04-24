@@ -82,6 +82,22 @@ fn int_not_eq_false() {
 }
 
 #[test]
+fn float_not_eq_true() {
+    let src = "println(if (2.0f != 2.0f) 10 else -10)";
+    let path = Path::new("FloatNotEqTrue.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+}
+
+#[test]
+fn float_not_eq_false() {
+    let src = "println(if (2.0f != 3.0f) 10 else -10)";
+    let path = Path::new("FloatNotEqFalse.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "10");
+}
+
+#[test]
 fn long_not_eq_true() {
     let src = "println(if (2L != 2L) 10 else -10)";
     let path = Path::new("LongNotEqTrue.kts");
