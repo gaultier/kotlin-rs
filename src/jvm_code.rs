@@ -236,7 +236,7 @@ impl Code {
     }
 
     pub(crate) fn push1(&mut self, op: u8, t: Type) -> Result<(), Error> {
-        self.push(op, None, None, t)?;
+        self.push(op, None, None, t.clone())?;
 
         match op {
             OP_ICONST_M1 | OP_ICONST_0 | OP_ICONST_1 | OP_ICONST_2 | OP_ICONST_3 | OP_ICONST_4
@@ -287,6 +287,14 @@ impl Code {
             OP_FLOAD_0 | OP_ALOAD_0 | OP_ILOAD_0 => {
                 let (_, t) = &self.state.locals.at(0);
 
+                self.state.stack.push(t.clone());
+            }
+            OP_DSTORE_0 | OP_LSTORE_0 => {
+                self.state.stack.pop2();
+                self.state.locals.push((0, t.clone()));
+            }
+            OP_DLOAD_0 | OP_LLOAD_0 => {
+                self.state.stack.push(t.clone()); // FIXME: top
                 self.state.stack.push(t.clone());
             }
             _ => {
@@ -644,9 +652,11 @@ impl Code {
             Type::Char | Type::Boolean | Type::Int => self.push1(OP_ISTORE_0, t.clone()),
             Type::TString => self.push1(OP_ASTORE_0, t),
             Type::Float => self.push1(OP_FSTORE_0, t),
+            Type::Long => self.push1(OP_LSTORE_0, Type::Long),
+            Type::Double => self.push1(OP_DSTORE_0, Type::Double),
             _ => {
                 dbg!(t);
-                todo!()
+                unimplemented!()
             }
         }
     }
@@ -657,7 +667,12 @@ impl Code {
             Type::Char | Type::Boolean | Type::Int => self.push1(OP_ILOAD_0, t.clone()),
             Type::TString => self.push1(OP_ALOAD_0, t),
             Type::Float => self.push1(OP_FLOAD_0, t),
-            _ => todo!(),
+            Type::Long => self.push1(OP_LLOAD_0, Type::Long),
+            Type::Double => self.push1(OP_DLOAD_0, Type::Double),
+            _ => {
+                dbg!(t);
+                unimplemented!()
+            }
         }
     }
 }

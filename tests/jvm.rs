@@ -416,3 +416,19 @@ fn print_float() {
     let output = compile(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "10.0");
 }
+
+#[test]
+fn print_long() {
+    let src = "println(10L)";
+    let path = Path::new("PrintLong.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "10");
+}
+
+#[test]
+fn print_double() {
+    let src = "println(10.0)";
+    let path = Path::new("PrintDouble.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "10.0");
+}
