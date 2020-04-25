@@ -161,7 +161,7 @@ fn add_and_push_constant(
         Constant::Int(_) if i <= std::u8::MAX as u16 => code.push2(OP_LDC, i as u8, Type::Int),
         Constant::Float(_) if i <= std::u8::MAX as u16 => code.push2(OP_LDC, i as u8, Type::Float),
         Constant::CString(_) => {
-            let bytes = ((i - 1) as u16).to_be_bytes();
+            let bytes = (i as u16).to_be_bytes();
             code.push3(
                 OP_LDC_W,
                 bytes[0],
@@ -172,7 +172,7 @@ fn add_and_push_constant(
             )
         }
         _ => {
-            let bytes = ((i - 1) as u16).to_be_bytes();
+            let bytes = (i as u16).to_be_bytes();
             code.push3(
                 OP_LDC_W,
                 bytes[0],
