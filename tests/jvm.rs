@@ -392,3 +392,27 @@ fn print_hello_world() {
     let output = compile(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "hello, world!");
 }
+
+#[test]
+fn print_int() {
+    let src = "println(10)";
+    let path = Path::new("PrintInt.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "10");
+}
+
+#[test]
+fn print_char() {
+    let src = "println('ᾯ')";
+    let path = Path::new("PrintChar.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "ᾯ");
+}
+
+#[test]
+fn print_float() {
+    let src = "println(10f)";
+    let path = Path::new("PrintFloat.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "10.0");
+}

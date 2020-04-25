@@ -280,11 +280,11 @@ impl Code {
                 self.state.stack.pop2();
                 self.state.stack.push(Type::Int);
             }
-            OP_ASTORE_0 | OP_ISTORE_0 => {
+            OP_FSTORE_0 | OP_ASTORE_0 | OP_ISTORE_0 => {
                 let t = self.state.stack.pop();
                 self.state.locals.push((0, t.clone()));
             }
-            OP_ALOAD_0 | OP_ILOAD_0 => {
+            OP_FLOAD_0 | OP_ALOAD_0 | OP_ILOAD_0 => {
                 let (_, t) = &self.state.locals.at(0);
 
                 self.state.stack.push(t.clone());
@@ -298,7 +298,7 @@ impl Code {
     }
 
     pub(crate) fn push2(&mut self, op: u8, operand1: u8, t: Type) -> Result<(), Error> {
-        self.push(op, Some(operand1), None, t)?;
+        self.push(op, Some(operand1), None, t.clone())?;
 
         match op {
             OP_BIPUSH => {
@@ -329,7 +329,7 @@ impl Code {
                 self.state.stack.push(Type::Long);
             }
             OP_LDC | OP_LDC_W => {
-                self.state.stack.push(Type::Long); // FIXME
+                self.state.stack.push(t.clone());
             }
             _ => {
                 dbg!(op);
@@ -641,17 +641,22 @@ impl Code {
     pub(crate) fn spill1(&mut self) -> Result<(), Error> {
         let t = self.state.stack.iter().last().unwrap().clone();
         match t {
-            Type::Int => self.push1(OP_ISTORE_0, t.clone()),
+            Type::Char | Type::Boolean | Type::Int => self.push1(OP_ISTORE_0, t.clone()),
             Type::TString => self.push1(OP_ASTORE_0, t),
-            _ => todo!(),
+            Type::Float => self.push1(OP_FSTORE_0, t),
+            _ => {
+                dbg!(t);
+                todo!()
+            }
         }
     }
 
     pub(crate) fn unspill1(&mut self) -> Result<(), Error> {
         let (_, t) = self.state.locals.iter().last().unwrap().clone();
         match t {
-            Type::Int => self.push1(OP_ILOAD_0, t.clone()),
+            Type::Char | Type::Boolean | Type::Int => self.push1(OP_ILOAD_0, t.clone()),
             Type::TString => self.push1(OP_ALOAD_0, t),
+            Type::Float => self.push1(OP_FLOAD_0, t),
             _ => todo!(),
         }
     }
