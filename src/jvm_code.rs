@@ -648,4 +648,22 @@ impl Code {
         self.locals_max = 100; // FIXME
         Ok(self.code.clone())
     }
+
+    pub(crate) fn spill1(&mut self) -> Result<(), Error> {
+        let t = self.state.stack.iter().last().unwrap().clone();
+        match t {
+            Type::Int => self.push1(OP_ISTORE_0, t.clone()),
+            Type::TString => self.push1(OP_ASTORE_0, t),
+            _ => todo!(),
+        }
+    }
+
+    pub(crate) fn unspill1(&mut self) -> Result<(), Error> {
+        let (_, t) = self.state.locals.iter().last().unwrap().clone();
+        match t {
+            Type::Int => self.push1(OP_ILOAD_0, t.clone()),
+            Type::TString => self.push1(OP_ALOAD_0, t),
+            _ => todo!(),
+        }
+    }
 }

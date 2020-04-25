@@ -666,7 +666,7 @@ impl<'a> JvmEmitter<'a> {
         ))?;
 
         self.expr(expr, code)?;
-        code.push1(OP_ISTORE_0, Type::Int)?;
+        code.spill1()?;
 
         code.push3(
             OP_GET_STATIC,
@@ -680,7 +680,7 @@ impl<'a> JvmEmitter<'a> {
             &self.constant_pool_index_to_fn_id,
             &self.types,
         )?;
-        code.push1(OP_ILOAD_0, Type::Int)?;
+        code.unspill1()?;
 
         code.push3(
             OP_INVOKE_VIRTUAL,

@@ -1,5 +1,6 @@
 use crate::jvm_stack_map_frame::VerificationTypeInfo;
 use crate::parse::{NodeId, Type};
+use std::slice::Iter;
 
 type Local = (NodeId, Type);
 
@@ -65,5 +66,18 @@ impl Locals {
             .iter()
             .map(|(_, t)| t.to_verification_info())
             .collect::<Vec<_>>()
+    }
+
+    pub(crate) fn iter(&self) -> Iter<Local> {
+        self.values.iter()
+    }
+}
+
+impl IntoIterator for Locals {
+    type Item = Local;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.values.into_iter()
     }
 }

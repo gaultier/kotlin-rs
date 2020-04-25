@@ -95,6 +95,7 @@ pub(crate) const OP_GOTO: u8 = 0xa7;
 pub(crate) const OP_LCMP: u8 = 0x94;
 pub(crate) const OP_FCMPL: u8 = 0x95;
 pub(crate) const OP_DCMPL: u8 = 0x97;
+pub(crate) const OP_ASTORE_0: u8 = 0x4b;
 pub(crate) const OP_ISTORE_0: u8 = 0x3b;
 pub(crate) const OP_ILOAD_0: u8 = 0x1a;
 pub(crate) const OP_ILOAD: u8 = 0x15;
