@@ -384,3 +384,11 @@ fn int_ge_false() {
     let output = compile(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
 }
+
+#[test]
+fn print_hello_world() {
+    let src = "println(\"hello, world!\")";
+    let path = Path::new("HelloWorld.kts");
+    let output = compile(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "\"hello, world!\"");
+}
