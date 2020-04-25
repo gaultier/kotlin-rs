@@ -428,8 +428,9 @@ impl Code {
                 self.state.stack.push(t.clone());
             }
             OP_LDC2_W => {
-                self.state.stack.push(Type::Long); // FIXME
-                self.state.stack.push(Type::Long); // FIXME
+                let t = self.opcode_types.last().unwrap();
+                self.state.stack.push(t.clone());
+                self.state.stack.push(t.clone());
             }
             _ => {
                 dbg!(op);
