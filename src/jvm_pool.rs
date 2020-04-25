@@ -47,9 +47,13 @@ impl Pool {
         // Since `self.values` is one-indexed, the max index is `std::u16::MAX+1` but since we
         // can only index it with u16 the real max index is `std::u16::MAX`
 
-        debug!("adding constant: constant={:?}", &constant);
+        debug!("pool: adding constant: constant={:?}", &constant);
 
         if let Some(i) = self.unique_value_to_index.get(&constant) {
+            debug!(
+                "pool: constant already exists at index i={} constant={:?}",
+                i, &constant
+            );
             return Ok(*i);
         }
 
