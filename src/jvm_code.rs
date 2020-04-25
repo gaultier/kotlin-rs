@@ -280,23 +280,12 @@ impl Code {
                 self.state.stack.pop2();
                 self.state.stack.push(Type::Int);
             }
-            OP_ISTORE_0 => {
+            OP_ASTORE_0 | OP_ISTORE_0 => {
                 let t = self.state.stack.pop();
                 self.state.locals.push((0, t.clone()));
-
-                // Double word. FIXME: top
-                if t == Type::Long || t == Type::Double {
-                    self.state.stack.pop();
-                    self.state.locals.push((0, t.clone()));
-                }
             }
-            OP_ILOAD_0 => {
+            OP_ALOAD_0 | OP_ILOAD_0 => {
                 let (_, t) = &self.state.locals.at(0);
-
-                // Double word. FIXME: top
-                if t == &Type::Long || t == &Type::Double {
-                    self.state.stack.push(t.clone());
-                }
 
                 self.state.stack.push(t.clone());
             }
