@@ -1429,7 +1429,7 @@ mod tests {
                 .pool
                 .iter()
                 .fold(0, |count, constant| match constant {
-                    Constant::Utf8(s) if s == "hello, world!" => count + 1,
+                    Constant::Utf8(s) if s == "\"hello, world!\"" => count + 1,
                     _ => count,
                 });
             assert_eq!(count, 1);
