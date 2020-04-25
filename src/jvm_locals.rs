@@ -62,13 +62,19 @@ impl Locals {
     }
 
     pub(crate) fn insert(&mut self, i: u16, l: Local) {
-        assert!(i < self.len());
-
         if i > std::u8::MAX as u16 {
             unimplemented!()
         }
 
-        let i = if l.1 == Type::Long || l.1 == Type::Double {
+        if i >= self.len() && !(t == Type::Long || t == Type::Double) {
+            self.values
+                .resize(self.values.len() + i as usize, (0, Type::Any));
+        } else if i >= self.len() {
+            self.values
+                .resize(self.values.len() + i as usize + 1, (0, Type::Any));
+        }
+
+        if l.1 == Type::Long || l.1 == Type::Double {
             self.values[i as usize] = l.clone();
             self.values[i as usize + 1] = l;
         } else {
