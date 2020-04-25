@@ -1,7 +1,7 @@
 use crate::error::*;
 use crate::jvm_constants::*;
 use crate::jvm_emitter::*;
-use crate::jvm_pool::{Constant, Pool};
+use crate::jvm_pool::Constant;
 use crate::jvm_stack_map_frame::{StackMapFrame, VerificationTypeInfo};
 use log::debug;
 
@@ -294,8 +294,8 @@ impl<'a> JvmEmitter<'a> {
             }
             Constant::Float(n) => {
                 w.write_all(&[CONSTANT_FLOAT])?;
-                debug!("const float: n={} v={:?}", n, n.to_be_bytes());
-                w.write_all(&n.to_be_bytes())?;
+                debug!("const float: n={:?}", n);
+                w.write_all(n)?;
             }
             Constant::LongHigh(n) => {
                 w.write_all(&[CONSTANT_LONG])?;
