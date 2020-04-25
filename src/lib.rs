@@ -7,6 +7,7 @@ mod jvm_code;
 mod jvm_constants;
 pub mod jvm_emitter;
 mod jvm_locals;
+mod jvm_pool;
 mod jvm_stack;
 mod jvm_stack_map_frame;
 mod jvm_state;

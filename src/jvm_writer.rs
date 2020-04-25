@@ -1,6 +1,7 @@
 use crate::error::*;
 use crate::jvm_constants::*;
 use crate::jvm_emitter::*;
+use crate::jvm_pool::{Constant, Pool};
 use crate::jvm_stack_map_frame::{StackMapFrame, VerificationTypeInfo};
 use log::debug;
 
