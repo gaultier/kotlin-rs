@@ -310,6 +310,10 @@ impl Code {
                 self.state.stack.push(t.clone()); // FIXME: top
                 self.state.stack.push(t.clone());
             }
+            OP_DLOAD_1 | OP_LLOAD_1 => {
+                self.state.stack.push(t.clone()); // FIXME: top
+                self.state.stack.push(t.clone());
+            }
             _ => {
                 dbg!(op);
                 unimplemented!()
