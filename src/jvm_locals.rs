@@ -66,7 +66,7 @@ impl Locals {
             unimplemented!()
         }
 
-        if i >= self.len() && !(t == Type::Long || t == Type::Double) {
+        if i >= self.len() && !(l.1 == Type::Long || l.1 == Type::Double) {
             self.values
                 .resize(self.values.len() + i as usize, (0, Type::Any));
         } else if i >= self.len() {
