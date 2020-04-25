@@ -282,11 +282,11 @@ impl Code {
             }
             OP_FSTORE_0 | OP_ASTORE_0 | OP_ISTORE_0 => {
                 let t = self.state.stack.pop();
-                self.state.locals.insert(0, (0, t.clone()));
+                self.state.locals.insert(0, (0, t));
             }
             OP_FSTORE_1 | OP_ASTORE_1 | OP_ISTORE_1 => {
                 let t = self.state.stack.pop();
-                self.state.locals.insert(1, (0, t.clone()));
+                self.state.locals.insert(1, (0, t));
             }
             OP_FLOAD_0 | OP_ALOAD_0 | OP_ILOAD_0 => {
                 let (_, t) = &self.state.locals.at(0);
@@ -300,19 +300,19 @@ impl Code {
             }
             OP_DSTORE_0 | OP_LSTORE_0 => {
                 self.state.stack.pop2();
-                self.state.locals.insert(0, (0, t.clone()));
+                self.state.locals.insert(0, (0, t));
             }
             OP_DSTORE_1 | OP_LSTORE_1 => {
                 self.state.stack.pop2();
-                self.state.locals.insert(1, (0, t.clone()));
+                self.state.locals.insert(1, (0, t));
             }
             OP_DLOAD_0 | OP_LLOAD_0 => {
                 self.state.stack.push(t.clone()); // FIXME: top
-                self.state.stack.push(t.clone());
+                self.state.stack.push(t);
             }
             OP_DLOAD_1 | OP_LLOAD_1 => {
                 self.state.stack.push(t.clone()); // FIXME: top
-                self.state.stack.push(t.clone());
+                self.state.stack.push(t);
             }
             _ => {
                 dbg!(op);
@@ -354,7 +354,7 @@ impl Code {
                 self.state.stack.push(Type::Long);
             }
             OP_LDC | OP_LDC_W => {
-                self.state.stack.push(t.clone());
+                self.state.stack.push(t);
             }
             _ => {
                 dbg!(op);
@@ -496,7 +496,7 @@ impl Code {
     pub(crate) fn spill1(&mut self) -> Result<(), Error> {
         let t = self.state.stack.iter().last().unwrap().clone();
         match t {
-            Type::Char | Type::Boolean | Type::Int => self.push1(OP_ISTORE_1, t.clone()),
+            Type::Char | Type::Boolean | Type::Int => self.push1(OP_ISTORE_1, t),
             Type::TString => self.push1(OP_ASTORE_1, t),
             Type::Float => self.push1(OP_FSTORE_1, t),
             Type::Long => self.push1(OP_LSTORE_1, Type::Long),
@@ -509,13 +509,13 @@ impl Code {
     }
 
     pub(crate) fn unspill1(&mut self) -> Result<(), Error> {
-        let (_, t) = self.state.locals.at(1);
+        let (_, t) = self.state.locals.at(1).clone();
         match t {
-            Type::Char | Type::Boolean | Type::Int => self.push1(OP_ILOAD_1, t.clone()),
-            Type::TString => self.push1(OP_ALOAD_1, t.clone()),
-            Type::Float => self.push1(OP_FLOAD_1, t.clone()),
-            Type::Long => self.push1(OP_LLOAD_1, t.clone()),
-            Type::Double => self.push1(OP_DLOAD_1, t.clone()),
+            Type::Char | Type::Boolean | Type::Int => self.push1(OP_ILOAD_1, t),
+            Type::TString => self.push1(OP_ALOAD_1, t),
+            Type::Float => self.push1(OP_FLOAD_1, t),
+            Type::Long => self.push1(OP_LLOAD_1, t),
+            Type::Double => self.push1(OP_DLOAD_1, t),
             _ => {
                 dbg!(t);
                 unimplemented!()
