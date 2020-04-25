@@ -32,6 +32,10 @@ impl Locals {
         self.values.is_empty()
     }
 
+    pub(crate) fn len(&self) -> u16 {
+        self.values.len() as u16
+    }
+
     pub(crate) fn at(&self, i: u16) -> &Local {
         assert!(self.values.len() > i as usize);
         &self.values[i as usize]
@@ -55,6 +59,21 @@ impl Locals {
 
         self.count_max = std::cmp::max(self.values.len() as u16, self.count_max);
         i as u16
+    }
+
+    pub(crate) fn insert(&mut self, i: u16, l: Local) {
+        assert!(i < self.len());
+
+        if i > std::u8::MAX as u16 {
+            unimplemented!()
+        }
+
+        let i = if l.1 == Type::Long || l.1 == Type::Double {
+            self.values[i as usize] = l.clone();
+            self.values[i as usize + 1] = l;
+        } else {
+            self.values[i as usize] = l;
+        };
     }
 
     pub(crate) fn count_max(&self) -> u16 {

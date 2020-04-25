@@ -1158,8 +1158,8 @@ impl<'a> JvmEmitter<'a> {
                     &self.types,
                 )
             }
-            TokenKind::Long(0) => code.push1(OP_LCONST_0, Type::Int),
-            TokenKind::Long(1) => code.push1(OP_LCONST_1, Type::Int),
+            TokenKind::Long(0) => code.push1(OP_LCONST_0, Type::Long),
+            TokenKind::Long(1) => code.push1(OP_LCONST_1, Type::Long),
             TokenKind::Long(n) => add_and_push_constant(
                 &mut self.pool,
                 &Constant::Long(n),
@@ -1168,10 +1168,10 @@ impl<'a> JvmEmitter<'a> {
                 &self.types,
             ),
             TokenKind::Double(n) if n.to_bits() == 0f64.to_bits() => {
-                code.push1(OP_DCONST_0, Type::Int)
+                code.push1(OP_DCONST_0, Type::Double)
             }
             TokenKind::Double(n) if n.to_bits() == 1f64.to_bits() => {
-                code.push1(OP_DCONST_1, Type::Int)
+                code.push1(OP_DCONST_1, Type::Double)
             }
             TokenKind::Double(n) => add_and_push_constant(
                 &mut self.pool,
