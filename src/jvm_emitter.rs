@@ -1197,7 +1197,9 @@ impl<'a> JvmEmitter<'a> {
                 &self.types,
             ),
             TokenKind::TString => {
-                let s = String::from(&self.session.src[literal.span.start..literal.span.end]);
+                // Without quotes
+                let s =
+                    String::from(&self.session.src[literal.span.start + 1..literal.span.end - 1]);
                 let i = self.pool.push(Constant::Utf8(s))?;
                 add_and_push_constant(
                     &mut self.pool,
@@ -1429,7 +1431,7 @@ mod tests {
                 .pool
                 .iter()
                 .fold(0, |count, constant| match constant {
-                    Constant::Utf8(s) if s == "\"hello, world!\"" => count + 1,
+                    Constant::Utf8(s) if s == "hello, world!" => count + 1,
                     _ => count,
                 });
             assert_eq!(count, 1);
