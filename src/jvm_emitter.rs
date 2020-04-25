@@ -160,16 +160,27 @@ fn add_and_push_constant(
         }
         Constant::Int(_) if i <= std::u8::MAX as u16 => code.push2(OP_LDC, i as u8, Type::Int),
         Constant::Float(_) if i <= std::u8::MAX as u16 => code.push2(OP_LDC, i as u8, Type::Float),
+        Constant::CString(_) => {
+            let bytes = ((i - 1) as u16).to_be_bytes();
+            code.push3(
+                OP_LDC_W,
+                bytes[0],
+                bytes[1],
+                Type::TString,
+                constant_pool_index_to_fn_id,
+                types,
+            )
+        }
         _ => {
             let bytes = ((i - 1) as u16).to_be_bytes();
             code.push3(
                 OP_LDC_W,
                 bytes[0],
                 bytes[1],
-                Type::Long,
+                Type::Nothing,
                 constant_pool_index_to_fn_id,
                 types,
-            ) // FIXME
+            )
         }
     }
 }
