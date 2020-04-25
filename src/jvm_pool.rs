@@ -1,5 +1,6 @@
 use crate::error::*;
 use log::debug;
+use std::slice::Iter;
 
 #[derive(Debug, Clone)]
 pub(crate) enum Constant {
@@ -27,6 +28,14 @@ pub(crate) struct Pool {
 impl Pool {
     pub(crate) fn new() -> Pool {
         Pool { values: Vec::new() }
+    }
+
+    pub(crate) fn len(&self) -> u16 {
+        self.values.len() as u16
+    }
+
+    pub(crate) fn is_empty(&self) -> bool {
+        self.values.is_empty()
     }
 
     pub(crate) fn push(&mut self, constant: &Constant) -> Result<u16, Error> {
@@ -66,5 +75,18 @@ impl Pool {
                 Location::new(),
             )),
         }
+    }
+
+    pub(crate) fn iter(&self) -> Iter<Constant> {
+        self.values.iter()
+    }
+}
+
+impl IntoIterator for Pool {
+    type Item = Constant;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.values.into_iter()
     }
 }

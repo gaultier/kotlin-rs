@@ -16,7 +16,7 @@ pub(crate) struct JvmEmitter<'a> {
     pub(crate) session: &'a Session<'a>,
     pub(crate) types: &'a Types,
     pub(crate) resolution: &'a Resolution,
-    pub(crate) constants: Vec<Constant>,
+    pub(crate) pool: Pool,
     pub(crate) methods: Vec<Function>,
     pub(crate) attributes: Vec<Attribute>,
     pub(crate) source_file_constant: u16,
@@ -125,51 +125,14 @@ fn binary_op(kind: &TokenKind, t: &Type) -> u8 {
     }
 }
 
-fn add_constant(constants: &mut Vec<Constant>, constant: &Constant) -> Result<u16, Error> {
-    // Since `constants` is one-indexed, the max index is `std::u16::MAX+1` but since we
-    // can only index it with u16 the real max index is `std::u16::MAX`
-
-    match constant {
-        Constant::Long(n) if (constants.len() + 1) < std::u16::MAX as usize => {
-            constants.push(Constant::LongHigh((*n >> 32) as i32));
-            constants.push(Constant::LongLow((*n & 0xff_ff_ff_ff) as i32));
-            Ok((constants.len()) as u16)
-        }
-        Constant::Double(n) if (constants.len() + 1) < std::u16::MAX as usize => {
-            let bytes = n.to_be_bytes();
-            constants.push(Constant::DoubleHigh(
-                ((bytes[0] as u32) << 24)
-                    + ((bytes[1] as u32) << 16)
-                    + ((bytes[2] as u32) << 8)
-                    + (bytes[3] as u32),
-            ));
-            constants.push(Constant::DoubleLow(
-                ((bytes[4] as u32) << 24)
-                    + ((bytes[5] as u32) << 16)
-                    + ((bytes[6] as u32) << 8)
-                    + (bytes[7] as u32),
-            ));
-            Ok((constants.len()) as u16)
-        }
-        _ if constants.len() < std::u16::MAX as usize => {
-            constants.push(constant.clone());
-            Ok(constants.len() as u16)
-        }
-        _ => Err(Error::new(
-            ErrorKind::MaxConstantsReached(constants.len() as u16),
-            Location::new(),
-        )),
-    }
-}
-
 fn add_and_push_constant(
-    constants: &mut Vec<Constant>,
+    pool: &mut Pool,
     constant: &Constant,
     code: &mut Code,
     constant_pool_index_to_fn_id: &BTreeMap<u16, NodeId>,
     types: &Types,
 ) -> Result<(), Error> {
-    let i = add_constant(constants, &constant)?;
+    let i = pool.push(&constant)?;
     debug!("added constant: constant={:?} i={}", &constant, i);
 
     match constant {
@@ -248,120 +211,87 @@ impl<'a> JvmEmitter<'a> {
         file_name: &Path,
         class_name: &str,
     ) -> JvmEmitter<'a> {
-        let mut constants = Vec::new();
+        let mut pool = Pool::new();
 
-        let stack_map_table_str = add_constant(
-            &mut constants,
-            &Constant::Utf8(String::from("StackMapTable")),
-        )
-        .unwrap();
+        let stack_map_table_str = pool
+            .push(&Constant::Utf8(String::from("StackMapTable")))
+            .unwrap();
 
-        let obj_str = add_constant(
-            &mut constants,
-            &Constant::Utf8(String::from("java/lang/Object")),
-        )
-        .unwrap();
-        let obj_ctor_descriptor =
-            add_constant(&mut constants, &Constant::Utf8(String::from("()V"))).unwrap();
+        let obj_str = pool
+            .push(&Constant::Utf8(String::from("java/lang/Object")))
+            .unwrap();
+        let obj_ctor_descriptor = pool.push(&Constant::Utf8(String::from("()V"))).unwrap();
 
-        let ctor_str =
-            add_constant(&mut constants, &Constant::Utf8(String::from(CTOR_STR))).unwrap();
+        let ctor_str = pool.push(&Constant::Utf8(String::from(CTOR_STR))).unwrap();
 
-        let obj_name_type = add_constant(
-            &mut constants,
-            &Constant::NameAndType(ctor_str, obj_ctor_descriptor),
-        )
-        .unwrap();
+        let obj_name_type = pool
+            .push(&Constant::NameAndType(ctor_str, obj_ctor_descriptor))
+            .unwrap();
 
-        let super_class = add_constant(&mut constants, &Constant::ClassInfo(obj_str)).unwrap();
+        let super_class = pool.push(&Constant::ClassInfo(obj_str)).unwrap();
 
-        let obj_method_ref = add_constant(
-            &mut constants,
-            &Constant::MethodRef(super_class, obj_name_type),
-        )
-        .unwrap();
-        let this_class_name =
-            add_constant(&mut constants, &Constant::Utf8(class_name.to_string())).unwrap();
+        let obj_method_ref = pool
+            .push(&Constant::MethodRef(super_class, obj_name_type))
+            .unwrap();
+        let this_class_name = pool.push(&Constant::Utf8(class_name.to_string())).unwrap();
 
-        let this_class =
-            add_constant(&mut constants, &Constant::ClassInfo(this_class_name)).unwrap();
+        let this_class = pool.push(&Constant::ClassInfo(this_class_name)).unwrap();
 
-        let code_str = add_constant(&mut constants, &Constant::Utf8(String::from("Code"))).unwrap();
+        let code_str = pool.push(&Constant::Utf8(String::from("Code"))).unwrap();
 
-        let line_table_str = add_constant(
-            &mut constants,
-            &Constant::Utf8(String::from("LineNumberTable")),
-        )
-        .unwrap();
+        let line_table_str = pool
+            .push(&Constant::Utf8(String::from("LineNumberTable")))
+            .unwrap();
 
-        let main_str = add_constant(&mut constants, &Constant::Utf8(String::from("main"))).unwrap();
+        let main_str = pool.push(&Constant::Utf8(String::from("main"))).unwrap();
 
-        let main_descriptor_str = add_constant(
-            &mut constants,
-            &Constant::Utf8(String::from("([Ljava/lang/String;)V")),
-        )
-        .unwrap();
+        let main_descriptor_str = pool
+            .push(&Constant::Utf8(String::from("([Ljava/lang/String;)V")))
+            .unwrap();
 
-        let source_file_constant =
-            add_constant(&mut constants, &Constant::Utf8(String::from("SourceFile"))).unwrap();
-        let source_file_name_constant = add_constant(
-            &mut constants,
-            &Constant::Utf8(file_name.to_string_lossy().to_string()),
-        )
-        .unwrap();
+        let source_file_constant = pool
+            .push(&Constant::Utf8(String::from("SourceFile")))
+            .unwrap();
+        let source_file_name_constant = pool
+            .push(&Constant::Utf8(file_name.to_string_lossy().to_string()))
+            .unwrap();
 
-        let class_system_str = add_constant(
-            &mut constants,
-            &Constant::Utf8(String::from("java/lang/System")),
-        )
-        .unwrap();
-        let class_system =
-            add_constant(&mut constants, &Constant::ClassInfo(class_system_str)).unwrap();
+        let class_system_str = pool
+            .push(&Constant::Utf8(String::from("java/lang/System")))
+            .unwrap();
+        let class_system = pool.push(&Constant::ClassInfo(class_system_str)).unwrap();
 
-        let out_str = add_constant(&mut constants, &Constant::Utf8(String::from("out"))).unwrap();
+        let out_str = pool.push(&Constant::Utf8(String::from("out"))).unwrap();
 
-        let println_str =
-            add_constant(&mut constants, &Constant::Utf8(String::from("println"))).unwrap();
+        let println_str = pool.push(&Constant::Utf8(String::from("println"))).unwrap();
 
-        let printstream_str = add_constant(
-            &mut constants,
-            &Constant::Utf8(String::from("java/io/PrintStream")),
-        )
-        .unwrap();
+        let printstream_str = pool
+            .push(&Constant::Utf8(String::from("java/io/PrintStream")))
+            .unwrap();
 
-        let printstream_str_type = add_constant(
-            &mut constants,
-            &Constant::Utf8(String::from("Ljava/io/PrintStream;")),
-        )
-        .unwrap();
-        let out_name_type = add_constant(
-            &mut constants,
-            &Constant::NameAndType(out_str, printstream_str_type),
-        )
-        .unwrap();
+        let printstream_str_type = pool
+            .push(&Constant::Utf8(String::from("Ljava/io/PrintStream;")))
+            .unwrap();
+        let out_name_type = pool
+            .push(&Constant::NameAndType(out_str, printstream_str_type))
+            .unwrap();
 
-        let out_fieldref = add_constant(
-            &mut constants,
-            &Constant::FieldRef(class_system, out_name_type),
-        )
-        .unwrap();
+        let out_fieldref = pool
+            .push(&Constant::FieldRef(class_system, out_name_type))
+            .unwrap();
 
-        let class_printstream =
-            add_constant(&mut constants, &Constant::ClassInfo(printstream_str)).unwrap();
+        let class_printstream = pool.push(&Constant::ClassInfo(printstream_str)).unwrap();
 
-        let main_args_str = add_constant(
-            &mut constants,
-            &Constant::Utf8(String::from("[Ljava/lang/String;")),
-        )
-        .unwrap();
-        let class_main_args =
-            add_constant(&mut constants, &Constant::ClassInfo(main_args_str)).unwrap();
+        let main_args_str = pool
+            .push(&Constant::Utf8(String::from("[Ljava/lang/String;")))
+            .unwrap();
+        let class_main_args = pool.push(&Constant::ClassInfo(main_args_str)).unwrap();
 
         JvmEmitter {
             session,
             types,
             resolution,
-            constants,
+            pool,
             source_file_constant,
             source_file_name_constant,
             code_str,
@@ -595,15 +525,14 @@ impl<'a> JvmEmitter<'a> {
             _ => unreachable!(),
         };
 
-        let name = add_constant(&mut self.constants, &Constant::Utf8(fn_name_s))?;
+        let name = self.pool.push(&Constant::Utf8(fn_name_s))?;
 
         let fn_t = self.types.get(&id).unwrap();
-        let t_i = add_constant(&mut self.constants, &Constant::Utf8(fn_t.to_jvm_string()))?;
-        let name_and_type = add_constant(&mut self.constants, &Constant::NameAndType(name, t_i))?;
-        let method_ref = add_constant(
-            &mut self.constants,
-            &Constant::MethodRef(self.this_class, name_and_type),
-        )?;
+        let t_i = self.pool.push(&Constant::Utf8(fn_t.to_jvm_string()))?;
+        let name_and_type = self.pool.push(&Constant::NameAndType(name, t_i))?;
+        let method_ref = self
+            .pool
+            .push(&Constant::MethodRef(self.this_class, name_and_type))?;
         self.fn_id_to_constant_pool_index.insert(id, method_ref);
         self.constant_pool_index_to_fn_id.insert(method_ref, id);
 
@@ -709,25 +638,21 @@ impl<'a> JvmEmitter<'a> {
     fn println(&mut self, expr: &AstNodeExpr, code: &mut Code) -> Result<(), Error> {
         let expr_t = self.types.get(&expr.id()).unwrap();
 
-        let println_str_type = add_constant(
-            &mut self.constants,
-            &Constant::Utf8(
-                Type::Function {
-                    args: vec![expr_t.clone()],
-                    return_t: Box::new(Some(Type::Unit)),
-                }
-                .to_jvm_string(),
-            ),
-        )?;
+        let println_str_type = self.pool.push(&Constant::Utf8(
+            Type::Function {
+                args: vec![expr_t.clone()],
+                return_t: Box::new(Some(Type::Unit)),
+            }
+            .to_jvm_string(),
+        ))?;
 
-        let println_name_type = add_constant(
-            &mut self.constants,
-            &Constant::NameAndType(self.println_str, println_str_type),
-        )?;
-        let println_methodref = add_constant(
-            &mut self.constants,
-            &Constant::MethodRef(self.class_printstream, println_name_type),
-        )?;
+        let println_name_type = self
+            .pool
+            .push(&Constant::NameAndType(self.println_str, println_str_type))?;
+        let println_methodref = self.pool.push(&Constant::MethodRef(
+            self.class_printstream,
+            println_name_type,
+        ))?;
 
         self.expr(expr, code)?;
         code.push1(OP_ISTORE_0, Type::Int)?;
@@ -1202,7 +1127,7 @@ impl<'a> JvmEmitter<'a> {
                 )
             }
             TokenKind::Int(n) => add_and_push_constant(
-                &mut self.constants,
+                &mut self.pool,
                 &Constant::Int(n),
                 code,
                 &self.constant_pool_index_to_fn_id,
@@ -1225,7 +1150,7 @@ impl<'a> JvmEmitter<'a> {
             TokenKind::Long(0) => code.push1(OP_LCONST_0, Type::Int),
             TokenKind::Long(1) => code.push1(OP_LCONST_1, Type::Int),
             TokenKind::Long(n) => add_and_push_constant(
-                &mut self.constants,
+                &mut self.pool,
                 &Constant::Long(n),
                 code,
                 &self.constant_pool_index_to_fn_id,
@@ -1238,7 +1163,7 @@ impl<'a> JvmEmitter<'a> {
                 code.push1(OP_DCONST_1, Type::Int)
             }
             TokenKind::Double(n) => add_and_push_constant(
-                &mut self.constants,
+                &mut self.pool,
                 &Constant::Double(n),
                 code,
                 &self.constant_pool_index_to_fn_id,
@@ -1254,7 +1179,7 @@ impl<'a> JvmEmitter<'a> {
                 code.push1(OP_FCONST_2, Type::Float)
             }
             TokenKind::Float(n) => add_and_push_constant(
-                &mut self.constants,
+                &mut self.pool,
                 &Constant::Float(n),
                 code,
                 &self.constant_pool_index_to_fn_id,
@@ -1262,9 +1187,9 @@ impl<'a> JvmEmitter<'a> {
             ),
             TokenKind::TString => {
                 let s = String::from(&self.session.src[literal.span.start..literal.span.end]);
-                let i = add_constant(&mut self.constants, &Constant::Utf8(s))?;
+                let i = self.pool.push(&Constant::Utf8(s))?;
                 add_and_push_constant(
-                    &mut self.constants,
+                    &mut self.pool,
                     &Constant::CString(i),
                     code,
                     &self.constant_pool_index_to_fn_id,

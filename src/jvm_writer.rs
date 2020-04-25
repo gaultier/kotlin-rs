@@ -117,11 +117,11 @@ impl<'a> JvmEmitter<'a> {
 
     fn constant_pool<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         // + 1 because it is one-indexed
-        let len = &(self.constants.len() as u16 + 1).to_be_bytes();
+        let len = &(self.pool.len() as u16 + 1).to_be_bytes();
         debug!("constant pool size={:#04X} {:#04X}", len[0], len[1]);
         w.write_all(len)?;
 
-        for constant in &self.constants {
+        for constant in self.pool.iter() {
             self.constant(constant, w)?;
         }
 
