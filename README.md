@@ -31,7 +31,9 @@ $ echo 'println(4*5)' | kotlin
 $ kotlin fmt -f e2e/fibonnaci_iter.kts
 
 # There's also (very experimental) native support!
-$ kotlin asm -f e2e/hello_world.kts
+# This will create a native executable (macOS only for now)
+$ echo 'println(5)' | kotlin asm
+5
 
 ```
 
