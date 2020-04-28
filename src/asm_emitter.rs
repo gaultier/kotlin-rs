@@ -85,6 +85,8 @@ impl<'a> AsmEmitter<'a> {
         )?;
         self.fn_epilog(w)?;
 
+        w.flush()?;
+
         Ok(())
     }
 }

@@ -1,3 +1,6 @@
 /target
 *.class
 META-INF
+*.o
+*.asm
+*.exe
