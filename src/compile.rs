@@ -185,8 +185,10 @@ pub fn asm(src: &str, file_name: &Path) -> Result<(), Error> {
         .unwrap_or("")
         .ends_with("kts")
     {
-        debug!("asm: running executable file {:?}", &exe_path);
-        let mut run_command = Command::new(exe_path);
+        let mut rel_exe_path = PathBuf::from("./");
+        rel_exe_path.push(exe_path);
+        debug!("asm: running executable file {:?}", &rel_exe_path);
+        let mut run_command = Command::new(rel_exe_path);
         run_command.status()?;
     }
 
