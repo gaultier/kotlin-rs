@@ -141,7 +141,7 @@ pub fn asm(src: &str, file_name: &Path) -> Result<(), Error> {
     asm_path.set_extension("nasm");
 
     let mut asm_file = std::fs::File::create(&asm_path)?;
-    let emitter = AsmEmitter::new(&session, &types, &resolution);
+    let mut emitter = AsmEmitter::new(&session, &types, &resolution);
     emitter.main(&stmts, &mut asm_file)?;
 
     let mut nasm_command = Command::new("nasm");

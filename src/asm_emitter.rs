@@ -7,9 +7,10 @@ use crate::session::Session;
 
 #[derive(Debug)]
 pub(crate) struct AsmEmitter<'a> {
-    pub(crate) session: &'a Session<'a>,
-    pub(crate) types: &'a Types,
-    pub(crate) resolution: &'a Resolution,
+    session: &'a Session<'a>,
+    types: &'a Types,
+    resolution: &'a Resolution,
+    buffer: String,
 }
 
 impl<'a> AsmEmitter<'a> {
@@ -22,92 +23,81 @@ impl<'a> AsmEmitter<'a> {
             session,
             types,
             resolution,
+            buffer: String::new(),
         }
     }
 
-    fn fn_prolog<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        w.write_all(
+    fn fn_prolog(&mut self) {
+        self.buffer.push_str(
             &r##"
             push rbp
             mov rbp, rsp
-            "##
-            .as_bytes(),
-        )?;
-        Ok(())
+            "##,
+        );
     }
 
-    fn fn_epilog<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        w.write_all(
+    fn fn_epilog(&mut self) {
+        self.buffer.push_str(
             &r##"pop rbp
             ret
-            "##
-            .as_bytes(),
-        )?;
-        Ok(())
+            "##,
+        );
     }
 
-    fn fn_main<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        w.write_all(
+    fn fn_main(&mut self) {
+        self.buffer.push_str(
             &r##"
             global _main
-            _main:"##
-                .as_bytes(),
-        )?;
-        Ok(())
+            _main:"##,
+        );
     }
 
-    fn prolog<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        w.write_all(
+    fn prolog(&mut self) {
+        self.buffer.push_str(
             &r##"
             BITS 64 ; 64 bits
             CPU X64 ; target the x86_64 family of CPUs
             DEFAULT REL ; relative addressing mode
 
             extern _printf ; might be unused but that is ok
-            "##
-            .as_bytes(),
-        )?;
-        Ok(())
+            "##,
+        );
     }
 
-    fn data_section<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        w.write_all(
+    fn data_section(&mut self) {
+        self.buffer.push_str(
             &r##"
             section .data
                 int_fmt_string: db "%d", 0
                 string_fmt_string: db "%s", 0
                 char_fmt_string: db "%c", 0
                 hello: db "hello, world!", 0
-            "##
-            .as_bytes(),
-        )?;
-        Ok(())
+            "##,
+        );
     }
 
-    fn text_section<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
-        w.write_all(
+    fn text_section(&mut self) {
+        self.buffer.push_str(
             &r##"
             section .text
-            "##
-            .as_bytes(),
-        )?;
-        Ok(())
+            "##,
+        );
     }
 
     pub(crate) fn main<W: std::io::Write>(
-        &self,
+        &mut self,
         _statements: &AstNodeStmt,
         w: &mut W,
     ) -> Result<(), Error> {
-        self.prolog(w)?;
-        self.data_section(w)?;
+        self.prolog();
+        self.data_section();
 
-        self.text_section(w)?;
-        self.fn_main(w)?;
-        self.fn_prolog(w)?;
+        self.text_section();
+        self.fn_main();
+        self.fn_prolog();
 
         // FIXME
-        w.write_all(
+        self.buffer.push_str(
             &r##"
             xor rax, rax
             lea rdi, [string_fmt_string]
@@ -115,11 +105,11 @@ impl<'a> AsmEmitter<'a> {
             call _printf
 
             xor rax, rax
-            "##
-            .as_bytes(),
-        )?;
-        self.fn_epilog(w)?;
+            "##,
+        );
+        self.fn_epilog();
 
+        w.write_all(self.buffer.as_bytes())?;
         w.flush()?;
 
         Ok(())
