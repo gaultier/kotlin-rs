@@ -4,3 +4,4 @@ META-INF
 *.o
 *.asm
 *.exe
+*.nasm
