@@ -38,6 +38,9 @@ $ echo 'println(5)' | kotlin asm
 $ file Stdin.exe
 Stdin.exe: Mach-O 64-bit executable x86_64
 
+$ ./Stdin.exe
+5
+
 ```
 
 This project can also be used as a library.
