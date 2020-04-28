@@ -84,6 +84,16 @@ impl<'a> AsmEmitter<'a> {
         Ok(())
     }
 
+    fn text_section<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
+        w.write_all(
+            &r##"
+            section .text
+            "##
+            .as_bytes(),
+        )?;
+        Ok(())
+    }
+
     pub(crate) fn main<W: std::io::Write>(
         &self,
         _statements: &AstNodeStmt,
@@ -91,6 +101,8 @@ impl<'a> AsmEmitter<'a> {
     ) -> Result<(), Error> {
         self.prolog(w)?;
         self.data_section(w)?;
+
+        self.text_section(w)?;
         self.fn_main(w)?;
         self.fn_prolog(w)?;
 
@@ -98,8 +110,8 @@ impl<'a> AsmEmitter<'a> {
         w.write_all(
             &r##"
             xor rax, rax
-            mov rdi, string_fmt_string
-            lea rsi, hello
+            lea rdi, [string_fmt_string]
+            lea rsi, [hello]
             call _printf
 
             xor rax, rax
