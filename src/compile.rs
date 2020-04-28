@@ -144,6 +144,11 @@ pub fn asm(src: &str, file_name: &Path) -> Result<(), Error> {
     let mut emitter = AsmEmitter::new(&session, &types, &resolution);
     emitter.main(&stmts, &mut asm_file)?;
 
+    debug!(
+        "asm: generated nasm file {:?} from source file {:?}",
+        &asm_path, &file_name
+    );
+
     let mut nasm_command = Command::new("nasm");
     nasm_command
         .arg("-f")
@@ -151,10 +156,15 @@ pub fn asm(src: &str, file_name: &Path) -> Result<(), Error> {
         .arg(&asm_path)
         .status()?;
 
-    let mut exe_path = PathBuf::from(file_name);
-    exe_path.set_extension("exe");
     let mut object_path = PathBuf::from(file_name);
     object_path.set_extension("o");
+    debug!(
+        "asm: generated object file {:?} from nasm file {:?}",
+        &object_path, &asm_path
+    );
+
+    let mut exe_path = PathBuf::from(file_name);
+    exe_path.set_extension("exe");
 
     let mut ld_command = Command::new("ld");
     ld_command
@@ -163,6 +173,10 @@ pub fn asm(src: &str, file_name: &Path) -> Result<(), Error> {
         .arg(&object_path)
         .arg("-lSystem")
         .status()?;
+    debug!(
+        "asm: generated executable file {:?} from object file {:?}",
+        &exe_path, &object_path
+    );
 
     if file_name
         .extension()
@@ -171,6 +185,7 @@ pub fn asm(src: &str, file_name: &Path) -> Result<(), Error> {
         .unwrap_or("")
         .ends_with("kts")
     {
+        debug!("asm: running executable file {:?}", &exe_path);
         let mut run_command = Command::new(exe_path);
         run_command.status()?;
     }
