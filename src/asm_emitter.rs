@@ -59,9 +59,25 @@ impl<'a> AsmEmitter<'a> {
     fn prolog<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         w.write_all(
             &r##"
-            BITS 64
-            CPU X64
-            DEFAULT REL
+            BITS 64 ; 64 bits
+            CPU X64 ; target the x86_64 family of CPUs
+            DEFAULT REL ; relative addressing mode
+
+            extern _printf ; might be unused but that is ok
+            "##
+            .as_bytes(),
+        )?;
+        Ok(())
+    }
+
+    fn data_section<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
+        w.write_all(
+            &r##"
+            section .data
+                int_fmt_string: db "%d", 0
+                string_fmt_string: db "%s", 0
+                char_fmt_string: db "%c", 0
+                hello: db "hello, world!", 0
             "##
             .as_bytes(),
         )?;
@@ -74,11 +90,18 @@ impl<'a> AsmEmitter<'a> {
         w: &mut W,
     ) -> Result<(), Error> {
         self.prolog(w)?;
+        self.data_section(w)?;
         self.fn_main(w)?;
         self.fn_prolog(w)?;
 
+        // FIXME
         w.write_all(
             &r##"
+            xor rax, rax
+            mov rdi, string_fmt_string
+            lea rsi, hello
+            call _printf
+
             xor rax, rax
             "##
             .as_bytes(),
