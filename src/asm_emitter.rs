@@ -56,7 +56,7 @@ impl<'a> AsmEmitter<'a> {
         Ok(())
     }
 
-    fn epilog<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
+    fn prolog<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
         w.write_all(
             &r##"
             BITS 64
@@ -65,6 +65,22 @@ impl<'a> AsmEmitter<'a> {
             "##
             .as_bytes(),
         )?;
+        Ok(())
+    }
+
+    pub(crate) fn main<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
+        self.prolog(w)?;
+        self.fn_main(w)?;
+        self.fn_prolog(w)?;
+
+        w.write_all(
+            &r##"
+            xor rax, rax
+            "##
+            .as_bytes(),
+        )?;
+        self.fn_epilog(w)?;
+
         Ok(())
     }
 }
