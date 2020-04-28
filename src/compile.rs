@@ -145,7 +145,11 @@ pub fn asm(src: &str, file_name: &Path) -> Result<(), Error> {
     emitter.main(&stmts, &mut asm_file)?;
 
     let mut nasm_command = Command::new("nasm");
-    nasm_command.arg("-f").arg(&asm_path).status()?;
+    nasm_command
+        .arg("-f")
+        .arg("macho64")
+        .arg(&asm_path)
+        .status()?;
 
     let mut exe_path = PathBuf::from(file_name);
     exe_path.set_extension("exe");
