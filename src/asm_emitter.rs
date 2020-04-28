@@ -99,8 +99,8 @@ impl<'a> AsmEmitter<'a> {
         self.buffer.push_str(
             &r##"
             xor rax, rax
-            lea rdi, [int_fmt_string] ; FIXME
-            mov rsi,"##,
+            lea rdi, [int_fmt_string] ; FIXME: hardcoded
+            mov rsi, "##,
         );
         self.statement(statements);
 
