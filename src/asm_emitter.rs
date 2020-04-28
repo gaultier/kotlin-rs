@@ -1,5 +1,5 @@
 use crate::error::*;
-// use crate::lex::{Token, TokenKind};
+use crate::lex::{Token, TokenKind};
 use crate::parse::*;
 use crate::resolver::Resolution;
 use crate::session::Session;
@@ -86,7 +86,7 @@ impl<'a> AsmEmitter<'a> {
 
     pub(crate) fn main<W: std::io::Write>(
         &mut self,
-        _statements: &AstNodeStmt,
+        statements: &AstNodeStmt,
         w: &mut W,
     ) -> Result<(), Error> {
         self.prolog();
@@ -96,22 +96,53 @@ impl<'a> AsmEmitter<'a> {
         self.fn_main();
         self.fn_prolog();
 
-        // FIXME
         self.buffer.push_str(
             &r##"
             xor rax, rax
-            lea rdi, [string_fmt_string]
-            lea rsi, [hello]
+            lea rdi, [int_fmt_string] ; FIXME
+            mov rsi,"##,
+        );
+        self.statement(statements);
+
+        self.buffer.push_str(
+            &r##"
             call _printf
 
             xor rax, rax
             "##,
         );
+
         self.fn_epilog();
 
         w.write_all(self.buffer.as_bytes())?;
         w.flush()?;
 
         Ok(())
+    }
+
+    fn statement(&mut self, statement: &AstNodeStmt) {
+        match statement {
+            AstNodeStmt::Expr(expr) => self.expr(expr),
+            AstNodeStmt::Block { body, .. } => {
+                for stmt in body {
+                    self.statement(stmt);
+                }
+            }
+            _ => todo!(),
+        }
+    }
+
+    fn expr(&mut self, expr: &AstNodeExpr) {
+        match expr {
+            AstNodeExpr::Literal(tok, _) => self.literal(tok),
+            _ => todo!(),
+        }
+    }
+
+    fn literal(&mut self, token: &Token) {
+        match token.kind {
+            TokenKind::Int(n) => self.buffer.push_str(&format!("{}", n)),
+            _ => todo!(),
+        }
     }
 }
