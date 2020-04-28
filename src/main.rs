@@ -1,5 +1,5 @@
 use clap::{App, Arg};
-use kotlin::compile::{asm, compile, default_path, fmt, sexp};
+use kotlin::compile::{asm, default_path, fmt, jvm, sexp};
 use kotlin::error::Error;
 use kotlin::lex::Lexer;
 use kotlin::parse::Parser;
@@ -22,14 +22,14 @@ fn main() {
         .arg(
             Arg::with_name("command")
                 .help("What to do")
-                .default_value("build")
+                .default_value("jvm")
                 .possible_values(&[
                     "sexp",
                     "asm",
                     "fmt",
                     "dump_ast",
                     "dump_tokens",
-                    "build",
+                    "jvm",
                     // Later: verify, etc
                 ])
                 .index(1),
@@ -74,7 +74,7 @@ fn main() {
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
     let res = match matches.value_of("command").unwrap() {
-        "build" => compile(&src, &file_name.unwrap_or_else(default_path).as_path()).map(|output| {
+        "jvm" => jvm(&src, &file_name.unwrap_or_else(default_path).as_path()).map(|output| {
             if let Some(output) = output {
                 print!("{}", String::from_utf8_lossy(&output.stdout));
                 eprint!("{}", String::from_utf8_lossy(&output.stderr));

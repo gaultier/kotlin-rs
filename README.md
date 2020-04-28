@@ -55,6 +55,6 @@ $ cargo run -- sexp -f /path/to/file.kt
 
 Pre-pre alpha. Do not use yet.
 
-Some full-fledged examples compile though, see the `e2e` directory.
+Some full-fledged examples compile though, see the `e2e` directory or the tests.
 
 See the [roadmap](docs/ROADMAP.md).

@@ -19,7 +19,7 @@ pub fn default_path() -> PathBuf {
     PathBuf::from("Stdin.kts")
 }
 
-pub fn compile(src: &str, file_name: &Path) -> Result<Option<Output>, Error> {
+pub fn jvm(src: &str, file_name: &Path) -> Result<Option<Output>, Error> {
     let session = Session::new(&src, None);
     let mut lexer = Lexer::new(&session);
     let (tokens, session) = lexer.lex()?;
