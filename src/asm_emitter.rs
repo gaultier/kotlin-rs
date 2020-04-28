@@ -29,7 +29,8 @@ impl<'a> AsmEmitter<'a> {
 
     fn fn_prolog(&mut self) {
         self.buffer.push_str(
-            &r##"
+            r##"
+            ; prolog
             push rbp
             mov rbp, rsp
             "##,
@@ -38,7 +39,9 @@ impl<'a> AsmEmitter<'a> {
 
     fn fn_epilog(&mut self) {
         self.buffer.push_str(
-            &r##"pop rbp
+            r##"
+            ; epilog
+            pop rbp
             ret
             "##,
         );
@@ -47,6 +50,7 @@ impl<'a> AsmEmitter<'a> {
     fn fn_main(&mut self) {
         self.buffer.push_str(
             &r##"
+            ; entrypoint
             global _main
             _main:"##,
         );
@@ -54,7 +58,7 @@ impl<'a> AsmEmitter<'a> {
 
     fn prolog(&mut self) {
         self.buffer.push_str(
-            &r##"
+            r##"
             BITS 64 ; 64 bits
             CPU X64 ; target the x86_64 family of CPUs
             DEFAULT REL ; relative addressing mode
@@ -66,7 +70,7 @@ impl<'a> AsmEmitter<'a> {
 
     fn data_section(&mut self) {
         self.buffer.push_str(
-            &r##"
+            r##"
             section .data
                 int_fmt_string: db "%d\n", 0
                 string_fmt_string: db "%s\n", 0
@@ -77,7 +81,7 @@ impl<'a> AsmEmitter<'a> {
 
     fn text_section(&mut self) {
         self.buffer.push_str(
-            &r##"
+            r##"
             section .text
             "##,
         );
