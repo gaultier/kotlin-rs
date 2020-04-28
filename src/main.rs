@@ -81,7 +81,7 @@ fn main() {
             }
         }),
         "sexp" => sexp(&src, &mut handle),
-        "asm" => asm(&src, &mut handle),
+        "asm" => asm(&src, &file_name.unwrap_or_else(default_path).as_path()),
         "fmt" => fmt(&src, &mut handle),
         "dump_ast" => dump_ast(&src),
         "dump_tokens" => dump_tokens(&src),

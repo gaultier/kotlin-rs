@@ -123,7 +123,7 @@ pub fn sexp<W: io::Write>(src: &str, w: &mut W) -> Result<(), Error> {
     emitter.statements(&stmts, w)
 }
 
-pub fn asm<W: io::Write>(src: &str, w: &mut W) -> Result<(), Error> {
+pub fn asm(src: &str, file_name: &Path) -> Result<(), Error> {
     let session = Session::new(&src, None);
     let mut lexer = Lexer::new(&session);
     let (tokens, session) = lexer.lex()?;
@@ -137,6 +137,39 @@ pub fn asm<W: io::Write>(src: &str, w: &mut W) -> Result<(), Error> {
     let mut type_checker = TypeChecker::new(&session, &resolution, &mut types);
     let types = type_checker.check_types(&stmts)?;
 
+    let mut asm_path = PathBuf::from(file_name);
+    asm_path.set_extension("nasm");
+
+    let mut asm_file = std::fs::File::create(&asm_path)?;
     let emitter = AsmEmitter::new(&session, &types, &resolution);
-    emitter.main(&stmts, w)
+    emitter.main(&stmts, &mut asm_file)?;
+
+    let mut nasm_command = Command::new("nasm");
+    nasm_command.arg("-f").arg(&asm_path).status()?;
+
+    let mut exe_path = PathBuf::from(file_name);
+    exe_path.set_extension("exe");
+    let mut object_path = PathBuf::from(file_name);
+    object_path.set_extension("o");
+
+    let mut ld_command = Command::new("ld");
+    ld_command
+        .arg("-o")
+        .arg(&exe_path)
+        .arg(&object_path)
+        .arg("-lSystem")
+        .status()?;
+
+    if file_name
+        .extension()
+        .map(|os_str| os_str.to_str())
+        .flatten()
+        .unwrap_or("")
+        .ends_with("kts")
+    {
+        let mut run_command = Command::new(exe_path);
+        run_command.status()?;
+    }
+
+    Ok(())
 }
