@@ -72,9 +72,9 @@ impl<'a> AsmEmitter<'a> {
         self.buffer.push_str(
             r##"
             section .data
-                int_fmt_string: db "%d\n", 0
-                string_fmt_string: db "%s\n", 0
-                char_fmt_string: db "%c\n", 0
+                int_fmt_string: db "%d", 10, 0
+                string_fmt_string: db "%s", 10, 0
+                char_fmt_string: db "%c", 10, 0
             "##,
         );
     }
@@ -132,7 +132,7 @@ impl<'a> AsmEmitter<'a> {
     fn println(&mut self, expr: &AstNodeExpr) {
         self.buffer.push_str(
             r##"
-            lea rdi, int_fmt_string ; FIXME: hardcoded
+            lea rdi, [int_fmt_string] ; FIXME: hardcoded
             mov rsi, "##,
         );
         self.expr(expr);
