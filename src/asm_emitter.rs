@@ -142,6 +142,10 @@ impl<'a> AsmEmitter<'a> {
     fn literal(&mut self, token: &Token) {
         match token.kind {
             TokenKind::Int(n) => self.buffer.push_str(&format!("{}", n)),
+            TokenKind::Long(n) => self.buffer.push_str(&format!("{}", n)),
+            TokenKind::Boolean(true) => self.buffer.push_str("1"),
+            TokenKind::Boolean(false) => self.buffer.push_str("0"),
+            TokenKind::Char(c) => self.buffer.push_str(&format!("'{}'", c)),
             _ => todo!(),
         }
     }
