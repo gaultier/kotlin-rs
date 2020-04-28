@@ -1,5 +1,5 @@
 use clap::{App, Arg};
-use kotlin::compile::{compile, default_path, fmt, sexp};
+use kotlin::compile::{asm, compile, default_path, fmt, sexp};
 use kotlin::error::Error;
 use kotlin::lex::Lexer;
 use kotlin::parse::Parser;
@@ -25,6 +25,7 @@ fn main() {
                 .default_value("build")
                 .possible_values(&[
                     "sexp",
+                    "asm",
                     "fmt",
                     "dump_ast",
                     "dump_tokens",
@@ -80,6 +81,7 @@ fn main() {
             }
         }),
         "sexp" => sexp(&src, &mut handle),
+        "asm" => asm(&src, &mut handle),
         "fmt" => fmt(&src, &mut handle),
         "dump_ast" => dump_ast(&src),
         "dump_tokens" => dump_tokens(&src),

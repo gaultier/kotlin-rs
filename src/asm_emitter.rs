@@ -1,9 +1,9 @@
 use crate::error::*;
-use crate::lex::{Token, TokenKind};
+// use crate::lex::{Token, TokenKind};
 use crate::parse::*;
 use crate::resolver::Resolution;
 use crate::session::Session;
-use log::debug;
+// use log::debug;
 
 #[derive(Debug)]
 pub(crate) struct AsmEmitter<'a> {
@@ -68,7 +68,11 @@ impl<'a> AsmEmitter<'a> {
         Ok(())
     }
 
-    pub(crate) fn main<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
+    pub(crate) fn main<W: std::io::Write>(
+        &self,
+        _statements: &AstNodeStmt,
+        w: &mut W,
+    ) -> Result<(), Error> {
         self.prolog(w)?;
         self.fn_main(w)?;
         self.fn_prolog(w)?;
