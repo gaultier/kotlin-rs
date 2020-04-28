@@ -68,10 +68,9 @@ impl<'a> AsmEmitter<'a> {
         self.buffer.push_str(
             &r##"
             section .data
-                int_fmt_string: db "%d", 0
-                string_fmt_string: db "%s", 0
-                char_fmt_string: db "%c", 0
-                hello: db "hello, world!", 0
+                int_fmt_string: db "%d\n", 0
+                string_fmt_string: db "%s\n", 0
+                char_fmt_string: db "%c\n", 0
             "##,
         );
     }
@@ -96,21 +95,7 @@ impl<'a> AsmEmitter<'a> {
         self.fn_main();
         self.fn_prolog();
 
-        self.buffer.push_str(
-            &r##"
-            xor rax, rax
-            lea rdi, [int_fmt_string] ; FIXME: hardcoded
-            mov rsi, "##,
-        );
         self.statement(statements);
-
-        self.buffer.push_str(
-            &r##"
-            call _printf
-
-            xor rax, rax
-            "##,
-        );
 
         self.fn_epilog();
 
@@ -135,8 +120,24 @@ impl<'a> AsmEmitter<'a> {
     fn expr(&mut self, expr: &AstNodeExpr) {
         match expr {
             AstNodeExpr::Literal(tok, _) => self.literal(tok),
+            AstNodeExpr::Println(expr, _) => self.println(expr),
             _ => todo!(),
         }
+    }
+
+    fn println(&mut self, expr: &AstNodeExpr) {
+        self.buffer.push_str(
+            r##"
+            lea rdi, int_fmt_string ; FIXME: hardcoded
+            mov rsi, "##,
+        );
+        self.expr(expr);
+        self.buffer.push_str(
+            &r##"
+            call _printf
+            xor rax, rax
+            "##,
+        );
     }
 
     fn literal(&mut self, token: &Token) {

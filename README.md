@@ -30,6 +30,9 @@ $ echo 'println(4*5)' | kotlin
 # Format a file (it does not modify the file in place, just prints on stdout):
 $ kotlin fmt -f e2e/fibonnaci_iter.kts
 
+# There's also (very experimental) native support!
+$ kotlin asm -f e2e/hello_world.kts
+
 ```
 
 This project can also be used as a library.
