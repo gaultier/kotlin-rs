@@ -150,12 +150,16 @@ pub fn asm(src: &str, file_name: &Path) -> Result<(), Error> {
     );
 
     let mut nasm_command = Command::new("nasm");
-    nasm_command
+    let mut nasm_child = nasm_command
         .arg("-f")
         .arg("macho64")
         .arg(&asm_path)
-        .status()
-        .expect("Nasm invocation failed");
+        .spawn()
+        .expect("Failed to start Nasm");
+    let ecode = nasm_child.wait().expect("Failed to wait on Nasm");
+    if !ecode.success() {
+        panic!("Non-zero return code from Nasm. This is likely a compiler bug.");
+    }
 
     let mut object_path = PathBuf::from(file_name);
     object_path.set_extension("o");
