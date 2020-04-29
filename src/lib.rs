@@ -1,4 +1,5 @@
 #![recursion_limit = "256"]
+mod asm_constants;
 pub mod asm_emitter;
 pub mod compile;
 mod cursor;

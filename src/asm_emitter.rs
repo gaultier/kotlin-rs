@@ -1,3 +1,4 @@
+use crate::asm_constants::Constants;
 use crate::error::*;
 use crate::lex::{Token, TokenKind};
 use crate::parse::*;
@@ -10,6 +11,7 @@ pub(crate) struct AsmEmitter<'a> {
     session: &'a Session<'a>,
     types: &'a Types,
     resolution: &'a Resolution,
+    constants: Constants,
     buffer: String,
 }
 
@@ -24,6 +26,7 @@ impl<'a> AsmEmitter<'a> {
             types,
             resolution,
             buffer: String::new(),
+            constants: Constants::new(),
         }
     }
 
@@ -56,35 +59,36 @@ impl<'a> AsmEmitter<'a> {
         );
     }
 
-    fn prolog(&mut self) {
-        self.buffer.push_str(
-            r##"
+    fn prolog<W: std::io::Write>(&mut self, w: &mut W) -> Result<(), Error> {
+        w.write_all(
+            &r##"
             BITS 64 ; 64 bits
             CPU X64 ; target the x86_64 family of CPUs
             DEFAULT REL ; relative addressing mode
 
             extern _printf ; might be unused but that is ok
-            "##,
-        );
+            "##
+            .as_bytes(),
+        )?;
+        Ok(())
     }
 
-    fn data_section(&mut self) {
-        self.buffer.push_str(
-            r##"
-            section .data
-                int_fmt_string: db "%d", 10, 0
-                string_fmt_string: db "%s", 10, 0
-                char_fmt_string: db "%c", 10, 0
-            "##,
-        );
+    fn data_section<W: std::io::Write>(&mut self, w: &mut W) -> Result<(), Error> {
+        w.write_all(&" section .data\n".as_bytes())?;
+        for (label, constant) in self.constants.iter() {
+            w.write_all(&format!("{} db {}", label, constant).as_bytes())?;
+        }
+        Ok(())
     }
 
-    fn text_section(&mut self) {
-        self.buffer.push_str(
-            r##"
+    fn text_section<W: std::io::Write>(&mut self, w: &mut W) -> Result<(), Error> {
+        w.write_all(
+            &r##"
             section .text
-            "##,
-        );
+            "##
+            .as_bytes(),
+        )?;
+        Ok(())
     }
 
     pub(crate) fn main<W: std::io::Write>(
@@ -92,16 +96,14 @@ impl<'a> AsmEmitter<'a> {
         statements: &AstNodeStmt,
         w: &mut W,
     ) -> Result<(), Error> {
-        self.prolog();
-        self.data_section();
-
-        self.text_section();
         self.fn_main();
         self.fn_prolog();
-
         self.statement(statements);
-
         self.fn_epilog();
+
+        self.prolog(w)?;
+        self.data_section(w)?;
+        self.text_section(w)?;
 
         w.write_all(self.buffer.as_bytes())?;
         w.flush()?;
@@ -151,6 +153,12 @@ impl<'a> AsmEmitter<'a> {
             TokenKind::Boolean(true) => self.buffer.push_str("1"),
             TokenKind::Boolean(false) => self.buffer.push_str("0"),
             TokenKind::Char(c) => self.buffer.push_str(&format!("'{}'", c)),
+            TokenKind::TString => {
+                let s = String::from(&self.session.src[token.span.start + 1..token.span.end - 1]);
+                let label = self.constants.find_or_create_string(s);
+
+                self.buffer.push_str(&format!("[{}]", &label));
+            }
             _ => todo!(),
         }
     }
