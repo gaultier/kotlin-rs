@@ -121,6 +121,7 @@ impl<'a> AsmEmitter<'a> {
     fn call_function(&mut self, fn_name: &str) {
         self.buffer.push_str(&"call ");
         self.buffer.push_str(fn_name);
+        self.buffer.push_str("\n");
     }
 
     pub(crate) fn main<W: std::io::Write>(
