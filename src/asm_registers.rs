@@ -91,7 +91,7 @@ impl Registers {
         None
     }
 
-    pub(crate) fn consume(&mut self, register: Register) {
+    pub(crate) fn free(&mut self, register: Register) {
         self.in_use &= !(register as u16);
     }
 }

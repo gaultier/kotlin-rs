@@ -1,5 +1,5 @@
 use crate::asm_constants::Constants;
-use crate::asm_registers::Registers;
+use crate::asm_registers::{Register, Registers};
 use crate::error::*;
 use crate::lex::{Token, TokenKind};
 use crate::parse::*;
@@ -104,6 +104,13 @@ impl<'a> AsmEmitter<'a> {
         Ok(())
     }
 
+    fn zero_register(&mut self, register: Register) {
+        self.buffer
+            .push_str(&format!("xor {}, {}", register, register));
+
+        self.registers.free(register);
+    }
+
     pub(crate) fn main<W: std::io::Write>(
         &mut self,
         statements: &AstNodeStmt,
@@ -163,9 +170,10 @@ impl<'a> AsmEmitter<'a> {
         self.buffer.push_str(
             &r##"
             call _printf
-            xor rax, rax
             "##,
         );
+
+        self.zero_register(Register::Rax);
     }
 
     fn literal(&mut self, token: &Token) {
