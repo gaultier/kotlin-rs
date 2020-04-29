@@ -81,7 +81,12 @@ fn main() {
             }
         }),
         "sexp" => sexp(&src, &mut handle),
-        "asm" => asm(&src, &file_name.unwrap_or_else(default_path).as_path()),
+        "asm" => asm(&src, &file_name.unwrap_or_else(default_path).as_path()).map(|output| {
+            if let Some(output) = output {
+                print!("{}", String::from_utf8_lossy(&output.stdout));
+                eprint!("{}", String::from_utf8_lossy(&output.stderr));
+            }
+        }),
         "fmt" => fmt(&src, &mut handle),
         "dump_ast" => dump_ast(&src),
         "dump_tokens" => dump_tokens(&src),

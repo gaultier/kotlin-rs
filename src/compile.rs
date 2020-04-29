@@ -123,7 +123,7 @@ pub fn sexp<W: io::Write>(src: &str, w: &mut W) -> Result<(), Error> {
     emitter.statements(&stmts, w)
 }
 
-pub fn asm(src: &str, file_name: &Path) -> Result<(), Error> {
+pub fn asm(src: &str, file_name: &Path) -> Result<Option<Output>, Error> {
     let session = Session::new(&src, None);
     let mut lexer = Lexer::new(&session);
     let (tokens, session) = lexer.lex()?;
@@ -200,10 +200,8 @@ pub fn asm(src: &str, file_name: &Path) -> Result<(), Error> {
         rel_exe_path.push(exe_path);
         debug!("asm: running executable file {:?}", &rel_exe_path);
         let mut run_command = Command::new(&rel_exe_path);
-        run_command
-            .status()
-            .unwrap_or_else(|err| panic!("Running {:?} failed: {:?}", &rel_exe_path, err));
+        return Ok(Some(run_command.output()?));
     }
 
-    Ok(())
+    Ok(None)
 }
