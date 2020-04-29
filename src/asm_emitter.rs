@@ -171,16 +171,15 @@ impl<'a> AsmEmitter<'a> {
             _ => todo!(),
         };
 
-        // Format string
-        let first_arg_assign_op = assign_register_op(&Type::TString);
-        // Variable to be printed
-        let second_arg_assign_op = assign_register_op(t);
-
         self.buffer.push_str(&format!(
             r##"
-            {} rdi, [{}]
-            {} rsi, "##,
-            first_arg_assign_op, fmt_string_label, second_arg_assign_op
+            {first_arg_assign_op} {first_fn_arg_reg}, [{fmt_string_label}]
+            {second_arg_assign_op} {second_fn_arg_reg}, "##,
+            first_arg_assign_op = assign_register_op(&Type::TString),
+            first_fn_arg_reg = Registers::first_fn_argument(),
+            fmt_string_label = fmt_string_label,
+            second_fn_arg_reg = Registers::second_fn_argument(),
+            second_arg_assign_op = assign_register_op(t)
         ));
         self.expr(expr);
 

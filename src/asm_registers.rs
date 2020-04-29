@@ -78,6 +78,14 @@ impl Registers {
         Registers { in_use: 0 }
     }
 
+    pub(crate) fn first_fn_argument() -> Register {
+        Register::Rdi
+    }
+
+    pub(crate) fn second_fn_argument() -> Register {
+        Register::Rsi
+    }
+
     pub(crate) fn allocate(&mut self) -> Option<Register> {
         let mut i = 1u16;
         while i <= Register::R15 as u16 {
