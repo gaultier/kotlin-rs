@@ -127,8 +127,8 @@
 
 ## CLI
 
-- [ ] Simplify CLI (align with kotlinc)
-- [ ] Add debug dump of the AST
+- [ ] Simplify CLI (align with kotlinc?)
+- [x] Add debug dump of the AST
 - [ ] Add debug dump of resolution & types
 - [ ] Show default paths of dependencies e.g stdlib
 - [ ] Give on the CLI paths of dependencies e.g stdlib
@@ -142,7 +142,7 @@
 - [x] Show full line of source code on error
 - [x] Show the exact location on the line of the error with description
 
-## Examples of using the libparsing
+## Examples of using the project as a library
 
 - [x] Add AST sexp dump
 - [ ] Write examples in rust
@@ -152,7 +152,7 @@
 - [x] Type inference
 - [ ] Generics
 - [x] Java Byte Code
-- [ ] Varargs
+- [x] Varargs
 - [ ] Null safety
 - [ ] Language server (?)
 
@@ -160,22 +160,25 @@
 
 - [ ] IR (?)
 - [x] Lisp
-- [x] Jvm println
-- [x] Jvm int math
-- [x] Jvm long math
-- [x] Jvm float math
-- [x] Jvm double math
-- [x] Jvm hello world
-- [x] Jvm binary operators (`==`, `!=`, `<=`, `<`, etc)
+
+### JVM
+
+- [x] println
+- [x] int math
+- [x] long math
+- [x] float math
+- [x] double math
+- [x] hello world
+- [x] binary operators (`==`, `!=`, `<=`, `<`, etc)
 - [ ] Test metadata `size()` calculations
 - [ ] Test metadata serialization
 - [ ] High level API to handle stack/locals/types
-- [x] Jvm boolean
-- [x] Jvm char
+- [x] boolean
+- [x] char
 - [ ] Conversion between types (?)
 - [x] Track max stack/locals
-- [x] Jvm if-else
-- [x] Jvm while loop
+- [x] if-else
+- [x] while loop
 - [x] Locals
 - [x] Assignment
 - [x] Functions
@@ -186,3 +189,9 @@
 - [ ] Local variables debug information
 - [ ] Package
 - [ ] Stack map frames (hard)
+
+### ASM
+
+- [x] println
+- [x] unique constants
+- [x] int math
