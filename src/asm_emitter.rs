@@ -16,10 +16,11 @@ pub(crate) struct AsmEmitter<'a> {
     resolution: &'a Resolution,
     constants: Constants,
     buffer: String,
-    int_fmt_string_label: String,
-    string_fmt_string_label: String,
     registers: Registers,
 }
+
+const PRINTF_FMT_STRING: &str = "%s";
+const PRINTF_FMT_INT: &str = "%d";
 
 fn assign_register_op(t: &Type) -> &'static str {
     match t {
@@ -36,8 +37,6 @@ impl<'a> AsmEmitter<'a> {
         resolution: &'a Resolution,
     ) -> AsmEmitter<'a> {
         let mut constants = Constants::new();
-        let int_fmt_string_label = constants.find_or_create_string(String::from("%d"));
-        let string_fmt_string_label = constants.find_or_create_string(String::from("%s"));
 
         AsmEmitter {
             session,
@@ -45,8 +44,6 @@ impl<'a> AsmEmitter<'a> {
             resolution,
             buffer: String::new(),
             constants,
-            int_fmt_string_label,
-            string_fmt_string_label,
             registers: Registers::new(),
         }
     }
@@ -202,27 +199,32 @@ impl<'a> AsmEmitter<'a> {
         }
     }
 
+    fn synthetic_literal_string(&mut self, s: &'static str) -> String {
+        self.constants.find_or_create_string(s)
+    }
+
+    fn assign_register(&mut self, register: Register, t: &Type) {
+        self.registers.reserve(register);
+        self.buffer
+            .push_str(&format!("{} {}, ", assign_register_op(t), register));
+    }
+
+    fn deref_string_from_label(&mut self, fmt_string_label: &str) {
+        self.buffer.push_str(&format!("[{}]\n", fmt_string_label));
+    }
+
     fn println(&mut self, expr: &AstNodeExpr) {
+        self.assign_register(REGISTER_ARG_1, &Type::TString);
+
         let t = self.types.get(&expr.id()).unwrap();
         let fmt_string_label = match t {
-            Type::Int => &self.int_fmt_string_label,
-            Type::TString => &self.string_fmt_string_label,
+            Type::Int => self.synthetic_literal_string(PRINTF_FMT_INT),
+            Type::TString => self.synthetic_literal_string(PRINTF_FMT_STRING),
             _ => todo!(),
         };
+        self.deref_string_from_label(&fmt_string_label);
 
-        self.registers.reserve(REGISTER_ARG_1);
-        self.registers.reserve(REGISTER_ARG_2);
-
-        self.buffer.push_str(&format!(
-            r##"
-            {first_arg_assign_op} {first_fn_arg_reg}, [{fmt_string_label}]
-            {second_arg_assign_op} {second_fn_arg_reg}, "##,
-            first_arg_assign_op = assign_register_op(&Type::TString),
-            first_fn_arg_reg = REGISTER_ARG_1,
-            fmt_string_label = fmt_string_label,
-            second_fn_arg_reg = REGISTER_ARG_2,
-            second_arg_assign_op = assign_register_op(t)
-        ));
+        self.assign_register(REGISTER_ARG_2, t);
         self.expr(expr, REGISTER_ARG_2);
 
         self.call_function("_printf");
@@ -241,7 +243,7 @@ impl<'a> AsmEmitter<'a> {
             TokenKind::Char(c) => self.buffer.push_str(&format!("'{}'", c)),
             TokenKind::TString => {
                 let s = String::from(&self.session.src[token.span.start + 1..token.span.end - 1]);
-                let label = self.constants.find_or_create_string(s);
+                let label = self.constants.find_or_create_string(&s);
 
                 self.buffer.push_str(&format!("[{}]", &label));
             }

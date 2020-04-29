@@ -21,10 +21,10 @@ impl Constants {
         }
     }
 
-    pub(crate) fn find_or_create_string(&mut self, s: String) -> Label {
-        debug!("constants: adding constant: string={}", &s);
+    pub(crate) fn find_or_create_string(&mut self, s: &str) -> Label {
+        debug!("constants: adding constant: string={}", s);
 
-        if let Some(label) = self.unique_value_to_label.get(&s) {
+        if let Some(label) = self.unique_value_to_label.get(s) {
             debug!(
                 "constants: constant already exists: string={} label={}",
                 &s, label
@@ -33,7 +33,8 @@ impl Constants {
         }
 
         let new_label = self.generate_new_label();
-        self.unique_value_to_label.insert(s, new_label.clone());
+        self.unique_value_to_label
+            .insert(s.to_string(), new_label.clone());
 
         new_label
     }
