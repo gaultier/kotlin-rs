@@ -105,10 +105,14 @@ impl<'a> AsmEmitter<'a> {
     }
 
     fn zero_register(&mut self, register: Register) {
+        self.registers.free(register);
         self.buffer
             .push_str(&format!("xor {}, {}", register, register));
+    }
 
-        self.registers.free(register);
+    fn call_function(&mut self, fn_name: &str) {
+        self.buffer.push_str(&"call ");
+        self.buffer.push_str(fn_name);
     }
 
     pub(crate) fn main<W: std::io::Write>(
@@ -167,11 +171,7 @@ impl<'a> AsmEmitter<'a> {
         ));
         self.expr(expr);
 
-        self.buffer.push_str(
-            &r##"
-            call _printf
-            "##,
-        );
+        self.call_function("_printf");
 
         self.zero_register(Register::Rax);
     }
