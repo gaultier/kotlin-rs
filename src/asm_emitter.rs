@@ -90,7 +90,7 @@ impl<'a> AsmEmitter<'a> {
     }
 
     fn data_section<W: std::io::Write>(&mut self, w: &mut W) -> Result<(), Error> {
-        w.write_all(&" section .data\n".as_bytes())?;
+        w.write_all(b" section .data\n")?;
         for (constant, label) in self.constants.iter() {
             w.write_all(
                 &format!("{}: db \"{}\", 0 ; null terminated\n", label, constant).as_bytes(),
@@ -100,12 +100,7 @@ impl<'a> AsmEmitter<'a> {
     }
 
     fn text_section<W: std::io::Write>(&mut self, w: &mut W) -> Result<(), Error> {
-        w.write_all(
-            &r##"
-            section .text
-            "##
-            .as_bytes(),
-        )?;
+        w.write_all(b"section .text\n")?;
         Ok(())
     }
 

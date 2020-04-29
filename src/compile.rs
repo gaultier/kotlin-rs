@@ -202,7 +202,7 @@ pub fn asm(src: &str, file_name: &Path) -> Result<(), Error> {
         let mut run_command = Command::new(&rel_exe_path);
         run_command
             .status()
-            .expect(&format!("Running {:?} failed", &rel_exe_path));
+            .unwrap_or_else(|err| panic!("Running {:?} failed: {:?}", &rel_exe_path, err));
     }
 
     Ok(())
