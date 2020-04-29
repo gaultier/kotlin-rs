@@ -85,7 +85,7 @@ impl<'a> AsmEmitter<'a> {
         w.write_all(&" section .data\n".as_bytes())?;
         for (constant, label) in self.constants.iter() {
             w.write_all(
-                &format!("{}: db \"{}\", 0 ; null terminated", label, constant).as_bytes(),
+                &format!("{}: db \"{}\", 0 ; null terminated\n", label, constant).as_bytes(),
             )?;
         }
         Ok(())
@@ -142,19 +142,21 @@ impl<'a> AsmEmitter<'a> {
     }
 
     fn println(&mut self, expr: &AstNodeExpr) {
-        let fmt_string_label = match self.types.get(&expr.id()).unwrap() {
-            Type::Int => &self.int_fmt_string_label,
-            Type::TString => &self.string_fmt_string_label,
+        let t = self.types.get(&expr.id()).unwrap();
+        let (op, fmt_string_label) = match t {
+            Type::Int => ("mov", &self.int_fmt_string_label),
+            Type::TString => ("lea", &self.string_fmt_string_label),
             _ => todo!(),
         };
 
         self.buffer.push_str(&format!(
             r##"
             lea rdi, [{}]
-            mov rsi, "##,
-            fmt_string_label
+            {} rsi, "##,
+            fmt_string_label, op
         ));
         self.expr(expr);
+
         self.buffer.push_str(
             &r##"
             call _printf
