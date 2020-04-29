@@ -155,10 +155,10 @@ pub fn asm(src: &str, file_name: &Path) -> Result<(), Error> {
         .arg("macho64")
         .arg(&asm_path)
         .spawn()
-        .expect("Failed to start Nasm");
-    let ecode = nasm_child.wait().expect("Failed to wait on Nasm");
+        .expect("Failed to start `nasm`");
+    let ecode = nasm_child.wait().expect("Failed to wait on `nasm`");
     if !ecode.success() {
-        panic!("Non-zero return code from Nasm. This is likely a compiler bug.");
+        panic!("Non-zero return code from `nasm`. This is likely a compiler bug.");
     }
 
     let mut object_path = PathBuf::from(file_name);
@@ -172,13 +172,17 @@ pub fn asm(src: &str, file_name: &Path) -> Result<(), Error> {
     exe_path.set_extension("exe");
 
     let mut ld_command = Command::new("ld");
-    ld_command
+    let mut ld_child = ld_command
         .arg("-o")
         .arg(&exe_path)
         .arg(&object_path)
         .arg("-lSystem")
-        .status()
-        .expect("Linker invocation failed");
+        .spawn()
+        .expect("Failed to start `ld`");
+    let ecode = ld_child.wait().expect("Failed to wait on `ld`");
+    if !ecode.success() {
+        panic!("Non-zero return code from `ld`. This is likely a compiler bug.");
+    }
 
     debug!(
         "asm: generated executable file {:?} from object file {:?}",
