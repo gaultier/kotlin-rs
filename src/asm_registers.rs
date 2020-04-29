@@ -79,8 +79,14 @@ impl Registers {
     }
 
     pub(crate) fn allocate(&mut self) -> Option<Register> {
-        let mut i = 0u16;
+        let mut i = 1u16;
         while i <= Register::R15 as u16 {
+            // Skip rbp and rsp since they are used for the stack
+            if i == Register::Rbp as u16 || i == Register::Rsp as u16 {
+                i *= 2;
+                continue;
+            }
+
             if (self.in_use & i) == 0 {
                 self.in_use |= i;
                 return Some(Register::from(i));

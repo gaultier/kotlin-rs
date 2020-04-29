@@ -19,6 +19,13 @@ pub(crate) struct AsmEmitter<'a> {
     registers: Registers,
 }
 
+fn assign_register_op(t: &Type) -> &'static str {
+    match t {
+        Type::TString => "lea",
+        _ => "mov",
+    }
+}
+
 impl<'a> AsmEmitter<'a> {
     pub(crate) fn new(
         session: &'a Session,
@@ -157,11 +164,13 @@ impl<'a> AsmEmitter<'a> {
 
     fn println(&mut self, expr: &AstNodeExpr) {
         let t = self.types.get(&expr.id()).unwrap();
-        let (op, fmt_string_label) = match t {
-            Type::Int => ("mov", &self.int_fmt_string_label),
-            Type::TString => ("lea", &self.string_fmt_string_label),
+        let fmt_string_label = match t {
+            Type::Int => &self.int_fmt_string_label,
+            Type::TString => &self.string_fmt_string_label,
             _ => todo!(),
         };
+
+        let op = assign_register_op(t);
 
         self.buffer.push_str(&format!(
             r##"
