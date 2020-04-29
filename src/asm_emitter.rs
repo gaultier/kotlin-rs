@@ -146,7 +146,10 @@ impl<'a> AsmEmitter<'a> {
 
     fn statement(&mut self, statement: &AstNodeStmt) {
         match statement {
-            AstNodeStmt::Expr(expr) => self.expr(expr),
+            AstNodeStmt::Expr(expr) => {
+                let register = self.registers.allocate().unwrap();
+                self.expr(expr, register);
+            }
             AstNodeStmt::Block { body, .. } => {
                 for stmt in body {
                     self.statement(stmt);
@@ -156,16 +159,16 @@ impl<'a> AsmEmitter<'a> {
         }
     }
 
-    fn expr(&mut self, expr: &AstNodeExpr) {
+    fn expr(&mut self, expr: &AstNodeExpr, register: Register) {
         match expr {
             AstNodeExpr::Literal(tok, _) => self.literal(tok),
             AstNodeExpr::Println(expr, _) => self.println(expr),
-            AstNodeExpr::Unary { .. } => self.unary(expr),
+            AstNodeExpr::Unary { .. } => self.unary(expr, register),
             _ => todo!(),
         }
     }
 
-    fn unary(&mut self, expr: &AstNodeExpr) {
+    fn unary(&mut self, expr: &AstNodeExpr, register: Register) {
         match expr {
             AstNodeExpr::Unary {
                 token:
@@ -176,10 +179,9 @@ impl<'a> AsmEmitter<'a> {
                 expr,
                 ..
             } => {
-                self.expr(expr);
+                self.expr(expr, register);
                 self.buffer.push_str("\n");
 
-                let register = Register::Rsi; // FIXME
                 self.buffer.push_str(&format!("neg {}\n", register));
             }
             AstNodeExpr::Unary {
@@ -191,7 +193,7 @@ impl<'a> AsmEmitter<'a> {
                 expr,
                 ..
             } => {
-                self.expr(expr);
+                self.expr(expr, register);
                 self.buffer.push_str("\n");
             }
             _ => todo!(),
@@ -219,13 +221,13 @@ impl<'a> AsmEmitter<'a> {
             second_fn_arg_reg = Registers::second_fn_argument(),
             second_arg_assign_op = assign_register_op(t)
         ));
-        self.expr(expr);
+        self.expr(expr, Registers::second_fn_argument());
 
         self.call_function("_printf");
 
         self.zero_register(Register::Rax);
-        self.registers.free(Register::Rdi);
-        self.registers.free(Register::Rsi);
+        self.registers.free(Registers::first_fn_argument());
+        self.registers.free(Registers::second_fn_argument());
     }
 
     fn literal(&mut self, token: &Token) {
