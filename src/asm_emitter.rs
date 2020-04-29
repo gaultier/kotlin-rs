@@ -143,8 +143,8 @@ impl<'a> AsmEmitter<'a> {
 
     fn println(&mut self, expr: &AstNodeExpr) {
         let fmt_string_label = match self.types.get(&expr.id()).unwrap() {
-            Type::Int => self.int_fmt_string_label,
-            Type::TString => self.string_fmt_string_label,
+            Type::Int => &self.int_fmt_string_label,
+            Type::TString => &self.string_fmt_string_label,
             _ => todo!(),
         };
 
