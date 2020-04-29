@@ -244,8 +244,7 @@ impl<'a> AsmEmitter<'a> {
             TokenKind::TString => {
                 let s = String::from(&self.session.src[token.span.start + 1..token.span.end - 1]);
                 let label = self.constants.find_or_create_string(&s);
-
-                self.buffer.push_str(&format!("[{}]", &label));
+                self.deref_string_from_label(&label);
             }
             _ => todo!(),
         }
