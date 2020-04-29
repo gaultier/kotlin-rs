@@ -171,6 +171,9 @@ impl<'a> AsmEmitter<'a> {
             _ => todo!(),
         };
 
+        self.registers.reserve(Registers::first_fn_argument());
+        self.registers.reserve(Registers::second_fn_argument());
+
         self.buffer.push_str(&format!(
             r##"
             {first_arg_assign_op} {first_fn_arg_reg}, [{fmt_string_label}]
@@ -182,10 +185,13 @@ impl<'a> AsmEmitter<'a> {
             second_arg_assign_op = assign_register_op(t)
         ));
         self.expr(expr);
+        self.buffer.push_str("\n");
 
         self.call_function("_printf");
 
         self.zero_register(Register::Rax);
+        self.registers.free(Register::Rdi);
+        self.registers.free(Register::Rsi);
     }
 
     fn literal(&mut self, token: &Token) {

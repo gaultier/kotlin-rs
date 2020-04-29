@@ -86,6 +86,17 @@ impl Registers {
         Register::Rsi
     }
 
+    pub(crate) fn is_free(&self, register: Register) -> bool {
+        (self.in_use & (register as u16)) == 0
+    }
+
+    pub(crate) fn reserve(&mut self, register: Register) {
+        if !self.is_free(register) {
+            todo!("Reorganize registers not implemented");
+        }
+        self.in_use |= register as u16;
+    }
+
     pub(crate) fn allocate(&mut self) -> Option<Register> {
         let mut i = 1u16;
         while i <= Register::R15 as u16 {
@@ -96,8 +107,9 @@ impl Registers {
             }
 
             if (self.in_use & i) == 0 {
-                self.in_use |= i;
-                return Some(Register::from(i));
+                let register = Register::from(i);
+                self.reserve(register);
+                return Some(register);
             }
 
             i *= 2;
