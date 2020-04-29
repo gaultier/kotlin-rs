@@ -22,7 +22,8 @@ pub(crate) struct AsmEmitter<'a> {
 fn assign_register_op(t: &Type) -> &'static str {
     match t {
         Type::TString => "lea",
-        _ => "mov",
+        Type::Int => "mov",
+        _ => todo!(),
     }
 }
 
