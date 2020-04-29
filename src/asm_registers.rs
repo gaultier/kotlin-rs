@@ -87,9 +87,6 @@ impl Registers {
     }
 
     pub(crate) fn reserve(&mut self, register: Register) {
-        if !self.is_free(register) {
-            todo!("Reorganize registers not implemented");
-        }
         self.in_use |= register as u16;
     }
 

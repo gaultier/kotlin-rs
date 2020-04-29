@@ -30,6 +30,13 @@ fn assign_register_op(t: &Type) -> &'static str {
     }
 }
 
+fn binary_op(kind: &TokenKind, t: &Type) -> &'static str {
+    match (kind, t) {
+        (TokenKind::Plus, Type::Int) => "add",
+        _ => todo!(),
+    }
+}
+
 impl<'a> AsmEmitter<'a> {
     pub(crate) fn new(
         session: &'a Session,
@@ -166,7 +173,37 @@ impl<'a> AsmEmitter<'a> {
             AstNodeExpr::Literal(tok, _) => self.literal(tok),
             AstNodeExpr::Println(expr, _) => self.println(expr),
             AstNodeExpr::Unary { .. } => self.unary(expr, register),
+            AstNodeExpr::Binary { .. } => self.binary(expr, register),
             _ => todo!(),
+        }
+    }
+
+    fn binary(&mut self, expr: &AstNodeExpr, register: Register) {
+        match expr {
+            AstNodeExpr::Binary {
+                left,
+                op,
+                right,
+                id,
+                ..
+            } => {
+                let t = self.types.get(id).unwrap();
+                let left_t = self.types.get(&left.id()).unwrap();
+                let right_t = self.types.get(&right.id()).unwrap();
+                if left_t != right_t {
+                    unimplemented!("Conversions")
+                }
+
+                //self.assign_register(register, t);
+                self.expr(left, register);
+                self.newline();
+
+                self.buffer.push_str(binary_op(&op.kind, t));
+                self.buffer.push_str(&format!(" {}, ", register));
+                self.expr(right, register);
+                self.newline();
+            }
+            _ => unreachable!(),
         }
     }
 
