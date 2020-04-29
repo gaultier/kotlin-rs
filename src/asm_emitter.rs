@@ -13,6 +13,8 @@ pub(crate) struct AsmEmitter<'a> {
     resolution: &'a Resolution,
     constants: Constants,
     buffer: String,
+    int_fmt_string_label: String,
+    string_fmt_string_label: String,
 }
 
 impl<'a> AsmEmitter<'a> {
@@ -21,12 +23,18 @@ impl<'a> AsmEmitter<'a> {
         types: &'a Types,
         resolution: &'a Resolution,
     ) -> AsmEmitter<'a> {
+        let mut constants = Constants::new();
+        let int_fmt_string_label = constants.find_or_create_string(String::from("%d"));
+        let string_fmt_string_label = constants.find_or_create_string(String::from("%s"));
+
         AsmEmitter {
             session,
             types,
             resolution,
             buffer: String::new(),
-            constants: Constants::new(),
+            constants,
+            int_fmt_string_label,
+            string_fmt_string_label,
         }
     }
 
@@ -75,8 +83,10 @@ impl<'a> AsmEmitter<'a> {
 
     fn data_section<W: std::io::Write>(&mut self, w: &mut W) -> Result<(), Error> {
         w.write_all(&" section .data\n".as_bytes())?;
-        for (label, constant) in self.constants.iter() {
-            w.write_all(&format!("{} db {}, 0 ; null terminated", label, constant).as_bytes())?;
+        for (constant, label) in self.constants.iter() {
+            w.write_all(
+                &format!("{}: db \"{}\", 0 ; null terminated", label, constant).as_bytes(),
+            )?;
         }
         Ok(())
     }
@@ -132,11 +142,18 @@ impl<'a> AsmEmitter<'a> {
     }
 
     fn println(&mut self, expr: &AstNodeExpr) {
-        self.buffer.push_str(
+        let fmt_string_label = match self.types.get(&expr.id()).unwrap() {
+            Type::Int => self.int_fmt_string_label,
+            Type::TString => self.string_fmt_string_label,
+            _ => todo!(),
+        };
+
+        self.buffer.push_str(&format!(
             r##"
-            lea rdi, [int_fmt_string] ; FIXME: hardcoded
+            lea rdi, [{}]
             mov rsi, "##,
-        );
+            fmt_string_label
+        ));
         self.expr(expr);
         self.buffer.push_str(
             &r##"
