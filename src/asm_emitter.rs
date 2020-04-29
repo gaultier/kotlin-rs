@@ -36,14 +36,12 @@ impl<'a> AsmEmitter<'a> {
         types: &'a Types,
         resolution: &'a Resolution,
     ) -> AsmEmitter<'a> {
-        let mut constants = Constants::new();
-
         AsmEmitter {
             session,
             types,
             resolution,
             buffer: String::new(),
-            constants,
+            constants: Constants::new(),
             registers: Registers::new(),
         }
     }
