@@ -117,10 +117,16 @@ impl<'a> AsmEmitter<'a> {
             .push_str(&format!("xor {}, {}", register, register));
     }
 
-    fn call_function(&mut self, fn_name: &str) {
+    fn call_function(&mut self, fn_name: &str, arg_count: usize) {
+        assert_eq!(arg_count, 2);
+
         self.buffer.push_str(&"call ");
         self.buffer.push_str(fn_name);
         self.buffer.push_str("\n");
+
+        self.zero_register(REGISTER_RETURN_VALUE);
+        self.registers.free(REGISTER_ARG_1);
+        self.registers.free(REGISTER_ARG_2);
     }
 
     pub(crate) fn main<W: std::io::Write>(
@@ -227,11 +233,7 @@ impl<'a> AsmEmitter<'a> {
         self.assign_register(REGISTER_ARG_2, t);
         self.expr(expr, REGISTER_ARG_2);
 
-        self.call_function("_printf");
-
-        self.zero_register(REGISTER_RETURN_VALUE);
-        self.registers.free(REGISTER_ARG_1);
-        self.registers.free(REGISTER_ARG_2);
+        self.call_function("_printf", 2);
     }
 
     fn literal(&mut self, token: &Token) {
