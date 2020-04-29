@@ -76,7 +76,7 @@ impl<'a> AsmEmitter<'a> {
     fn data_section<W: std::io::Write>(&mut self, w: &mut W) -> Result<(), Error> {
         w.write_all(&" section .data\n".as_bytes())?;
         for (label, constant) in self.constants.iter() {
-            w.write_all(&format!("{} db {}", label, constant).as_bytes())?;
+            w.write_all(&format!("{} db {}, 0 ; null terminated", label, constant).as_bytes())?;
         }
         Ok(())
     }
