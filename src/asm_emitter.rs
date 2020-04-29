@@ -99,6 +99,10 @@ impl<'a> AsmEmitter<'a> {
         Ok(())
     }
 
+    fn newline(&mut self) {
+        self.buffer.push_str("\n");
+    }
+
     fn text_section<W: std::io::Write>(&mut self, w: &mut W) -> Result<(), Error> {
         w.write_all(b"section .text\n")?;
         Ok(())
@@ -115,7 +119,7 @@ impl<'a> AsmEmitter<'a> {
 
         self.buffer.push_str(&"call ");
         self.buffer.push_str(fn_name);
-        self.buffer.push_str("\n");
+        self.newline();
 
         self.zero_register(REGISTER_RETURN_VALUE);
         self.registers.free(REGISTER_ARG_1);
@@ -178,7 +182,7 @@ impl<'a> AsmEmitter<'a> {
                 ..
             } => {
                 self.expr(expr, register);
-                self.buffer.push_str("\n");
+                self.newline();
 
                 self.buffer.push_str(&format!("neg {}\n", register));
             }
@@ -192,7 +196,7 @@ impl<'a> AsmEmitter<'a> {
                 ..
             } => {
                 self.expr(expr, register);
-                self.buffer.push_str("\n");
+                self.newline();
             }
             _ => todo!(),
         }
@@ -225,6 +229,7 @@ impl<'a> AsmEmitter<'a> {
 
         self.assign_register(REGISTER_ARG_2, t);
         self.expr(expr, REGISTER_ARG_2);
+        self.newline();
 
         self.call_function("_printf", 2);
     }
