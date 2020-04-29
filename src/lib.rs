@@ -1,6 +1,7 @@
 #![recursion_limit = "256"]
 mod asm_constants;
 pub mod asm_emitter;
+mod asm_registers;
 pub mod compile;
 mod cursor;
 pub mod error;
