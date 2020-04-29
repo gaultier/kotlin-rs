@@ -1,5 +1,7 @@
 use crate::asm_constants::Constants;
-use crate::asm_registers::{Register, Registers};
+use crate::asm_registers::{
+    Register, Registers, REGISTER_ARG_1, REGISTER_ARG_2, REGISTER_RETURN_VALUE,
+};
 use crate::error::*;
 use crate::lex::{Token, TokenKind};
 use crate::parse::*;
@@ -208,26 +210,26 @@ impl<'a> AsmEmitter<'a> {
             _ => todo!(),
         };
 
-        self.registers.reserve(Registers::first_fn_argument());
-        self.registers.reserve(Registers::second_fn_argument());
+        self.registers.reserve(REGISTER_ARG_1);
+        self.registers.reserve(REGISTER_ARG_2);
 
         self.buffer.push_str(&format!(
             r##"
             {first_arg_assign_op} {first_fn_arg_reg}, [{fmt_string_label}]
             {second_arg_assign_op} {second_fn_arg_reg}, "##,
             first_arg_assign_op = assign_register_op(&Type::TString),
-            first_fn_arg_reg = Registers::first_fn_argument(),
+            first_fn_arg_reg = REGISTER_ARG_1,
             fmt_string_label = fmt_string_label,
-            second_fn_arg_reg = Registers::second_fn_argument(),
+            second_fn_arg_reg = REGISTER_ARG_2,
             second_arg_assign_op = assign_register_op(t)
         ));
-        self.expr(expr, Registers::second_fn_argument());
+        self.expr(expr, REGISTER_ARG_2);
 
         self.call_function("_printf");
 
-        self.zero_register(Register::Rax);
-        self.registers.free(Registers::first_fn_argument());
-        self.registers.free(Registers::second_fn_argument());
+        self.zero_register(REGISTER_RETURN_VALUE);
+        self.registers.free(REGISTER_ARG_1);
+        self.registers.free(REGISTER_ARG_2);
     }
 
     fn literal(&mut self, token: &Token) {

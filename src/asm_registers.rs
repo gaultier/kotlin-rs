@@ -21,6 +21,10 @@ pub(crate) enum Register {
     R15 = 32768,
 }
 
+pub(crate) const REGISTER_RETURN_VALUE: Register = Register::Rax;
+pub(crate) const REGISTER_ARG_1: Register = Register::Rdi;
+pub(crate) const REGISTER_ARG_2: Register = Register::Rsi;
+
 impl From<u16> for Register {
     fn from(i: u16) -> Register {
         match i {
@@ -76,14 +80,6 @@ pub(crate) struct Registers {
 impl Registers {
     pub(crate) fn new() -> Registers {
         Registers { in_use: 0 }
-    }
-
-    pub(crate) fn first_fn_argument() -> Register {
-        Register::Rdi
-    }
-
-    pub(crate) fn second_fn_argument() -> Register {
-        Register::Rsi
     }
 
     pub(crate) fn is_free(&self, register: Register) -> bool {
