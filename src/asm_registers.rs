@@ -1,8 +1,8 @@
 use std::fmt;
 
 // x86_64 specific
-#[derive(Debug, PartialEq, Eq)]
-enum Register {
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub(crate) enum Register {
     Rax = 1,
     Rbx = 2,
     Rcx = 4,
@@ -69,11 +69,15 @@ impl fmt::Display for Register {
 }
 
 #[derive(Debug)]
-struct Registers {
+pub(crate) struct Registers {
     in_use: u16,
 }
 
 impl Registers {
+    pub(crate) fn new() -> Registers {
+        Registers { in_use: 0 }
+    }
+
     pub(crate) fn allocate(&mut self) -> Option<Register> {
         let mut i = 0u16;
         while i <= Register::R15 as u16 {
@@ -85,5 +89,9 @@ impl Registers {
             i *= 2;
         }
         None
+    }
+
+    pub(crate) fn consume(&mut self, register: Register) {
+        self.in_use &= !(register as u16);
     }
 }

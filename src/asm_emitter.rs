@@ -1,4 +1,5 @@
 use crate::asm_constants::Constants;
+use crate::asm_registers::Registers;
 use crate::error::*;
 use crate::lex::{Token, TokenKind};
 use crate::parse::*;
@@ -15,6 +16,7 @@ pub(crate) struct AsmEmitter<'a> {
     buffer: String,
     int_fmt_string_label: String,
     string_fmt_string_label: String,
+    registers: Registers,
 }
 
 impl<'a> AsmEmitter<'a> {
@@ -35,6 +37,7 @@ impl<'a> AsmEmitter<'a> {
             constants,
             int_fmt_string_label,
             string_fmt_string_label,
+            registers: Registers::new(),
         }
     }
 
