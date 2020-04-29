@@ -160,6 +160,40 @@ impl<'a> AsmEmitter<'a> {
         match expr {
             AstNodeExpr::Literal(tok, _) => self.literal(tok),
             AstNodeExpr::Println(expr, _) => self.println(expr),
+            AstNodeExpr::Unary { .. } => self.unary(expr),
+            _ => todo!(),
+        }
+    }
+
+    fn unary(&mut self, expr: &AstNodeExpr) {
+        match expr {
+            AstNodeExpr::Unary {
+                token:
+                    Token {
+                        kind: TokenKind::Minus,
+                        ..
+                    },
+                expr,
+                ..
+            } => {
+                self.expr(expr);
+                self.buffer.push_str("\n");
+
+                let register = Register::Rsi; // FIXME
+                self.buffer.push_str(&format!("neg {}\n", register));
+            }
+            AstNodeExpr::Unary {
+                token:
+                    Token {
+                        kind: TokenKind::Plus,
+                        ..
+                    },
+                expr,
+                ..
+            } => {
+                self.expr(expr);
+                self.buffer.push_str("\n");
+            }
             _ => todo!(),
         }
     }
@@ -186,7 +220,6 @@ impl<'a> AsmEmitter<'a> {
             second_arg_assign_op = assign_register_op(t)
         ));
         self.expr(expr);
-        self.buffer.push_str("\n");
 
         self.call_function("_printf");
 
