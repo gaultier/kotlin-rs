@@ -170,13 +170,16 @@ impl<'a> AsmEmitter<'a> {
             _ => todo!(),
         };
 
-        let op = assign_register_op(t);
+        // Format string
+        let first_arg_assign_op = assign_register_op(&Type::TString);
+        // Variable to be printed
+        let second_arg_assign_op = assign_register_op(t);
 
         self.buffer.push_str(&format!(
             r##"
-            lea rdi, [{}]
+            {} rdi, [{}]
             {} rsi, "##,
-            fmt_string_label, op
+            first_arg_assign_op, fmt_string_label, second_arg_assign_op
         ));
         self.expr(expr);
 
