@@ -154,7 +154,8 @@ pub fn asm(src: &str, file_name: &Path) -> Result<(), Error> {
         .arg("-f")
         .arg("macho64")
         .arg(&asm_path)
-        .status()?;
+        .status()
+        .expect("Nasm invocation failed");
 
     let mut object_path = PathBuf::from(file_name);
     object_path.set_extension("o");
@@ -172,7 +173,9 @@ pub fn asm(src: &str, file_name: &Path) -> Result<(), Error> {
         .arg(&exe_path)
         .arg(&object_path)
         .arg("-lSystem")
-        .status()?;
+        .status()
+        .expect("Linker invocation failed");
+
     debug!(
         "asm: generated executable file {:?} from object file {:?}",
         &exe_path, &object_path
@@ -188,8 +191,10 @@ pub fn asm(src: &str, file_name: &Path) -> Result<(), Error> {
         let mut rel_exe_path = PathBuf::from("./");
         rel_exe_path.push(exe_path);
         debug!("asm: running executable file {:?}", &rel_exe_path);
-        let mut run_command = Command::new(rel_exe_path);
-        run_command.status()?;
+        let mut run_command = Command::new(&rel_exe_path);
+        run_command
+            .status()
+            .expect(&format!("Running {:?} failed", &rel_exe_path));
     }
 
     Ok(())
