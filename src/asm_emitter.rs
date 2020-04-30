@@ -33,6 +33,8 @@ fn assign_register_op(t: &Type) -> &'static str {
 fn binary_op(kind: &TokenKind, t: &Type) -> &'static str {
     match (kind, t) {
         (TokenKind::Plus, Type::Int) => "add",
+        (TokenKind::Minus, Type::Int) => "sub",
+        (TokenKind::Star, Type::Int) => "imul",
         _ => todo!(),
     }
 }

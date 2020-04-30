@@ -24,3 +24,19 @@ fn print_neg_int() {
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
 }
+
+#[test]
+fn add_int() {
+    let src = "println(10+5)";
+    let path = Path::new("AddIntAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "15");
+}
+
+#[test]
+fn mult_int() {
+    let src = "println(10*5)";
+    let path = Path::new("MultIntAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "50");
+}
