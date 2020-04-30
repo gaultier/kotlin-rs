@@ -75,7 +75,7 @@ impl<'a> AsmEmitter<'a> {
 
     fn fn_main(&mut self) {
         self.buffer.push_str(
-            &r##"
+            r##"
             ; entrypoint
             global _main
             _main:"##,
@@ -124,7 +124,7 @@ impl<'a> AsmEmitter<'a> {
     fn call_function(&mut self, fn_name: &str, arg_count: usize) {
         assert_eq!(arg_count, 2);
 
-        self.buffer.push_str(&"call ");
+        self.buffer.push_str("call ");
         self.buffer.push_str(fn_name);
         self.newline();
 
@@ -194,7 +194,6 @@ impl<'a> AsmEmitter<'a> {
                     unimplemented!("Conversions")
                 }
 
-                //self.assign_register(register, t);
                 self.expr(left, register);
                 self.newline();
 
