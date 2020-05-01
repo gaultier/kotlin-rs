@@ -18,6 +18,7 @@ pub(crate) struct AsmEmitter<'a> {
     buffer: String,
     registers: Registers,
     label_count: usize,
+    id_to_register: Vec<(NodeId, Register)>,
 }
 
 const PRINTF_FMT_STRING: &str = "\"%s\", 0xa"; // 0xa = \n
@@ -38,6 +39,7 @@ impl<'a> AsmEmitter<'a> {
             constants: Constants::new(),
             registers: Registers::new(),
             label_count: 0,
+            id_to_register: Vec::new(),
         }
     }
 
@@ -147,6 +149,21 @@ impl<'a> AsmEmitter<'a> {
         Ok(())
     }
 
+    fn assign_var_to_register(&mut self, id: NodeId, register: Register) {
+        let found = self
+            .id_to_register
+            .iter()
+            .find(|elem| **elem == (id, register));
+        assert!(found.is_none());
+
+        self.id_to_register.push((id, register));
+    }
+
+    fn var_def(&mut self, id: NodeId, value: &AstNodeExpr, register: Register) {
+        self.expr(value, register);
+        self.assign_var_to_register(id, register);
+    }
+
     fn while_stmt(&mut self, cond: &AstNodeExpr, body: &AstNodeStmt, register: Register) {
         let loop_label = self.generate_new_label();
         let end_label = self.generate_new_label();
@@ -193,6 +210,7 @@ impl<'a> AsmEmitter<'a> {
                 }
             }
             AstNodeStmt::While { cond, body, .. } => self.while_stmt(cond, body, register),
+            AstNodeStmt::VarDefinition { id, value, .. } => self.var_def(*id, value, register),
             _ => todo!(),
         }
     }
