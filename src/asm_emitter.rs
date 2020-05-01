@@ -17,6 +17,7 @@ pub(crate) struct AsmEmitter<'a> {
     constants: Constants,
     buffer: String,
     registers: Registers,
+    label_count: usize,
 }
 
 const PRINTF_FMT_STRING: &str = "\"%s\", 0xa"; // 0xa = \n
@@ -36,7 +37,13 @@ impl<'a> AsmEmitter<'a> {
             buffer: String::new(),
             constants: Constants::new(),
             registers: Registers::new(),
+            label_count: 0,
         }
+    }
+
+    fn generate_new_label(&mut self) -> String {
+        self.label_count += 1;
+        return format!(".L{}", self.label_count);
     }
 
     fn fn_prolog(&mut self) {
@@ -153,6 +160,40 @@ impl<'a> AsmEmitter<'a> {
         }
     }
 
+    fn if_expr(
+        &mut self,
+        cond: &AstNodeExpr,
+        if_body: &AstNodeStmt,
+        else_body: &AstNodeStmt,
+        register: Register,
+    ) {
+        self.expr(cond, register);
+
+        let else_body_label = self.generate_new_label();
+        let merge_bodies_label = self.generate_new_label();
+        self.buffer
+            .push_str(&format!("jz {} ; else branch", else_body_label));
+        self.newline();
+        self.registers.free(register);
+
+        self.statement(if_body);
+        self.buffer
+            .push_str(&format!("jmp {} ; if branch", merge_bodies_label));
+        self.newline();
+        self.newline();
+
+        self.buffer.push_str(&else_body_label);
+        self.buffer.push_str(":");
+        self.newline();
+        self.statement(else_body);
+        self.newline();
+        self.newline();
+
+        self.buffer.push_str(&merge_bodies_label);
+        self.buffer.push_str(":");
+        self.newline();
+    }
+
     fn expr(&mut self, expr: &AstNodeExpr, register: Register) {
         match expr {
             AstNodeExpr::Literal(tok, _) => self.literal(tok, register),
@@ -160,6 +201,12 @@ impl<'a> AsmEmitter<'a> {
             AstNodeExpr::Unary { .. } => self.unary(expr, register),
             AstNodeExpr::Binary { .. } => self.binary(expr, register),
             AstNodeExpr::Grouping(expr, _) => self.expr(expr, register),
+            AstNodeExpr::IfExpr {
+                cond,
+                if_body,
+                else_body,
+                ..
+            } => self.if_expr(cond, if_body, else_body, register),
             _ => todo!(),
         }
     }
