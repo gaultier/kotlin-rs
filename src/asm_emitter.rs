@@ -238,6 +238,7 @@ impl<'a> AsmEmitter<'a> {
 
                         self.buffer
                             .push_str(&format!("sub {}, {}", register, intermediate_register));
+                        self.registers.free(intermediate_register);
                     }
                     (TokenKind::Star, Type::Int) => {
                         let intermediate_register = self.registers.allocate().unwrap();
@@ -245,6 +246,7 @@ impl<'a> AsmEmitter<'a> {
 
                         self.buffer
                             .push_str(&format!("imul {}, {}", register, intermediate_register));
+                        self.registers.free(intermediate_register);
                     }
                     (TokenKind::Slash, Type::Int) => {
                         self.div(right, register);
