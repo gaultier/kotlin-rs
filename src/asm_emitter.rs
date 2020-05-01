@@ -122,7 +122,6 @@ impl<'a> AsmEmitter<'a> {
         self.buffer.push_str(fn_name);
         self.newline();
 
-        self.zero_register(REGISTER_RETURN_VALUE);
         self.registers.free(REGISTER_ARG_1);
         self.registers.free(REGISTER_ARG_2);
     }
@@ -133,10 +132,11 @@ impl<'a> AsmEmitter<'a> {
         w: &mut W,
     ) -> Result<(), Error> {
         self.fn_main();
+
         self.fn_prolog();
         let register = self.registers.allocate().unwrap();
         self.statement(statements, register);
-        self.registers.free(register);
+        self.zero_register(REGISTER_RETURN_VALUE);
         self.fn_epilog();
 
         self.prolog(w)?;
@@ -162,8 +162,12 @@ impl<'a> AsmEmitter<'a> {
         self.id_to_register.push((id, register));
     }
 
-    fn var_def(&mut self, id: NodeId, value: &AstNodeExpr, register: Register) {
+    fn var_def(&mut self, identifier: &Token, id: NodeId, value: &AstNodeExpr, register: Register) {
         self.expr(value, register);
+        let var_name = &self.session.src[identifier.span.start..identifier.span.end];
+        self.buffer
+            .push_str(&format!("; {} is now in register {}", var_name, register));
+        self.newline();
         self.assign_var_to_register(id, register);
     }
 
@@ -174,7 +178,7 @@ impl<'a> AsmEmitter<'a> {
         self.newline();
 
         self.buffer.push_str(&loop_label);
-        self.buffer.push_str(":");
+        self.buffer.push_str(": ; loop body");
         self.newline();
 
         self.expr(cond, register);
@@ -182,18 +186,18 @@ impl<'a> AsmEmitter<'a> {
         self.newline();
 
         self.buffer
-            .push_str(&format!("jne {} ; end loop", end_label));
+            .push_str(&format!("jne {} ; stop loop", end_label));
         self.newline();
         self.registers.free(register);
 
         self.statement(body, register);
         self.buffer
-            .push_str(&format!("jmp {} ; start loop", loop_label));
+            .push_str(&format!("jmp {} ; jump to start of loop body", loop_label));
         self.newline();
         self.newline();
 
         self.buffer.push_str(&end_label);
-        self.buffer.push_str(":");
+        self.buffer.push_str(": ; loop is finished");
         self.newline();
     }
 
@@ -230,7 +234,12 @@ impl<'a> AsmEmitter<'a> {
                 }
             }
             AstNodeStmt::While { cond, body, .. } => self.while_stmt(cond, body, register),
-            AstNodeStmt::VarDefinition { id, value, .. } => self.var_def(*id, value, register),
+            AstNodeStmt::VarDefinition {
+                identifier,
+                id,
+                value,
+                ..
+            } => self.var_def(identifier, *id, value, register),
             _ => todo!(),
         }
     }
@@ -567,7 +576,6 @@ impl<'a> AsmEmitter<'a> {
             self.assign_register(REGISTER_ARG_2);
             self.buffer.push_str(register.as_str());
             self.newline();
-            self.zero_register(register);
         }
 
         self.call_function("_printf", 2);
