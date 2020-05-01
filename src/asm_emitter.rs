@@ -30,15 +30,6 @@ fn assign_register_op(t: &Type) -> &'static str {
     }
 }
 
-fn binary_op(kind: &TokenKind, t: &Type) -> &'static str {
-    match (kind, t) {
-        (TokenKind::Plus, Type::Int) => "add",
-        (TokenKind::Minus, Type::Int) => "sub",
-        (TokenKind::Star, Type::Int) => "imul",
-        _ => todo!(),
-    }
-}
-
 impl<'a> AsmEmitter<'a> {
     pub(crate) fn new(
         session: &'a Session,
@@ -199,9 +190,59 @@ impl<'a> AsmEmitter<'a> {
                 self.expr(left, register);
                 self.newline();
 
-                self.buffer.push_str(binary_op(&op.kind, t));
-                self.buffer.push_str(&format!(" {}, ", register));
-                self.expr(right, register);
+                match (op.kind, t) {
+                    (TokenKind::Plus, Type::Int) => {
+                        self.buffer.push_str(&format!("add {}, ", register));
+                        self.expr(right, register);
+                    }
+                    (TokenKind::Minus, Type::Int) => {
+                        self.buffer.push_str(&format!("sub {}, ", register));
+                        self.expr(right, register);
+                    }
+                    (TokenKind::Star, Type::Int) => {
+                        self.buffer.push_str(&format!("imul {}, ", register));
+                        self.expr(right, register);
+                    }
+                    (TokenKind::Slash, Type::Int) => {
+                        // The dividend is in `rax`, so we copy `register` in rax
+                        if register != Register::Rax {
+                            self.registers.reserve(Register::Rax);
+                            self.assign_register(Register::Rax, t);
+                            self.buffer.push_str(&format!("{}", register));
+                            self.newline();
+
+                            // Required to store the sign in rdx:rax
+                            self.buffer.push_str("cqo");
+                            self.newline();
+                        }
+
+                        // The dividend is in `rcx`
+                        // TODO: here we might override the content of `rcx`. Check if `rcx` is free?
+                        if register != Register::Rcx {
+                            self.registers.reserve(Register::Rcx);
+                            self.assign_register(Register::Rcx, t);
+                            self.expr(right, Register::Rcx);
+                            self.newline();
+                        }
+
+                        self.buffer.push_str(&format!("idiv {}", Register::Rcx));
+                        // `div` destroys the content of `rcx`
+                        self.registers.free(Register::Rcx);
+                        self.newline();
+
+                        // We copy the result of the division in the original register if needed
+                        if register != Register::Rax {
+                            self.assign_register(register, t);
+                            self.buffer.push_str(&format!("{}", Register::Rax));
+                            self.newline();
+                            self.zero_register(Register::Rax);
+                            self.newline();
+
+                            self.registers.free(Register::Rax);
+                        }
+                    }
+                    _ => todo!(),
+                }
                 self.newline();
             }
             _ => unreachable!(),
