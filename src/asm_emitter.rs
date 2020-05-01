@@ -147,6 +147,36 @@ impl<'a> AsmEmitter<'a> {
         Ok(())
     }
 
+    fn while_stmt(&mut self, cond: &AstNodeExpr, body: &AstNodeStmt, register: Register) {
+        let loop_label = self.generate_new_label();
+        let end_label = self.generate_new_label();
+        self.newline();
+        self.newline();
+
+        self.buffer.push_str(&loop_label);
+        self.buffer.push_str(":");
+        self.newline();
+
+        self.expr(cond, register);
+        self.buffer.push_str(&format!("cmp {}, 1", register));
+        self.newline();
+
+        self.buffer
+            .push_str(&format!("jne {} ; end loop", end_label));
+        self.newline();
+        self.registers.free(register);
+
+        self.statement(body, register);
+        self.buffer
+            .push_str(&format!("jmp {} ; start loop", loop_label));
+        self.newline();
+        self.newline();
+
+        self.buffer.push_str(&end_label);
+        self.buffer.push_str(":");
+        self.newline();
+    }
+
     fn statement(&mut self, statement: &AstNodeStmt, register: Register) {
         match statement {
             AstNodeStmt::Expr(expr) => {
@@ -162,6 +192,7 @@ impl<'a> AsmEmitter<'a> {
                     }
                 }
             }
+            AstNodeStmt::While { cond, body, .. } => self.while_stmt(cond, body, register),
             _ => todo!(),
         }
     }
