@@ -43,8 +43,16 @@ fn mult_int() {
 
 #[test]
 fn div_int() {
-    let src = "println(10/4)";
+    let src = "println(11/4)";
     let path = Path::new("DivIntAsm.kts");
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "2");
+}
+
+#[test]
+fn rem_int() {
+    let src = "println(11%4)";
+    let path = Path::new("RemIntAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
 }
