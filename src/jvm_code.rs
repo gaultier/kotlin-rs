@@ -88,15 +88,18 @@ impl IfBuilder {
 
         builder.goto_target = Some(1 + end);
 
-        code.jump_target_at(
-            builder.if_location.unwrap(),
-            JumpTarget::If {
-                if_location: builder.if_location.unwrap(),
-                if_target: builder.if_target.unwrap(),
-                goto_location: builder.goto_location.unwrap(),
-                goto_target: builder.goto_target.unwrap(),
-            },
-        );
+        #[cfg(feature = "jvm_stack_map_frames")]
+        {
+            code.jump_target_at(
+                builder.if_location.unwrap(),
+                JumpTarget::If {
+                    if_location: builder.if_location.unwrap(),
+                    if_target: builder.if_target.unwrap(),
+                    goto_location: builder.goto_location.unwrap(),
+                    goto_target: builder.goto_target.unwrap(),
+                },
+            );
+        }
 
         Ok(())
     }
@@ -167,16 +170,19 @@ impl IfBuilder {
         Ok(self)
     }
 
-    pub(crate) fn build(self, code: &mut Code) -> Self {
-        code.jump_target_at(
-            self.if_location.unwrap(),
-            JumpTarget::If {
-                if_location: self.if_location.unwrap(),
-                if_target: self.if_target.unwrap(),
-                goto_location: self.goto_location.unwrap(),
-                goto_target: self.goto_target.unwrap(),
-            },
-        );
+    pub(crate) fn build(self, _code: &mut Code) -> Self {
+        #[cfg(feature = "jvm_stack_map_frames")]
+        {
+            code.jump_target_at(
+                self.if_location.unwrap(),
+                JumpTarget::If {
+                    if_location: self.if_location.unwrap(),
+                    if_target: self.if_target.unwrap(),
+                    goto_location: self.goto_location.unwrap(),
+                    goto_target: self.goto_target.unwrap(),
+                },
+            );
+        }
 
         self
     }
@@ -210,18 +216,22 @@ impl Code {
         }
     }
 
+    #[cfg(feature = "jvm_stack_map_frames")]
     fn stack_map_frame_add_full(&mut self, bci_target: u16) {
         debug!("stack_map_frame_add_full: bci_target={}", bci_target);
 
         // TODO: check overflow
-        self.stack_map_frames.insert(
-            bci_target,
-            StackMapFrame::Full {
-                offset: 0, // Will be computed in a final step
-                stack: self.state.stack.to_verification_info(),
-                locals: self.state.locals.to_verification_info(),
-            },
-        );
+        #[cfg(feature = "jvm_stack_map_frames")]
+        {
+            self.stack_map_frames.insert(
+                bci_target,
+                StackMapFrame::Full {
+                    offset: 0, // Will be computed in a final step
+                    stack: self.state.stack.to_verification_info(),
+                    locals: self.state.locals.to_verification_info(),
+                },
+            );
+        }
     }
 
     pub(crate) fn stack_map_frames_compute_delta_offsets(&mut self) -> Vec<StackMapFrame> {
@@ -440,10 +450,12 @@ impl Code {
         Ok(())
     }
 
+    #[cfg(feature = "jvm_stack_map_frames")]
     fn jump_target_at(&mut self, location: u16, jump_target: JumpTarget) {
         self.jump_targets.insert(location, jump_target);
     }
 
+    #[cfg(feature = "jvm_stack_map_frames")]
     fn generate_stack_map_frames(&mut self, jvm_emitter: &JvmEmitter) -> Result<(), Error> {
         // debug!("verify: jump_targets={:?}", &self.jump_targets);
 
@@ -485,7 +497,7 @@ impl Code {
         Ok(())
     }
 
-    pub(crate) fn end(&mut self, jvm_emitter: &JvmEmitter) -> Result<Vec<u8>, Error> {
+    pub(crate) fn end(&mut self, _jvm_emitter: &JvmEmitter) -> Result<Vec<u8>, Error> {
         // let (stack_max, locals_max) =
         //     self.generate_stack_map_frames(jvm_emitter, Stack::new(), self.args_locals.clone())?;
         self.stack_max = 100; // FIXME

@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["Philippe Gaultier <philigaultier@gmail.com>"]
 edition = "2018"
 
+[features]
+jvm_stack_map_frames = []
+default = []
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]

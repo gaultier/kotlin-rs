@@ -39,10 +39,6 @@ impl Pool {
         self.values.len() as u16
     }
 
-    pub(crate) fn is_empty(&self) -> bool {
-        self.values.is_empty()
-    }
-
     pub(crate) fn push(&mut self, constant: Constant) -> Result<u16, Error> {
         // Since `self.values` is one-indexed, the max index is `std::u16::MAX+1` but since we
         // can only index it with u16 the real max index is `std::u16::MAX`

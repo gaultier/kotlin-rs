@@ -1,5 +1,7 @@
+#[cfg(feature = "jvm_stack_map_frames")]
 use crate::jvm_stack_map_frame::VerificationTypeInfo;
 use crate::parse::{NodeId, Type};
+#[cfg(feature = "jvm_stack_map_frames")]
 use std::slice::Iter;
 
 type Local = (NodeId, Type);
@@ -26,10 +28,6 @@ impl Locals {
                 None
             }
         })
-    }
-
-    pub(crate) fn is_empty(&self) -> bool {
-        self.values.is_empty()
     }
 
     pub(crate) fn len(&self) -> u16 {
@@ -86,6 +84,7 @@ impl Locals {
         self.count_max
     }
 
+    #[cfg(feature = "jvm_stack_map_frames")]
     pub(crate) fn to_verification_info(&self) -> Vec<VerificationTypeInfo> {
         self.values
             .iter()
@@ -93,6 +92,7 @@ impl Locals {
             .collect::<Vec<_>>()
     }
 
+    #[cfg(feature = "jvm_stack_map_frames")]
     pub(crate) fn iter(&self) -> Iter<Local> {
         self.values.iter()
     }

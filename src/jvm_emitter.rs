@@ -528,7 +528,7 @@ impl<'a> JvmEmitter<'a> {
         fn_name: &AstNodeExpr,
         args: &[AstNodeExpr],
         id: NodeId,
-        flags: u16,
+        _flags: u16,
         body: &AstNodeStmt,
     ) -> Result<(), Error> {
         let fn_name_s = match fn_name {

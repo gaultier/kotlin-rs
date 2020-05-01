@@ -1,4 +1,5 @@
 use crate::parse::Type;
+#[cfg(feature = "jvm_stack_map_frames")]
 use log::debug;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -24,6 +25,7 @@ pub(crate) enum StackMapFrame {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[cfg(feature = "jvm_stack_map_frames")]
 pub(crate) enum JumpTarget {
     If {
         if_location: u16,
@@ -48,6 +50,7 @@ impl StackMapFrame {
 }
 
 impl Type {
+    #[cfg(feature = "jvm_stack_map_frames")]
     pub(crate) fn to_verification_info(&self) -> VerificationTypeInfo {
         match self {
             Type::Boolean | Type::Int | Type::Char => VerificationTypeInfo::Int,

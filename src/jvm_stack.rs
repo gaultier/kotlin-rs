@@ -1,3 +1,4 @@
+#[cfg(feature = "jvm_stack_map_frames")]
 use crate::jvm_stack_map_frame::VerificationTypeInfo;
 use crate::parse::Type;
 use std::slice::Iter;
@@ -47,6 +48,7 @@ impl Stack {
         self.count_max
     }
 
+    #[cfg(feature = "jvm_stack_map_frames")]
     pub(crate) fn to_verification_info(&self) -> Vec<VerificationTypeInfo> {
         self.values
             .iter()
