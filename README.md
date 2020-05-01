@@ -49,11 +49,11 @@ $ kotlin fmt -f fibonnaci_iter.kts
 $ echo 'println(5 * 3 + 7)' | kotlin asm
 22
 
-# No JVM involved here, it is a stand-alone executable
+# No JVM involved here, it is a stand-alone executable:
 $ file ./Stdin
 Stdin: Mach-O 64-bit executable x86_64
 
-# We can run it directly:
+# We can run it directly like any other executable:
 $ ./Stdin
 22
 
