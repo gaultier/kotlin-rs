@@ -3,7 +3,7 @@ A work-in-progress Kotlin compiler written in Rust.
 
 The goals of the project are:
 
-- An alternative implementation of a compiler for the Kotlin language (or at least a large subset of it)
+- An alternative to the official Jetbrains compiler
 - Non-JVM
 - Can be used as a library (for example to build a language server or developer tools), or as a stand-alone executable (which uses the library)
 - Fast 
