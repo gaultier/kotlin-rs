@@ -173,12 +173,15 @@ impl<'a> AsmEmitter<'a> {
         else_body: &AstNodeStmt,
         register: Register,
     ) {
-        self.expr(cond, register);
-
         let else_body_label = self.generate_new_label();
         let merge_bodies_label = self.generate_new_label();
+
+        self.expr(cond, register);
+        self.buffer.push_str(&format!("cmp {}, 1", register));
+        self.newline();
+
         self.buffer
-            .push_str(&format!("je {} ; else branch", else_body_label));
+            .push_str(&format!("jne {} ; else branch", else_body_label));
         self.newline();
         self.registers.free(register);
 
