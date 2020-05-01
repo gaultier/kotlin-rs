@@ -5,9 +5,9 @@ The goals of the project are:
 
 - An alternative implementation of a compiler for the Kotlin language (or at least a large subset of it)
 - Non-JVM
-- Can be integrated as a library (for example to build a language server or developer tools)
+- Can be used as a library (for example to build a language server or developer tools), or as a stand-alone executable (which uses the library)
 - Fast 
-- Produces beautiful error messages
+- Beautiful error messages
 - Heavily tested
 
 ## Quick start
