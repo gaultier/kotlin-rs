@@ -254,7 +254,7 @@ impl<'a> AsmEmitter<'a> {
                         // We copy the result of the division in the original register if needed
                         if register != Register::Rax {
                             self.assign_register(register);
-                            self.buffer.push_str(&format!("{}", Register::Rax));
+                            self.buffer.push_str(Register::Rax.as_str());
                             self.newline();
                             self.zero_register(Register::Rax);
 
@@ -266,7 +266,7 @@ impl<'a> AsmEmitter<'a> {
                         // We copy the result of the division in the original register if needed
                         if register != Register::Rdx {
                             self.assign_register(register);
-                            self.buffer.push_str(&format!("{}", Register::Rdx));
+                            self.buffer.push_str(Register::Rdx.as_str());
                             self.newline();
                             self.zero_register(Register::Rdx);
 
@@ -302,7 +302,7 @@ impl<'a> AsmEmitter<'a> {
                         // We copy the result of the division in the original register if needed
                         if register != Register::Rax {
                             self.assign_register(register);
-                            self.buffer.push_str(&format!("{}", Register::Rax));
+                            self.buffer.push_str(Register::Rax.as_str());
                             self.newline();
                             self.zero_register(Register::Rax);
 
@@ -314,7 +314,7 @@ impl<'a> AsmEmitter<'a> {
                         // We copy the result of the division in the original register if needed
                         if register != Register::Rdx {
                             self.assign_register(register);
-                            self.buffer.push_str(&format!("{}", Register::Rdx));
+                            self.buffer.push_str(Register::Rdx.as_str());
                             self.newline();
                             self.zero_register(Register::Rdx);
 
