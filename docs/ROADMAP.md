@@ -197,4 +197,4 @@
 - [x] int math
 - [x] long math
 - [ ] Conversions between primitive types
-- [ ] Equality test
+- [x] (In)Equality test
