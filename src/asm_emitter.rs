@@ -197,11 +197,28 @@ impl<'a> AsmEmitter<'a> {
         self.newline();
     }
 
+    fn assign(&mut self, target: &AstNodeExpr, value: &AstNodeExpr, register: Register) {
+        self.expr(value, register);
+
+        match target {
+            AstNodeExpr::VarRef(_, id) => {
+                let node_ref_id = self.resolution.get(&id).unwrap().node_ref_id;
+                let var_register = self.find_var_register(node_ref_id).unwrap();
+                self.assign_register(var_register);
+
+                self.buffer.push_str(register.as_str());
+                self.newline();
+            }
+            _ => todo!(),
+        }
+    }
+
     fn statement(&mut self, statement: &AstNodeStmt, register: Register) {
         match statement {
             AstNodeStmt::Expr(expr) => {
                 self.expr(expr, register);
             }
+            AstNodeStmt::Assign { target, value, .. } => self.assign(target, value, register),
             AstNodeStmt::Block { body, .. } => {
                 if let Some((stmt, rest)) = body.split_first() {
                     self.statement(stmt, register);
