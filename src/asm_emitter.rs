@@ -21,6 +21,7 @@ pub(crate) struct AsmEmitter<'a> {
 
 const PRINTF_FMT_STRING: &str = "%s";
 const PRINTF_FMT_INT: &str = "%d";
+const PRINTF_FMT_LONG: &str = "%ld";
 
 impl<'a> AsmEmitter<'a> {
     pub(crate) fn new(
@@ -336,6 +337,7 @@ impl<'a> AsmEmitter<'a> {
         let fmt_string_label = match t {
             Type::Int => self.synthetic_literal_string(PRINTF_FMT_INT),
             Type::TString => self.synthetic_literal_string(PRINTF_FMT_STRING),
+            Type::Long => self.synthetic_literal_string(PRINTF_FMT_LONG),
             _ => todo!(),
         };
         self.deref_string_from_label(REGISTER_ARG_1, &fmt_string_label);
