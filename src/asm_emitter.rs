@@ -22,14 +22,6 @@ pub(crate) struct AsmEmitter<'a> {
 const PRINTF_FMT_STRING: &str = "%s";
 const PRINTF_FMT_INT: &str = "%d";
 
-fn assign_register_op(t: &Type) -> &'static str {
-    match t {
-        Type::TString => "mov",
-        Type::Int => "mov",
-        _ => todo!(),
-    }
-}
-
 impl<'a> AsmEmitter<'a> {
     pub(crate) fn new(
         session: &'a Session,
@@ -173,7 +165,7 @@ impl<'a> AsmEmitter<'a> {
     }
 
     // `rax`: dividend, register or next free register: dividend, `rdx`: remainder
-    fn div(&mut self, right: &AstNodeExpr, register: Register, t: &Type) {
+    fn div(&mut self, right: &AstNodeExpr, register: Register) {
         // The dividend must be in `rax`, so we copy `register` in rax
         if register != Register::Rax {
             if !self.registers.is_free(Register::Rax) {
@@ -182,7 +174,7 @@ impl<'a> AsmEmitter<'a> {
             }
 
             self.registers.reserve(Register::Rax);
-            self.assign_register(Register::Rax, t);
+            self.assign_register(Register::Rax);
             self.buffer.push_str(&format!("{}", register));
             self.newline();
         }
@@ -245,10 +237,10 @@ impl<'a> AsmEmitter<'a> {
                         self.expr(right, None);
                     }
                     (TokenKind::Slash, Type::Int) => {
-                        self.div(right, register, t);
+                        self.div(right, register);
                         // We copy the result of the division in the original register if needed
                         if register != Register::Rax {
-                            self.assign_register(register, t);
+                            self.assign_register(register);
                             self.buffer.push_str(&format!("{}", Register::Rax));
                             self.newline();
                             self.zero_register(Register::Rax);
@@ -257,10 +249,10 @@ impl<'a> AsmEmitter<'a> {
                         }
                     }
                     (TokenKind::Percent, Type::Int) => {
-                        self.div(right, register, t);
+                        self.div(right, register);
                         // We copy the result of the division in the original register if needed
                         if register != Register::Rdx {
-                            self.assign_register(register, t);
+                            self.assign_register(register);
                             self.buffer.push_str(&format!("{}", Register::Rdx));
                             self.newline();
                             self.zero_register(Register::Rdx);
@@ -312,10 +304,9 @@ impl<'a> AsmEmitter<'a> {
         self.constants.find_or_create_string(s)
     }
 
-    fn assign_register(&mut self, register: Register, t: &Type) {
+    fn assign_register(&mut self, register: Register) {
         self.registers.reserve(register);
-        self.buffer
-            .push_str(&format!("{} {}, ", assign_register_op(t), register));
+        self.buffer.push_str(&format!("mov {}, ", register));
     }
 
     fn deref_string_from_label(&mut self, register: Register, fmt_string_label: &str) {
@@ -344,7 +335,7 @@ impl<'a> AsmEmitter<'a> {
                 todo!("Re-arrange registers");
             }
 
-            self.assign_register(REGISTER_ARG_2, t);
+            self.assign_register(REGISTER_ARG_2);
             self.buffer.push_str(&format!("{}", register));
             self.newline();
             self.zero_register(register);
@@ -357,7 +348,7 @@ impl<'a> AsmEmitter<'a> {
         if let Some(register) = register {
             // String requires `lea`
             if token.kind != TokenKind::TString {
-                self.buffer.push_str(&format!("mov {}, ", register));
+                self.assign_register(register);
             }
         }
 
