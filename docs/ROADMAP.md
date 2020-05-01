@@ -194,6 +194,7 @@
 
 - [x] println
 - [x] unique constants
+- [x] hello world
 - [x] int math
 - [x] long math
 - [ ] Conversions between primitive types
