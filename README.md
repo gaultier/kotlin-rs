@@ -61,7 +61,7 @@ $ ./Stdin
 
 This project can also be used as a library.
 
-## Debugging
+## Troubleshooting when working on the compiler
 
 ```
 # Possible values: 0|trace|debug|info|warn|error
