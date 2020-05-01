@@ -216,3 +216,11 @@ fn long_if_false() {
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
 }
+
+#[test]
+fn int_var() {
+    let src = "var a = 2; println(a)";
+    let path = Path::new("IntVarAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "2");
+}
