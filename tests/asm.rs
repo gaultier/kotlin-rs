@@ -200,3 +200,19 @@ fn int_if_false() {
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
 }
+
+#[test]
+fn long_if_true() {
+    let src = "println(if(2L == 2L) 10L else -10L)";
+    let path = Path::new("LongIfTrueAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "10");
+}
+
+#[test]
+fn long_if_false() {
+    let src = "println(if(2L == 3L) 10L else -10L)";
+    let path = Path::new("LongIfFalseAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+}
