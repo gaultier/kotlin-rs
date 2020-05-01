@@ -26,6 +26,29 @@ pub(crate) const REGISTER_RETURN_VALUE: Register = Register::Rax;
 pub(crate) const REGISTER_ARG_1: Register = Register::Rdi;
 pub(crate) const REGISTER_ARG_2: Register = Register::Rsi;
 
+impl Register {
+    pub(crate) fn as_str(&self) -> &'static str {
+        match self {
+            Register::Rax => "rax",
+            Register::Rbx => "rbx",
+            Register::Rcx => "rcx",
+            Register::Rdx => "rdx",
+            Register::Rbp => "rbp",
+            Register::Rsp => "rsp",
+            Register::Rsi => "rsi",
+            Register::Rdi => "rdi",
+            Register::R8 => "r8",
+            Register::R9 => "r9",
+            Register::R10 => "r10",
+            Register::R11 => "r11",
+            Register::R12 => "r12",
+            Register::R13 => "r13",
+            Register::R14 => "r14",
+            Register::R15 => "r15",
+        }
+    }
+}
+
 impl From<u16> for Register {
     fn from(i: u16) -> Register {
         match i {
@@ -52,24 +75,7 @@ impl From<u16> for Register {
 
 impl fmt::Display for Register {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Register::Rax => f.write_str("rax"),
-            Register::Rbx => f.write_str("rbx"),
-            Register::Rcx => f.write_str("rcx"),
-            Register::Rdx => f.write_str("rdx"),
-            Register::Rbp => f.write_str("rbp"),
-            Register::Rsp => f.write_str("rsp"),
-            Register::Rsi => f.write_str("rsi"),
-            Register::Rdi => f.write_str("rdi"),
-            Register::R8 => f.write_str("r8"),
-            Register::R9 => f.write_str("r9"),
-            Register::R10 => f.write_str("r10"),
-            Register::R11 => f.write_str("r11"),
-            Register::R12 => f.write_str("r12"),
-            Register::R13 => f.write_str("r13"),
-            Register::R14 => f.write_str("r14"),
-            Register::R15 => f.write_str("r15"),
-        }
+        f.write_str(self.as_str())
     }
 }
 

@@ -195,3 +195,4 @@
 - [x] println
 - [x] unique constants
 - [x] int math
+- [x] long math

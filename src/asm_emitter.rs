@@ -370,6 +370,13 @@ impl<'a> AsmEmitter<'a> {
         self.buffer.push_str(&format!("mov {}, ", register));
     }
 
+    // Consume the origin register
+    fn transfer_register(&mut self, source: Register, destination: Register) {
+        self.assign_register(source);
+        self.buffer.push_str(destination.as_str());
+        self.registers.free(source);
+    }
+
     fn deref_string_from_label(&mut self, register: Register, fmt_string_label: &str) {
         self.buffer
             .push_str(&format!("lea {}, [{}]\n", register, fmt_string_label));
