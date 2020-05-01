@@ -184,3 +184,19 @@ fn long_ne_false() {
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "0");
 }
+
+#[test]
+fn int_if_true() {
+    let src = "println(if(2 == 2) 10 else -10)";
+    let path = Path::new("IntIfTrueAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "10");
+}
+
+#[test]
+fn int_if_false() {
+    let src = "println(if(2 == 3) 10 else -10)";
+    let path = Path::new("IntIfFalseAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+}
