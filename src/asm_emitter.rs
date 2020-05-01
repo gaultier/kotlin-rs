@@ -161,6 +161,7 @@ impl<'a> AsmEmitter<'a> {
             AstNodeExpr::Println(expr, _) => self.println(expr, register),
             AstNodeExpr::Unary { .. } => self.unary(expr, register),
             AstNodeExpr::Binary { .. } => self.binary(expr, register),
+            AstNodeExpr::Grouping(expr, _) => self.expr(expr, register),
             _ => todo!(),
         }
     }
