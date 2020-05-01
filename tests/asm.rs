@@ -27,23 +27,31 @@ fn print_neg_int() {
 
 #[test]
 fn add_int() {
-    let src = "println(10+5)";
+    let src = "println(10 + -5)";
     let path = Path::new("AddIntAsm.kts");
     let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "15");
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "5");
 }
 
 #[test]
 fn mult_int() {
-    let src = "println(10*-5)";
+    let src = "println(10 * -5)";
     let path = Path::new("MultIntAsm.kts");
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "-50");
 }
 
 #[test]
+fn sub_int() {
+    let src = "println(10 - -5)";
+    let path = Path::new("SubIntAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "15");
+}
+
+#[test]
 fn div_int() {
-    let src = "println(11/-4)";
+    let src = "println(11 / -4)";
     let path = Path::new("DivIntAsm.kts");
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "-2");
@@ -51,8 +59,64 @@ fn div_int() {
 
 #[test]
 fn rem_int() {
-    let src = "println(11%4)";
+    let src = "println(11 % 4)";
     let path = Path::new("RemIntAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
+}
+
+#[test]
+fn print_long() {
+    let src = "println(10L)";
+    let path = Path::new("PrintLongAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "10");
+}
+
+#[test]
+fn print_neg_long() {
+    let src = "println(-10L)";
+    let path = Path::new("PrintNegLongAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-10");
+}
+
+#[test]
+fn add_long() {
+    let src = "println(10L + -5L)";
+    let path = Path::new("AddLongAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "5");
+}
+
+#[test]
+fn sub_long() {
+    let src = "println(10L - -5L)";
+    let path = Path::new("SubLongAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "15");
+}
+
+#[test]
+fn mult_long() {
+    let src = "println(10L * -5L)";
+    let path = Path::new("MultLongAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-50");
+}
+
+#[test]
+fn div_long() {
+    let src = "println(11L / -4L)";
+    let path = Path::new("DivLongAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-2");
+}
+
+#[test]
+fn rem_long() {
+    let src = "println(11L % 4L)";
+    let path = Path::new("RemLongAsm.kts");
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
 }
