@@ -225,6 +225,18 @@ impl<'a> AsmEmitter<'a> {
                 self.newline();
 
                 match (op.kind, t) {
+                    (TokenKind::EqualEqual, Type::Boolean) => {
+                        let intermediate_register = self.registers.allocate().unwrap();
+                        self.expr(right, intermediate_register);
+
+                        self.buffer
+                            .push_str(&format!("cmp {}, {}", register, intermediate_register));
+                        self.newline();
+                        self.registers.free(intermediate_register);
+
+                        self.buffer
+                            .push_str(&format!("sete {}", register.as_byte_str()));
+                    }
                     (TokenKind::Plus, Type::Int) => {
                         let intermediate_register = self.registers.allocate().unwrap();
                         self.expr(right, intermediate_register);
@@ -321,7 +333,10 @@ impl<'a> AsmEmitter<'a> {
                             self.registers.free(Register::Rdx);
                         }
                     }
-                    _ => todo!(),
+                    _ => {
+                        dbg!(left, right, op, t);
+                        todo!("binary operation")
+                    }
                 }
                 self.newline();
             }
@@ -390,7 +405,7 @@ impl<'a> AsmEmitter<'a> {
 
         let t = self.types.get(&expr.id()).unwrap();
         let fmt_string_label = match t {
-            Type::Int => self.synthetic_literal_string(PRINTF_FMT_INT),
+            Type::Boolean | Type::Int => self.synthetic_literal_string(PRINTF_FMT_INT),
             Type::TString => self.synthetic_literal_string(PRINTF_FMT_STRING),
             Type::Long => self.synthetic_literal_string(PRINTF_FMT_LONG),
             _ => todo!(),

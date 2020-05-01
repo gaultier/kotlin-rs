@@ -47,6 +47,27 @@ impl Register {
             Register::R15 => "r15",
         }
     }
+
+    pub(crate) fn as_byte_str(&self) -> &'static str {
+        match self {
+            Register::Rax => "al",
+            Register::Rbx => "bl",
+            Register::Rcx => "cl",
+            Register::Rdx => "dl",
+            Register::Rbp => "bl",
+            Register::Rsp => "sl",
+            Register::Rsi => "sl",
+            Register::Rdi => "dl",
+            Register::R8 => "8l",
+            Register::R9 => "9l",
+            Register::R10 => "10l",
+            Register::R11 => "11l",
+            Register::R12 => "12l",
+            Register::R13 => "13l",
+            Register::R14 => "14l",
+            Register::R15 => "15l",
+        }
+    }
 }
 
 impl From<u16> for Register {

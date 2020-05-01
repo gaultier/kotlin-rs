@@ -196,3 +196,5 @@
 - [x] unique constants
 - [x] int math
 - [x] long math
+- [ ] Conversions between primitive types
+- [ ] Equality test
