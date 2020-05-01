@@ -194,4 +194,4 @@
 
 - [x] println
 - [x] unique constants
-- [ ] int math
+- [x] int math
