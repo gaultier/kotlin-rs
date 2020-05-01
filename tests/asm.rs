@@ -120,3 +120,19 @@ fn rem_long() {
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
 }
+
+#[test]
+fn int_eq_true() {
+    let src = "println((2 + 3) == 5)";
+    let path = Path::new("IntEqTrueAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "1");
+}
+
+#[test]
+fn int_eq_false() {
+    let src = "println((3 + 3) == 5)";
+    let path = Path::new("IntEqFalseAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "0");
+}
