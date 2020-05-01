@@ -32,8 +32,8 @@ $ kotlin fmt -f e2e/fibonnaci_iter.kts
 
 # There's also (very experimental) native support!
 # This will create a native executable (macOS, x86_64 only for now)
-# `nasm` is required
-$ echo 'println(5*3+7)' | kotlin asm
+# `nasm` and a libc are required
+$ echo 'println(5 * 3 + 7)' | kotlin asm
 22
 
 $ file ./Stdin
