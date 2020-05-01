@@ -273,6 +273,54 @@ impl<'a> AsmEmitter<'a> {
                             self.registers.free(Register::Rdx);
                         }
                     }
+                    (TokenKind::Plus, Type::Long) => {
+                        let intermediate_register = self.registers.allocate().unwrap();
+                        self.expr(right, intermediate_register);
+
+                        self.buffer
+                            .push_str(&format!("add {}, {}", register, intermediate_register));
+                        self.registers.free(intermediate_register);
+                    }
+                    (TokenKind::Minus, Type::Long) => {
+                        let intermediate_register = self.registers.allocate().unwrap();
+                        self.expr(right, intermediate_register);
+
+                        self.buffer
+                            .push_str(&format!("sub {}, {}", register, intermediate_register));
+                        self.registers.free(intermediate_register);
+                    }
+                    (TokenKind::Star, Type::Long) => {
+                        let intermediate_register = self.registers.allocate().unwrap();
+                        self.expr(right, intermediate_register);
+
+                        self.buffer
+                            .push_str(&format!("imul {}, {}", register, intermediate_register));
+                        self.registers.free(intermediate_register);
+                    }
+                    (TokenKind::Slash, Type::Long) => {
+                        self.div(right, register);
+                        // We copy the result of the division in the original register if needed
+                        if register != Register::Rax {
+                            self.assign_register(register);
+                            self.buffer.push_str(&format!("{}", Register::Rax));
+                            self.newline();
+                            self.zero_register(Register::Rax);
+
+                            self.registers.free(Register::Rax);
+                        }
+                    }
+                    (TokenKind::Percent, Type::Long) => {
+                        self.div(right, register);
+                        // We copy the result of the division in the original register if needed
+                        if register != Register::Rdx {
+                            self.assign_register(register);
+                            self.buffer.push_str(&format!("{}", Register::Rdx));
+                            self.newline();
+                            self.zero_register(Register::Rdx);
+
+                            self.registers.free(Register::Rdx);
+                        }
+                    }
                     _ => todo!(),
                 }
                 self.newline();
