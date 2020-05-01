@@ -48,12 +48,3 @@ impl Constants {
         self.unique_value_to_label.iter()
     }
 }
-
-// impl<'a> IntoIterator for &Constants {
-//     type Item = (String, Label);
-//     type IntoIter = &'a std::collections::btree_map::IntoIter<String, Label>;
-
-//     fn into_iter(self) -> Self::IntoIter {
-//         &self.unique_value_to_label.iter()
-//     }
-// }

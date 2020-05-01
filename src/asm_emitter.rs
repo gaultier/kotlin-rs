@@ -19,9 +19,9 @@ pub(crate) struct AsmEmitter<'a> {
     registers: Registers,
 }
 
-const PRINTF_FMT_STRING: &str = "%s";
-const PRINTF_FMT_INT: &str = "%d";
-const PRINTF_FMT_LONG: &str = "%ld";
+const PRINTF_FMT_STRING: &str = "\"%s\", 0xa"; // 0xa = \n
+const PRINTF_FMT_INT: &str = "\"%d\", 0xa"; // 0xa = \n
+const PRINTF_FMT_LONG: &str = "\"%ld\", 0xa"; // 0xa = \n
 
 impl<'a> AsmEmitter<'a> {
     pub(crate) fn new(
@@ -85,9 +85,7 @@ impl<'a> AsmEmitter<'a> {
     fn data_section<W: std::io::Write>(&mut self, w: &mut W) -> Result<(), Error> {
         w.write_all(b" section .data\n")?;
         for (constant, label) in self.constants.iter() {
-            w.write_all(
-                &format!("{}: db \"{}\", 0 ; null terminated\n", label, constant).as_bytes(),
-            )?;
+            w.write_all(&format!("{}: db {}, 0 ; null terminated\n", label, constant).as_bytes())?;
         }
         Ok(())
     }
@@ -469,7 +467,7 @@ impl<'a> AsmEmitter<'a> {
                 self.newline();
             }
             TokenKind::TString => {
-                let s = String::from(&self.session.src[token.span.start + 1..token.span.end - 1]);
+                let s = String::from(&self.session.src[token.span.start..token.span.end]);
                 let label = self.constants.find_or_create_string(&s);
 
                 self.deref_string_from_label(register, &label);
