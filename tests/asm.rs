@@ -35,18 +35,18 @@ fn add_int() {
 
 #[test]
 fn mult_int() {
-    let src = "println(10*5)";
+    let src = "println(10*-5)";
     let path = Path::new("MultIntAsm.kts");
     let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "50");
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-50");
 }
 
 #[test]
 fn div_int() {
-    let src = "println(11/4)";
+    let src = "println(11/-4)";
     let path = Path::new("DivIntAsm.kts");
     let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "2");
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "-2");
 }
 
 #[test]

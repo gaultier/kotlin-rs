@@ -143,7 +143,7 @@ impl<'a> AsmEmitter<'a> {
         match statement {
             AstNodeStmt::Expr(expr) => {
                 let register = self.registers.allocate().unwrap();
-                self.expr(expr, Some(register));
+                self.expr(expr, register);
             }
             AstNodeStmt::Block { body, .. } => {
                 for stmt in body {
@@ -154,12 +154,12 @@ impl<'a> AsmEmitter<'a> {
         }
     }
 
-    fn expr(&mut self, expr: &AstNodeExpr, register: Option<Register>) {
+    fn expr(&mut self, expr: &AstNodeExpr, register: Register) {
         match expr {
             AstNodeExpr::Literal(tok, _) => self.literal(tok, register),
-            AstNodeExpr::Println(expr, _) => self.println(expr, register.unwrap()),
-            AstNodeExpr::Unary { .. } => self.unary(expr, register.unwrap()),
-            AstNodeExpr::Binary { .. } => self.binary(expr, register.unwrap()),
+            AstNodeExpr::Println(expr, _) => self.println(expr, register),
+            AstNodeExpr::Unary { .. } => self.unary(expr, register),
+            AstNodeExpr::Binary { .. } => self.binary(expr, register),
             _ => todo!(),
         }
     }
@@ -194,7 +194,7 @@ impl<'a> AsmEmitter<'a> {
             }
 
             self.registers.reserve(Register::Rcx);
-            self.expr(right, Some(Register::Rcx));
+            self.expr(right, Register::Rcx);
             self.newline();
         }
 
@@ -220,21 +220,31 @@ impl<'a> AsmEmitter<'a> {
                     unimplemented!("Conversions")
                 }
 
-                self.expr(left, Some(register));
+                self.expr(left, register);
                 self.newline();
 
                 match (op.kind, t) {
                     (TokenKind::Plus, Type::Int) => {
-                        self.buffer.push_str(&format!("add {}, ", register));
-                        self.expr(right, None);
+                        let intermediate_register = self.registers.allocate().unwrap();
+                        self.expr(right, intermediate_register);
+
+                        self.buffer
+                            .push_str(&format!("add {}, {}", register, intermediate_register));
+                        self.registers.free(intermediate_register);
                     }
                     (TokenKind::Minus, Type::Int) => {
-                        self.buffer.push_str(&format!("sub {}, ", register));
-                        self.expr(right, None);
+                        let intermediate_register = self.registers.allocate().unwrap();
+                        self.expr(right, intermediate_register);
+
+                        self.buffer
+                            .push_str(&format!("sub {}, {}", register, intermediate_register));
                     }
                     (TokenKind::Star, Type::Int) => {
-                        self.buffer.push_str(&format!("imul {}, ", register));
-                        self.expr(right, None);
+                        let intermediate_register = self.registers.allocate().unwrap();
+                        self.expr(right, intermediate_register);
+
+                        self.buffer
+                            .push_str(&format!("imul {}, {}", register, intermediate_register));
                     }
                     (TokenKind::Slash, Type::Int) => {
                         self.div(right, register);
@@ -279,7 +289,7 @@ impl<'a> AsmEmitter<'a> {
                 expr,
                 ..
             } => {
-                self.expr(expr, Some(register));
+                self.expr(expr, register);
                 self.newline();
 
                 self.buffer.push_str(&format!("neg {}\n", register));
@@ -293,7 +303,7 @@ impl<'a> AsmEmitter<'a> {
                 expr,
                 ..
             } => {
-                self.expr(expr, Some(register));
+                self.expr(expr, register);
                 self.newline();
             }
             _ => todo!(),
@@ -328,7 +338,7 @@ impl<'a> AsmEmitter<'a> {
         };
         self.deref_string_from_label(REGISTER_ARG_1, &fmt_string_label);
 
-        self.expr(expr, Some(register));
+        self.expr(expr, register);
 
         if register != REGISTER_ARG_2 {
             if !self.registers.is_free(REGISTER_ARG_2) {
@@ -344,30 +354,40 @@ impl<'a> AsmEmitter<'a> {
         self.call_function("_printf", 2);
     }
 
-    fn literal(&mut self, token: &Token, register: Option<Register>) {
-        if let Some(register) = register {
-            // String requires `lea`
-            if token.kind != TokenKind::TString {
-                self.assign_register(register);
-            }
-        }
-
+    fn literal(&mut self, token: &Token, register: Register) {
         match token.kind {
-            TokenKind::Int(n) => self.buffer.push_str(&format!("{}", n)),
-            TokenKind::Long(n) => self.buffer.push_str(&format!("{}", n)),
-            TokenKind::Boolean(true) => self.buffer.push_str("1"),
-            TokenKind::Boolean(false) => self.buffer.push_str("0"),
-            TokenKind::Char(c) => self.buffer.push_str(&format!("'{}'", c)),
+            TokenKind::Int(n) => {
+                self.assign_register(register);
+                self.buffer.push_str(&format!("{}", n));
+                self.newline();
+            }
+            TokenKind::Long(n) => {
+                self.assign_register(register);
+                self.buffer.push_str(&format!("{}", n));
+                self.newline();
+            }
+            TokenKind::Boolean(true) => {
+                self.assign_register(register);
+                self.buffer.push_str("1");
+                self.newline();
+            }
+            TokenKind::Boolean(false) => {
+                self.assign_register(register);
+                self.buffer.push_str("0");
+                self.newline();
+            }
+            TokenKind::Char(c) => {
+                self.assign_register(register);
+                self.buffer.push_str(&format!("'{}'", c));
+                self.newline();
+            }
             TokenKind::TString => {
                 let s = String::from(&self.session.src[token.span.start + 1..token.span.end - 1]);
                 let label = self.constants.find_or_create_string(&s);
-                self.deref_string_from_label(register.unwrap(), &label);
+
+                self.deref_string_from_label(register, &label);
             }
             _ => todo!(),
-        }
-
-        if register.is_some() {
-            self.newline();
         }
     }
 }
