@@ -238,6 +238,18 @@ impl<'a> AsmEmitter<'a> {
                         self.buffer
                             .push_str(&format!("sete {}", register.as_byte_str()));
                     }
+                    (TokenKind::BangEqual, Type::Boolean) => {
+                        let intermediate_register = self.registers.allocate().unwrap();
+                        self.expr(right, intermediate_register);
+
+                        self.buffer
+                            .push_str(&format!("cmp {}, {}", register, intermediate_register));
+                        self.newline();
+                        self.registers.free(intermediate_register);
+
+                        self.buffer
+                            .push_str(&format!("setne {}", register.as_byte_str()));
+                    }
                     (TokenKind::Plus, Type::Int) => {
                         let intermediate_register = self.registers.allocate().unwrap();
                         self.expr(right, intermediate_register);
