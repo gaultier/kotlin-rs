@@ -7,4 +7,5 @@ target
 !*.kts
 !.gitignore
 !Makefile
-
+!Cargo.toml
+!Cargo.lock
