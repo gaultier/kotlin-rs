@@ -14,20 +14,16 @@ The goals of the project are:
 Prerequisite: a Rust toolchain installed.
 
 ```sh
-# Build
+# Build an optimized, self-contained executable: `./target/release/kotlin`, thereafter referred as `kotlin`
 $ cargo build --release
 
-# The statically built, self-contained executable is here: `./target/release/kotlin`.
-# It will be now referred as `kotlin`.
-# By default it targets the JVM, and only requires the JRE to be installed to run class files.
-
+# By default our compiler targets the JVM, and only requires the JRE to be installed to run class files.
 # Run with a file:
 $ cd e2e && kotlin -f fibonnaci_rec.kts
 9227465
 
 # This creates a class file called `FibonnaciRec.class`:
 $ javap ./FibonnaciRec.class
-javap ./FibonnaciRec.class
 Compiled from "fibonnaci_rec.kts"
 class FibonnaciRec {
   FibonnaciRec();
@@ -45,7 +41,7 @@ $ echo 'println(4*5)' | kotlin
 
 # Experimental: format a file.
 # It does not modify the file in place, just prints the formatted version on stdout
-$ kotlin fmt -f e2e/fibonnaci_iter.kts
+$ kotlin fmt -f fibonnaci_iter.kts
 
 # There's also (very experimental) native support!
 # This will create a native executable (macOS, x86_64 only for now)
