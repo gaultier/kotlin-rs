@@ -171,10 +171,15 @@ impl<'a> AsmEmitter<'a> {
         }
     }
 
-    // `rax`: dividend, `rcx` or register: dividend, `rdx`: remainder
+    // `rax`: dividend, register or next free register: dividend, `rdx`: remainder
     fn div(&mut self, right: &AstNodeExpr, register: Register, t: &Type) {
         // The dividend must be in `rax`, so we copy `register` in rax
         if register != Register::Rax {
+            if !self.registers.is_free(Register::Rax) {
+                dbg!(&self.registers);
+                todo!("Re-arrange registers");
+            }
+
             self.registers.reserve(Register::Rax);
             self.assign_register(Register::Rax, t);
             self.buffer.push_str(&format!("{}", register));
@@ -185,16 +190,23 @@ impl<'a> AsmEmitter<'a> {
             self.newline();
         }
 
-        // The dividend is in `rcx`
-        // TODO: here we might override the content of `rcx`. Check if `rcx` is free?
+        // `div` will overwrite `rdx`.
+        if !self.registers.is_free(Register::Rdx) {
+            dbg!(&self.registers);
+            todo!("Re-arrange registers");
+        }
+
         if register != Register::Rcx {
+            if !self.registers.is_free(Register::Rcx) {
+                todo!("Re-arrange registers");
+            }
+
             self.registers.reserve(Register::Rcx);
             self.assign_register(Register::Rcx, t);
             self.expr(right, Register::Rcx);
             self.newline();
         }
 
-        // TODO: this will override the content of `rdx`. Check if `rdx` is free?
         self.buffer.push_str(&format!("idiv {}", Register::Rcx));
         // `div` destroys the content of `rcx`
         self.registers.free(Register::Rcx);

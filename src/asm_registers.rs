@@ -1,3 +1,4 @@
+use log::debug;
 use std::fmt;
 
 // x86_64 specific
@@ -101,6 +102,7 @@ impl Registers {
 
             if (self.in_use & i) == 0 {
                 let register = Register::from(i);
+                debug!("allocate: new register={} in_use={}", register, self.in_use);
                 self.reserve(register);
                 return Some(register);
             }
@@ -112,5 +114,33 @@ impl Registers {
 
     pub(crate) fn free(&mut self, register: Register) {
         self.in_use &= !(register as u16);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn is_free_initially() {
+        let registers = Registers::new();
+        assert!(registers.is_free(Register::Rax));
+    }
+
+    #[test]
+    fn is_not_free_after_being_reserved() {
+        let mut registers = Registers::new();
+        registers.reserve(Register::Rax);
+        assert!(!registers.is_free(Register::Rax));
+    }
+
+    #[test]
+    fn is_free_after_being_freed() {
+        let mut registers = Registers::new();
+        registers.reserve(Register::Rax);
+        assert!(!registers.is_free(Register::Rax));
+
+        registers.free(Register::Rax);
+        assert!(registers.is_free(Register::Rax));
     }
 }
