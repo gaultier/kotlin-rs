@@ -66,10 +66,16 @@ This project can also be used as a library.
 ```
 # Possible values: 0|trace|debug|info|warn|error
 $ export RUST_LOG=debug
+
 # Possible values: 0|1|full
 $ export RUST_BACKTRACE=full
+
+# Dump the output of the lexer
 $ cargo run -- dump_tokens -f /path/to/file.kt
+
+# Dump the output of the parser
 $ cargo run -- dump_ast -f /path/to/file.kt
+
 # Prettier view of the ast with s-expressions
 $ cargo run -- sexp -f /path/to/file.kt
 ```
