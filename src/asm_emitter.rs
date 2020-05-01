@@ -132,7 +132,9 @@ impl<'a> AsmEmitter<'a> {
     ) -> Result<(), Error> {
         self.fn_main();
         self.fn_prolog();
-        self.statement(statements);
+        let register = self.registers.allocate().unwrap();
+        self.statement(statements, register);
+        self.registers.free(register);
         self.fn_epilog();
 
         self.prolog(w)?;
@@ -145,15 +147,19 @@ impl<'a> AsmEmitter<'a> {
         Ok(())
     }
 
-    fn statement(&mut self, statement: &AstNodeStmt) {
+    fn statement(&mut self, statement: &AstNodeStmt, register: Register) {
         match statement {
             AstNodeStmt::Expr(expr) => {
-                let register = self.registers.allocate().unwrap();
                 self.expr(expr, register);
             }
             AstNodeStmt::Block { body, .. } => {
-                for stmt in body {
-                    self.statement(stmt);
+                if let Some((stmt, rest)) = body.split_first() {
+                    self.statement(stmt, register);
+
+                    for stmt in rest {
+                        let register = self.registers.allocate().unwrap();
+                        self.statement(stmt, register);
+                    }
                 }
             }
             _ => todo!(),
@@ -172,20 +178,20 @@ impl<'a> AsmEmitter<'a> {
         let else_body_label = self.generate_new_label();
         let merge_bodies_label = self.generate_new_label();
         self.buffer
-            .push_str(&format!("jz {} ; else branch", else_body_label));
+            .push_str(&format!("je {} ; else branch", else_body_label));
         self.newline();
         self.registers.free(register);
 
-        self.statement(if_body);
+        self.statement(if_body, register);
         self.buffer
-            .push_str(&format!("jmp {} ; if branch", merge_bodies_label));
+            .push_str(&format!("jmp {} ; end of if", merge_bodies_label));
         self.newline();
         self.newline();
 
         self.buffer.push_str(&else_body_label);
         self.buffer.push_str(":");
         self.newline();
-        self.statement(else_body);
+        self.statement(else_body, register);
         self.newline();
         self.newline();
 
