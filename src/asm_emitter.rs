@@ -149,12 +149,15 @@ impl<'a> AsmEmitter<'a> {
         Ok(())
     }
 
-    fn assign_var_to_register(&mut self, id: NodeId, register: Register) {
-        let found = self
-            .id_to_register
+    fn find_var_register(&mut self, id: NodeId) -> Option<Register> {
+        self.id_to_register
             .iter()
-            .find(|elem| **elem == (id, register));
-        assert!(found.is_none());
+            .find(|elem| elem.0 == id)
+            .map(|elem| elem.1)
+    }
+
+    fn assign_var_to_register(&mut self, id: NodeId, register: Register) {
+        assert!(self.find_var_register(id).is_none());
 
         self.id_to_register.push((id, register));
     }
@@ -252,9 +255,18 @@ impl<'a> AsmEmitter<'a> {
         self.newline();
     }
 
+    fn var_ref(&mut self, id: NodeId, register: Register) {
+        self.assign_register(register);
+        let node_ref_id = self.resolution.get(&id).unwrap().node_ref_id;
+        let var_reg = self.find_var_register(node_ref_id).unwrap();
+        self.buffer.push_str(var_reg.as_str());
+        self.newline();
+    }
+
     fn expr(&mut self, expr: &AstNodeExpr, register: Register) {
         match expr {
             AstNodeExpr::Literal(tok, _) => self.literal(tok, register),
+            AstNodeExpr::VarRef(_, id) => self.var_ref(*id, register),
             AstNodeExpr::Println(expr, _) => self.println(expr, register),
             AstNodeExpr::Unary { .. } => self.unary(expr, register),
             AstNodeExpr::Binary { .. } => self.binary(expr, register),
