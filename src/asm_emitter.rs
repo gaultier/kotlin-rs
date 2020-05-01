@@ -176,7 +176,7 @@ impl<'a> AsmEmitter<'a> {
 
             self.registers.reserve(Register::Rax);
             self.assign_register(Register::Rax);
-            self.buffer.push_str(&format!("{}", register));
+            self.buffer.push_str(register.as_str());
             self.newline();
         }
         // Required to store the sign in rdx:rax, otherwise we get a FPE
@@ -405,7 +405,7 @@ impl<'a> AsmEmitter<'a> {
             }
 
             self.assign_register(REGISTER_ARG_2);
-            self.buffer.push_str(&format!("{}", register));
+            self.buffer.push_str(register.as_str());
             self.newline();
             self.zero_register(register);
         }
