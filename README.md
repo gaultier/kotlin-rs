@@ -33,14 +33,14 @@ $ kotlin fmt -f e2e/fibonnaci_iter.kts
 # There's also (very experimental) native support!
 # This will create a native executable (macOS, x86_64 only for now)
 # `nasm` is required
-$ echo 'println(5)' | kotlin asm
-5
+$ echo 'println(5*3+7)' | kotlin asm
+22
 
 $ file ./Stdin
 Stdin: Mach-O 64-bit executable x86_64
 
 $ ./Stdin
-5
+22
 
 ```
 
@@ -61,7 +61,11 @@ $ cargo run -- sexp -f /path/to/file.kt
 
 ## Tests
 
-`cargo test`
+```sh
+$ cargo test
+# optional: clean up test files
+$ make clean
+```
 
 ## Status
 
