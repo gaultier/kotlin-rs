@@ -695,7 +695,11 @@ impl<'a> TypeChecker<'a> {
             AstNodeExpr::Literal(..) => self.literal(ast),
             AstNodeExpr::Unary { .. } => self.unary(ast),
             AstNodeExpr::Binary { .. } => self.binary(ast),
-            AstNodeExpr::Grouping(expr, _) => self.expr(expr),
+            AstNodeExpr::Grouping(expr, id) => {
+                let t = self.expr(expr).unwrap();
+                self.types.insert(*id, t.clone());
+                Ok(t)
+            }
             AstNodeExpr::IfExpr { .. } => self.if_expr(ast),
             AstNodeExpr::WhenExpr { id, .. } => self.when_expr(ast, *id),
             AstNodeExpr::VarRef(_, id) => self.var_ref(*id),
