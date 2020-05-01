@@ -166,7 +166,7 @@ impl<'a> AsmEmitter<'a> {
         self.expr(value, register);
         let var_name = &self.session.src[identifier.span.start..identifier.span.end];
         self.buffer
-            .push_str(&format!("; {} is now in register {}", var_name, register));
+            .push_str(&format!("; `{}` is in register {}", var_name, register));
         self.newline();
         self.assign_var_to_register(id, register);
     }
