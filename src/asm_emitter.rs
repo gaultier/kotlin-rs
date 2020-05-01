@@ -112,6 +112,7 @@ impl<'a> AsmEmitter<'a> {
         self.registers.free(register);
         self.buffer
             .push_str(&format!("xor {}, {}", register, register));
+        self.newline();
     }
 
     fn call_function(&mut self, fn_name: &str, arg_count: usize) {
@@ -164,7 +165,7 @@ impl<'a> AsmEmitter<'a> {
     fn expr(&mut self, expr: &AstNodeExpr, register: Register) {
         match expr {
             AstNodeExpr::Literal(tok, _) => self.literal(tok),
-            AstNodeExpr::Println(expr, _) => self.println(expr),
+            AstNodeExpr::Println(expr, _) => self.println(expr, register),
             AstNodeExpr::Unary { .. } => self.unary(expr, register),
             AstNodeExpr::Binary { .. } => self.binary(expr, register),
             _ => todo!(),
@@ -184,11 +185,10 @@ impl<'a> AsmEmitter<'a> {
             self.assign_register(Register::Rax, t);
             self.buffer.push_str(&format!("{}", register));
             self.newline();
-
-            // Required to store the sign in rdx:rax, otherwise we get a FPE
-            self.buffer.push_str("cqo");
-            self.newline();
         }
+        // Required to store the sign in rdx:rax, otherwise we get a FPE
+        self.buffer.push_str("cqo");
+        self.newline();
 
         // `div` will overwrite `rdx`.
         if !self.registers.is_free(Register::Rdx) {
@@ -253,7 +253,6 @@ impl<'a> AsmEmitter<'a> {
                             self.buffer.push_str(&format!("{}", Register::Rax));
                             self.newline();
                             self.zero_register(Register::Rax);
-                            self.newline();
 
                             self.registers.free(Register::Rax);
                         }
@@ -266,7 +265,6 @@ impl<'a> AsmEmitter<'a> {
                             self.buffer.push_str(&format!("{}", Register::Rdx));
                             self.newline();
                             self.zero_register(Register::Rdx);
-                            self.newline();
 
                             self.registers.free(Register::Rdx);
                         }
@@ -325,7 +323,11 @@ impl<'a> AsmEmitter<'a> {
         self.buffer.push_str(&format!("[{}]\n", fmt_string_label));
     }
 
-    fn println(&mut self, expr: &AstNodeExpr) {
+    fn println(&mut self, expr: &AstNodeExpr, register: Register) {
+        if !self.registers.is_free(REGISTER_ARG_1) {
+            todo!("Re-arrange registers");
+        }
+
         self.assign_register(REGISTER_ARG_1, &Type::TString);
 
         let t = self.types.get(&expr.id()).unwrap();
@@ -336,9 +338,19 @@ impl<'a> AsmEmitter<'a> {
         };
         self.deref_string_from_label(&fmt_string_label);
 
-        self.assign_register(REGISTER_ARG_2, t);
-        self.expr(expr, REGISTER_ARG_2);
-        self.newline();
+        self.assign_register(register, t);
+        self.expr(expr, register);
+
+        if register != REGISTER_ARG_2 {
+            if !self.registers.is_free(REGISTER_ARG_2) {
+                todo!("Re-arrange registers");
+            }
+
+            self.assign_register(REGISTER_ARG_2, t);
+            self.buffer.push_str(&format!("{}", register));
+            self.newline();
+            self.zero_register(register);
+        }
 
         self.call_function("_printf", 2);
     }

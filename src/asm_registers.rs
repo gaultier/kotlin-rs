@@ -100,8 +100,8 @@ impl Registers {
                 continue;
             }
 
-            if (self.in_use & i) == 0 {
-                let register = Register::from(i);
+            let register = Register::from(i);
+            if self.is_free(register) {
                 debug!("allocate: new register={} in_use={}", register, self.in_use);
                 self.reserve(register);
                 return Some(register);
