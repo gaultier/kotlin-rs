@@ -90,7 +90,7 @@ $ make clean
 
 ## Status
 
-Pre-pre alpha. Do not use yet. Only a small subset of the language is supported (basically everything except classes, generics, and using stuff outside the current file), and there are likely bugs.
+Pre-pre alpha. Do not use yet. Only a small subset of the language is supported (basically only expressions, statements and functions, and we only consider the current file when compiling. No classes, no generics), and there are likely bugs.
 
 Some full-fledged examples compile though, see the `e2e` directory or the tests.
 
