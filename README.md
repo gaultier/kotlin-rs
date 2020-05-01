@@ -17,28 +17,47 @@ Prerequisite: a Rust toolchain installed.
 # Build
 $ cargo build --release
 
-# The statically built, self-contained executable can be found in `./target/release/kotlin`.
+# The statically built, self-contained executable is here: `./target/release/kotlin`.
 # It will be now referred as `kotlin`.
+# By default it targets the JVM, and only requires the JRE to be installed to run class files.
+
 # Run with a file:
 $ cd e2e && kotlin -f fibonnaci_rec.kts
-10946
+9227465
 
-# Or with stdin:
+# This creates a class file called `FibonnaciRec.class`:
+$ javap ./FibonnaciRec.class
+javap ./FibonnaciRec.class
+Compiled from "fibonnaci_rec.kts"
+class FibonnaciRec {
+  FibonnaciRec();
+  static int fibonacci(int);
+  public static void main(java.lang.String[]);
+}
+
+# We can run it directly with `java`:
+$ java FibonnaciRec
+9227465
+
+# We can also simply use stdin, this will create `Stdin.class` and run it with `java`:
 $ echo 'println(4*5)' | kotlin
 20
 
-# Format a file (it does not modify the file in place, just prints on stdout):
+# Experimental: format a file.
+# It does not modify the file in place, just prints the formatted version on stdout
 $ kotlin fmt -f e2e/fibonnaci_iter.kts
 
 # There's also (very experimental) native support!
 # This will create a native executable (macOS, x86_64 only for now)
-# `nasm` and a libc are required
+# The assembler `nasm` is required (`brew install nasm`)
 $ echo 'println(5 * 3 + 7)' | kotlin asm
 22
 
+# No JVM involved here, it is a stand-alone executable
 $ file ./Stdin
 Stdin: Mach-O 64-bit executable x86_64
 
+# We can run it directly:
 $ ./Stdin
 22
 
