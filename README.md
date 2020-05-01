@@ -22,7 +22,7 @@ $ cargo build --release
 $ cd e2e && kotlin -f fibonnaci_rec.kts
 9227465
 
-# This creates a class file called `FibonnaciRec.class`:
+# A class file called `FibonnaciRec.class` was created:
 $ javap ./FibonnaciRec.class
 Compiled from "fibonnaci_rec.kts"
 class FibonnaciRec {
