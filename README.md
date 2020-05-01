@@ -36,10 +36,10 @@ $ kotlin fmt -f e2e/fibonnaci_iter.kts
 $ echo 'println(5)' | kotlin asm
 5
 
-$ file Stdin.exe
-Stdin.exe: Mach-O 64-bit executable x86_64
+$ file ./Stdin
+Stdin: Mach-O 64-bit executable x86_64
 
-$ ./Stdin.exe
+$ ./Stdin
 5
 
 ```

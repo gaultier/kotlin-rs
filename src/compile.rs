@@ -169,7 +169,7 @@ pub fn asm(src: &str, file_name: &Path) -> Result<Option<Output>, Error> {
     );
 
     let mut exe_path = PathBuf::from(file_name);
-    exe_path.set_extension("exe");
+    exe_path.set_extension("");
 
     let mut ld_command = Command::new("ld");
     let mut ld_child = ld_command

@@ -1,7 +1,10 @@
-/target
-*.class
-META-INF
-*.o
-*.asm
-*.exe
-*.nasm
+*
+target
+!*/
+!*.rs
+!*.md
+!*.kt
+!*.kts
+!.gitignore
+!Makefile
+
