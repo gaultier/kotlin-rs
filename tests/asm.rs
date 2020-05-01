@@ -136,3 +136,19 @@ fn int_eq_false() {
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "0");
 }
+
+#[test]
+fn long_eq_true() {
+    let src = "println((2L + 3L) == 5L)";
+    let path = Path::new("LongEqTrueAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "1");
+}
+
+#[test]
+fn long_eq_false() {
+    let src = "println((3L + 3L) == 5L)";
+    let path = Path::new("LongEqFalseAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "0");
+}
