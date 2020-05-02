@@ -60,48 +60,48 @@ impl<'a> AsmEmitter<'a> {
     fn fn_prolog(&mut self) {
         self.buffer.push_str(
             r##"
-            ; prolog
-            push rbp
-            mov rbp, rsp
-            "##,
+; prolog
+push rbp
+mov rbp, rsp
+"##,
         );
     }
 
     fn fn_epilog(&mut self) {
         self.buffer.push_str(
             r##"
-            ; epilog
-            pop rbp
-            ret
-            "##,
+; epilog
+pop rbp
+ret
+"##,
         );
     }
 
     fn fn_main(&mut self) {
         self.buffer.push_str(
             r##"
-            ; entrypoint
-            global _main
-            _main:"##,
+; entrypoint
+global _main
+_main:"##,
         );
     }
 
     fn prolog<W: std::io::Write>(&mut self, w: &mut W) -> Result<(), Error> {
         w.write_all(
             &r##"
-            BITS 64 ; 64 bits
-            CPU X64 ; target the x86_64 family of CPUs
-            DEFAULT REL ; relative addressing mode
+BITS 64 ; 64 bits
+CPU X64 ; target the x86_64 family of CPUs
+DEFAULT REL ; relative addressing mode
 
-            extern _printf ; might be unused but that is ok
-            "##
+extern _printf ; might be unused but that is ok
+"##
             .as_bytes(),
         )?;
         Ok(())
     }
 
     fn data_section<W: std::io::Write>(&mut self, w: &mut W) -> Result<(), Error> {
-        w.write_all(b" section .data\n")?;
+        w.write_all(b"section .data\n")?;
         for (constant, label) in self.constants.iter() {
             w.write_all(&format!("{}: db {}, 0 ; null terminated\n", label, constant).as_bytes())?;
         }
