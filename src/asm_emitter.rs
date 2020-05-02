@@ -25,6 +25,15 @@ const PRINTF_FMT_STRING: &str = "\"%s\", 0xa"; // 0xa = \n
 const PRINTF_FMT_INT: &str = "\"%d\", 0xa"; // 0xa = \n
 const PRINTF_FMT_LONG: &str = "\"%ld\", 0xa"; // 0xa = \n
 
+fn logic_op(kind: &TokenKind) -> &'static str {
+    match kind {
+        TokenKind::EqualEqual => "sete",
+        TokenKind::Lesser => "setl",
+        TokenKind::BangEqual => "setne",
+        _ => todo!(),
+    }
+}
+
 impl<'a> AsmEmitter<'a> {
     pub(crate) fn new(
         session: &'a Session,
@@ -367,7 +376,7 @@ impl<'a> AsmEmitter<'a> {
                 self.newline();
 
                 match (op.kind, t) {
-                    (TokenKind::EqualEqual, Type::Boolean) => {
+                    (kind, Type::Boolean) => {
                         let intermediate_register = self.registers.allocate().unwrap();
                         self.expr(right, intermediate_register);
 
@@ -376,32 +385,11 @@ impl<'a> AsmEmitter<'a> {
                         self.newline();
                         self.registers.free(intermediate_register);
 
-                        self.buffer
-                            .push_str(&format!("sete {}", register.as_byte_str()));
-                    }
-                    (TokenKind::Lesser, Type::Boolean) => {
-                        let intermediate_register = self.registers.allocate().unwrap();
-                        self.expr(right, intermediate_register);
-
-                        self.buffer
-                            .push_str(&format!("cmp {}, {}", register, intermediate_register));
-                        self.newline();
-                        self.registers.free(intermediate_register);
-
-                        self.buffer
-                            .push_str(&format!("setl {}", register.as_byte_str()));
-                    }
-                    (TokenKind::BangEqual, Type::Boolean) => {
-                        let intermediate_register = self.registers.allocate().unwrap();
-                        self.expr(right, intermediate_register);
-
-                        self.buffer
-                            .push_str(&format!("cmp {}, {}", register, intermediate_register));
-                        self.newline();
-                        self.registers.free(intermediate_register);
-
-                        self.buffer
-                            .push_str(&format!("setne {}", register.as_byte_str()));
+                        self.buffer.push_str(&format!(
+                            "{} {}",
+                            logic_op(&kind),
+                            register.as_byte_str()
+                        ));
                     }
                     (TokenKind::Plus, Type::Int) => {
                         let intermediate_register = self.registers.allocate().unwrap();
