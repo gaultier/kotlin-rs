@@ -199,3 +199,9 @@
 - [x] long math
 - [ ] Conversions between primitive types
 - [x] (In)Equality test
+
+## Optimizations
+
+*none at the moment*
+
+TODO
