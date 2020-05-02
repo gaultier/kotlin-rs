@@ -224,3 +224,14 @@ fn int_var() {
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "2");
 }
+
+#[test]
+fn while_loop() {
+    let src = "var i = 0; while(i != 10){println(i); i = i + 1; }";
+    let path = Path::new("WhileLoopAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(
+        String::from_utf8_lossy(&output).trim(),
+        "0\n1\n2\n3\n4\n5\n6\n7\n8\n9"
+    );
+}
