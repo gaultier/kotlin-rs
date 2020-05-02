@@ -4,22 +4,22 @@ use std::fmt;
 // x86_64 specific
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub(crate) enum Register {
-    Rax = 1,
-    Rbx = 2,
-    Rcx = 4,
-    Rdx = 8,
-    Rbp = 16,
-    Rsp = 32,
-    Rsi = 64,
-    Rdi = 128,
-    R8 = 256,
-    R9 = 512,
-    R10 = 1024,
-    R11 = 2048,
-    R12 = 4096,
-    R13 = 8192,
-    R14 = 16384,
-    R15 = 32768,
+    Rax = 1 << 0,
+    Rbx = 1 << 1,
+    Rcx = 1 << 2,
+    Rdx = 1 << 3,
+    Rbp = 1 << 4,
+    Rsp = 1 << 5,
+    Rsi = 1 << 6,
+    Rdi = 1 << 7,
+    R8 = 1 << 8,
+    R9 = 1 << 9,
+    R10 = 1 << 10,
+    R11 = 1 << 11,
+    R12 = 1 << 12,
+    R13 = 1 << 13,
+    R14 = 1 << 14,
+    R15 = 1 << 15,
 }
 
 pub(crate) const REGISTER_RETURN_VALUE: Register = Register::Rax;
@@ -119,11 +119,11 @@ impl Registers {
     }
 
     pub(crate) fn allocate(&mut self) -> Option<Register> {
-        let mut i = 1u16;
-        while i <= Register::R15 as u16 {
+        let mut i = 32768;
+        while i != 0 {
             // Skip rbp and rsp since they are used for the stack
             if i == Register::Rbp as u16 || i == Register::Rsp as u16 {
-                i *= 2;
+                i = i >> 1;
                 continue;
             }
 
@@ -134,7 +134,7 @@ impl Registers {
                 return Some(register);
             }
 
-            i *= 2;
+            i = i >> 1;
         }
         None
     }
