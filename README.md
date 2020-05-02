@@ -46,17 +46,16 @@ $ kotlin fmt -f fibonnaci_iter.kts
 # There's also (very experimental) native support!
 # This will create a native executable (macOS, x86_64 only for now) and run it.
 # The assembler `nasm` is required (`brew install nasm`)
-$ echo 'println(5 * 3 + 7)' | kotlin asm
-22
+$ kotlin asm -f fibonnaci_iter.kts
+9227465
 
 # No JVM involved here, it is a stand-alone executable:
-$ file ./Stdin
-Stdin: Mach-O 64-bit executable x86_64
+$ file ./fibonnaci_iter
+./fibonnaci_iter: Mach-O 64-bit executable x86_64
 
 # We can run it directly like any other executable:
-$ ./Stdin
-22
-
+$ ./fibonnaci_iter
+9227465
 ```
 
 This project can also be used as a library.
