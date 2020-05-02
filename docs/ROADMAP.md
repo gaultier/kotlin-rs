@@ -199,6 +199,8 @@
 - [x] long math
 - [ ] Conversions between primitive types
 - [x] (In)Equality test
+- [x] While
+- [x] For
 
 ## Optimizations
 
