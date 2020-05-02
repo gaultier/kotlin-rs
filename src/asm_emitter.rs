@@ -553,7 +553,11 @@ impl<'a> AsmEmitter<'a> {
     }
 
     fn println(&mut self, expr: &AstNodeExpr, register: Register) {
-        if !self.registers.is_free(REGISTER_ARG_1) {
+        if !self.registers.is_free(REGISTER_ARG_1)
+            || !self.registers.is_free(REGISTER_ARG_2)
+            || !self.registers.is_free(REGISTER_RETURN_VALUE)
+        {
+            dbg!(&self.registers);
             todo!("Re-arrange registers");
         }
 
@@ -569,10 +573,6 @@ impl<'a> AsmEmitter<'a> {
         self.expr(expr, register);
 
         if register != REGISTER_ARG_2 {
-            if !self.registers.is_free(REGISTER_ARG_2) {
-                todo!("Re-arrange registers");
-            }
-
             self.assign_register(REGISTER_ARG_2);
             self.buffer.push_str(register.as_str());
             self.newline();
