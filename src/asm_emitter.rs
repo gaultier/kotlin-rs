@@ -9,10 +9,15 @@ use crate::resolver::Resolution;
 use crate::session::Session;
 // use log::debug;
 
+const LABEL_FLAG_NONE: u8 = 0;
+const LABEL_FLAG_ENTRYPOINT: u8 = 1;
+const LABEL_FLAG_EXTERN: u8 = 2;
+
 #[derive(Debug)]
 struct Label {
     name: String,
     buffer: String,
+    flags: u8,
 }
 
 impl Label {
@@ -20,6 +25,7 @@ impl Label {
         Label {
             name,
             buffer: String::new(),
+            flags: LABEL_FLAG_NONE,
         }
     }
 }
@@ -579,7 +585,7 @@ extern _printf ; might be unused but that is ok
     }
 
     // Consume the origin register
-    fn transfer_register(&mut self, source: Register, destination: Register) {
+    fn _transfer_register(&mut self, source: Register, destination: Register) {
         self.assign_register(source);
         self.add_code(destination.as_str());
         self.registers.free(source);
