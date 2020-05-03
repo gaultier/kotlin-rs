@@ -30,7 +30,6 @@ pub(crate) struct AsmEmitter<'a> {
     types: &'a Types,
     resolution: &'a Resolution,
     constants: Constants,
-    buffer: String,
     registers: Registers,
     label_count: usize,
     id_to_register: Vec<(NodeId, Register)>,
@@ -61,7 +60,6 @@ impl<'a> AsmEmitter<'a> {
             session,
             types,
             resolution,
-            buffer: String::new(),
             constants: Constants::new(),
             registers: Registers::new(),
             label_count: 0,
@@ -144,8 +142,7 @@ extern _printf ; might be unused but that is ok
 
     fn zero_register(&mut self, register: Register) {
         self.registers.free(register);
-        self.buffer
-            .push_str(&format!("xor {}, {}", register, register));
+        self.add_code(&format!("xor {}, {}", register, register));
         self.newline();
     }
 
@@ -177,7 +174,8 @@ extern _printf ; might be unused but that is ok
         self.data_section(w)?;
         self.text_section(w)?;
 
-        w.write_all(self.buffer.as_bytes())?;
+        // FIXME
+        w.write_all(self.labels.first().unwrap().buffer.as_bytes())?;
         w.flush()?;
 
         Ok(())
@@ -199,8 +197,7 @@ extern _printf ; might be unused but that is ok
     fn var_def(&mut self, identifier: &Token, id: NodeId, value: &AstNodeExpr, register: Register) {
         self.expr(value, register);
         let var_name = &self.session.src[identifier.span.start..identifier.span.end];
-        self.buffer
-            .push_str(&format!("; `{}` is in register {}", var_name, register));
+        self.add_code(&format!("; `{}` is in register {}", var_name, register));
         self.newline();
         self.assign_var_to_register(id, register);
     }
@@ -219,14 +216,12 @@ extern _printf ; might be unused but that is ok
         self.add_code(&format!("cmp {}, 1", register));
         self.newline();
 
-        self.buffer
-            .push_str(&format!("jne {} ; stop loop", end_label));
+        self.add_code(&format!("jne {} ; stop loop", end_label));
         self.newline();
         self.registers.free(register);
 
         self.statement(body, register);
-        self.buffer
-            .push_str(&format!("jmp {} ; jump to start of loop body", loop_label));
+        self.add_code(&format!("jmp {} ; jump to start of loop body", loop_label));
         self.newline();
         self.newline();
 
@@ -324,14 +319,12 @@ extern _printf ; might be unused but that is ok
         self.add_code(&format!("cmp {}, 1", register));
         self.newline();
 
-        self.buffer
-            .push_str(&format!("jne {} ; else branch", else_body_label));
+        self.add_code(&format!("jne {} ; else branch", else_body_label));
         self.newline();
         self.registers.free(register);
 
         self.statement(if_body, register);
-        self.buffer
-            .push_str(&format!("jmp {} ; end of if", merge_bodies_label));
+        self.add_code(&format!("jmp {} ; end of if", merge_bodies_label));
         self.newline();
         self.newline();
 
@@ -437,8 +430,7 @@ extern _printf ; might be unused but that is ok
                         let intermediate_register = self.registers.allocate().unwrap();
                         self.expr(right, intermediate_register);
 
-                        self.buffer
-                            .push_str(&format!("cmp {}, {}", register, intermediate_register));
+                        self.add_code(&format!("cmp {}, {}", register, intermediate_register));
                         self.newline();
                         self.registers.free(intermediate_register);
 
@@ -448,24 +440,21 @@ extern _printf ; might be unused but that is ok
                         let intermediate_register = self.registers.allocate().unwrap();
                         self.expr(right, intermediate_register);
 
-                        self.buffer
-                            .push_str(&format!("add {}, {}", register, intermediate_register));
+                        self.add_code(&format!("add {}, {}", register, intermediate_register));
                         self.registers.free(intermediate_register);
                     }
                     (TokenKind::Minus, Type::Int) => {
                         let intermediate_register = self.registers.allocate().unwrap();
                         self.expr(right, intermediate_register);
 
-                        self.buffer
-                            .push_str(&format!("sub {}, {}", register, intermediate_register));
+                        self.add_code(&format!("sub {}, {}", register, intermediate_register));
                         self.registers.free(intermediate_register);
                     }
                     (TokenKind::Star, Type::Int) => {
                         let intermediate_register = self.registers.allocate().unwrap();
                         self.expr(right, intermediate_register);
 
-                        self.buffer
-                            .push_str(&format!("imul {}, {}", register, intermediate_register));
+                        self.add_code(&format!("imul {}, {}", register, intermediate_register));
                         self.registers.free(intermediate_register);
                     }
                     (TokenKind::Slash, Type::Int) => {
@@ -496,24 +485,21 @@ extern _printf ; might be unused but that is ok
                         let intermediate_register = self.registers.allocate().unwrap();
                         self.expr(right, intermediate_register);
 
-                        self.buffer
-                            .push_str(&format!("add {}, {}", register, intermediate_register));
+                        self.add_code(&format!("add {}, {}", register, intermediate_register));
                         self.registers.free(intermediate_register);
                     }
                     (TokenKind::Minus, Type::Long) => {
                         let intermediate_register = self.registers.allocate().unwrap();
                         self.expr(right, intermediate_register);
 
-                        self.buffer
-                            .push_str(&format!("sub {}, {}", register, intermediate_register));
+                        self.add_code(&format!("sub {}, {}", register, intermediate_register));
                         self.registers.free(intermediate_register);
                     }
                     (TokenKind::Star, Type::Long) => {
                         let intermediate_register = self.registers.allocate().unwrap();
                         self.expr(right, intermediate_register);
 
-                        self.buffer
-                            .push_str(&format!("imul {}, {}", register, intermediate_register));
+                        self.add_code(&format!("imul {}, {}", register, intermediate_register));
                         self.registers.free(intermediate_register);
                     }
                     (TokenKind::Slash, Type::Long) => {
@@ -600,8 +586,7 @@ extern _printf ; might be unused but that is ok
     }
 
     fn deref_string_from_label(&mut self, register: Register, fmt_string_label: &str) {
-        self.buffer
-            .push_str(&format!("lea {}, [{}]\n", register, fmt_string_label));
+        self.add_code(&format!("lea {}, [{}]\n", register, fmt_string_label));
         self.newline();
     }
 
