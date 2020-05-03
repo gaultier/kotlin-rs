@@ -10,6 +10,21 @@ use crate::session::Session;
 // use log::debug;
 
 #[derive(Debug)]
+struct Label {
+    name: String,
+    buffer: String,
+}
+
+impl Label {
+    fn new(name: String) -> Label {
+        Label {
+            name,
+            buffer: String::new(),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub(crate) struct AsmEmitter<'a> {
     session: &'a Session<'a>,
     types: &'a Types,
@@ -19,6 +34,8 @@ pub(crate) struct AsmEmitter<'a> {
     registers: Registers,
     label_count: usize,
     id_to_register: Vec<(NodeId, Register)>,
+    labels: Vec<Label>,
+    current_label_index: usize,
 }
 
 const PRINTF_FMT_STRING: &str = "\"%s\", 0xa"; // 0xa = \n
@@ -49,7 +66,13 @@ impl<'a> AsmEmitter<'a> {
             registers: Registers::new(),
             label_count: 0,
             id_to_register: Vec::new(),
+            labels: vec![Label::new(String::from("_main"))],
+            current_label_index: 0,
         }
+    }
+
+    fn add_code(&mut self, s: &str) {
+        self.labels[self.current_label_index].buffer.push_str(s);
     }
 
     fn generate_new_label(&mut self) -> String {
@@ -58,7 +81,7 @@ impl<'a> AsmEmitter<'a> {
     }
 
     fn fn_prolog(&mut self) {
-        self.buffer.push_str(
+        self.add_code(
             r##"
 %push mycontext ; save the current context
 %stacksize flat64 ; tell NASM to use bp
@@ -70,16 +93,16 @@ enter   %$localsize, 0
     }
 
     fn fn_epilog(&mut self) {
-        self.buffer.push_str("leave");
+        self.add_code("leave");
         self.newline();
-        self.buffer.push_str("ret");
+        self.add_code("ret");
         self.newline();
-        self.buffer.push_str("%pop");
+        self.add_code("%pop");
         self.newline();
     }
 
     fn fn_main(&mut self) {
-        self.buffer.push_str(
+        self.add_code(
             r##"
 ; entrypoint
 global _main
@@ -111,7 +134,7 @@ extern _printf ; might be unused but that is ok
     }
 
     fn newline(&mut self) {
-        self.buffer.push_str("\n");
+        self.add_code("\n");
     }
 
     fn text_section<W: std::io::Write>(&mut self, w: &mut W) -> Result<(), Error> {
@@ -129,8 +152,8 @@ extern _printf ; might be unused but that is ok
     fn call_function(&mut self, fn_name: &str, arg_count: usize) {
         assert_eq!(arg_count, 2);
 
-        self.buffer.push_str("call ");
-        self.buffer.push_str(fn_name);
+        self.add_code("call ");
+        self.add_code(fn_name);
         self.newline();
 
         self.registers.free(REGISTER_ARG_1);
@@ -188,12 +211,12 @@ extern _printf ; might be unused but that is ok
         self.newline();
         self.newline();
 
-        self.buffer.push_str(&loop_label);
-        self.buffer.push_str(": ; loop body");
+        self.add_code(&loop_label);
+        self.add_code(": ; loop body");
         self.newline();
 
         self.expr(cond, register);
-        self.buffer.push_str(&format!("cmp {}, 1", register));
+        self.add_code(&format!("cmp {}, 1", register));
         self.newline();
 
         self.buffer
@@ -207,8 +230,8 @@ extern _printf ; might be unused but that is ok
         self.newline();
         self.newline();
 
-        self.buffer.push_str(&end_label);
-        self.buffer.push_str(": ; loop is finished");
+        self.add_code(&end_label);
+        self.add_code(": ; loop is finished");
         self.newline();
     }
 
@@ -221,7 +244,7 @@ extern _printf ; might be unused but that is ok
                 let var_register = self.find_var_register(node_ref_id).unwrap();
                 self.assign_register(var_register);
 
-                self.buffer.push_str(register.as_str());
+                self.add_code(register.as_str());
                 self.newline();
             }
             _ => todo!(),
@@ -276,8 +299,8 @@ extern _printf ; might be unused but that is ok
         // let fn_t = self.types.get(&id).unwrap();
 
         self.newline();
-        self.buffer.push_str(fn_name_s);
-        self.buffer.push_str(":");
+        self.add_code(fn_name_s);
+        self.add_code(":");
         self.newline();
         self.fn_prolog();
 
@@ -298,7 +321,7 @@ extern _printf ; might be unused but that is ok
         let merge_bodies_label = self.generate_new_label();
 
         self.expr(cond, register);
-        self.buffer.push_str(&format!("cmp {}, 1", register));
+        self.add_code(&format!("cmp {}, 1", register));
         self.newline();
 
         self.buffer
@@ -312,15 +335,15 @@ extern _printf ; might be unused but that is ok
         self.newline();
         self.newline();
 
-        self.buffer.push_str(&else_body_label);
-        self.buffer.push_str(":");
+        self.add_code(&else_body_label);
+        self.add_code(":");
         self.newline();
         self.statement(else_body, register);
         self.newline();
         self.newline();
 
-        self.buffer.push_str(&merge_bodies_label);
-        self.buffer.push_str(":");
+        self.add_code(&merge_bodies_label);
+        self.add_code(":");
         self.newline();
     }
 
@@ -328,7 +351,7 @@ extern _printf ; might be unused but that is ok
         self.assign_register(register);
         let node_ref_id = self.resolution.get(&id).unwrap().node_ref_id;
         let var_reg = self.find_var_register(node_ref_id).unwrap();
-        self.buffer.push_str(var_reg.as_str());
+        self.add_code(var_reg.as_str());
         self.newline();
     }
 
@@ -361,11 +384,11 @@ extern _printf ; might be unused but that is ok
 
             self.registers.reserve(Register::Rax);
             self.assign_register(Register::Rax);
-            self.buffer.push_str(register.as_str());
+            self.add_code(register.as_str());
             self.newline();
         }
         // Required to store the sign in rdx:rax, otherwise we get a FPE
-        self.buffer.push_str("cqo");
+        self.add_code("cqo");
         self.newline();
 
         // `div` will overwrite `rdx`.
@@ -384,7 +407,7 @@ extern _printf ; might be unused but that is ok
             self.newline();
         }
 
-        self.buffer.push_str(&format!("idiv {}", Register::Rcx));
+        self.add_code(&format!("idiv {}", Register::Rcx));
         // `div` destroys the content of `rcx`
         self.registers.free(Register::Rcx);
         self.newline();
@@ -419,11 +442,7 @@ extern _printf ; might be unused but that is ok
                         self.newline();
                         self.registers.free(intermediate_register);
 
-                        self.buffer.push_str(&format!(
-                            "{} {}",
-                            logic_op(&kind),
-                            register.as_byte_str()
-                        ));
+                        self.add_code(&format!("{} {}", logic_op(&kind), register.as_byte_str()));
                     }
                     (TokenKind::Plus, Type::Int) => {
                         let intermediate_register = self.registers.allocate().unwrap();
@@ -454,7 +473,7 @@ extern _printf ; might be unused but that is ok
                         // We copy the result of the division in the original register if needed
                         if register != Register::Rax {
                             self.assign_register(register);
-                            self.buffer.push_str(Register::Rax.as_str());
+                            self.add_code(Register::Rax.as_str());
                             self.newline();
                             self.zero_register(Register::Rax);
 
@@ -466,7 +485,7 @@ extern _printf ; might be unused but that is ok
                         // We copy the result of the division in the original register if needed
                         if register != Register::Rdx {
                             self.assign_register(register);
-                            self.buffer.push_str(Register::Rdx.as_str());
+                            self.add_code(Register::Rdx.as_str());
                             self.newline();
                             self.zero_register(Register::Rdx);
 
@@ -502,7 +521,7 @@ extern _printf ; might be unused but that is ok
                         // We copy the result of the division in the original register if needed
                         if register != Register::Rax {
                             self.assign_register(register);
-                            self.buffer.push_str(Register::Rax.as_str());
+                            self.add_code(Register::Rax.as_str());
                             self.newline();
                             self.zero_register(Register::Rax);
 
@@ -514,7 +533,7 @@ extern _printf ; might be unused but that is ok
                         // We copy the result of the division in the original register if needed
                         if register != Register::Rdx {
                             self.assign_register(register);
-                            self.buffer.push_str(Register::Rdx.as_str());
+                            self.add_code(Register::Rdx.as_str());
                             self.newline();
                             self.zero_register(Register::Rdx);
 
@@ -546,7 +565,7 @@ extern _printf ; might be unused but that is ok
                 self.expr(expr, register);
                 self.newline();
 
-                self.buffer.push_str(&format!("neg {}\n", register));
+                self.add_code(&format!("neg {}\n", register));
             }
             AstNodeExpr::Unary {
                 token:
@@ -570,13 +589,13 @@ extern _printf ; might be unused but that is ok
 
     fn assign_register(&mut self, register: Register) {
         self.registers.reserve(register);
-        self.buffer.push_str(&format!("mov {}, ", register));
+        self.add_code(&format!("mov {}, ", register));
     }
 
     // Consume the origin register
     fn transfer_register(&mut self, source: Register, destination: Register) {
         self.assign_register(source);
-        self.buffer.push_str(destination.as_str());
+        self.add_code(destination.as_str());
         self.registers.free(source);
     }
 
@@ -608,7 +627,7 @@ extern _printf ; might be unused but that is ok
 
         if register != REGISTER_ARG_2 {
             self.assign_register(REGISTER_ARG_2);
-            self.buffer.push_str(register.as_str());
+            self.add_code(register.as_str());
             self.newline();
         }
 
@@ -619,27 +638,27 @@ extern _printf ; might be unused but that is ok
         match token.kind {
             TokenKind::Int(n) => {
                 self.assign_register(register);
-                self.buffer.push_str(&format!("{}", n));
+                self.add_code(&format!("{}", n));
                 self.newline();
             }
             TokenKind::Long(n) => {
                 self.assign_register(register);
-                self.buffer.push_str(&format!("{}", n));
+                self.add_code(&format!("{}", n));
                 self.newline();
             }
             TokenKind::Boolean(true) => {
                 self.assign_register(register);
-                self.buffer.push_str("1");
+                self.add_code("1");
                 self.newline();
             }
             TokenKind::Boolean(false) => {
                 self.assign_register(register);
-                self.buffer.push_str("0");
+                self.add_code("0");
                 self.newline();
             }
             TokenKind::Char(c) => {
                 self.assign_register(register);
-                self.buffer.push_str(&format!("'{}'", c));
+                self.add_code(&format!("'{}'", c));
                 self.newline();
             }
             TokenKind::TString => {
