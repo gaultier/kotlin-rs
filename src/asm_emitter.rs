@@ -249,8 +249,44 @@ extern _printf ; might be unused but that is ok
                 value,
                 ..
             } => self.var_def(identifier, *id, value, register),
+            AstNodeStmt::FnDefinition {
+                fn_name,
+                args,
+                id,
+                body,
+                ..
+            } => self.fn_def(fn_name, args, *id, body),
             _ => todo!(),
         }
+    }
+
+    fn fn_def(
+        &mut self,
+        fn_name: &AstNodeExpr,
+        _args: &[AstNodeExpr],
+        _id: NodeId,
+        body: &AstNodeStmt,
+    ) {
+        let fn_name_s = match fn_name {
+            AstNodeExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
+            _ => unreachable!(),
+        };
+        // let fn_t = self.types.get(&id).unwrap();
+
+        self.newline();
+        self.buffer.push_str(fn_name_s);
+        self.buffer.push_str(":");
+        self.newline();
+        self.buffer.push_str("enter");
+        self.newline();
+
+        let register = self.registers.allocate().unwrap();
+        self.statement(body, register);
+
+        self.buffer.push_str("leave");
+        self.newline();
+        self.buffer.push_str("ret");
+        self.newline();
     }
 
     fn if_expr(
