@@ -60,21 +60,22 @@ impl<'a> AsmEmitter<'a> {
     fn fn_prolog(&mut self) {
         self.buffer.push_str(
             r##"
-; prolog
-push rbp
-mov rbp, rsp
+%push mycontext ; save the current context
+%stacksize flat64 ; tell NASM to use bp
+%assign %$localsize 0 ; 0 locals
+enter   %$localsize, 0
 "##,
         );
+        self.newline();
     }
 
     fn fn_epilog(&mut self) {
-        self.buffer.push_str(
-            r##"
-; epilog
-pop rbp
-ret
-"##,
-        );
+        self.buffer.push_str("leave");
+        self.newline();
+        self.buffer.push_str("ret");
+        self.newline();
+        self.buffer.push_str("%pop");
+        self.newline();
     }
 
     fn fn_main(&mut self) {
@@ -84,6 +85,7 @@ ret
 global _main
 _main:"##,
         );
+        self.newline();
     }
 
     fn prolog<W: std::io::Write>(&mut self, w: &mut W) -> Result<(), Error> {
@@ -277,16 +279,12 @@ extern _printf ; might be unused but that is ok
         self.buffer.push_str(fn_name_s);
         self.buffer.push_str(":");
         self.newline();
-        self.buffer.push_str("enter");
-        self.newline();
+        self.fn_prolog();
 
         let register = self.registers.allocate().unwrap();
         self.statement(body, register);
 
-        self.buffer.push_str("leave");
-        self.newline();
-        self.buffer.push_str("ret");
-        self.newline();
+        self.fn_epilog();
     }
 
     fn if_expr(
