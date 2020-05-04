@@ -330,3 +330,21 @@ println(even(100))
  )"##
     );
 }
+
+#[test]
+fn wrong_number_of_args() -> Result<(), String> {
+    let src = "fun a(b: Int) = 10; a();";
+    let mut out: Vec<u8> = Vec::new();
+
+    match sexp(src, &mut out) {
+        Err(Error {
+            kind:
+                ErrorKind::WrongNumberOfArguments {
+                    expected: 1,
+                    found: 0,
+                },
+            ..
+        }) => Ok(()),
+        other => Err(format!("Should be an error: {:?}", other)),
+    }
+}
