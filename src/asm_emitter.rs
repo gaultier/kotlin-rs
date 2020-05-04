@@ -108,8 +108,7 @@ impl<'a> AsmEmitter<'a> {
 
     fn fn_prolog(&mut self) {
         self.add_code(
-            r##"
-%push fn_context ; save the current context
+            r##"%push fn_context ; save the current context
 %stacksize flat64 ; tell NASM to use bp
 %assign %$localsize 0 ; 0 locals
 enter   %$localsize, 0
@@ -129,8 +128,7 @@ enter   %$localsize, 0
 
     fn prolog<W: std::io::Write>(&mut self, w: &mut W) -> Result<(), Error> {
         w.write_all(
-            &r##"
-BITS 64 ; 64 bits
+            &r##"BITS 64 ; 64 bits
 CPU X64 ; target the x86_64 family of CPUs
 DEFAULT REL ; relative addressing mode
 
