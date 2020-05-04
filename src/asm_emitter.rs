@@ -7,7 +7,7 @@ use crate::lex::{Token, TokenKind};
 use crate::parse::*;
 use crate::resolver::Resolution;
 use crate::session::Session;
-// use log::debug;
+use log::debug;
 
 const LABEL_FLAG_NONE: u8 = 0;
 const LABEL_FLAG_ENTRYPOINT: u8 = 1;
@@ -210,12 +210,11 @@ extern _printf ; might be unused but that is ok
         assert!(self.find_var_register(id).is_none());
 
         self.id_to_register.push((id, register));
+        dbg!(&self.id_to_register);
     }
 
-    fn var_def(&mut self, identifier: &Token, id: NodeId, value: &AstNodeExpr, register: Register) {
+    fn var_def(&mut self, id: NodeId, value: &AstNodeExpr, register: Register) {
         self.expr(value, register);
-        let var_name = &self.session.src[identifier.span.start..identifier.span.end];
-        self.add_code(&format!("; `{}` is in register {}", var_name, register));
         self.newline();
         self.assign_var_to_register(id, register);
     }
@@ -281,12 +280,7 @@ extern _printf ; might be unused but that is ok
                 }
             }
             AstNodeStmt::While { cond, body, .. } => self.while_stmt(cond, body, register),
-            AstNodeStmt::VarDefinition {
-                identifier,
-                id,
-                value,
-                ..
-            } => self.var_def(identifier, *id, value, register),
+            AstNodeStmt::VarDefinition { id, value, .. } => self.var_def(*id, value, register),
             AstNodeStmt::FnDefinition {
                 fn_name,
                 args,
@@ -317,6 +311,7 @@ extern _printf ; might be unused but that is ok
             AstNodeExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
             _ => unreachable!(),
         };
+        debug!("fn_def: name={} args={:?}", fn_name_s, _args);
 
         // FIXME: use function flags
         self.add_label(Label::new(fn_name_s.to_owned(), LABEL_FLAG_NONE));
@@ -371,6 +366,7 @@ extern _printf ; might be unused but that is ok
     fn var_ref(&mut self, id: NodeId, register: Register) {
         self.assign_register(register);
         let node_ref_id = self.resolution.get(&id).unwrap().node_ref_id;
+        dbg!(&self.id_to_register, id);
         let var_reg = self.find_var_register(node_ref_id).unwrap();
         self.add_code(var_reg.as_str());
         self.newline();
@@ -387,22 +383,26 @@ extern _printf ; might be unused but that is ok
             AstNodeExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
             _ => unreachable!(),
         };
+        debug!("fn_call: name={} args={:?}", fn_name_s, args);
 
         // FIXME: put arguments in the right registers
         // FIXME: if `register` is `rax`, it will be overriden
 
         let args_count = args.len();
+        if args_count > 1 {
+            todo!("More than one function argument")
+        }
         if args_count == 1 && !self.registers.is_free(REGISTER_ARG_1) {
             todo!("Re-arrange registers");
         }
 
         if args_count == 1 {
-            self.assign_register(REGISTER_ARG_1);
-            self.expr(&args[0], REGISTER_ARG_1);
-        }
+            let arg = &args[0];
 
-        if args_count > 1 {
-            todo!("More than one function argument")
+            dbg!("Treating arg n=1");
+            self.registers.reserve(REGISTER_ARG_1);
+            self.assign_var_to_register(arg.id(), REGISTER_ARG_1);
+            self.expr(arg, REGISTER_ARG_1);
         }
 
         self.add_code(&format!("call {}\n", fn_name_s));

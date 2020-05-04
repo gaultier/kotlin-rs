@@ -48,6 +48,10 @@ pub enum ErrorKind {
         found_context: LexicalContext,
     },
     IoError(std::io::Error),
+    WrongNumberOfArguments {
+        expected: usize,
+        found: usize,
+    },
     MaxConstantsReached(u16),
 }
 
@@ -140,6 +144,11 @@ impl fmt::Display for ErrorKind {
                 f,
                 "`{}` should be inside a {}, found it inside a {}",
                 *jump_kind, *expected_context, *found_context,
+            ),
+            ErrorKind::WrongNumberOfArguments { expected, found } => write!(
+                f,
+                "Wrong number of arguments passed to function: expected {}, found {}",
+                expected, found
             ),
             ErrorKind::IoError(err) => write!(f, "{}", err),
             ErrorKind::MaxConstantsReached(max) => write!(

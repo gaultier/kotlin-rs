@@ -597,6 +597,16 @@ impl<'a> TypeChecker<'a> {
                 return_t,
                 args: args_t,
             } => {
+                if args_t.len() != args.len() {
+                    return Err(Error::new(
+                        ErrorKind::WrongNumberOfArguments {
+                            expected: args_t.len(),
+                            found: args.len(),
+                        },
+                        self.session.span_location(span),
+                    ));
+                }
+
                 for (arg, expected_arg_t) in args.iter().zip(args_t) {
                     let found_arg_t = self.expr(arg)?;
                     self.is_type(&found_arg_t, &expected_arg_t, span)?;
