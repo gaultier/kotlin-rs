@@ -259,3 +259,11 @@ fn int_lesser_false() {
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "0");
 }
+
+#[test]
+fn fn_zero_args() {
+    let src = "fun foo() {println(\"foo\")}; foo()";
+    let path = Path::new("FnZeroArgsAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "foo");
+}

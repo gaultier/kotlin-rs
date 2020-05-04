@@ -379,7 +379,7 @@ extern _printf ; might be unused but that is ok
     fn fn_call(
         &mut self,
         fn_name: &AstNodeExpr,
-        _args: &[AstNodeExpr],
+        args: &[AstNodeExpr],
         _id: NodeId,
         _register: Register,
     ) {
@@ -390,6 +390,21 @@ extern _printf ; might be unused but that is ok
 
         // FIXME: put arguments in the right registers
         // FIXME: if `register` is `rax`, it will be overriden
+
+        let args_count = args.len();
+        if args_count == 1 && !self.registers.is_free(REGISTER_ARG_1) {
+            todo!("Re-arrange registers");
+        }
+
+        if args_count == 1 {
+            self.assign_register(REGISTER_ARG_1);
+            self.expr(&args[0], REGISTER_ARG_1);
+        }
+
+        if args_count > 1 {
+            todo!("More than one function argument")
+        }
+
         self.add_code(&format!("call {}\n", fn_name_s));
     }
 
