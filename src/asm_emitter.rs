@@ -378,6 +378,23 @@ extern _printf ; might be unused but that is ok
         self.newline();
     }
 
+    fn fn_call(
+        &mut self,
+        fn_name: &AstNodeExpr,
+        _args: &[AstNodeExpr],
+        _id: NodeId,
+        _register: Register,
+    ) {
+        let fn_name_s = match fn_name {
+            AstNodeExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
+            _ => unreachable!(),
+        };
+
+        // FIXME: put arguments in the right registers
+        // FIXME: if `register` is `rax`, it will be overriden
+        self.add_code(&format!("call {}\n", fn_name_s));
+    }
+
     fn expr(&mut self, expr: &AstNodeExpr, register: Register) {
         match expr {
             AstNodeExpr::Literal(tok, _) => self.literal(tok, register),
@@ -386,6 +403,9 @@ extern _printf ; might be unused but that is ok
             AstNodeExpr::Unary { .. } => self.unary(expr, register),
             AstNodeExpr::Binary { .. } => self.binary(expr, register),
             AstNodeExpr::Grouping(expr, _) => self.expr(expr, register),
+            AstNodeExpr::FnCall {
+                fn_name, args, id, ..
+            } => self.fn_call(fn_name, args, *id, register),
             AstNodeExpr::IfExpr {
                 cond,
                 if_body,
