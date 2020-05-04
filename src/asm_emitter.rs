@@ -301,7 +301,7 @@ extern _printf ; might be unused but that is ok
     fn fn_def(
         &mut self,
         fn_name: &AstNodeExpr,
-        _args: &[AstNodeExpr],
+        args: &[AstNodeExpr],
         body: &AstNodeStmt,
         _flags: u16,
         _id: NodeId,
@@ -311,7 +311,7 @@ extern _printf ; might be unused but that is ok
             AstNodeExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
             _ => unreachable!(),
         };
-        debug!("fn_def: name={} args={:?}", fn_name_s, _args);
+        debug!("fn_def: name={} args={:?}", fn_name_s, args);
 
         // FIXME: use function flags
         self.add_label(Label::new(fn_name_s.to_owned(), LABEL_FLAG_NONE));
@@ -319,6 +319,12 @@ extern _printf ; might be unused but that is ok
         // let fn_t = self.types.get(&id).unwrap();
 
         self.fn_prolog();
+
+        if args.len() == 1 {
+            self.assign_var_to_register(args[0].id(), REGISTER_ARG_1);
+        } else {
+            todo!("More than one arg")
+        }
 
         let register = self.registers.allocate().unwrap();
         self.statement(body, register);
@@ -366,7 +372,6 @@ extern _printf ; might be unused but that is ok
     fn var_ref(&mut self, id: NodeId, register: Register) {
         self.assign_register(register);
         let node_ref_id = self.resolution.get(&id).unwrap().node_ref_id;
-        dbg!(&self.id_to_register, id);
         let var_reg = self.find_var_register(node_ref_id).unwrap();
         self.add_code(var_reg.as_str());
         self.newline();
@@ -399,7 +404,6 @@ extern _printf ; might be unused but that is ok
         if args_count == 1 {
             let arg = &args[0];
 
-            dbg!("Treating arg n=1");
             self.registers.reserve(REGISTER_ARG_1);
             self.assign_var_to_register(arg.id(), REGISTER_ARG_1);
             self.expr(arg, REGISTER_ARG_1);
