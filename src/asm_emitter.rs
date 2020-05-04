@@ -109,7 +109,7 @@ impl<'a> AsmEmitter<'a> {
     fn fn_prolog(&mut self) {
         self.add_code(
             r##"
-%push mycontext ; save the current context
+%push fn_context ; save the current context
 %stacksize flat64 ; tell NASM to use bp
 %assign %$localsize 0 ; 0 locals
 enter   %$localsize, 0
