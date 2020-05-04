@@ -293,36 +293,46 @@ extern _printf ; might be unused but that is ok
                 fn_name,
                 args,
                 id,
+                flags,
                 body,
                 ..
-            } => self.fn_def(fn_name, args, *id, body),
+            } => self.fn_def(fn_name, args, body, *flags, *id),
             _ => todo!(),
         }
+    }
+
+    fn add_label(&mut self, label: Label) {
+        self.labels.push(label);
+        self.current_label_index += 1;
     }
 
     fn fn_def(
         &mut self,
         fn_name: &AstNodeExpr,
         _args: &[AstNodeExpr],
-        _id: NodeId,
         body: &AstNodeStmt,
+        _flags: u16,
+        _id: NodeId,
     ) {
+        let label_containing_fn_def = self.current_label_index;
         let fn_name_s = match fn_name {
             AstNodeExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
             _ => unreachable!(),
         };
+
+        // FIXME: use function flags
+        self.add_label(Label::new(fn_name_s.to_owned(), LABEL_FLAG_NONE));
+
         // let fn_t = self.types.get(&id).unwrap();
 
-        self.newline();
-        self.add_code(fn_name_s);
-        self.add_code(":");
-        self.newline();
         self.fn_prolog();
 
         let register = self.registers.allocate().unwrap();
         self.statement(body, register);
 
         self.fn_epilog();
+
+        self.current_label_index = label_containing_fn_def;
     }
 
     fn if_expr(
