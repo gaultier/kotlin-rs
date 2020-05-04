@@ -13,20 +13,42 @@ const LABEL_FLAG_NONE: u8 = 0;
 const LABEL_FLAG_ENTRYPOINT: u8 = 1;
 const LABEL_FLAG_EXTERN: u8 = 2;
 
+type LabelFlag = u8;
+
 #[derive(Debug)]
 struct Label {
     name: String,
     buffer: String,
-    flags: u8,
+    flags: LabelFlag,
 }
 
 impl Label {
-    fn new(name: String) -> Label {
+    fn new(name: String, flags: LabelFlag) -> Label {
         Label {
             name,
             buffer: String::new(),
-            flags: LABEL_FLAG_NONE,
+            flags,
         }
+    }
+
+    fn write_flag<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
+        if (self.flags & LABEL_FLAG_EXTERN) != 0 {
+            writeln!(w, "extern {}", self.name)?;
+        }
+        if (self.flags & LABEL_FLAG_ENTRYPOINT) != 0 {
+            writeln!(w, "global {}", self.name)?;
+        }
+
+        Ok(())
+    }
+
+    fn write<W: std::io::Write>(&self, w: &mut W) -> Result<(), Error> {
+        self.write_flag(w)?;
+        write!(w, "{}:\n", self.name)?;
+        w.write_all(self.buffer.as_bytes())?;
+        w.write_all(b"\n")?;
+
+        Ok(())
     }
 }
 
@@ -70,7 +92,7 @@ impl<'a> AsmEmitter<'a> {
             registers: Registers::new(),
             label_count: 0,
             id_to_register: Vec::new(),
-            labels: vec![Label::new(String::from("_main"))],
+            labels: vec![Label::new(String::from("_main"), LABEL_FLAG_ENTRYPOINT)],
             current_label_index: 0,
         }
     }
@@ -105,16 +127,6 @@ enter   %$localsize, 0
         self.newline();
     }
 
-    fn fn_main(&mut self) {
-        self.add_code(
-            r##"
-; entrypoint
-global _main
-_main:"##,
-        );
-        self.newline();
-    }
-
     fn prolog<W: std::io::Write>(&mut self, w: &mut W) -> Result<(), Error> {
         w.write_all(
             &r##"
@@ -134,6 +146,9 @@ extern _printf ; might be unused but that is ok
         for (constant, label) in self.constants.iter() {
             w.write_all(&format!("{}: db {}, 0 ; null terminated\n", label, constant).as_bytes())?;
         }
+
+        self.newline();
+
         Ok(())
     }
 
@@ -142,7 +157,7 @@ extern _printf ; might be unused but that is ok
     }
 
     fn text_section<W: std::io::Write>(&mut self, w: &mut W) -> Result<(), Error> {
-        w.write_all(b"section .text\n")?;
+        w.write_all(b"section .text\n\n")?;
         Ok(())
     }
 
@@ -168,8 +183,6 @@ extern _printf ; might be unused but that is ok
         statements: &AstNodeStmt,
         w: &mut W,
     ) -> Result<(), Error> {
-        self.fn_main();
-
         self.fn_prolog();
         let register = self.registers.allocate().unwrap();
         self.statement(statements, register);
@@ -180,8 +193,9 @@ extern _printf ; might be unused but that is ok
         self.data_section(w)?;
         self.text_section(w)?;
 
-        // FIXME
-        w.write_all(self.labels.first().unwrap().buffer.as_bytes())?;
+        for label in &self.labels {
+            label.write(w)?;
+        }
         w.flush()?;
 
         Ok(())
