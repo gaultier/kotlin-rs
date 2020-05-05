@@ -669,14 +669,17 @@ extern _printf ; might be unused but that is ok
     }
 
     fn println(&mut self, expr: &AstNodeExpr, register: Register) {
-        if !self.registers.is_free(REGISTER_ARG_1)
+        let register = if !self.registers.is_free(REGISTER_ARG_1)
             || !self.registers.is_free(REGISTER_ARG_2)
             || !self.registers.is_free(REGISTER_RETURN_VALUE)
         {
             let copy_arg1_register = self.registers.allocate().unwrap();
             self.transfer_register(REGISTER_ARG_1, copy_arg1_register);
             // TODO: arg2, return value
-        }
+            copy_arg1_register
+        } else {
+            register
+        };
 
         let t = self.types.get(&expr.id()).unwrap();
         let fmt_string_label = match t {
