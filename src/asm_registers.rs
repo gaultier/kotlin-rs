@@ -128,6 +128,18 @@ impl Registers {
         (self.in_use & (register as u16)) == 0
     }
 
+    pub(crate) fn register_fn_arg(i: u16) -> Option<Register> {
+        match i {
+            1 => Some(Register::Rdi),
+            2 => Some(Register::Rsi),
+            3 => Some(Register::Rdx),
+            4 => Some(Register::Rcx),
+            5 => Some(Register::R8),
+            6 => Some(Register::R9),
+            _ => None,
+        }
+    }
+
     pub(crate) fn reserve(&mut self, register: Register) {
         self.in_use |= register as u16;
     }
