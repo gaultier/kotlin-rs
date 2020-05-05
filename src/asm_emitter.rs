@@ -322,6 +322,8 @@ extern _printf ; might be unused but that is ok
 
         if args.len() == 1 {
             self.assign_var_to_register(args[0].id(), REGISTER_ARG_1);
+        } else if args.len() == 0 {
+            // No-op
         } else {
             todo!("More than one arg")
         }
