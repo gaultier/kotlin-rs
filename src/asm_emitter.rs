@@ -661,6 +661,12 @@ extern _printf ; might be unused but that is ok
         self.add_code(source.as_str());
         self.newline();
         self.registers.free(source);
+
+        for (_, reg) in self.id_to_register.iter_mut() {
+            if reg == &source {
+                *reg = destination;
+            }
+        }
     }
 
     fn deref_string_from_label(&mut self, register: Register, fmt_string_label: &str) {
