@@ -210,7 +210,6 @@ extern _printf ; might be unused but that is ok
         assert!(self.find_var_register(id).is_none());
 
         self.id_to_register.push((id, register));
-        dbg!(&self.id_to_register);
     }
 
     fn var_def(&mut self, id: NodeId, value: &AstNodeExpr, register: Register) {
@@ -311,7 +310,10 @@ extern _printf ; might be unused but that is ok
             AstNodeExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
             _ => unreachable!(),
         };
-        debug!("fn_def: name={} args={:?}", fn_name_s, args);
+        debug!(
+            "fn_def: name={} args={:?} registers=[{}]",
+            fn_name_s, args, self.registers
+        );
 
         // FIXME: use function flags
         self.add_label(Label::new(fn_name_s.to_owned(), LABEL_FLAG_NONE));
@@ -321,6 +323,7 @@ extern _printf ; might be unused but that is ok
         self.fn_prolog();
 
         if args.len() == 1 {
+            self.registers.reserve(REGISTER_ARG_1);
             self.assign_var_to_register(args[0].id(), REGISTER_ARG_1);
         } else if args.len() == 0 {
             // No-op
@@ -329,6 +332,11 @@ extern _printf ; might be unused but that is ok
         }
 
         let register = self.registers.allocate().unwrap();
+        debug!(
+            "fn_def before body: name={} args={:?} registers=[{}] register={}",
+            fn_name_s, args, self.registers, register
+        );
+
         self.statement(body, register);
 
         self.fn_epilog();
@@ -648,9 +656,10 @@ extern _printf ; might be unused but that is ok
     }
 
     // Consume the origin register
-    fn _transfer_register(&mut self, source: Register, destination: Register) {
-        self.assign_register(source);
-        self.add_code(destination.as_str());
+    fn transfer_register(&mut self, source: Register, destination: Register) {
+        self.assign_register(destination);
+        self.add_code(source.as_str());
+        self.newline();
         self.registers.free(source);
     }
 
@@ -664,8 +673,9 @@ extern _printf ; might be unused but that is ok
             || !self.registers.is_free(REGISTER_ARG_2)
             || !self.registers.is_free(REGISTER_RETURN_VALUE)
         {
-            dbg!(&self.registers);
-            todo!("Re-arrange registers");
+            let copy_arg1_register = self.registers.allocate().unwrap();
+            self.transfer_register(REGISTER_ARG_1, copy_arg1_register);
+            // TODO: arg2, return value
         }
 
         let t = self.types.get(&expr.id()).unwrap();

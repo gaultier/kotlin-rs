@@ -105,6 +105,20 @@ pub(crate) struct Registers {
     in_use: u16,
 }
 
+impl fmt::Display for Registers {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut i = 1;
+        while i < (1 << 15) {
+            let register = Register::from(i);
+            if !self.is_free(register) {
+                write!(f, "{} ", register)?;
+            }
+            i = i << 1;
+        }
+        Ok(())
+    }
+}
+
 impl Registers {
     pub(crate) fn new() -> Registers {
         Registers { in_use: 0 }
