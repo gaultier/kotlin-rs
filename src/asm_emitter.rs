@@ -379,6 +379,7 @@ extern _printf ; might be unused but that is ok
         self.newline();
     }
 
+    // PERF: make it a no-op if `var_reg == register` to avoid e.g `mov r15, 15`
     fn var_ref(&mut self, id: NodeId, register: Register) {
         self.assign_register(register);
         let node_ref_id = self.resolution.get(&id).unwrap().node_ref_id;
