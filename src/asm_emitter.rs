@@ -662,6 +662,9 @@ extern _printf ; might be unused but that is ok
         self.newline();
         self.registers.free(source);
 
+        // TODO: if we could use a level of indirection and only store an index to an array of
+        // registers instead of the register directly, and the index was stable, we would not need
+        // to update the value of the register
         for (_, reg) in self.id_to_register.iter_mut() {
             if reg == &source {
                 *reg = destination;
