@@ -172,7 +172,7 @@ extern _printf ; might be unused but that is ok
         self.add_code(fn_name);
         self.newline();
 
-        for i in 1..arg_count {
+        for i in 1..=arg_count {
             let arg_register = Registers::register_fn_arg(i as u16).unwrap();
             self.registers.free(arg_register);
         }
@@ -324,13 +324,10 @@ extern _printf ; might be unused but that is ok
 
         self.fn_prolog();
 
-        if args.len() == 1 {
-            self.registers.reserve(REGISTER_ARG_1);
-            self.assign_var_to_register(args[0].id(), REGISTER_ARG_1);
-        } else if args.len() == 0 {
-            // No-op
-        } else {
-            todo!("More than one arg")
+        for i in 1..=args.len() {
+            let arg_register = Registers::register_fn_arg(i as u16).unwrap();
+            self.registers.reserve(arg_register);
+            self.assign_var_to_register(args[i - 1].id(), arg_register);
         }
 
         let register = self.registers.allocate().unwrap();
