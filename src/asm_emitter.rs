@@ -400,23 +400,23 @@ extern _printf ; might be unused but that is ok
         };
         debug!("fn_call: name={} args={:?}", fn_name_s, args);
 
-        // FIXME: put arguments in the right registers
-        // FIXME: if `register` is `rax`, it will be overriden
-
-        let args_count = args.len();
-        if args_count > 1 {
-            todo!("More than one function argument")
-        }
-        if args_count == 1 && !self.registers.is_free(REGISTER_ARG_1) {
+        // Calling the function will override `rax` with the return value
+        if !self.registers.is_free(REGISTER_RETURN_VALUE) {
             todo!("Re-arrange registers");
         }
 
-        if args_count == 1 {
-            let arg = &args[0];
+        for i in 1..=args.len() {
+            let arg_register = Registers::register_fn_arg(i as u16).unwrap();
 
-            self.registers.reserve(REGISTER_ARG_1);
-            self.assign_var_to_register(arg.id(), REGISTER_ARG_1);
-            self.expr(arg, REGISTER_ARG_1);
+            if !self.registers.is_free(arg_register) {
+                todo!("Re-arrange registers");
+            }
+
+            self.registers.reserve(arg_register);
+
+            let arg = &args[i - 1];
+            self.assign_var_to_register(arg.id(), arg_register);
+            self.expr(arg, arg_register);
         }
 
         self.add_code(&format!("call {}\n", fn_name_s));
