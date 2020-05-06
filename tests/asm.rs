@@ -275,3 +275,11 @@ fn fn_one_arg() {
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "99");
 }
+
+#[test]
+fn fn_two_args() {
+    let src = "fun foo(a: Int, b:Int) {println(b-a)}; foo(99,102)";
+    let path = Path::new("FnTwoArgsAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
+}
