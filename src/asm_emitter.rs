@@ -164,8 +164,6 @@ extern _printf ; might be unused but that is ok
     }
 
     fn call_function(&mut self, fn_name: &str, arg_count: usize) {
-        assert_eq!(arg_count, 2);
-
         self.add_code("call ");
         self.add_code(fn_name);
         self.newline();
@@ -303,7 +301,7 @@ extern _printf ; might be unused but that is ok
         args: &[AstNodeExpr],
         body: &AstNodeStmt,
         _flags: u16,
-        _id: NodeId,
+        id: NodeId,
     ) {
         let label_containing_fn_def = self.current_label_index;
         let fn_name_s = match fn_name {
@@ -318,7 +316,7 @@ extern _printf ; might be unused but that is ok
         // FIXME: use function flags
         self.add_label(Label::new(fn_name_s.to_owned(), LABEL_FLAG_NONE));
 
-        // let fn_t = self.types.get(&id).unwrap();
+        let fn_t = self.types.get(&id).unwrap();
 
         self.fn_prolog();
 
@@ -335,6 +333,21 @@ extern _printf ; might be unused but that is ok
         );
 
         self.statement(body, register);
+
+        let return_t = fn_t.fn_return_t().unwrap();
+        if return_t != Type::Nothing && return_t != Type::Unit {
+            // Place return value in `rax`
+
+            assert_eq!(return_t, Type::Int); // FIXME: only int supported for now
+
+            if !self.registers.is_free(REGISTER_RETURN_VALUE) {
+                todo!();
+            }
+
+            self.assign_register(REGISTER_RETURN_VALUE);
+            self.add_code(register.as_str());
+            self.newline();
+        }
 
         self.fn_epilog();
 
@@ -399,20 +412,23 @@ extern _printf ; might be unused but that is ok
         debug!("fn_call: name={} args={:?}", fn_name_s, args);
 
         // Calling the function will override `rax` with the return value
-        if !self.registers.is_free(REGISTER_RETURN_VALUE) {
-            todo!("Re-arrange registers");
-        }
+        // if !self.registers.is_free(REGISTER_RETURN_VALUE) {
+        //     todo!("Re-arrange registers");
+        // }
 
         let standard_args_registers = args
             .iter()
             .enumerate()
             .map(|(i, _)| Registers::register_fn_arg(1 + i as u16).unwrap())
             .collect::<Vec<_>>();
+
+        // Preserve argument registers before the call if they are already in use
         let copy_args_registers = standard_args_registers
             .iter()
             .map(|r| self.spill_to_register(*r))
             .collect::<Vec<_>>();
 
+        // Set argument registers before the call
         for (i, arg_register) in standard_args_registers.iter().enumerate() {
             self.registers.reserve(*arg_register);
 
@@ -421,9 +437,9 @@ extern _printf ; might be unused but that is ok
             self.expr(arg, *arg_register);
         }
 
-        self.add_code(&format!("call {}\n", fn_name_s));
+        self.call_function(fn_name_s, args.len());
 
-        // Restore registers like they were before the call
+        // Restore argument registers like they were before the call
         standard_args_registers
             .iter()
             .zip(copy_args_registers)
@@ -698,15 +714,15 @@ extern _printf ; might be unused but that is ok
     }
 
     fn println(&mut self, expr: &AstNodeExpr, register: Register) {
+        self.expr(expr, register);
+
         let arg1_register = Registers::register_fn_arg(1).unwrap();
         let arg2_register = Registers::register_fn_arg(2).unwrap();
+        let ret_register = REGISTER_RETURN_VALUE;
 
         let arg1_register_copy = self.spill_to_register(arg1_register);
         let arg2_register_copy = self.spill_to_register(arg2_register);
-
-        if !self.registers.is_free(REGISTER_RETURN_VALUE) {
-            todo!("Rearrange registers");
-        }
+        let ret_register_copy = self.spill_to_register(ret_register);
 
         let t = self.types.get(&expr.id()).unwrap();
         let fmt_string_label = match t {
@@ -716,8 +732,6 @@ extern _printf ; might be unused but that is ok
             _ => todo!(),
         };
         self.deref_string_from_label(arg1_register, &fmt_string_label);
-
-        self.expr(expr, register);
 
         if register != arg2_register {
             self.assign_register(arg2_register);
@@ -730,6 +744,7 @@ extern _printf ; might be unused but that is ok
         // Restore registers like they were before the call
         self.transfer_register(arg1_register_copy, arg1_register);
         self.transfer_register(arg2_register_copy, arg2_register);
+        self.transfer_register(ret_register_copy, ret_register);
     }
 
     fn literal(&mut self, token: &Token, register: Register) {
