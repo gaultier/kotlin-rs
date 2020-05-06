@@ -267,3 +267,11 @@ fn fn_zero_args() {
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "foo");
 }
+
+#[test]
+fn fn_one_arg() {
+    let src = "fun foo(a: Int) {println(a)}; foo(99)";
+    let path = Path::new("FnOneArgAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "99");
+}

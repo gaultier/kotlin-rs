@@ -172,8 +172,10 @@ extern _printf ; might be unused but that is ok
         self.add_code(fn_name);
         self.newline();
 
-        self.registers.free(REGISTER_ARG_1);
-        self.registers.free(REGISTER_ARG_2);
+        for i in 1..arg_count {
+            let arg_register = Registers::register_fn_arg(i as u16).unwrap();
+            self.registers.free(arg_register);
+        }
     }
 
     pub(crate) fn main<W: std::io::Write>(
