@@ -23,8 +23,6 @@ pub(crate) enum Register {
 }
 
 pub(crate) const REGISTER_RETURN_VALUE: Register = Register::Rax;
-pub(crate) const REGISTER_ARG_1: Register = Register::Rdi;
-pub(crate) const REGISTER_ARG_2: Register = Register::Rsi;
 
 impl Register {
     pub(crate) fn as_str(&self) -> &'static str {

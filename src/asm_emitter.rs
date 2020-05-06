@@ -1,7 +1,5 @@
 use crate::asm_constants::Constants;
-use crate::asm_registers::{
-    Register, Registers, REGISTER_ARG_1, REGISTER_ARG_2, REGISTER_RETURN_VALUE,
-};
+use crate::asm_registers::{Register, Registers, REGISTER_RETURN_VALUE};
 use crate::error::*;
 use crate::lex::{Token, TokenKind};
 use crate::parse::*;
@@ -405,21 +403,33 @@ extern _printf ; might be unused but that is ok
             todo!("Re-arrange registers");
         }
 
-        for i in 1..=args.len() {
-            let arg_register = Registers::register_fn_arg(i as u16).unwrap();
+        let standard_args_registers = args
+            .iter()
+            .enumerate()
+            .map(|(i, _)| Registers::register_fn_arg(1 + i as u16).unwrap())
+            .collect::<Vec<_>>();
+        let copy_args_registers = standard_args_registers
+            .iter()
+            .map(|r| self.spill_to_register(*r))
+            .collect::<Vec<_>>();
 
-            if !self.registers.is_free(arg_register) {
-                todo!("Re-arrange registers");
-            }
+        for (i, arg_register) in standard_args_registers.iter().enumerate() {
+            self.registers.reserve(*arg_register);
 
-            self.registers.reserve(arg_register);
-
-            let arg = &args[i - 1];
-            self.assign_var_to_register(arg.id(), arg_register);
-            self.expr(arg, arg_register);
+            let arg = &args[i];
+            self.assign_var_to_register(arg.id(), *arg_register);
+            self.expr(arg, *arg_register);
         }
 
         self.add_code(&format!("call {}\n", fn_name_s));
+
+        // Restore registers like they were before the call
+        standard_args_registers
+            .iter()
+            .zip(copy_args_registers)
+            .for_each(|(standard_args_register, copy_args_register)| {
+                self.transfer_register(copy_args_register, *standard_args_register)
+            });
     }
 
     fn expr(&mut self, expr: &AstNodeExpr, register: Register) {
@@ -677,18 +687,26 @@ extern _printf ; might be unused but that is ok
         self.newline();
     }
 
-    fn println(&mut self, expr: &AstNodeExpr, register: Register) {
-        let register = if !self.registers.is_free(REGISTER_ARG_1)
-            || !self.registers.is_free(REGISTER_ARG_2)
-            || !self.registers.is_free(REGISTER_RETURN_VALUE)
-        {
-            let copy_arg1_register = self.registers.allocate().unwrap();
-            self.transfer_register(REGISTER_ARG_1, copy_arg1_register);
-            // TODO: arg2, return value
-            copy_arg1_register
+    fn spill_to_register(&mut self, original_register: Register) -> Register {
+        if !self.registers.is_free(original_register) {
+            let copy_register = self.registers.allocate().unwrap();
+            self.transfer_register(original_register, copy_register);
+            copy_register
         } else {
-            register
-        };
+            original_register
+        }
+    }
+
+    fn println(&mut self, expr: &AstNodeExpr, register: Register) {
+        let arg1_register = Registers::register_fn_arg(1).unwrap();
+        let arg2_register = Registers::register_fn_arg(2).unwrap();
+
+        let arg1_register_copy = self.spill_to_register(arg1_register);
+        let arg2_register_copy = self.spill_to_register(arg2_register);
+
+        if !self.registers.is_free(REGISTER_RETURN_VALUE) {
+            todo!("Rearrange registers");
+        }
 
         let t = self.types.get(&expr.id()).unwrap();
         let fmt_string_label = match t {
@@ -697,17 +715,21 @@ extern _printf ; might be unused but that is ok
             Type::Long => self.synthetic_literal_string(PRINTF_FMT_LONG),
             _ => todo!(),
         };
-        self.deref_string_from_label(REGISTER_ARG_1, &fmt_string_label);
+        self.deref_string_from_label(arg1_register, &fmt_string_label);
 
         self.expr(expr, register);
 
-        if register != REGISTER_ARG_2 {
-            self.assign_register(REGISTER_ARG_2);
+        if register != arg2_register {
+            self.assign_register(arg2_register);
             self.add_code(register.as_str());
             self.newline();
         }
 
         self.call_function("_printf", 2);
+
+        // Restore registers like they were before the call
+        self.transfer_register(arg1_register_copy, arg1_register);
+        self.transfer_register(arg2_register_copy, arg2_register);
     }
 
     fn literal(&mut self, token: &Token, register: Register) {
