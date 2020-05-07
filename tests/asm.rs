@@ -307,3 +307,11 @@ fn fn_two_args_ret() {
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "199");
 }
+
+#[test]
+fn fn_rec() {
+    let src = "fun sum(n: Int, acc: Int): Int = if (n == 0) acc else sum(n - 1, n + acc); println(sum(20, 0))";
+    let path = Path::new("FnRecAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "210");
+}
