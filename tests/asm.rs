@@ -283,3 +283,19 @@ fn fn_two_args() {
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
 }
+
+#[test]
+fn fn_zero_args_ret() {
+    let src = "fun foo() = 42 * 2; println(foo())";
+    let path = Path::new("FnZeroArgsRetAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "84");
+}
+
+#[test]
+fn fn_one_arg_ret() {
+    let src = "fun foo(a: Int) = a + a; println(foo(99))";
+    let path = Path::new("FnOneArgRetAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "198");
+}
