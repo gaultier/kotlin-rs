@@ -409,7 +409,10 @@ extern _printf ; might be unused but that is ok
             AstNodeExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
             _ => unreachable!(),
         };
-        debug!("fn_call: name={} args={:?}", fn_name_s, args);
+        debug!(
+            "fn_call: name={} args={:?} registers={}",
+            fn_name_s, args, self.registers
+        );
 
         // Calling the function will override `rax` with the return value
         // if !self.registers.is_free(REGISTER_RETURN_VALUE) {
