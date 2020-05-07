@@ -351,6 +351,12 @@ extern _printf ; might be unused but that is ok
 
         self.fn_epilog();
 
+        self.registers.free(register);
+
+        debug!(
+            "fn_def: end name={} args={:?} registers=[{}]",
+            fn_name_s, args, self.registers
+        );
         self.current_label_index = label_containing_fn_def;
     }
 
