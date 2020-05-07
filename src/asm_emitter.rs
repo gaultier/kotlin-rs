@@ -712,9 +712,16 @@ extern _printf ; might be unused but that is ok
         self.newline();
     }
 
+    fn comment(&mut self, s: &str) {
+        self.add_code("; ");
+        self.add_code(s);
+        self.newline();
+    }
+
     fn spill_to_register(&mut self, original_register: Register) -> Register {
         if !self.registers.is_free(original_register) {
             let copy_register = self.registers.allocate().unwrap();
+            self.comment("spill to register");
             self.transfer_register(original_register, copy_register);
             copy_register
         } else {
