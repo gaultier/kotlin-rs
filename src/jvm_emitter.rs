@@ -394,8 +394,8 @@ impl<'a> JvmEmitter<'a> {
 
         let attribute_code = Attribute::Code {
             name: self.code_str,
-            max_stack: code.stack_max,
-            max_locals: code.locals_max,
+            max_stack: 100,  // FIXME
+            max_locals: 100, // FIXME
             code: bytecode,
             exception_table: Vec::new(),
             attributes: vec![line_table, stack_map_table],
@@ -580,8 +580,8 @@ impl<'a> JvmEmitter<'a> {
 
         let attribute_code = Attribute::Code {
             name: self.code_str,
-            max_stack: code.state.stack.count_max(),
-            max_locals: code.state.locals.count_max(),
+            max_stack: 100,  // FIXME
+            max_locals: 100, // FIXME
             code: bytecode,
             exception_table: Vec::new(),
             attributes: vec![line_table, stack_map_table],

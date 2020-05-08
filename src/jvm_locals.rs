@@ -63,14 +63,15 @@ impl Locals {
         if i > std::u8::MAX as u16 {
             unimplemented!()
         }
+        let t = &l.1;
+        let size = if t == &Type::Long || t == &Type::Double {
+            2
+        } else {
+            1
+        };
 
-        if i >= self.len() && !(l.1 == Type::Long || l.1 == Type::Double) {
-            self.values
-                .resize(self.values.len() + i as usize, (0, Type::Any));
-        } else if i >= self.len() {
-            self.values
-                .resize(self.values.len() + i as usize + 1, (0, Type::Any));
-        }
+        let new_len = u16::max(i + size, self.values.len() as u16);
+        self.values.resize(new_len as usize, (0, Type::Any));
 
         if l.1 == Type::Long || l.1 == Type::Double {
             self.values[i as usize] = l.clone();
