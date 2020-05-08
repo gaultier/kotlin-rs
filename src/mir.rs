@@ -21,6 +21,7 @@ impl MirTransformer {
 
     fn fn_def(&mut self, fn_body: AstNodeStmt) -> AstNodeStmt {
         match fn_body {
+            // Transform expression form into standard block form for simplicity later
             AstNodeStmt::Expr(expr) => AstNodeStmt::Block {
                 body: vec![AstNodeStmt::Expr(AstNodeExpr::Jump {
                     kind: JumpKind::Return,
@@ -30,6 +31,7 @@ impl MirTransformer {
                 })],
                 id: self.next_id(),
             },
+            // Add final return in fn body if none to avoid falling through
             AstNodeStmt::Block { mut body, id } => {
                 match body.last() {
                     Some(AstNodeStmt::Expr(AstNodeExpr::Jump {
