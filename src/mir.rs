@@ -19,8 +19,8 @@ impl MirTransformer {
         self.current_id
     }
 
-    fn fn_def(&mut self, body: AstNodeStmt) -> AstNodeStmt {
-        match body {
+    fn fn_def(&mut self, fn_body: AstNodeStmt) -> AstNodeStmt {
+        match fn_body {
             AstNodeStmt::Expr(expr) => AstNodeStmt::Block {
                 body: vec![AstNodeStmt::Expr(AstNodeExpr::Jump {
                     kind: JumpKind::Return,
@@ -30,7 +30,24 @@ impl MirTransformer {
                 })],
                 id: self.next_id(),
             },
-            _ => body,
+            AstNodeStmt::Block { mut body, id } => {
+                match body.last() {
+                    Some(AstNodeStmt::Expr(AstNodeExpr::Jump {
+                        kind: JumpKind::Return,
+                        ..
+                    })) => (), // No-op
+                    _ => {
+                        body.push(AstNodeStmt::Expr(AstNodeExpr::Jump {
+                            span: Span::new(0, 0),
+                            kind: JumpKind::Return,
+                            expr: None,
+                            id: self.next_id(),
+                        }));
+                    }
+                }
+                AstNodeStmt::Block { body, id }
+            }
+            _ => unreachable!(),
         }
     }
 
