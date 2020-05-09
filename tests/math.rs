@@ -14,6 +14,7 @@ fn add_int_long() {
     );
 }
 
+// TODO: asm
 #[test]
 fn add_float_float() {
     let src = "1f + 2f;";
