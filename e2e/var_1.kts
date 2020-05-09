@@ -1,4 +1,9 @@
-var a: String = "initial"  // 1
-println(a)
-val b: Int = 1             // 2
-val c = 3                  // 3
+var a: String = "initial"
+println(a) // Expect: initial
+
+val b: Int = 1
+val c = 3
+
+println(b); // Expect: 1
+println(c); // Expect: 3
+
