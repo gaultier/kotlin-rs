@@ -8,9 +8,8 @@ fun cases(obj: Any) {
         else -> println("Unknown")
     }
 }
-fun main() {
-    cases("Hello") // Expect: Greeting
-    cases(1) // Expect: One
-    cases(0L) // Expect: Not a string
-    cases("hello") // Expect: Unknown
-}
+
+cases("Hello") // Expect: Greeting
+cases(1) // Expect: One
+cases(0L) // Expect: Long
+cases("hello") // Expect: Unknown
