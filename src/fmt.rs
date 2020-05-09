@@ -68,8 +68,26 @@ impl<'a> Formatter<'a> {
             AstNodeStmt::Block { body, .. } => {
                 self.block(body, w)?;
             }
-            AstNodeStmt::Class { .. } => todo!(),
+            AstNodeStmt::Class {
+                name_span, body, ..
+            } => {
+                let name = self.session.src[name_span.start..name_span.end].into();
+                self.class(name, body, w)?;
+            }
         };
+        Ok(())
+    }
+
+    fn class<W: std::io::Write>(
+        &mut self,
+        name: &str,
+        body: &AstNodeStmt,
+        w: &mut W,
+    ) -> Result<(), Error> {
+        write!(w, "class {} {{\n", name)?;
+
+        self.statements(body, w)?;
+        write!(w, "}}\n")?;
         Ok(())
     }
 
