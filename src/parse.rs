@@ -1402,7 +1402,7 @@ impl<'a> Parser<'a> {
             TokenKind::KeywordWhile => self.while_stmt(),
             TokenKind::KeywordDo => self.do_while_stmt(),
             TokenKind::KeywordVal | TokenKind::KeywordVar => self.var_def(),
-            TokenKind::KeywordFun => self.declaration(),
+            TokenKind::KeywordFun | TokenKind::KeywordClass => self.declaration(),
             _ if self.incoming_assignement() => self.assign(),
             _ => Ok(AstNodeStmt::Expr(self.expr()?)),
         }
