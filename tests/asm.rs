@@ -315,3 +315,12 @@ fn fn_rec() {
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "210");
 }
+
+#[test]
+fn add_int_int() {
+    let src = "println(1 + 2)";
+
+    let path = Path::new("AddIntIntAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
+}
