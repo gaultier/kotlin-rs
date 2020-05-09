@@ -1,2 +1,2 @@
 var e: Int 
-println(e)
+println(e) // Expect: error
