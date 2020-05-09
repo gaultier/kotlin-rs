@@ -333,3 +333,12 @@ fn add_long_long() {
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
 }
+
+#[test]
+fn complex_int_math_expr() {
+    let src = "println(-9 / 2 + 5 * 3)";
+
+    let path = Path::new("ComplexIntMathExprAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "11");
+}

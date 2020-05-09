@@ -459,3 +459,12 @@ fn add_float_float() {
     let output = jvm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "3.0");
 }
+
+#[test]
+fn complex_int_math_expr() {
+    let src = "println(-9 / 2 + 5 * 3)";
+
+    let path = Path::new("ComplexIntMathExpr.kts");
+    let output = jvm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "11");
+}
