@@ -14,30 +14,6 @@ fn int_equality() {
 }
 
 #[test]
-fn uint_equality() {
-    let src = "0xabU == 171U;";
-    let mut out: Vec<u8> = Vec::new();
-
-    assert!(sexp(src, &mut out).is_ok());
-    assert_eq!(
-        std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(== 171 171)"
-    );
-}
-
-#[test]
-fn uint_long_equality() {
-    let src = "0xabUL == 171UL;";
-    let mut out: Vec<u8> = Vec::new();
-
-    assert!(sexp(src, &mut out).is_ok());
-    assert_eq!(
-        std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(== 171 171)"
-    );
-}
-
-#[test]
 fn float_equality() {
     let src = ".3f == .2f + 10e-2f;";
     let mut out: Vec<u8> = Vec::new();
@@ -76,48 +52,6 @@ fn long_equality() {
 #[test]
 fn int_long_equality() -> Result<(), &'static str> {
     let src = "0xab == 171L;";
-    let mut out: Vec<u8> = Vec::new();
-
-    match sexp(src, &mut out) {
-        Err(Error {
-            kind: ErrorKind::IncompatibleTypes(..),
-            location:
-                Location {
-                    start_line: 1,
-                    start_column: 6,
-                    end_line: 1,
-                    end_column: 8,
-                    ..
-                },
-        }) => Ok(()),
-        _ => Err("Should be a type error"),
-    }
-}
-
-#[test]
-fn int_uint_long_equality() -> Result<(), &'static str> {
-    let src = "0xab == 171UL;";
-    let mut out: Vec<u8> = Vec::new();
-
-    match sexp(src, &mut out) {
-        Err(Error {
-            kind: ErrorKind::IncompatibleTypes(..),
-            location:
-                Location {
-                    start_line: 1,
-                    start_column: 6,
-                    end_line: 1,
-                    end_column: 8,
-                    ..
-                },
-        }) => Ok(()),
-        _ => Err("Should be a type error"),
-    }
-}
-
-#[test]
-fn int_uint_equality() -> Result<(), &'static str> {
-    let src = "0xab == 171U;";
     let mut out: Vec<u8> = Vec::new();
 
     match sexp(src, &mut out) {

@@ -9,9 +9,7 @@ use std::fmt;
 pub enum Type {
     Boolean,
     Int,
-    UInt,
     Long,
-    ULong,
     Float,
     Double,
     Null,
@@ -19,9 +17,7 @@ pub enum Type {
     Char,
     Unit,
     IntRange,
-    UIntRange,
     LongRange,
-    ULongRange,
     FloatRange,
     DoubleRange,
     TStringRange,
@@ -47,9 +43,7 @@ impl fmt::Display for Type {
         match self {
             Type::Boolean => write!(f, "Boolean"),
             Type::Int => write!(f, "Int"),
-            Type::UInt => write!(f, "UInt"),
             Type::Long => write!(f, "Long"),
-            Type::ULong => write!(f, "ULong"),
             Type::Float => write!(f, "Float"),
             Type::Double => write!(f, "Double"),
             Type::Null => write!(f, "Null"),
@@ -58,9 +52,7 @@ impl fmt::Display for Type {
             Type::Unit => write!(f, "Unit"),
             Type::BooleanRange => write!(f, "BooleanRange"),
             Type::IntRange => write!(f, "IntRange"),
-            Type::UIntRange => write!(f, "UIntRange"),
             Type::LongRange => write!(f, "LongRange"),
-            Type::ULongRange => write!(f, "ULongRange"),
             Type::FloatRange => write!(f, "FloatRange"),
             Type::DoubleRange => write!(f, "DoubleRange"),
             Type::CharRange => write!(f, "CharRange"),
@@ -106,9 +98,7 @@ impl Type {
     pub(crate) fn is_range(&self) -> bool {
         match self {
             Type::IntRange
-            | Type::UIntRange
             | Type::LongRange
-            | Type::ULongRange
             | Type::FloatRange
             | Type::DoubleRange
             | Type::TStringRange
@@ -126,8 +116,6 @@ impl Token {
         match self.kind {
             TokenKind::Int(_) => Type::Int,
             TokenKind::Long(_) => Type::Long,
-            TokenKind::UInt(_) => Type::UInt,
-            TokenKind::ULong(_) => Type::ULong,
             TokenKind::Float(_) => Type::Float,
             TokenKind::Double(_) => Type::Double,
             TokenKind::Boolean(_) => Type::Boolean,
@@ -293,9 +281,7 @@ impl AstExpr {
 
     pub(crate) fn span(&self) -> Span {
         match self {
-            AstExpr::Binary { left, right, .. } => {
-                Span::from_spans(&left.span(), &right.span())
-            }
+            AstExpr::Binary { left, right, .. } => Span::from_spans(&left.span(), &right.span()),
             AstExpr::Literal(token, _) => token.span,
             AstExpr::Unary { expr, .. } => expr.span(),
             AstExpr::Grouping(expr, _) => expr.span(),
@@ -332,8 +318,6 @@ impl<'a> Parser<'a> {
         match identifier {
             "Int" => Ok(Type::Int),
             "Long" => Ok(Type::Long),
-            "UInt" => Ok(Type::UInt),
-            "ULong" => Ok(Type::ULong),
             "Float" => Ok(Type::Float),
             "Double" => Ok(Type::Double),
             "Boolean" => Ok(Type::Boolean),

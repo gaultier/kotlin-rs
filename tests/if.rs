@@ -28,7 +28,7 @@ fn multi_if_expr() {
 
 #[test]
 fn nested_if_expr() {
-    let src = "if (1<2) if (99U < 100UL) 'a' else 'b' else 'c'\n";
+    let src = "if (1<2) if (99 < 100) 'a' else 'b' else 'c'\n";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(sexp(src, &mut out).is_ok());
@@ -146,12 +146,12 @@ fn check_both_branches_types_match_unit_when_empty_if() {
 
 #[test]
 fn check_types_coalesce() -> Result<(), String> {
-    let src = "if (1<2) 99U else 99UL \n";
+    let src = "if (1<2) 99 else 99f \n";
     let mut out: Vec<u8> = Vec::new();
 
     match sexp(src, &mut out) {
         Err(Error {
-            kind: ErrorKind::IncompatibleTypes(Type::UInt, Type::ULong),
+            kind: ErrorKind::IncompatibleTypes(Type::Int, Type::Float),
             ..
         }) => Ok(()),
         other => Err(format!("Should be a type error: {:?}", other)),

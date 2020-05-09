@@ -55,24 +55,14 @@ impl<'a> TypeChecker<'a> {
         Ok(Type::Unit)
     }
 
-    fn while_stmt(
-        &mut self,
-        cond: &AstExpr,
-        block: &AstStmt,
-        span: &Span,
-    ) -> Result<Type, Error> {
+    fn while_stmt(&mut self, cond: &AstExpr, block: &AstStmt, span: &Span) -> Result<Type, Error> {
         let cond_t = self.expr(cond)?;
         self.is_type(&cond_t, &Type::Boolean, &span)?;
         self.statement(block)?;
         Ok(Type::Unit)
     }
 
-    fn var_def(
-        &mut self,
-        value: &AstExpr,
-        identifier: &Token,
-        id: Id,
-    ) -> Result<Type, Error> {
+    fn var_def(&mut self, value: &AstExpr, identifier: &Token, id: Id) -> Result<Type, Error> {
         let value_t = self.expr(value)?;
         if let Some(t) = self.types.get(&id) {
             // If a type was specified explicitely, check that it matches the implicit type of the
@@ -86,12 +76,7 @@ impl<'a> TypeChecker<'a> {
         Ok(value_t)
     }
 
-    fn assign(
-        &mut self,
-        target: &AstExpr,
-        value: &AstExpr,
-        span: &Span,
-    ) -> Result<Type, Error> {
+    fn assign(&mut self, target: &AstExpr, value: &AstExpr, span: &Span) -> Result<Type, Error> {
         let target_t = self.expr(target)?;
         let value_t = self.expr(value)?;
         self.is_type(&target_t, &value_t, span)?;
@@ -134,7 +119,7 @@ impl<'a> TypeChecker<'a> {
                 let t = Type::UserType { name };
                 self.types.insert(*id, t.clone());
 
-                self.statements(body);
+                self.statements(body)?;
 
                 Ok(t)
             }
@@ -202,12 +187,7 @@ impl<'a> TypeChecker<'a> {
             } => {
                 let t = self.expr(right)?;
                 match t {
-                    Type::Int
-                    | Type::UInt
-                    | Type::Long
-                    | Type::ULong
-                    | Type::Float
-                    | Type::Double => {
+                    Type::Int | Type::Long | Type::Float | Type::Double => {
                         self.types.insert(*id, t.clone());
                         Ok(t)
                     }
@@ -323,9 +303,7 @@ impl<'a> TypeChecker<'a> {
                 self.is_type(&right_t, &left_t, &right.span())?;
                 let t = match left_t {
                     Type::Int => Type::IntRange,
-                    Type::UInt => Type::UIntRange,
                     Type::Long => Type::LongRange,
-                    Type::ULong => Type::ULongRange,
                     Type::Float => Type::FloatRange,
                     Type::Double => Type::DoubleRange,
                     Type::TString => Type::TStringRange,
@@ -427,9 +405,7 @@ impl<'a> TypeChecker<'a> {
                 let right_t = self.expr(right)?;
                 let t = match (&left_t, &right_t) {
                     (Type::Int, Type::IntRange)
-                    | (Type::UInt, Type::UIntRange)
                     | (Type::Long, Type::LongRange)
-                    | (Type::ULong, Type::ULongRange)
                     | (Type::Float, Type::FloatRange)
                     | (Type::Double, Type::DoubleRange)
                     | (Type::TString, Type::TStringRange)
@@ -783,12 +759,8 @@ impl<'a> TypeChecker<'a> {
             (Type::Char, Type::Char) => Ok(Type::Char),
             (Type::Boolean, Type::Boolean) => Ok(Type::Boolean),
             (Type::Int, Type::Int) => Ok(Type::Int),
-            (Type::UInt, Type::UInt) => Ok(Type::UInt),
             (Type::Long, Type::Long) | (Type::Long, Type::Int) | (Type::Int, Type::Long) => {
                 Ok(Type::Long)
-            }
-            (Type::UInt, Type::ULong) | (Type::ULong, Type::UInt) | (Type::ULong, Type::ULong) => {
-                Ok(Type::ULong)
             }
             // Plus
             (Type::Float, Type::Float)
@@ -809,16 +781,12 @@ impl<'a> TypeChecker<'a> {
             | (Type::TString, Type::TString)
             | (Type::TString, Type::Int)
             | (Type::Int, Type::TString)
-            | (Type::TString, Type::UInt)
-            | (Type::UInt, Type::TString)
             | (Type::TString, Type::Long)
             | (Type::Long, Type::TString)
-            | (Type::TString, Type::ULong)
             | (Type::TString, Type::Float)
             | (Type::Float, Type::TString)
             | (Type::TString, Type::Double)
             | (Type::Double, Type::TString)
-            | (Type::ULong, Type::TString)
             | (Type::TString, Type::Char)
             | (Type::Char, Type::TString)
             // Asymetrical

@@ -16,12 +16,12 @@ fn simple_range() {
 
 #[test]
 fn check_both_types_match() -> Result<(), String> {
-    let src = "1U..\n\n5UL";
+    let src = "1..\n\n5f";
     let mut out: Vec<u8> = Vec::new();
 
     match sexp(src, &mut out) {
         Err(Error {
-            kind: ErrorKind::IncompatibleTypes(Type::ULong, Type::UInt),
+            kind: ErrorKind::IncompatibleTypes(Type::Float, Type::Int),
             ..
         }) => Ok(()),
         other => Err(format!("Should be a type error: {:?}", other)),
