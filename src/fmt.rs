@@ -84,9 +84,11 @@ impl<'a> Formatter<'a> {
         body: &AstNodeStmt,
         w: &mut W,
     ) -> Result<(), Error> {
+        self.ident(w);
         write!(w, "class {} {{\n", name)?;
 
         self.statements(body, w)?;
+        self.ident(w);
         write!(w, "}}\n")?;
         Ok(())
     }
