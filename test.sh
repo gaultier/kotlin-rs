@@ -13,7 +13,13 @@ do
     if ! ${DIFF_TOOL} \
         <(awk -F '// Expect: ' '/Expect/{print $2}' "$f") \
         <(${BIN} -f "$f" jvm); then
-            echo "[$f] differs"
+            echo "jvm: [$f] differs"
+    fi
+
+    if ! ${DIFF_TOOL} \
+        <(awk -F '// Expect: ' '/Expect/{print $2}' "$f") \
+        <(${BIN} -f "$f" asm); then
+            echo "asm: [$f] differs"
     fi
 done
 
