@@ -49,7 +49,7 @@ impl fmt::Display for LexicalContext {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-struct FnDef<'a> {
+struct Definition<'a> {
     identifier: &'a str,
     id: Id,
     block_id: Id,
@@ -61,8 +61,8 @@ pub(crate) struct Resolver<'a> {
     resolution: Resolution,
     scopes: Scopes<'a>,
     context: LexicalContext,
-    fn_definitions: BTreeMap<(Id, &'a str), FnDef<'a>>, // Key=(block_id, identifier)
-    class_definitions: BTreeMap<(Id, &'a str), FnDef<'a>>, // Key=(block_id, identifier)
+    fn_definitions: BTreeMap<(Id, &'a str), Definition<'a>>, // Key=(block_id, identifier)
+    class_definitions: BTreeMap<(Id, &'a str), Definition<'a>>, // Key=(block_id, identifier)
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -457,7 +457,7 @@ impl<'a> Resolver<'a> {
 
         self.fn_definitions.insert(
             (block_id, identifier),
-            FnDef {
+            Definition {
                 id,
                 flags,
                 block_id,
@@ -476,7 +476,7 @@ impl<'a> Resolver<'a> {
 
         self.fn_definitions.insert(
             (block_id, name),
-            FnDef {
+            Definition {
                 id,
                 flags,
                 block_id,
@@ -580,12 +580,7 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn fn_def(
-        &mut self,
-        args: &[AstExpr],
-        body: &AstStmt,
-        id: Id,
-    ) -> Result<(), Error> {
+    fn fn_def(&mut self, args: &[AstExpr], body: &AstStmt, id: Id) -> Result<(), Error> {
         self.enter_scope(id);
 
         for arg in args {
