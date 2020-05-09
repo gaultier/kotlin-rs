@@ -286,6 +286,7 @@ extern _printf ; might be unused but that is ok
                 body,
                 ..
             } => self.fn_def(fn_name, args, body, *flags, *id),
+            AstNodeStmt::Class { .. } => todo!(),
             _ => todo!(),
         }
     }

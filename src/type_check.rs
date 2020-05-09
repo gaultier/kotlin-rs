@@ -124,6 +124,7 @@ impl<'a> TypeChecker<'a> {
                 return_t_span,
             } => self.fn_def(fn_name, args, body, *flags, return_t_span, *id),
             AstNodeStmt::Block { body, .. } => self.block(body),
+            AstNodeStmt::Class { .. } => todo!(),
         }
     }
 

@@ -625,7 +625,8 @@ impl<'a> JvmEmitter<'a> {
                 body,
                 ..
             } => self.fn_def(fn_name, args, *id, *flags, body),
-            _ => unimplemented!(),
+            AstNodeStmt::Class { .. } => todo!(),
+            _ => todo!(),
         }
     }
 

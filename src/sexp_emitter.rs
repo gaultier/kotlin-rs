@@ -126,6 +126,7 @@ impl<'a> SexpEmitter<'a> {
             AstNodeStmt::Block { body, .. } => {
                 self.block(body, w)?;
             }
+            AstNodeStmt::Class { .. } => todo!(),
         };
         Ok(())
     }
