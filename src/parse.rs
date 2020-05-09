@@ -176,6 +176,12 @@ pub enum AstNodeStmt {
         body: Statements,
         id: NodeId,
     },
+    Class {
+        body: Box<AstNodeStmt>,
+        name_span: Span,
+        flags: u16,
+        id: NodeId,
+    },
 }
 
 pub type Statements = Vec<AstNodeStmt>;
@@ -1339,9 +1345,40 @@ impl<'a> Parser<'a> {
         })
     }
 
+    fn class_body(&mut self) -> Result<AstNodeStmt, Error> {
+        self.eat(TokenKind::LeftCurlyBracket)?;
+        self.skip_newlines()?;
+
+        // self.class_member_def();
+
+        self.skip_newlines()?;
+        self.eat(TokenKind::RightCurlyBracket)?;
+
+        Ok(AstNodeStmt::Block {
+            body: vec![],
+            id: self.next_id(),
+        })
+    }
+
+    fn class_def(&mut self) -> Result<AstNodeStmt, Error> {
+        self.eat(TokenKind::KeywordClass)?;
+        self.skip_newlines()?;
+        let name_span = self.simple_identifier()?.span();
+
+        let body = self.class_body()?;
+
+        Ok(AstNodeStmt::Class {
+            body: Box::new(body),
+            name_span,
+            flags: 0, // FIXME
+            id: self.next_id(),
+        })
+    }
+
     fn declaration(&mut self) -> Result<AstNodeStmt, Error> {
         match self.previous.unwrap().kind {
             TokenKind::KeywordFun => self.fn_def(),
+            TokenKind::KeywordClass => self.class_def(),
             _ => unimplemented!("Declarations other than functions (e.g class)"),
         }
     }

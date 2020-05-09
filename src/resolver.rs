@@ -10,6 +10,7 @@ const LEXICAL_CONTEXT_TOP_LEVEL: u8 = 0;
 const LEXICAL_CONTEXT_LOOP: u8 = 0b001;
 const LEXICAL_CONTEXT_FUNCTION: u8 = 0b010;
 const LEXICAL_CONTEXT_LOOP_IN_FUNCTION: u8 = 0b011;
+const LEXICAL_CONTEXT_CLASS: u8 = 0b100;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct LexicalContext(pub u8);
@@ -29,6 +30,10 @@ impl LexicalContext {
 
     fn enter_function(&mut self) {
         self.0 |= LEXICAL_CONTEXT_FUNCTION;
+    }
+
+    fn enter_class(&mut self) {
+        self.0 |= LEXICAL_CONTEXT_CLASS;
     }
 }
 
@@ -57,6 +62,7 @@ pub(crate) struct Resolver<'a> {
     scopes: Scopes<'a>,
     context: LexicalContext,
     fn_definitions: BTreeMap<(NodeId, &'a str), FnDef<'a>>, // Key=(block_id, identifier)
+    class_definitions: BTreeMap<(NodeId, &'a str), FnDef<'a>>, // Key=(block_id, identifier)
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -109,6 +115,7 @@ impl<'a> Resolver<'a> {
             scopes: Vec::new(),
             context: LexicalContext(LEXICAL_CONTEXT_TOP_LEVEL),
             fn_definitions: BTreeMap::new(),
+            class_definitions: BTreeMap::new(),
         }
     }
 
@@ -464,6 +471,25 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
+    fn class_decl(&mut self, name: &'a str, flags: u16, id: NodeId) -> Result<(), Error> {
+        let block_id = self.scopes.last().unwrap().block_id;
+
+        self.fn_definitions.insert(
+            (block_id, name),
+            FnDef {
+                id,
+                flags,
+                block_id,
+                identifier: name,
+            },
+        );
+        debug!(
+            "class declaration: name=`{}` scope_id={} id={}",
+            name, block_id, id
+        );
+        Ok(())
+    }
+
     fn var_def(&mut self, identifier: &'a str, flags: u16, id: NodeId) -> Result<(), Error> {
         let scope = self.scopes.last_mut().unwrap();
         scope.var_statuses.insert(
@@ -513,6 +539,25 @@ impl<'a> Resolver<'a> {
             "assign: identifier={} target={:?} value={:?} flags={}",
             identifier, target, value, flags
         );
+        Ok(())
+    }
+
+    fn class_def0(
+        &mut self,
+        name: &'a str,
+        body: &AstNodeStmt,
+        flags: u16,
+        id: NodeId,
+    ) -> Result<(), Error> {
+        self.class_decl(name, flags, id)?;
+        self.enter_scope(id);
+
+        let ctx = self.context;
+        self.context.enter_class();
+        self.statement0(body)?;
+        self.context = ctx;
+
+        self.exit_scope();
         Ok(())
     }
 
@@ -600,6 +645,15 @@ impl<'a> Resolver<'a> {
                 self.fn_def0(fn_name, *flags, body, *id)?;
             }
             AstNodeStmt::Block { body, .. } => self.fn_block0(body)?,
+            AstNodeStmt::Class {
+                name_span,
+                body,
+                flags,
+                id,
+            } => {
+                let name = &self.session.src[name_span.start..name_span.end];
+                self.class_def0(name, body, *flags, *id)?;
+            }
         };
         Ok(())
     }
@@ -652,6 +706,9 @@ impl<'a> Resolver<'a> {
                 self.fn_def(args, body, *id)?;
             }
             AstNodeStmt::Block { body, .. } => self.fn_block(body)?,
+            AstNodeStmt::Class { .. } => {
+                // TODO
+            }
         };
         Ok(())
     }
