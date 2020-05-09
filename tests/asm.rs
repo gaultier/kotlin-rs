@@ -324,3 +324,12 @@ fn add_int_int() {
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
 }
+
+#[test]
+fn add_long_long() {
+    let src = "println(1L + 2L)";
+
+    let path = Path::new("AddLongLongAsm.kts");
+    let output = asm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
+}

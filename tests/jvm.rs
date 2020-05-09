@@ -441,3 +441,21 @@ fn add_int_int() {
     let output = jvm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
 }
+
+#[test]
+fn add_int_long() {
+    let src = "println(1 + 2L)";
+
+    let path = Path::new("AddIntLong.kts");
+    let output = jvm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
+}
+
+#[test]
+fn add_long_long() {
+    let src = "println(1L + 2L)";
+
+    let path = Path::new("AddLongLong.kts");
+    let output = jvm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
+}

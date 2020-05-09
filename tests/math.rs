@@ -3,32 +3,8 @@ use kotlin::error::*;
 use kotlin::parse::Type;
 
 #[test]
-fn add_int_int() {
-    let src = "1 + 2;";
-    let mut out: Vec<u8> = Vec::new();
-
-    assert!(sexp(src, &mut out).is_ok());
-    assert_eq!(
-        std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(+ 1 2)"
-    );
-}
-
-#[test]
 fn add_int_long() {
     let src = "1 + 2L;";
-    let mut out: Vec<u8> = Vec::new();
-
-    assert!(sexp(src, &mut out).is_ok());
-    assert_eq!(
-        std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(+ 1 2)"
-    );
-}
-
-#[test]
-fn add_long_long() {
-    let src = "1L + 2L;";
     let mut out: Vec<u8> = Vec::new();
 
     assert!(sexp(src, &mut out).is_ok());
