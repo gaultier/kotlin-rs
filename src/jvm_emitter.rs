@@ -35,8 +35,8 @@ pub(crate) struct JvmEmitter<'a> {
     pub(crate) println_str: u16,
     pub(crate) class_printstream: u16,
     pub(crate) stack_map_table_str: u16,
-    pub(crate) fn_id_to_constant_pool_index: BTreeMap<NodeId, u16>,
-    pub(crate) constant_pool_index_to_fn_id: BTreeMap<u16, NodeId>,
+    pub(crate) fn_id_to_constant_pool_index: BTreeMap<Id, u16>,
+    pub(crate) constant_pool_index_to_fn_id: BTreeMap<u16, Id>,
     class_name: String,
     class_main_args: u16,
 }
@@ -129,7 +129,7 @@ fn add_and_push_constant(
     pool: &mut Pool,
     constant: &Constant,
     code: &mut Code,
-    constant_pool_index_to_fn_id: &BTreeMap<u16, NodeId>,
+    constant_pool_index_to_fn_id: &BTreeMap<u16, Id>,
     types: &Types,
 ) -> Result<(), Error> {
     let i = pool.push(constant.clone())?;
@@ -328,7 +328,7 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 
-    pub(crate) fn main(&mut self, block: &AstNodeStmt) -> Result<(), Error> {
+    pub(crate) fn main(&mut self, block: &AstStmt) -> Result<(), Error> {
         self.methods = vec![Function {
             access_flags: 0,
             name: self.ctor_str,
@@ -415,8 +415,8 @@ impl<'a> JvmEmitter<'a> {
 
     fn while_stmt(
         &mut self,
-        cond: &AstNodeExpr,
-        body: &AstNodeStmt,
+        cond: &AstExpr,
+        body: &AstStmt,
         code: &mut Code,
     ) -> Result<(), Error> {
         let before_cond = code.code.len();
@@ -459,7 +459,7 @@ impl<'a> JvmEmitter<'a> {
         Ok(())
     }
 
-    fn var_def(&mut self, id: NodeId, value: &AstNodeExpr, code: &mut Code) -> Result<(), Error> {
+    fn var_def(&mut self, id: Id, value: &AstExpr, code: &mut Code) -> Result<(), Error> {
         let t = self.types.get(&id).unwrap();
 
         self.expr(value, code)?;
@@ -479,14 +479,14 @@ impl<'a> JvmEmitter<'a> {
 
     fn assign(
         &mut self,
-        target: &AstNodeExpr,
-        value: &AstNodeExpr,
+        target: &AstExpr,
+        value: &AstExpr,
         code: &mut Code,
     ) -> Result<(), Error> {
         self.expr(value, code)?;
 
         match target {
-            AstNodeExpr::VarRef(_, id) => {
+            AstExpr::VarRef(_, id) => {
                 let ref_id = self.resolution.get(&id).unwrap().node_ref_id;
                 let (i, _) = code.state.locals.find_by_id(ref_id).unwrap();
                 let t = self.types.get(&id).unwrap();
@@ -506,7 +506,7 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 
-    fn var_ref(&mut self, id: NodeId, code: &mut Code) -> Result<(), Error> {
+    fn var_ref(&mut self, id: Id, code: &mut Code) -> Result<(), Error> {
         let t = self.types.get(&id).unwrap();
 
         let ref_id = self.resolution.get(&id).unwrap().node_ref_id;
@@ -525,14 +525,14 @@ impl<'a> JvmEmitter<'a> {
 
     fn fn_def(
         &mut self,
-        fn_name: &AstNodeExpr,
-        args: &[AstNodeExpr],
-        id: NodeId,
+        fn_name: &AstExpr,
+        args: &[AstExpr],
+        id: Id,
         _flags: u16,
-        body: &AstNodeStmt,
+        body: &AstStmt,
     ) -> Result<(), Error> {
         let fn_name_s = match fn_name {
-            AstNodeExpr::VarRef(span, _) => self.session.src[span.start..span.end].to_string(),
+            AstExpr::VarRef(span, _) => self.session.src[span.start..span.end].to_string(),
             _ => unreachable!(),
         };
 
@@ -595,12 +595,12 @@ impl<'a> JvmEmitter<'a> {
 
     pub(crate) fn statement(
         &mut self,
-        statement: &AstNodeStmt,
+        statement: &AstStmt,
         code: &mut Code,
     ) -> Result<(), Error> {
         match statement {
-            AstNodeStmt::Expr(e) => self.expr(e, code),
-            AstNodeStmt::Assign {
+            AstStmt::Expr(e) => self.expr(e, code),
+            AstStmt::Assign {
                 op: TokenKind::Equal,
                 target,
                 value,
@@ -608,16 +608,16 @@ impl<'a> JvmEmitter<'a> {
             } => self.assign(target, value, code),
             // The MIR should have transformed other assignements e.g `+=` to simpler forms at this
             // point
-            AstNodeStmt::Assign { .. } => unreachable!(),
-            AstNodeStmt::VarDefinition { value, id, .. } => self.var_def(*id, value, code),
-            AstNodeStmt::Block { body, .. } => {
+            AstStmt::Assign { .. } => unreachable!(),
+            AstStmt::VarDefinition { value, id, .. } => self.var_def(*id, value, code),
+            AstStmt::Block { body, .. } => {
                 for stmt in body {
                     self.statement(stmt, code)?;
                 }
                 Ok(())
             }
-            AstNodeStmt::While { cond, body, .. } => self.while_stmt(cond, body, code),
-            AstNodeStmt::FnDefinition {
+            AstStmt::While { cond, body, .. } => self.while_stmt(cond, body, code),
+            AstStmt::FnDefinition {
                 fn_name,
                 args,
                 id,
@@ -625,16 +625,16 @@ impl<'a> JvmEmitter<'a> {
                 body,
                 ..
             } => self.fn_def(fn_name, args, *id, *flags, body),
-            AstNodeStmt::Class { .. } => todo!(),
+            AstStmt::Class { .. } => todo!(),
             _ => todo!(),
         }
     }
 
     fn if_expr(
         &mut self,
-        cond: &AstNodeExpr,
-        if_body: &AstNodeStmt,
-        else_body: &AstNodeStmt,
+        cond: &AstExpr,
+        if_body: &AstStmt,
+        else_body: &AstStmt,
         code: &mut Code,
     ) -> Result<(), Error> {
         self.expr(cond, code)?;
@@ -647,7 +647,7 @@ impl<'a> JvmEmitter<'a> {
         Ok(())
     }
 
-    fn println(&mut self, expr: &AstNodeExpr, code: &mut Code) -> Result<(), Error> {
+    fn println(&mut self, expr: &AstExpr, code: &mut Code) -> Result<(), Error> {
         let expr_t = self.types.get(&expr.id()).unwrap();
 
         let println_str_type = self.pool.push(Constant::Utf8(
@@ -695,8 +695,8 @@ impl<'a> JvmEmitter<'a> {
 
     fn fn_call(
         &mut self,
-        fn_name: &AstNodeExpr,
-        args: &[AstNodeExpr],
+        fn_name: &AstExpr,
+        args: &[AstExpr],
         code: &mut Code,
     ) -> Result<(), Error> {
         let fn_id = self.resolution.get(&fn_name.id()).unwrap().node_ref_id;
@@ -718,7 +718,7 @@ impl<'a> JvmEmitter<'a> {
 
     fn return_expr(
         &mut self,
-        expr: &Option<Box<AstNodeExpr>>,
+        expr: &Option<Box<AstExpr>>,
         code: &mut Code,
     ) -> Result<(), Error> {
         if let Some(expr) = expr {
@@ -731,21 +731,21 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 
-    pub(crate) fn expr(&mut self, expr: &AstNodeExpr, code: &mut Code) -> Result<(), Error> {
+    pub(crate) fn expr(&mut self, expr: &AstExpr, code: &mut Code) -> Result<(), Error> {
         match expr {
-            AstNodeExpr::Literal(l, _) => self.literal(l, code),
-            AstNodeExpr::Unary { .. } => self.unary(expr, code),
-            AstNodeExpr::Binary { .. } => self.binary(expr, code),
-            AstNodeExpr::Grouping(e, _) => self.expr(e, code),
-            AstNodeExpr::Println(e, _) => self.println(e, code),
-            AstNodeExpr::VarRef(_, id) => self.var_ref(*id, code),
-            AstNodeExpr::Jump {
+            AstExpr::Literal(l, _) => self.literal(l, code),
+            AstExpr::Unary { .. } => self.unary(expr, code),
+            AstExpr::Binary { .. } => self.binary(expr, code),
+            AstExpr::Grouping(e, _) => self.expr(e, code),
+            AstExpr::Println(e, _) => self.println(e, code),
+            AstExpr::VarRef(_, id) => self.var_ref(*id, code),
+            AstExpr::Jump {
                 kind: crate::parse::JumpKind::Return,
                 expr,
                 ..
             } => self.return_expr(expr, code),
-            AstNodeExpr::FnCall { fn_name, args, .. } => self.fn_call(fn_name, args, code),
-            AstNodeExpr::IfExpr {
+            AstExpr::FnCall { fn_name, args, .. } => self.fn_call(fn_name, args, code),
+            AstExpr::IfExpr {
                 cond,
                 if_body,
                 else_body,
@@ -755,9 +755,9 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 
-    fn binary(&mut self, expr: &AstNodeExpr, code: &mut Code) -> Result<(), Error> {
+    fn binary(&mut self, expr: &AstExpr, code: &mut Code) -> Result<(), Error> {
         match expr {
-            AstNodeExpr::Binary {
+            AstExpr::Binary {
                 left,
                 op,
                 right,
@@ -1088,9 +1088,9 @@ impl<'a> JvmEmitter<'a> {
         }
     }
 
-    fn unary(&mut self, expr: &AstNodeExpr, code: &mut Code) -> Result<(), Error> {
+    fn unary(&mut self, expr: &AstExpr, code: &mut Code) -> Result<(), Error> {
         match expr {
-            AstNodeExpr::Unary {
+            AstExpr::Unary {
                 token:
                     Token {
                         kind: TokenKind::Minus,
@@ -1102,7 +1102,7 @@ impl<'a> JvmEmitter<'a> {
                 self.expr(expr, code)?;
                 code.push1(OP_INEG, Type::Int)
             }
-            AstNodeExpr::Unary {
+            AstExpr::Unary {
                 token:
                     Token {
                         kind: TokenKind::Plus,

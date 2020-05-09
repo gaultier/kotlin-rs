@@ -106,7 +106,7 @@ impl IfBuilder {
 
     pub(crate) fn if_body(
         mut self,
-        if_body: &AstNodeStmt,
+        if_body: &AstStmt,
         jvm_emitter: &mut JvmEmitter,
         code: &mut Code,
     ) -> Result<Self, Error> {
@@ -153,7 +153,7 @@ impl IfBuilder {
 
     pub(crate) fn else_body(
         mut self,
-        else_body: &AstNodeStmt,
+        else_body: &AstStmt,
         jvm_emitter: &mut JvmEmitter,
         code: &mut Code,
     ) -> Result<Self, Error> {
@@ -380,7 +380,7 @@ impl Code {
         operand1: u8,
         operand2: u8,
         t: Type,
-        constant_pool_index_to_fn_id: &BTreeMap<u16, NodeId>,
+        constant_pool_index_to_fn_id: &BTreeMap<u16, Id>,
         types: &Types,
     ) -> Result<(), Error> {
         self.push(op, Some(operand1), Some(operand2), t)?;
@@ -415,7 +415,7 @@ impl Code {
             OP_INVOKE_STATIC | OP_INVOKE_SPECIAL => {
                 let fn_i: u16 = u16::from_be_bytes([operand1, operand2]);
                 // The constant pool is one-indexed
-                let fn_id: NodeId = *constant_pool_index_to_fn_id.get(&fn_i).unwrap();
+                let fn_id: Id = *constant_pool_index_to_fn_id.get(&fn_i).unwrap();
                 let fn_t = types.get(&fn_id).unwrap();
                 let return_t = fn_t.fn_return_t();
                 debug!("verify: op={} return_t={:?}", op, return_t);

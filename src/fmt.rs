@@ -21,8 +21,8 @@ impl<'a> Formatter<'a> {
 
     fn assign<W: std::io::Write>(
         &mut self,
-        target: &AstNodeExpr,
-        value: &AstNodeExpr,
+        target: &AstExpr,
+        value: &AstExpr,
         span: &Span,
         w: &mut W,
     ) -> Result<(), Error> {
@@ -34,21 +34,21 @@ impl<'a> Formatter<'a> {
         Ok(())
     }
 
-    fn statement<W: std::io::Write>(&mut self, stmt: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
+    fn statement<W: std::io::Write>(&mut self, stmt: &AstStmt, w: &mut W) -> Result<(), Error> {
         match stmt {
-            AstNodeStmt::Expr(expr) => {
+            AstStmt::Expr(expr) => {
                 self.expr(expr, w)?;
             }
-            AstNodeStmt::While { .. } => {
+            AstStmt::While { .. } => {
                 self.while_stmt(stmt, w)?;
             }
-            AstNodeStmt::DoWhile { .. } => {
+            AstStmt::DoWhile { .. } => {
                 self.do_while_stmt(stmt, w)?;
             }
-            AstNodeStmt::VarDefinition { .. } => {
+            AstStmt::VarDefinition { .. } => {
                 self.var_def(stmt, w)?;
             }
-            AstNodeStmt::Assign {
+            AstStmt::Assign {
                 target,
                 value,
                 span,
@@ -56,7 +56,7 @@ impl<'a> Formatter<'a> {
             } => {
                 self.assign(target, value, span, w)?;
             }
-            AstNodeStmt::FnDefinition {
+            AstStmt::FnDefinition {
                 fn_name,
                 args,
                 body,
@@ -65,10 +65,10 @@ impl<'a> Formatter<'a> {
             } => {
                 self.fn_def(fn_name, args, body, *id, w)?;
             }
-            AstNodeStmt::Block { body, .. } => {
+            AstStmt::Block { body, .. } => {
                 self.block(body, w)?;
             }
-            AstNodeStmt::Class {
+            AstStmt::Class {
                 name_span, body, ..
             } => {
                 let name = self.session.src[name_span.start..name_span.end].into();
@@ -81,7 +81,7 @@ impl<'a> Formatter<'a> {
     fn class<W: std::io::Write>(
         &mut self,
         name: &str,
-        body: &AstNodeStmt,
+        body: &AstStmt,
         w: &mut W,
     ) -> Result<(), Error> {
         self.ident(w);
@@ -95,16 +95,16 @@ impl<'a> Formatter<'a> {
 
     pub fn statements<W: std::io::Write>(
         &mut self,
-        block: &AstNodeStmt,
+        block: &AstStmt,
         w: &mut W,
     ) -> Result<(), Error> {
         self.statement(&block, w)?;
         Ok(())
     }
 
-    fn var_def<W: std::io::Write>(&mut self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
+    fn var_def<W: std::io::Write>(&mut self, ast: &AstStmt, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNodeStmt::VarDefinition {
+            AstStmt::VarDefinition {
                 identifier,
                 value,
                 flags,
@@ -126,11 +126,11 @@ impl<'a> Formatter<'a> {
 
     fn do_while_stmt<W: std::io::Write>(
         &mut self,
-        ast: &AstNodeStmt,
+        ast: &AstStmt,
         w: &mut W,
     ) -> Result<(), Error> {
         match ast {
-            AstNodeStmt::DoWhile { cond, body, .. } => {
+            AstStmt::DoWhile { cond, body, .. } => {
                 writeln!(w, "do {{").unwrap();
                 self.statement(body, w)?;
                 writeln!(w).unwrap();
@@ -144,9 +144,9 @@ impl<'a> Formatter<'a> {
         }
     }
 
-    fn while_stmt<W: std::io::Write>(&mut self, ast: &AstNodeStmt, w: &mut W) -> Result<(), Error> {
+    fn while_stmt<W: std::io::Write>(&mut self, ast: &AstStmt, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNodeStmt::While { cond, body, .. } => {
+            AstStmt::While { cond, body, .. } => {
                 write!(w, "while (").unwrap();
                 self.expr(cond, w)?;
                 writeln!(w, ") {{").unwrap();
@@ -164,9 +164,9 @@ impl<'a> Formatter<'a> {
         Ok(())
     }
 
-    fn unary<W: std::io::Write>(&mut self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
+    fn unary<W: std::io::Write>(&mut self, ast: &AstExpr, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNodeExpr::Unary {
+            AstExpr::Unary {
                 token, expr, kind, ..
             } => {
                 if *kind == UnaryKind::Postfix {
@@ -182,9 +182,9 @@ impl<'a> Formatter<'a> {
         }
     }
 
-    fn binary<W: std::io::Write>(&mut self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
+    fn binary<W: std::io::Write>(&mut self, ast: &AstExpr, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNodeExpr::Binary {
+            AstExpr::Binary {
                 left, op, right, ..
             } => {
                 self.expr(left, w)?;
@@ -196,7 +196,7 @@ impl<'a> Formatter<'a> {
         }
     }
 
-    fn block<W: std::io::Write>(&mut self, block: &[AstNodeStmt], w: &mut W) -> Result<(), Error> {
+    fn block<W: std::io::Write>(&mut self, block: &[AstStmt], w: &mut W) -> Result<(), Error> {
         self.ident += 1;
 
         if let Some((stmt, stmts)) = block.split_last() {
@@ -221,8 +221,8 @@ impl<'a> Formatter<'a> {
 
     fn fn_call<W: std::io::Write>(
         &mut self,
-        fn_name: &AstNodeExpr,
-        args: &[AstNodeExpr],
+        fn_name: &AstExpr,
+        args: &[AstExpr],
         w: &mut W,
     ) -> Result<(), Error> {
         self.expr(fn_name, w)?;
@@ -242,10 +242,10 @@ impl<'a> Formatter<'a> {
 
     fn fn_def<W: std::io::Write>(
         &mut self,
-        fn_name: &AstNodeExpr,
-        args: &[AstNodeExpr],
-        body: &AstNodeStmt,
-        id: NodeId,
+        fn_name: &AstExpr,
+        args: &[AstExpr],
+        body: &AstStmt,
+        id: Id,
         w: &mut W,
     ) -> Result<(), Error> {
         write!(w, "fun ").unwrap();
@@ -269,9 +269,9 @@ impl<'a> Formatter<'a> {
         Ok(())
     }
 
-    fn when_expr<W: std::io::Write>(&mut self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
+    fn when_expr<W: std::io::Write>(&mut self, ast: &AstExpr, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNodeExpr::WhenExpr {
+            AstExpr::WhenExpr {
                 entries,
                 else_entry,
                 subject,
@@ -313,14 +313,14 @@ impl<'a> Formatter<'a> {
 
     fn fn_body<W: std::io::Write>(
         &mut self,
-        ast: &AstNodeStmt,
+        ast: &AstStmt,
         return_t: &Type,
         w: &mut W,
     ) -> Result<(), Error> {
         // One empty line after the function declaration
         match ast {
-            AstNodeStmt::Block { body, .. } => match body.as_slice() {
-                [AstNodeStmt::Expr(AstNodeExpr::Jump {
+            AstStmt::Block { body, .. } => match body.as_slice() {
+                [AstStmt::Expr(AstExpr::Jump {
                     kind: JumpKind::Return,
                     expr: Some(expr),
                     ..
@@ -335,7 +335,7 @@ impl<'a> Formatter<'a> {
                     writeln!(w, "\n}}").unwrap();
                 }
             },
-            AstNodeStmt::Expr(e) if self.types.get(&e.id()).unwrap() == return_t => {
+            AstStmt::Expr(e) if self.types.get(&e.id()).unwrap() == return_t => {
                 write!(w, "= ").unwrap();
                 self.expr(e, w)?;
                 writeln!(w).unwrap();
@@ -347,12 +347,12 @@ impl<'a> Formatter<'a> {
 
     fn control_structure_body<W: std::io::Write>(
         &mut self,
-        ast: &AstNodeStmt,
+        ast: &AstStmt,
         w: &mut W,
     ) -> Result<(), Error> {
         match ast {
-            AstNodeStmt::Block { body, .. } => match body.as_slice() {
-                [AstNodeStmt::Expr(e)] => self.expr(e, w),
+            AstStmt::Block { body, .. } => match body.as_slice() {
+                [AstStmt::Expr(e)] => self.expr(e, w),
                 _ => {
                     writeln!(w, "{{").unwrap();
                     self.block(body, w)?;
@@ -360,14 +360,14 @@ impl<'a> Formatter<'a> {
                     Ok(())
                 }
             },
-            AstNodeStmt::Expr(e) => self.expr(e, w),
+            AstStmt::Expr(e) => self.expr(e, w),
             _ => unreachable!(),
         }
     }
 
-    fn if_expr<W: std::io::Write>(&mut self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
+    fn if_expr<W: std::io::Write>(&mut self, ast: &AstExpr, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNodeExpr::IfExpr {
+            AstExpr::IfExpr {
                 cond,
                 if_body,
                 else_body,
@@ -396,7 +396,7 @@ impl<'a> Formatter<'a> {
     fn jump_expr<W: std::io::Write>(
         &mut self,
         kind: JumpKind,
-        expr: &Option<Box<AstNodeExpr>>,
+        expr: &Option<Box<AstExpr>>,
         w: &mut W,
     ) -> Result<(), Error> {
         match kind {
@@ -415,7 +415,7 @@ impl<'a> Formatter<'a> {
 
     fn range_test<W: std::io::Write>(
         &mut self,
-        range: &AstNodeExpr,
+        range: &AstExpr,
         cond: bool,
         w: &mut W,
     ) -> Result<(), Error> {
@@ -430,7 +430,7 @@ impl<'a> Formatter<'a> {
 
     fn type_test<W: std::io::Write>(
         &mut self,
-        identifier: &AstNodeExpr,
+        identifier: &AstExpr,
         cond: bool,
         w: &mut W,
     ) -> Result<(), Error> {
@@ -443,27 +443,27 @@ impl<'a> Formatter<'a> {
         Ok(())
     }
 
-    fn expr<W: std::io::Write>(&mut self, ast: &AstNodeExpr, w: &mut W) -> Result<(), Error> {
+    fn expr<W: std::io::Write>(&mut self, ast: &AstExpr, w: &mut W) -> Result<(), Error> {
         match ast {
-            AstNodeExpr::WhenExpr { .. } => self.when_expr(ast, w),
-            AstNodeExpr::Literal(token, ..) => self.literal(token, w),
-            AstNodeExpr::Unary { .. } => self.unary(ast, w),
-            AstNodeExpr::Binary { .. } => self.binary(ast, w),
-            AstNodeExpr::Grouping(expr, _) => {
+            AstExpr::WhenExpr { .. } => self.when_expr(ast, w),
+            AstExpr::Literal(token, ..) => self.literal(token, w),
+            AstExpr::Unary { .. } => self.unary(ast, w),
+            AstExpr::Binary { .. } => self.binary(ast, w),
+            AstExpr::Grouping(expr, _) => {
                 write!(w, "(").unwrap();
                 self.expr(expr, w)?;
                 write!(w, ")").unwrap();
                 Ok(())
             }
-            AstNodeExpr::IfExpr { .. } => self.if_expr(ast, w),
-            AstNodeExpr::VarRef(span, _) => self.var_ref(span, w),
-            AstNodeExpr::FnCall { fn_name, args, .. } => self.fn_call(fn_name, args, w),
-            AstNodeExpr::Jump { kind, expr, .. } => self.jump_expr(*kind, expr, w),
-            AstNodeExpr::RangeTest { range, cond, .. } => self.range_test(range, *cond, w),
-            AstNodeExpr::TypeTest {
+            AstExpr::IfExpr { .. } => self.if_expr(ast, w),
+            AstExpr::VarRef(span, _) => self.var_ref(span, w),
+            AstExpr::FnCall { fn_name, args, .. } => self.fn_call(fn_name, args, w),
+            AstExpr::Jump { kind, expr, .. } => self.jump_expr(*kind, expr, w),
+            AstExpr::RangeTest { range, cond, .. } => self.range_test(range, *cond, w),
+            AstExpr::TypeTest {
                 identifier, cond, ..
             } => self.type_test(identifier, *cond, w),
-            AstNodeExpr::Println(expr, _) => {
+            AstExpr::Println(expr, _) => {
                 write!(w, "println(").unwrap();
                 self.expr(expr, w)?;
                 write!(w, ")").unwrap();

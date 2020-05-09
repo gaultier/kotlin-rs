@@ -9,7 +9,7 @@ pub(crate) struct TypeChecker<'a> {
     session: &'a Session<'a>,
     resolution: &'a Resolution,
     types: &'a mut Types,
-    current_fn_id: Option<NodeId>,
+    current_fn_id: Option<Id>,
 }
 
 impl<'a> TypeChecker<'a> {
@@ -43,8 +43,8 @@ impl<'a> TypeChecker<'a> {
 
     fn do_while_stmt(
         &mut self,
-        cond: &AstNodeExpr,
-        block: &AstNodeStmt,
+        cond: &AstExpr,
+        block: &AstStmt,
         span: &Span,
     ) -> Result<Type, Error> {
         // The types in the body are inferred before the types in the condition since the condition
@@ -57,8 +57,8 @@ impl<'a> TypeChecker<'a> {
 
     fn while_stmt(
         &mut self,
-        cond: &AstNodeExpr,
-        block: &AstNodeStmt,
+        cond: &AstExpr,
+        block: &AstStmt,
         span: &Span,
     ) -> Result<Type, Error> {
         let cond_t = self.expr(cond)?;
@@ -69,9 +69,9 @@ impl<'a> TypeChecker<'a> {
 
     fn var_def(
         &mut self,
-        value: &AstNodeExpr,
+        value: &AstExpr,
         identifier: &Token,
-        id: NodeId,
+        id: Id,
     ) -> Result<Type, Error> {
         let value_t = self.expr(value)?;
         if let Some(t) = self.types.get(&id) {
@@ -88,8 +88,8 @@ impl<'a> TypeChecker<'a> {
 
     fn assign(
         &mut self,
-        target: &AstNodeExpr,
-        value: &AstNodeExpr,
+        target: &AstExpr,
+        value: &AstExpr,
         span: &Span,
     ) -> Result<Type, Error> {
         let target_t = self.expr(target)?;
@@ -98,24 +98,24 @@ impl<'a> TypeChecker<'a> {
         Ok(Type::Unit)
     }
 
-    fn statement(&mut self, statement: &AstNodeStmt) -> Result<Type, Error> {
+    fn statement(&mut self, statement: &AstStmt) -> Result<Type, Error> {
         match statement {
-            AstNodeStmt::Expr(expr) => self.expr(expr),
-            AstNodeStmt::DoWhile { cond, span, body } => self.do_while_stmt(cond, body, span),
-            AstNodeStmt::While { cond, span, body } => self.while_stmt(cond, body, span),
-            AstNodeStmt::VarDefinition {
+            AstStmt::Expr(expr) => self.expr(expr),
+            AstStmt::DoWhile { cond, span, body } => self.do_while_stmt(cond, body, span),
+            AstStmt::While { cond, span, body } => self.while_stmt(cond, body, span),
+            AstStmt::VarDefinition {
                 value,
                 id,
                 identifier,
                 ..
             } => self.var_def(value, identifier, *id),
-            AstNodeStmt::Assign {
+            AstStmt::Assign {
                 target,
                 value,
                 span,
                 ..
             } => self.assign(target, value, span),
-            AstNodeStmt::FnDefinition {
+            AstStmt::FnDefinition {
                 fn_name,
                 args,
                 body,
@@ -123,8 +123,8 @@ impl<'a> TypeChecker<'a> {
                 id,
                 return_t_span,
             } => self.fn_def(fn_name, args, body, *flags, return_t_span, *id),
-            AstNodeStmt::Block { body, .. } => self.block(body),
-            AstNodeStmt::Class {
+            AstStmt::Block { body, .. } => self.block(body),
+            AstStmt::Class {
                 name_span,
                 body,
                 id,
@@ -141,22 +141,22 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    pub fn check_types(&mut self, statements: &AstNodeStmt) -> Result<Types, Error> {
+    pub fn check_types(&mut self, statements: &AstStmt) -> Result<Types, Error> {
         self.statements(statements)?;
         Ok(self.types.clone())
     }
 
-    fn statements(&mut self, statements: &AstNodeStmt) -> Result<Type, Error> {
+    fn statements(&mut self, statements: &AstStmt) -> Result<Type, Error> {
         self.statement(statements)
     }
 
-    fn unary(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
+    fn unary(&mut self, ast: &AstExpr) -> Result<Type, Error> {
         if let Some(t) = self.types.get(&ast.id()) {
             return Ok(t.clone());
         }
 
         match ast {
-            AstNodeExpr::Unary {
+            AstExpr::Unary {
                 token:
                     Token {
                         kind: TokenKind::Minus,
@@ -166,7 +166,7 @@ impl<'a> TypeChecker<'a> {
                 id,
                 ..
             }
-            | AstNodeExpr::Unary {
+            | AstExpr::Unary {
                 token:
                     Token {
                         kind: TokenKind::Plus,
@@ -180,7 +180,7 @@ impl<'a> TypeChecker<'a> {
                 self.types.insert(*id, t.clone());
                 Ok(t)
             }
-            AstNodeExpr::Unary {
+            AstExpr::Unary {
                 token:
                     Token {
                         kind: TokenKind::PlusPlus,
@@ -190,7 +190,7 @@ impl<'a> TypeChecker<'a> {
                 id,
                 ..
             }
-            | AstNodeExpr::Unary {
+            | AstExpr::Unary {
                 token:
                     Token {
                         kind: TokenKind::MinusMinus,
@@ -219,7 +219,7 @@ impl<'a> TypeChecker<'a> {
                 }
             }
 
-            AstNodeExpr::Unary {
+            AstExpr::Unary {
                 token:
                     tok
                     @
@@ -240,18 +240,18 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn literal(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
+    fn literal(&mut self, ast: &AstExpr) -> Result<Type, Error> {
         // Already filled in parser
         Ok(self.types.get(&ast.id()).unwrap().clone())
     }
 
-    fn binary(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
+    fn binary(&mut self, ast: &AstExpr) -> Result<Type, Error> {
         if let Some(t) = self.types.get(&ast.id()) {
             return Ok(t.clone());
         }
 
         match ast {
-            AstNodeExpr::Binary {
+            AstExpr::Binary {
                 left,
                 op:
                     op
@@ -263,7 +263,7 @@ impl<'a> TypeChecker<'a> {
                 right,
                 id,
             }
-            | AstNodeExpr::Binary {
+            | AstExpr::Binary {
                 left,
                 op:
                     op
@@ -275,7 +275,7 @@ impl<'a> TypeChecker<'a> {
                 right,
                 id,
             }
-            | AstNodeExpr::Binary {
+            | AstExpr::Binary {
                 left,
                 op:
                     op
@@ -287,7 +287,7 @@ impl<'a> TypeChecker<'a> {
                 right,
                 id,
             }
-            | AstNodeExpr::Binary {
+            | AstExpr::Binary {
                 left,
                 op:
                     op
@@ -307,7 +307,7 @@ impl<'a> TypeChecker<'a> {
                 self.types.insert(*id, Type::Boolean);
                 Ok(Type::Boolean)
             }
-            AstNodeExpr::Binary {
+            AstExpr::Binary {
                 left,
                 op:
                     Token {
@@ -343,7 +343,7 @@ impl<'a> TypeChecker<'a> {
                 Ok(t)
             }
 
-            AstNodeExpr::Binary {
+            AstExpr::Binary {
                 left,
                 op:
                     op
@@ -355,7 +355,7 @@ impl<'a> TypeChecker<'a> {
                 right,
                 id,
             }
-            | AstNodeExpr::Binary {
+            | AstExpr::Binary {
                 left,
                 op:
                     op
@@ -367,7 +367,7 @@ impl<'a> TypeChecker<'a> {
                 right,
                 id,
             }
-            | AstNodeExpr::Binary {
+            | AstExpr::Binary {
                 left,
                 op:
                     op
@@ -379,7 +379,7 @@ impl<'a> TypeChecker<'a> {
                 right,
                 id,
             }
-            | AstNodeExpr::Binary {
+            | AstExpr::Binary {
                 left,
                 op:
                     op
@@ -400,7 +400,7 @@ impl<'a> TypeChecker<'a> {
                 self.types.insert(*id, t.clone());
                 Ok(t)
             }
-            AstNodeExpr::Binary {
+            AstExpr::Binary {
                 left,
                 op:
                     Token {
@@ -413,7 +413,7 @@ impl<'a> TypeChecker<'a> {
                 self.expr(left)?;
                 Ok(self.types.get(id).cloned().unwrap())
             }
-            AstNodeExpr::Binary {
+            AstExpr::Binary {
                 left,
                 op:
                     Token {
@@ -445,7 +445,7 @@ impl<'a> TypeChecker<'a> {
                 self.types.insert(*id, t.clone());
                 Ok(t)
             }
-            AstNodeExpr::Binary {
+            AstExpr::Binary {
                 left,
                 op,
                 right,
@@ -461,12 +461,12 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn block(&mut self, block: &[AstNodeStmt]) -> Result<Type, Error> {
+    fn block(&mut self, block: &[AstStmt]) -> Result<Type, Error> {
         for stmt in block {
             self.statement(stmt)?;
         }
         Ok(match block.last() {
-            Some(AstNodeStmt::Expr(stmt_expr)) => self
+            Some(AstStmt::Expr(stmt_expr)) => self
                 .types
                 .get(&stmt_expr.id())
                 .unwrap_or(&Type::Unit)
@@ -475,13 +475,13 @@ impl<'a> TypeChecker<'a> {
         })
     }
 
-    fn when_expr(&mut self, ast: &AstNodeExpr, id: NodeId) -> Result<Type, Error> {
+    fn when_expr(&mut self, ast: &AstExpr, id: Id) -> Result<Type, Error> {
         if let Some(t) = self.types.get(&ast.id()) {
             return Ok(t.clone());
         }
 
         let else_entry = match ast {
-            AstNodeExpr::WhenExpr {
+            AstExpr::WhenExpr {
                 subject: Some(subject),
                 entries,
                 else_entry,
@@ -491,7 +491,7 @@ impl<'a> TypeChecker<'a> {
                 for entry in entries.iter() {
                     let cond_t = self.expr(&entry.cond)?;
                     match entry.cond {
-                        AstNodeExpr::RangeTest { .. } => {
+                        AstExpr::RangeTest { .. } => {
                             self.is_type(&cond_t, &Type::Boolean, &entry.span)?
                         }
                         _ => self.is_type(&cond_t, &subject_t, &entry.span)?,
@@ -502,7 +502,7 @@ impl<'a> TypeChecker<'a> {
                 }
                 else_entry
             }
-            AstNodeExpr::WhenExpr {
+            AstExpr::WhenExpr {
                 subject: None,
                 entries,
                 else_entry,
@@ -530,13 +530,13 @@ impl<'a> TypeChecker<'a> {
         Ok(t)
     }
 
-    fn if_expr(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
+    fn if_expr(&mut self, ast: &AstExpr) -> Result<Type, Error> {
         if let Some(t) = self.types.get(&ast.id()) {
             return Ok(t.clone());
         }
 
         match ast {
-            AstNodeExpr::IfExpr {
+            AstExpr::IfExpr {
                 cond,
                 cond_span,
                 if_body,
@@ -576,7 +576,7 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn var_ref(&mut self, id: NodeId) -> Result<Type, Error> {
+    fn var_ref(&mut self, id: Id) -> Result<Type, Error> {
         if let Some(t) = self.types.get(&id) {
             return Ok(t.clone());
         }
@@ -593,10 +593,10 @@ impl<'a> TypeChecker<'a> {
 
     fn fn_call(
         &mut self,
-        fn_name: &AstNodeExpr,
+        fn_name: &AstExpr,
         span: &Span,
-        args: &[AstNodeExpr],
-        id: NodeId,
+        args: &[AstExpr],
+        id: Id,
     ) -> Result<Type, Error> {
         if let Some(t) = self.types.get(&id) {
             return Ok(t.clone());
@@ -638,12 +638,12 @@ impl<'a> TypeChecker<'a> {
 
     fn fn_def(
         &mut self,
-        fn_name: &AstNodeExpr,
-        args: &[AstNodeExpr],
-        body: &AstNodeStmt,
+        fn_name: &AstExpr,
+        args: &[AstExpr],
+        body: &AstStmt,
         flags: u16,
         return_t_span: &Span,
-        id: NodeId,
+        id: Id,
     ) -> Result<Type, Error> {
         let current_fn_id = self.current_fn_id;
         self.current_fn_id = Some(id);
@@ -654,7 +654,7 @@ impl<'a> TypeChecker<'a> {
         // type is inferred to be the one of the expression if not explicitely defined.
         // If the function was defined using the long form `fun add(a:Int, b:Int) { return a+b; }`, the type is the explicit type. If not given it is Unit.
         let found_return_t = match body {
-            AstNodeStmt::Expr(e) => {
+            AstStmt::Expr(e) => {
                 let found_return_t = self.expr(e)?;
                 let explicit_return_t = self.types.get(&id).map(|t| t.fn_return_t()).flatten();
                 if let Some(explicit_return_t) = explicit_return_t {
@@ -666,7 +666,7 @@ impl<'a> TypeChecker<'a> {
                 }
                 found_return_t
             }
-            AstNodeStmt::Block { .. } => {
+            AstStmt::Block { .. } => {
                 self.statement(body)?;
                 let explicit_return_t = self
                     .types
@@ -701,7 +701,7 @@ impl<'a> TypeChecker<'a> {
         Ok(fn_t)
     }
 
-    fn range_test(&mut self, range: &AstNodeExpr, span: &Span, id: NodeId) -> Result<Type, Error> {
+    fn range_test(&mut self, range: &AstExpr, span: &Span, id: Id) -> Result<Type, Error> {
         let t = self.expr(range)?;
         if t.is_range() {
             self.types.insert(id, Type::Boolean);
@@ -714,27 +714,27 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn expr(&mut self, ast: &AstNodeExpr) -> Result<Type, Error> {
+    fn expr(&mut self, ast: &AstExpr) -> Result<Type, Error> {
         match ast {
-            AstNodeExpr::Literal(..) => self.literal(ast),
-            AstNodeExpr::Unary { .. } => self.unary(ast),
-            AstNodeExpr::Binary { .. } => self.binary(ast),
-            AstNodeExpr::Grouping(expr, id) => {
+            AstExpr::Literal(..) => self.literal(ast),
+            AstExpr::Unary { .. } => self.unary(ast),
+            AstExpr::Binary { .. } => self.binary(ast),
+            AstExpr::Grouping(expr, id) => {
                 let t = self.expr(expr).unwrap();
                 self.types.insert(*id, t.clone());
                 Ok(t)
             }
-            AstNodeExpr::IfExpr { .. } => self.if_expr(ast),
-            AstNodeExpr::WhenExpr { id, .. } => self.when_expr(ast, *id),
-            AstNodeExpr::VarRef(_, id) => self.var_ref(*id),
-            AstNodeExpr::FnCall {
+            AstExpr::IfExpr { .. } => self.if_expr(ast),
+            AstExpr::WhenExpr { id, .. } => self.when_expr(ast, *id),
+            AstExpr::VarRef(_, id) => self.var_ref(*id),
+            AstExpr::FnCall {
                 fn_name,
                 args,
                 span,
                 id,
                 ..
             } => self.fn_call(fn_name, span, args, *id),
-            AstNodeExpr::Jump {
+            AstExpr::Jump {
                 id,
                 kind: JumpKind::Return,
                 expr,
@@ -765,12 +765,12 @@ impl<'a> TypeChecker<'a> {
 
                 Ok(Type::Nothing)
             }
-            AstNodeExpr::Jump { id, .. } => Ok(self.types.get(id).cloned().unwrap()),
-            AstNodeExpr::RangeTest {
+            AstExpr::Jump { id, .. } => Ok(self.types.get(id).cloned().unwrap()),
+            AstExpr::RangeTest {
                 range, span, id, ..
             } => self.range_test(range, span, *id),
-            AstNodeExpr::TypeTest { id, .. } => Ok(self.types.get(id).cloned().unwrap()),
-            AstNodeExpr::Println(expr, id) => {
+            AstExpr::TypeTest { id, .. } => Ok(self.types.get(id).cloned().unwrap()),
+            AstExpr::Println(expr, id) => {
                 self.expr(expr)?;
                 self.types.insert(*id, Type::Unit);
                 Ok(Type::Unit)

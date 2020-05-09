@@ -11,7 +11,7 @@ impl MirTransformer {
         MirTransformer { current_id }
     }
 
-    fn next_id(&mut self) -> NodeId {
+    fn next_id(&mut self) -> Id {
         self.current_id = self
             .current_id
             .checked_add(1)
@@ -19,11 +19,11 @@ impl MirTransformer {
         self.current_id
     }
 
-    fn fn_def(&mut self, fn_body: AstNodeStmt) -> AstNodeStmt {
+    fn fn_def(&mut self, fn_body: AstStmt) -> AstStmt {
         match fn_body {
             // Transform expression form into standard block form for simplicity later
-            AstNodeStmt::Expr(expr) => AstNodeStmt::Block {
-                body: vec![AstNodeStmt::Expr(AstNodeExpr::Jump {
+            AstStmt::Expr(expr) => AstStmt::Block {
+                body: vec![AstStmt::Expr(AstExpr::Jump {
                     kind: JumpKind::Return,
                     span: Span::new(0, 0),
                     expr: Some(Box::new(expr)),
@@ -32,14 +32,14 @@ impl MirTransformer {
                 id: self.next_id(),
             },
             // Add final return in fn body if none to avoid falling through
-            AstNodeStmt::Block { mut body, id } => {
+            AstStmt::Block { mut body, id } => {
                 match body.last() {
-                    Some(AstNodeStmt::Expr(AstNodeExpr::Jump {
+                    Some(AstStmt::Expr(AstExpr::Jump {
                         kind: JumpKind::Return,
                         ..
                     })) => (), // No-op
                     _ => {
-                        body.push(AstNodeStmt::Expr(AstNodeExpr::Jump {
+                        body.push(AstStmt::Expr(AstExpr::Jump {
                             span: Span::new(0, 0),
                             kind: JumpKind::Return,
                             expr: None,
@@ -47,29 +47,29 @@ impl MirTransformer {
                         }));
                     }
                 }
-                AstNodeStmt::Block { body, id }
+                AstStmt::Block { body, id }
             }
             _ => unreachable!(),
         }
     }
 
-    fn statement(&mut self, statement: AstNodeStmt) -> AstNodeStmt {
+    fn statement(&mut self, statement: AstStmt) -> AstStmt {
         match statement {
-            AstNodeStmt::Block { body, id } => {
+            AstStmt::Block { body, id } => {
                 let body = body
                     .into_iter()
                     .map(|stmt| self.statement(stmt))
                     .collect::<Vec<_>>();
-                AstNodeStmt::Block { body, id }
+                AstStmt::Block { body, id }
             }
-            AstNodeStmt::FnDefinition {
+            AstStmt::FnDefinition {
                 fn_name,
                 body,
                 id,
                 args,
                 flags,
                 return_t_span,
-            } => AstNodeStmt::FnDefinition {
+            } => AstStmt::FnDefinition {
                 fn_name,
                 body: Box::new(self.fn_def(*body)),
                 args,
@@ -81,7 +81,7 @@ impl MirTransformer {
         }
     }
 
-    pub(crate) fn statements(&mut self, block: AstNodeStmt) -> AstNodeStmt {
+    pub(crate) fn statements(&mut self, block: AstStmt) -> AstStmt {
         self.statement(block)
     }
 }

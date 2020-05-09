@@ -1,10 +1,10 @@
 #[cfg(feature = "jvm_stack_map_frames")]
 use crate::jvm_stack_map_frame::VerificationTypeInfo;
-use crate::parse::{NodeId, Type};
+use crate::parse::{Id, Type};
 #[cfg(feature = "jvm_stack_map_frames")]
 use std::slice::Iter;
 
-type Local = (NodeId, Type);
+type Local = (Id, Type);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Locals {
@@ -20,7 +20,7 @@ impl Locals {
         }
     }
 
-    pub(crate) fn find_by_id(&self, id: NodeId) -> Option<(u16, Local)> {
+    pub(crate) fn find_by_id(&self, id: Id) -> Option<(u16, Local)> {
         self.values.iter().enumerate().find_map(|(i, l)| {
             if l.0 == id {
                 Some((i as u16, l.clone()))

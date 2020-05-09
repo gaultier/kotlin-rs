@@ -51,8 +51,8 @@ impl fmt::Display for LexicalContext {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 struct FnDef<'a> {
     identifier: &'a str,
-    id: NodeId,
-    block_id: NodeId,
+    id: Id,
+    block_id: Id,
     flags: u16,
 }
 
@@ -61,8 +61,8 @@ pub(crate) struct Resolver<'a> {
     resolution: Resolution,
     scopes: Scopes<'a>,
     context: LexicalContext,
-    fn_definitions: BTreeMap<(NodeId, &'a str), FnDef<'a>>, // Key=(block_id, identifier)
-    class_definitions: BTreeMap<(NodeId, &'a str), FnDef<'a>>, // Key=(block_id, identifier)
+    fn_definitions: BTreeMap<(Id, &'a str), FnDef<'a>>, // Key=(block_id, identifier)
+    class_definitions: BTreeMap<(Id, &'a str), FnDef<'a>>, // Key=(block_id, identifier)
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -73,7 +73,7 @@ enum VarStatus {
 
 #[derive(Debug, Copy, Clone)]
 struct Var {
-    id: NodeId,
+    id: Id,
     status: VarStatus,
     flags: u16,
 }
@@ -82,11 +82,11 @@ struct Var {
 struct Scope<'a> {
     var_statuses: BTreeMap<&'a str, Var>,
     fn_statuses: BTreeMap<&'a str, Var>,
-    block_id: NodeId,
+    block_id: Id,
 }
 
 impl<'a> Scope<'a> {
-    fn new(block_id: NodeId) -> Scope<'a> {
+    fn new(block_id: Id) -> Scope<'a> {
         Scope {
             block_id,
             var_statuses: BTreeMap::new(),
@@ -100,12 +100,12 @@ type Scopes<'a> = Vec<Scope<'a>>;
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct VarUsageRef {
     pub(crate) scope_depth: usize,
-    pub(crate) node_ref_id: NodeId,
+    pub(crate) node_ref_id: Id,
     pub(crate) node_ref_flags: u16,
-    pub(crate) block_id_ref: NodeId,
+    pub(crate) block_id_ref: Id,
 }
 
-pub(crate) type Resolution = BTreeMap<NodeId, VarUsageRef>;
+pub(crate) type Resolution = BTreeMap<Id, VarUsageRef>;
 
 impl<'a> Resolver<'a> {
     pub(crate) fn new(session: &'a Session) -> Resolver<'a> {
@@ -131,7 +131,7 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn find_var(&self, identifier: &str) -> Option<(NodeId, Var, usize)> {
+    fn find_var(&self, identifier: &str) -> Option<(Id, Var, usize)> {
         let depth = self
             .scopes
             .iter()
@@ -142,7 +142,7 @@ impl<'a> Resolver<'a> {
         Some((scope.block_id, *var, depth))
     }
 
-    fn find_fn(&self, identifier: &str) -> Option<(NodeId, Var, usize)> {
+    fn find_fn(&self, identifier: &str) -> Option<(Id, Var, usize)> {
         let depth = self.scopes.iter().rev().position(|scope| {
             self.fn_definitions
                 .get(&(scope.block_id, identifier))
@@ -162,7 +162,7 @@ impl<'a> Resolver<'a> {
         Some((fn_def.block_id, var, depth))
     }
 
-    fn var_ref(&mut self, span: &Span, id: NodeId) -> Result<(), Error> {
+    fn var_ref(&mut self, span: &Span, id: Id) -> Result<(), Error> {
         let identifier = &self.session.src[span.start..span.end];
         let (block_id, var, depth) = self
             .find_var(identifier)
@@ -189,13 +189,13 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn expr0(&mut self, expr: &AstNodeExpr) -> Result<(), Error> {
+    fn expr0(&mut self, expr: &AstExpr) -> Result<(), Error> {
         match &expr {
-            AstNodeExpr::Literal(_, _) => (),
-            AstNodeExpr::Grouping(expr, _) | AstNodeExpr::Unary { expr, .. } => {
+            AstExpr::Literal(_, _) => (),
+            AstExpr::Grouping(expr, _) | AstExpr::Unary { expr, .. } => {
                 self.expr0(&*expr)?;
             }
-            AstNodeExpr::Binary {
+            AstExpr::Binary {
                 left,
                 op:
                     Token {
@@ -206,11 +206,11 @@ impl<'a> Resolver<'a> {
             } => {
                 self.expr0(&*left)?;
             }
-            AstNodeExpr::Binary { left, right, .. } => {
+            AstExpr::Binary { left, right, .. } => {
                 self.expr0(&*left)?;
                 self.expr0(&*right)?;
             }
-            AstNodeExpr::IfExpr {
+            AstExpr::IfExpr {
                 cond,
                 if_body,
                 else_body,
@@ -220,7 +220,7 @@ impl<'a> Resolver<'a> {
                 self.statements0(if_body)?;
                 self.statements0(else_body)?;
             }
-            AstNodeExpr::WhenExpr {
+            AstExpr::WhenExpr {
                 subject,
                 entries,
                 else_entry,
@@ -238,38 +238,38 @@ impl<'a> Resolver<'a> {
                     self.statement0(else_entry)?;
                 }
             }
-            AstNodeExpr::VarRef(_, _) => {}
-            AstNodeExpr::FnCall { .. } => {}
-            AstNodeExpr::Jump {
+            AstExpr::VarRef(_, _) => {}
+            AstExpr::FnCall { .. } => {}
+            AstExpr::Jump {
                 kind: JumpKind::Break,
                 ..
             }
-            | AstNodeExpr::Jump {
+            | AstExpr::Jump {
                 kind: JumpKind::Continue,
                 ..
             } => {}
-            AstNodeExpr::Jump {
+            AstExpr::Jump {
                 kind: JumpKind::Return,
                 ..
             } => {}
-            AstNodeExpr::Jump {
+            AstExpr::Jump {
                 kind: JumpKind::Throw,
                 ..
             } => unimplemented!("Throw expressions"),
-            AstNodeExpr::RangeTest { .. } => {}
-            AstNodeExpr::TypeTest { .. } => {}
-            AstNodeExpr::Println(_, _) => {}
+            AstExpr::RangeTest { .. } => {}
+            AstExpr::TypeTest { .. } => {}
+            AstExpr::Println(_, _) => {}
         };
         Ok(())
     }
 
-    fn expr(&mut self, expr: &AstNodeExpr) -> Result<(), Error> {
+    fn expr(&mut self, expr: &AstExpr) -> Result<(), Error> {
         match &expr {
-            AstNodeExpr::Literal(_, _) => (),
-            AstNodeExpr::Grouping(expr, _) | AstNodeExpr::Unary { expr, .. } => {
+            AstExpr::Literal(_, _) => (),
+            AstExpr::Grouping(expr, _) | AstExpr::Unary { expr, .. } => {
                 self.expr(&*expr)?;
             }
-            AstNodeExpr::Binary {
+            AstExpr::Binary {
                 left,
                 op:
                     Token {
@@ -278,7 +278,7 @@ impl<'a> Resolver<'a> {
                     },
                 ..
             }
-            | AstNodeExpr::Binary {
+            | AstExpr::Binary {
                 left,
                 op:
                     Token {
@@ -290,11 +290,11 @@ impl<'a> Resolver<'a> {
                 self.expr(&*left)?;
                 // No need to resolve the rifght part which is the type
             }
-            AstNodeExpr::Binary { left, right, .. } => {
+            AstExpr::Binary { left, right, .. } => {
                 self.expr(&*left)?;
                 self.expr(&*right)?;
             }
-            AstNodeExpr::IfExpr {
+            AstExpr::IfExpr {
                 cond,
                 if_body,
                 else_body,
@@ -304,7 +304,7 @@ impl<'a> Resolver<'a> {
                 self.statements(if_body)?;
                 self.statements(else_body)?;
             }
-            AstNodeExpr::WhenExpr {
+            AstExpr::WhenExpr {
                 subject,
                 entries,
                 else_entry,
@@ -322,18 +322,18 @@ impl<'a> Resolver<'a> {
                     self.statement(else_entry)?;
                 }
             }
-            AstNodeExpr::VarRef(span, id) => {
+            AstExpr::VarRef(span, id) => {
                 self.var_ref(span, *id)?;
             }
-            AstNodeExpr::FnCall { fn_name, args, .. } => {
+            AstExpr::FnCall { fn_name, args, .. } => {
                 self.fn_call(fn_name, args)?;
             }
-            AstNodeExpr::Jump {
+            AstExpr::Jump {
                 kind: k @ JumpKind::Break,
                 span,
                 ..
             }
-            | AstNodeExpr::Jump {
+            | AstExpr::Jump {
                 kind: k @ JumpKind::Continue,
                 span,
                 ..
@@ -349,7 +349,7 @@ impl<'a> Resolver<'a> {
                     ));
                 }
             }
-            AstNodeExpr::Jump {
+            AstExpr::Jump {
                 kind: k @ JumpKind::Return,
                 span,
                 expr,
@@ -370,24 +370,24 @@ impl<'a> Resolver<'a> {
                     self.expr(expr)?;
                 }
             }
-            AstNodeExpr::Jump {
+            AstExpr::Jump {
                 kind: JumpKind::Throw,
                 ..
             } => unimplemented!("Throw expressions"),
-            AstNodeExpr::RangeTest { range, .. } => {
+            AstExpr::RangeTest { range, .. } => {
                 self.expr(range)?;
             }
-            AstNodeExpr::TypeTest { .. } => {}
-            AstNodeExpr::Println(expr, _) => {
+            AstExpr::TypeTest { .. } => {}
+            AstExpr::Println(expr, _) => {
                 self.expr(expr)?;
             }
         };
         Ok(())
     }
 
-    fn var_ref_fn(&mut self, fn_name: &AstNodeExpr) -> Result<(), Error> {
+    fn var_ref_fn(&mut self, fn_name: &AstExpr) -> Result<(), Error> {
         match fn_name {
-            AstNodeExpr::VarRef(span, id) => {
+            AstExpr::VarRef(span, id) => {
                 let identifier = &self.session.src[span.start..span.end];
                 let (block_id, var, depth) = self.find_fn(identifier).ok_or_else(|| {
                     if self.find_var(identifier).is_some() {
@@ -421,7 +421,7 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    fn fn_call(&mut self, fn_name: &AstNodeExpr, args: &[AstNodeExpr]) -> Result<(), Error> {
+    fn fn_call(&mut self, fn_name: &AstExpr, args: &[AstExpr]) -> Result<(), Error> {
         self.var_ref_fn(fn_name)?;
 
         for arg in args {
@@ -431,7 +431,7 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn var_decl(&mut self, identifier: &'a str, flags: u16, id: NodeId) -> Result<(), Error> {
+    fn var_decl(&mut self, identifier: &'a str, flags: u16, id: Id) -> Result<(), Error> {
         let scope = self.scopes.last_mut().unwrap();
         scope.var_statuses.insert(
             identifier,
@@ -448,10 +448,10 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn fn_name_decl(&mut self, fn_name: &AstNodeExpr, flags: u16, id: NodeId) -> Result<(), Error> {
+    fn fn_name_decl(&mut self, fn_name: &AstExpr, flags: u16, id: Id) -> Result<(), Error> {
         let block_id = self.scopes.last().unwrap().block_id;
         let identifier = match fn_name {
-            AstNodeExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
+            AstExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
             _ => unimplemented!("Complex function names (e.g extension methods)"),
         };
 
@@ -471,7 +471,7 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn class_decl(&mut self, name: &'a str, flags: u16, id: NodeId) -> Result<(), Error> {
+    fn class_decl(&mut self, name: &'a str, flags: u16, id: Id) -> Result<(), Error> {
         let block_id = self.scopes.last().unwrap().block_id;
 
         self.fn_definitions.insert(
@@ -490,7 +490,7 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn var_def(&mut self, identifier: &'a str, flags: u16, id: NodeId) -> Result<(), Error> {
+    fn var_def(&mut self, identifier: &'a str, flags: u16, id: Id) -> Result<(), Error> {
         let scope = self.scopes.last_mut().unwrap();
         scope.var_statuses.insert(
             identifier,
@@ -507,7 +507,7 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn enter_scope(&mut self, block_id: NodeId) {
+    fn enter_scope(&mut self, block_id: Id) {
         debug!("enter scope: id={}", block_id);
         self.scopes.push(Scope::new(block_id));
     }
@@ -517,12 +517,12 @@ impl<'a> Resolver<'a> {
         self.scopes.pop();
     }
 
-    fn assign(&mut self, target: &AstNodeExpr, value: &AstNodeExpr) -> Result<(), Error> {
+    fn assign(&mut self, target: &AstExpr, value: &AstExpr) -> Result<(), Error> {
         self.expr(target)?;
         self.expr(value)?;
 
         let (identifier, span) = match target {
-            AstNodeExpr::VarRef(span, _) => (&self.session.src[span.start..span.end], span),
+            AstExpr::VarRef(span, _) => (&self.session.src[span.start..span.end], span),
             _ => unreachable!(),
         };
 
@@ -545,9 +545,9 @@ impl<'a> Resolver<'a> {
     fn class_def0(
         &mut self,
         name: &'a str,
-        body: &AstNodeStmt,
+        body: &AstStmt,
         flags: u16,
-        id: NodeId,
+        id: Id,
     ) -> Result<(), Error> {
         self.class_decl(name, flags, id)?;
         self.enter_scope(id);
@@ -563,10 +563,10 @@ impl<'a> Resolver<'a> {
 
     fn fn_def0(
         &mut self,
-        fn_name: &AstNodeExpr,
+        fn_name: &AstExpr,
         flags: u16,
-        body: &AstNodeStmt,
-        id: NodeId,
+        body: &AstStmt,
+        id: Id,
     ) -> Result<(), Error> {
         self.fn_name_decl(fn_name, flags, id)?;
         self.enter_scope(id);
@@ -582,15 +582,15 @@ impl<'a> Resolver<'a> {
 
     fn fn_def(
         &mut self,
-        args: &[AstNodeExpr],
-        body: &AstNodeStmt,
-        id: NodeId,
+        args: &[AstExpr],
+        body: &AstStmt,
+        id: Id,
     ) -> Result<(), Error> {
         self.enter_scope(id);
 
         for arg in args {
             match arg {
-                AstNodeExpr::VarRef(span, id) => {
+                AstExpr::VarRef(span, id) => {
                     let identifier = &self.session.src[span.start..span.end];
                     self.var_decl(identifier, 0, *id)?;
                     self.var_def(identifier, 0, *id)?;
@@ -608,34 +608,34 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn fn_block0(&mut self, body: &[AstNodeStmt]) -> Result<(), Error> {
+    fn fn_block0(&mut self, body: &[AstStmt]) -> Result<(), Error> {
         for stmt in body {
             self.statement0(stmt)?;
         }
         Ok(())
     }
 
-    fn fn_block(&mut self, body: &[AstNodeStmt]) -> Result<(), Error> {
+    fn fn_block(&mut self, body: &[AstStmt]) -> Result<(), Error> {
         for stmt in body {
             self.statement(stmt)?;
         }
         Ok(())
     }
 
-    fn statement0(&mut self, statement: &AstNodeStmt) -> Result<(), Error> {
+    fn statement0(&mut self, statement: &AstStmt) -> Result<(), Error> {
         match statement {
-            AstNodeStmt::Expr(expr) => {
+            AstStmt::Expr(expr) => {
                 self.expr0(expr)?;
             }
-            AstNodeStmt::DoWhile { body, .. } | AstNodeStmt::While { body, .. } => {
+            AstStmt::DoWhile { body, .. } | AstStmt::While { body, .. } => {
                 let ctx = self.context;
                 self.context.enter_loop();
                 self.statements0(body)?;
                 self.context = ctx;
             }
-            AstNodeStmt::VarDefinition { .. } => {}
-            AstNodeStmt::Assign { .. } => {}
-            AstNodeStmt::FnDefinition {
+            AstStmt::VarDefinition { .. } => {}
+            AstStmt::Assign { .. } => {}
+            AstStmt::FnDefinition {
                 fn_name,
                 flags,
                 body,
@@ -644,8 +644,8 @@ impl<'a> Resolver<'a> {
             } => {
                 self.fn_def0(fn_name, *flags, body, *id)?;
             }
-            AstNodeStmt::Block { body, .. } => self.fn_block0(body)?,
-            AstNodeStmt::Class {
+            AstStmt::Block { body, .. } => self.fn_block0(body)?,
+            AstStmt::Class {
                 name_span,
                 body,
                 flags,
@@ -658,17 +658,17 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn statement(&mut self, statement: &AstNodeStmt) -> Result<(), Error> {
+    fn statement(&mut self, statement: &AstStmt) -> Result<(), Error> {
         match statement {
-            AstNodeStmt::Expr(expr) => {
+            AstStmt::Expr(expr) => {
                 self.expr(expr)?;
             }
-            AstNodeStmt::DoWhile { cond, body, .. } => {
+            AstStmt::DoWhile { cond, body, .. } => {
                 let ctx = self.context;
                 self.context.enter_loop();
 
                 match &**body {
-                    AstNodeStmt::Block { id, body } => {
+                    AstStmt::Block { id, body } => {
                         self.enter_scope(*id);
                         for stmt in body {
                             self.statement(&stmt)?;
@@ -681,14 +681,14 @@ impl<'a> Resolver<'a> {
                 }
                 self.context = ctx;
             }
-            AstNodeStmt::While { cond, body, .. } => {
+            AstStmt::While { cond, body, .. } => {
                 let ctx = self.context;
                 self.expr(cond)?;
                 self.context.enter_loop();
                 self.statements(body)?;
                 self.context = ctx;
             }
-            AstNodeStmt::VarDefinition {
+            AstStmt::VarDefinition {
                 identifier,
                 value,
                 id,
@@ -699,30 +699,30 @@ impl<'a> Resolver<'a> {
                 self.var_decl(identifier, *flags as u16, *id)?;
                 self.var_def(identifier, *flags as u16, *id)?;
             }
-            AstNodeStmt::Assign { target, value, .. } => {
+            AstStmt::Assign { target, value, .. } => {
                 self.assign(target, value)?;
             }
-            AstNodeStmt::FnDefinition { args, body, id, .. } => {
+            AstStmt::FnDefinition { args, body, id, .. } => {
                 self.fn_def(args, body, *id)?;
             }
-            AstNodeStmt::Block { body, .. } => self.fn_block(body)?,
-            AstNodeStmt::Class { .. } => {
+            AstStmt::Block { body, .. } => self.fn_block(body)?,
+            AstStmt::Class { .. } => {
                 // TODO
             }
         };
         Ok(())
     }
 
-    fn statements0(&mut self, block: &AstNodeStmt) -> Result<(), Error> {
+    fn statements0(&mut self, block: &AstStmt) -> Result<(), Error> {
         match block {
-            AstNodeStmt::Block { id, body } => {
+            AstStmt::Block { id, body } => {
                 self.enter_scope(*id);
                 for stmt in body {
                     self.statement0(&stmt)?;
                 }
                 self.exit_scope();
             }
-            AstNodeStmt::Expr(expr) => {
+            AstStmt::Expr(expr) => {
                 self.expr0(expr)?;
             }
             _ => unreachable!(),
@@ -730,16 +730,16 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    fn statements(&mut self, block: &AstNodeStmt) -> Result<(), Error> {
+    fn statements(&mut self, block: &AstStmt) -> Result<(), Error> {
         match block {
-            AstNodeStmt::Block { id, body } => {
+            AstStmt::Block { id, body } => {
                 self.enter_scope(*id);
                 for stmt in body {
                     self.statement(&stmt)?;
                 }
                 self.exit_scope();
             }
-            AstNodeStmt::Expr(expr) => {
+            AstStmt::Expr(expr) => {
                 self.expr(expr)?;
             }
             _ => unreachable!(),
@@ -747,7 +747,7 @@ impl<'a> Resolver<'a> {
         Ok(())
     }
 
-    pub(crate) fn resolve(&mut self, block: &AstNodeStmt) -> Result<Resolution, Error> {
+    pub(crate) fn resolve(&mut self, block: &AstStmt) -> Result<Resolution, Error> {
         self.statements0(block)?;
         debug!("fn_definitions={:?}", &self.fn_definitions);
         self.statements(block)?;

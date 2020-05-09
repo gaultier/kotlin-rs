@@ -58,7 +58,7 @@ pub(crate) struct AsmEmitter<'a> {
     constants: Constants,
     registers: Registers,
     label_count: usize,
-    id_to_register: Vec<(NodeId, Register)>,
+    id_to_register: Vec<(Id, Register)>,
     labels: Vec<Label>,
     current_label_index: usize,
 }
@@ -176,7 +176,7 @@ extern _printf ; might be unused but that is ok
 
     pub(crate) fn main<W: std::io::Write>(
         &mut self,
-        statements: &AstNodeStmt,
+        statements: &AstStmt,
         w: &mut W,
     ) -> Result<(), Error> {
         self.fn_prolog();
@@ -197,26 +197,26 @@ extern _printf ; might be unused but that is ok
         Ok(())
     }
 
-    fn find_var_register(&mut self, id: NodeId) -> Option<Register> {
+    fn find_var_register(&mut self, id: Id) -> Option<Register> {
         self.id_to_register
             .iter()
             .find(|elem| elem.0 == id)
             .map(|elem| elem.1)
     }
 
-    fn assign_var_to_register(&mut self, id: NodeId, register: Register) {
+    fn assign_var_to_register(&mut self, id: Id, register: Register) {
         assert!(self.find_var_register(id).is_none());
 
         self.id_to_register.push((id, register));
     }
 
-    fn var_def(&mut self, id: NodeId, value: &AstNodeExpr, register: Register) {
+    fn var_def(&mut self, id: Id, value: &AstExpr, register: Register) {
         self.expr(value, register);
         self.newline();
         self.assign_var_to_register(id, register);
     }
 
-    fn while_stmt(&mut self, cond: &AstNodeExpr, body: &AstNodeStmt, register: Register) {
+    fn while_stmt(&mut self, cond: &AstExpr, body: &AstStmt, register: Register) {
         let loop_label = self.generate_new_label();
         let end_label = self.generate_new_label();
         self.newline();
@@ -244,11 +244,11 @@ extern _printf ; might be unused but that is ok
         self.newline();
     }
 
-    fn assign(&mut self, target: &AstNodeExpr, value: &AstNodeExpr, register: Register) {
+    fn assign(&mut self, target: &AstExpr, value: &AstExpr, register: Register) {
         self.expr(value, register);
 
         match target {
-            AstNodeExpr::VarRef(_, id) => {
+            AstExpr::VarRef(_, id) => {
                 let node_ref_id = self.resolution.get(&id).unwrap().node_ref_id;
                 let var_register = self.find_var_register(node_ref_id).unwrap();
                 self.assign_register(var_register);
@@ -260,13 +260,13 @@ extern _printf ; might be unused but that is ok
         }
     }
 
-    fn statement(&mut self, statement: &AstNodeStmt, register: Register) {
+    fn statement(&mut self, statement: &AstStmt, register: Register) {
         match statement {
-            AstNodeStmt::Expr(expr) => {
+            AstStmt::Expr(expr) => {
                 self.expr(expr, register);
             }
-            AstNodeStmt::Assign { target, value, .. } => self.assign(target, value, register),
-            AstNodeStmt::Block { body, .. } => {
+            AstStmt::Assign { target, value, .. } => self.assign(target, value, register),
+            AstStmt::Block { body, .. } => {
                 if let Some((stmt, rest)) = body.split_first() {
                     self.statement(stmt, register);
 
@@ -276,9 +276,9 @@ extern _printf ; might be unused but that is ok
                     }
                 }
             }
-            AstNodeStmt::While { cond, body, .. } => self.while_stmt(cond, body, register),
-            AstNodeStmt::VarDefinition { id, value, .. } => self.var_def(*id, value, register),
-            AstNodeStmt::FnDefinition {
+            AstStmt::While { cond, body, .. } => self.while_stmt(cond, body, register),
+            AstStmt::VarDefinition { id, value, .. } => self.var_def(*id, value, register),
+            AstStmt::FnDefinition {
                 fn_name,
                 args,
                 id,
@@ -286,7 +286,7 @@ extern _printf ; might be unused but that is ok
                 body,
                 ..
             } => self.fn_def(fn_name, args, body, *flags, *id),
-            AstNodeStmt::Class { .. } => todo!(),
+            AstStmt::Class { .. } => todo!(),
             _ => todo!(),
         }
     }
@@ -298,15 +298,15 @@ extern _printf ; might be unused but that is ok
 
     fn fn_def(
         &mut self,
-        fn_name: &AstNodeExpr,
-        args: &[AstNodeExpr],
-        body: &AstNodeStmt,
+        fn_name: &AstExpr,
+        args: &[AstExpr],
+        body: &AstStmt,
         _flags: u16,
-        id: NodeId,
+        id: Id,
     ) {
         let label_containing_fn_def = self.current_label_index;
         let fn_name_s = match fn_name {
-            AstNodeExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
+            AstExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
             _ => unreachable!(),
         };
         debug!(
@@ -363,9 +363,9 @@ extern _printf ; might be unused but that is ok
 
     fn if_expr(
         &mut self,
-        cond: &AstNodeExpr,
-        if_body: &AstNodeStmt,
-        else_body: &AstNodeStmt,
+        cond: &AstExpr,
+        if_body: &AstStmt,
+        else_body: &AstStmt,
         register: Register,
     ) {
         let else_body_label = self.generate_new_label();
@@ -397,7 +397,7 @@ extern _printf ; might be unused but that is ok
     }
 
     // PERF: make it a no-op if `var_reg == register` to avoid e.g `mov r15, 15`
-    fn var_ref(&mut self, id: NodeId, register: Register) {
+    fn var_ref(&mut self, id: Id, register: Register) {
         self.assign_register(register);
         let node_ref_id = self.resolution.get(&id).unwrap().node_ref_id;
         let var_reg = self.find_var_register(node_ref_id).unwrap();
@@ -407,13 +407,13 @@ extern _printf ; might be unused but that is ok
 
     fn fn_call(
         &mut self,
-        fn_name: &AstNodeExpr,
-        args: &[AstNodeExpr],
-        _id: NodeId,
+        fn_name: &AstExpr,
+        args: &[AstExpr],
+        _id: Id,
         _register: Register,
     ) {
         let fn_name_s = match fn_name {
-            AstNodeExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
+            AstExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
             _ => unreachable!(),
         };
         debug!(
@@ -458,18 +458,18 @@ extern _printf ; might be unused but that is ok
             });
     }
 
-    fn expr(&mut self, expr: &AstNodeExpr, register: Register) {
+    fn expr(&mut self, expr: &AstExpr, register: Register) {
         match expr {
-            AstNodeExpr::Literal(tok, _) => self.literal(tok, register),
-            AstNodeExpr::VarRef(_, id) => self.var_ref(*id, register),
-            AstNodeExpr::Println(expr, _) => self.println(expr, register),
-            AstNodeExpr::Unary { .. } => self.unary(expr, register),
-            AstNodeExpr::Binary { .. } => self.binary(expr, register),
-            AstNodeExpr::Grouping(expr, _) => self.expr(expr, register),
-            AstNodeExpr::FnCall {
+            AstExpr::Literal(tok, _) => self.literal(tok, register),
+            AstExpr::VarRef(_, id) => self.var_ref(*id, register),
+            AstExpr::Println(expr, _) => self.println(expr, register),
+            AstExpr::Unary { .. } => self.unary(expr, register),
+            AstExpr::Binary { .. } => self.binary(expr, register),
+            AstExpr::Grouping(expr, _) => self.expr(expr, register),
+            AstExpr::FnCall {
                 fn_name, args, id, ..
             } => self.fn_call(fn_name, args, *id, register),
-            AstNodeExpr::IfExpr {
+            AstExpr::IfExpr {
                 cond,
                 if_body,
                 else_body,
@@ -480,7 +480,7 @@ extern _printf ; might be unused but that is ok
     }
 
     // `rax`: dividend, register or next free register: dividend, `rdx`: remainder
-    fn div(&mut self, right: &AstNodeExpr, register: Register) {
+    fn div(&mut self, right: &AstExpr, register: Register) {
         // The dividend must be in `rax`, so we copy `register` in rax
         if register != Register::Rax {
             if !self.registers.is_free(Register::Rax) {
@@ -519,9 +519,9 @@ extern _printf ; might be unused but that is ok
         self.newline();
     }
 
-    fn binary(&mut self, expr: &AstNodeExpr, register: Register) {
+    fn binary(&mut self, expr: &AstExpr, register: Register) {
         match expr {
-            AstNodeExpr::Binary {
+            AstExpr::Binary {
                 left,
                 op,
                 right,
@@ -650,9 +650,9 @@ extern _printf ; might be unused but that is ok
         }
     }
 
-    fn unary(&mut self, expr: &AstNodeExpr, register: Register) {
+    fn unary(&mut self, expr: &AstExpr, register: Register) {
         match expr {
-            AstNodeExpr::Unary {
+            AstExpr::Unary {
                 token:
                     Token {
                         kind: TokenKind::Minus,
@@ -666,7 +666,7 @@ extern _printf ; might be unused but that is ok
 
                 self.add_code(&format!("neg {}\n", register));
             }
-            AstNodeExpr::Unary {
+            AstExpr::Unary {
                 token:
                     Token {
                         kind: TokenKind::Plus,
@@ -730,7 +730,7 @@ extern _printf ; might be unused but that is ok
         }
     }
 
-    fn println(&mut self, expr: &AstNodeExpr, register: Register) {
+    fn println(&mut self, expr: &AstExpr, register: Register) {
         self.expr(expr, register);
 
         let arg1_register = Registers::register_fn_arg(1).unwrap();
