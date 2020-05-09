@@ -432,3 +432,12 @@ fn print_double() {
     let output = jvm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "10.0");
 }
+
+#[test]
+fn add_int_int() {
+    let src = "println(1 + 2)";
+
+    let path = Path::new("AddIntInt.kts");
+    let output = jvm(src, &path).unwrap().unwrap().stdout;
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
+}
