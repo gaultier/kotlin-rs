@@ -71,6 +71,7 @@ fn logic_op(kind: &TokenKind) -> &'static str {
     match kind {
         TokenKind::EqualEqual => "sete",
         TokenKind::Lesser => "setl",
+        TokenKind::Greater => "setg",
         TokenKind::BangEqual => "setne",
         _ => todo!(),
     }
@@ -296,14 +297,7 @@ extern _printf ; might be unused but that is ok
         self.current_label_index += 1;
     }
 
-    fn fn_def(
-        &mut self,
-        fn_name: &AstExpr,
-        args: &[AstExpr],
-        body: &AstStmt,
-        _flags: u16,
-        id: Id,
-    ) {
+    fn fn_def(&mut self, fn_name: &AstExpr, args: &[AstExpr], body: &AstStmt, _flags: u16, id: Id) {
         let label_containing_fn_def = self.current_label_index;
         let fn_name_s = match fn_name {
             AstExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
@@ -405,13 +399,7 @@ extern _printf ; might be unused but that is ok
         self.newline();
     }
 
-    fn fn_call(
-        &mut self,
-        fn_name: &AstExpr,
-        args: &[AstExpr],
-        _id: Id,
-        _register: Register,
-    ) {
+    fn fn_call(&mut self, fn_name: &AstExpr, args: &[AstExpr], _id: Id, _register: Register) {
         let fn_name_s = match fn_name {
             AstExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
             _ => unreachable!(),
