@@ -37,6 +37,9 @@ pub enum Type {
         class: String,
         jvm_constant_pool_index: Option<u16>,
     },
+    UserType {
+        name: String,
+    }, // TODO: probably more fields like source file
 }
 
 impl fmt::Display for Type {
@@ -77,6 +80,7 @@ impl fmt::Display for Type {
                 return_t.clone().unwrap_or(Type::Any).fmt(f)
             }
             Type::Object { class, .. } => write!(f, "class {}", class),
+            Type::UserType { name } => write!(f, "{}", name),
         }
     }
 }
