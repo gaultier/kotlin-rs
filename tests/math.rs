@@ -88,18 +88,6 @@ fn add_double_int() {
 }
 
 #[test]
-fn complex_math() {
-    let src = "-1.5 / 2 + 5 * 3;";
-    let mut out: Vec<u8> = Vec::new();
-
-    assert!(sexp(src, &mut out).is_ok());
-    assert_eq!(
-        std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(+ (/ (- 1.5) 2) (* 5 3))"
-    );
-}
-
-#[test]
 fn add_string_string() {
     let src = r##""abc" + "def";"##;
     let mut out: Vec<u8> = Vec::new();

@@ -7,4 +7,4 @@ fun a () = if (a>2) {
     a() * a()
 }
 
-println(a())
+println(a()) // Expect: 64

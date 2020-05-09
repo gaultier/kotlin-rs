@@ -1,16 +1,16 @@
 
-fun cases(obj: Any) {                                
-    when (obj) {                                     // 1   
-        1 -> println("One")                          // 2
-        "Hello" -> println("Greeting")               // 3
-        is Long -> println("Long")                   // 4
-        !is String -> println("Not a string")        // 5
-        else -> println("Unknown")                   // 6
-    }   
+fun cases(obj: Any) {
+    when (obj) {
+        1 -> println("One")
+        "Hello" -> println("Greeting")
+        is Long -> println("Long")
+        !is String -> println("Not a string")
+        else -> println("Unknown")
+    }
 }
 fun main() {
-    cases("Hello")
-    cases(1)
-    cases(0L)
-    cases("hello")
+    cases("Hello") // Expect: Greeting
+    cases(1) // Expect: One
+    cases(0L) // Expect: Not a string
+    cases("hello") // Expect: Unknown
 }
