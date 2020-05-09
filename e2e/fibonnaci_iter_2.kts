@@ -9,4 +9,4 @@ while (++i < 35) {
     a = tmp
 }
 
-println(b) // 9227465
+println(b) // Expect: 9227465
