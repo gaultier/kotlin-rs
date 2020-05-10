@@ -418,37 +418,11 @@ fn print_float() {
 }
 
 #[test]
-fn print_long() {
-    let src = "println(10L)";
-    let path = Path::new("PrintLong.kts");
-    let output = jvm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "10");
-}
-
-#[test]
 fn print_double() {
     let src = "println(10.0)";
     let path = Path::new("PrintDouble.kts");
     let output = jvm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "10.0");
-}
-
-#[test]
-fn add_int_int() {
-    let src = "println(1 + 2)";
-
-    let path = Path::new("AddIntInt.kts");
-    let output = jvm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
-}
-
-#[test]
-fn add_long_long() {
-    let src = "println(1L + 2L)";
-
-    let path = Path::new("AddLongLong.kts");
-    let output = jvm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
 }
 
 #[test]
@@ -458,13 +432,4 @@ fn add_float_float() {
     let path = Path::new("AddFloatFloat.kts");
     let output = jvm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "3.0");
-}
-
-#[test]
-fn complex_int_math_expr() {
-    let src = "println(-9 / 2 + 5 * 3)";
-
-    let path = Path::new("ComplexIntMathExpr.kts");
-    let output = jvm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "11");
 }
