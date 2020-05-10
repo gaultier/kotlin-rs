@@ -399,7 +399,7 @@ extern _printf ; might be unused but that is ok
         self.newline();
     }
 
-    fn fn_call(&mut self, fn_name: &AstExpr, args: &[AstExpr], _id: Id, _register: Register) {
+    fn fn_call(&mut self, fn_name: &AstExpr, args: &[AstExpr]) {
         let fn_name_s = match fn_name {
             AstExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
             _ => unreachable!(),
@@ -454,9 +454,7 @@ extern _printf ; might be unused but that is ok
             AstExpr::Unary { .. } => self.unary(expr, register),
             AstExpr::Binary { .. } => self.binary(expr, register),
             AstExpr::Grouping(expr, _) => self.expr(expr, register),
-            AstExpr::FnCall {
-                fn_name, args, id, ..
-            } => self.fn_call(fn_name, args, *id, register),
+            AstExpr::FnCall { fn_name, args, .. } => self.fn_call(fn_name, args),
             AstExpr::IfExpr {
                 cond,
                 if_body,
