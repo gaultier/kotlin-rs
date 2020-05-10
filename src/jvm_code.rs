@@ -312,11 +312,11 @@ impl Code {
                 self.state.stack.push(t.clone());
             }
             OP_DSTORE_0 | OP_LSTORE_0 => {
-                self.state.stack.pop2();
+                self.state.stack.pop();
                 self.state.locals.insert(0, (0, t));
             }
             OP_DSTORE_1 | OP_LSTORE_1 => {
-                self.state.stack.pop2();
+                self.state.stack.pop();
                 self.state.locals.insert(1, (0, t));
             }
             OP_DLOAD_0 | OP_LLOAD_0 => {
