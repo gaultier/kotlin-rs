@@ -265,7 +265,10 @@ impl Code {
                 self.state.stack.push(Type::Int);
             }
             OP_RETURN | OP_IRETURN => {}
-            OP_INEG => {}
+            OP_INEG | OP_FNEG => {}
+            OP_LNEG | OP_DNEG => {
+                self.state.stack.pop();
+            }
             OP_LCONST_0 | OP_LCONST_1 => {
                 self.state.stack.push(Type::Long); // FIXME: top
                 self.state.stack.push(Type::Long);

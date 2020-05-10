@@ -125,6 +125,16 @@ fn binary_op(kind: &TokenKind, t: &Type) -> u8 {
     }
 }
 
+fn unary_op(kind: &TokenKind, t: &Type) -> u8 {
+    match (kind, t) {
+        (TokenKind::Minus, Type::Int) => OP_INEG,
+        (TokenKind::Minus, Type::Long) => OP_LNEG,
+        (TokenKind::Minus, Type::Float) => OP_FNEG,
+        (TokenKind::Minus, Type::Double) => OP_DNEG,
+        _ => todo!(),
+    }
+}
+
 fn add_and_push_constant(
     pool: &mut Pool,
     constant: &Constant,
@@ -413,12 +423,7 @@ impl<'a> JvmEmitter<'a> {
         Ok(())
     }
 
-    fn while_stmt(
-        &mut self,
-        cond: &AstExpr,
-        body: &AstStmt,
-        code: &mut Code,
-    ) -> Result<(), Error> {
+    fn while_stmt(&mut self, cond: &AstExpr, body: &AstStmt, code: &mut Code) -> Result<(), Error> {
         let before_cond = code.code.len();
         self.expr(cond, code)?;
 
@@ -477,12 +482,7 @@ impl<'a> JvmEmitter<'a> {
         code.push2(op, i as u8, t.clone())
     }
 
-    fn assign(
-        &mut self,
-        target: &AstExpr,
-        value: &AstExpr,
-        code: &mut Code,
-    ) -> Result<(), Error> {
+    fn assign(&mut self, target: &AstExpr, value: &AstExpr, code: &mut Code) -> Result<(), Error> {
         self.expr(value, code)?;
 
         match target {
@@ -593,11 +593,7 @@ impl<'a> JvmEmitter<'a> {
         Ok(())
     }
 
-    pub(crate) fn statement(
-        &mut self,
-        statement: &AstStmt,
-        code: &mut Code,
-    ) -> Result<(), Error> {
+    pub(crate) fn statement(&mut self, statement: &AstStmt, code: &mut Code) -> Result<(), Error> {
         match statement {
             AstStmt::Expr(e) => self.expr(e, code),
             AstStmt::Assign {
@@ -716,11 +712,7 @@ impl<'a> JvmEmitter<'a> {
         )
     }
 
-    fn return_expr(
-        &mut self,
-        expr: &Option<Box<AstExpr>>,
-        code: &mut Code,
-    ) -> Result<(), Error> {
+    fn return_expr(&mut self, expr: &Option<Box<AstExpr>>, code: &mut Code) -> Result<(), Error> {
         if let Some(expr) = expr {
             self.expr(expr, code)?;
             let t = self.types.get(&expr.id()).unwrap();
@@ -1089,6 +1081,8 @@ impl<'a> JvmEmitter<'a> {
     }
 
     fn unary(&mut self, expr: &AstExpr, code: &mut Code) -> Result<(), Error> {
+        let t = self.types.get(&expr.id()).unwrap();
+
         match expr {
             AstExpr::Unary {
                 token:
@@ -1100,7 +1094,7 @@ impl<'a> JvmEmitter<'a> {
                 ..
             } => {
                 self.expr(expr, code)?;
-                code.push1(OP_INEG, Type::Int)
+                code.push1(unary_op(&TokenKind::Minus, t), t.clone())
             }
             AstExpr::Unary {
                 token:
