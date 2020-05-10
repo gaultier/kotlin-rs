@@ -2,14 +2,6 @@ use kotlin::compile::asm;
 use std::path::Path;
 
 #[test]
-fn add_long() {
-    let src = "println(10L + -5L)";
-    let path = Path::new("AddLongAsm.kts");
-    let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "5");
-}
-
-#[test]
 fn sub_long() {
     let src = "println(10L - -5L)";
     let path = Path::new("SubLongAsm.kts");
