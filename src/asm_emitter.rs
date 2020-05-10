@@ -682,6 +682,14 @@ extern _printf ; might be unused but that is ok
 
     // Consume the origin register
     fn transfer_register(&mut self, source: Register, destination: Register) {
+        if source == destination {
+            return;
+        }
+        self.comment(&format!(
+            "Transfer register from {} to {}",
+            source, destination
+        ));
+
         self.assign_register(destination);
         self.add_code(source.as_str());
         self.newline();
