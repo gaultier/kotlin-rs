@@ -2,14 +2,6 @@ use kotlin::compile::asm;
 use std::path::Path;
 
 #[test]
-fn rem_long() {
-    let src = "println(11L % 4L)";
-    let path = Path::new("RemLongAsm.kts");
-    let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
-}
-
-#[test]
 fn int_eq_true() {
     let src = "println((2 + 3) == 5)";
     let path = Path::new("IntEqTrueAsm.kts");

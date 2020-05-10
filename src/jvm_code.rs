@@ -260,6 +260,9 @@ impl Code {
             | OP_FMUL | OP_FSUB | OP_FDIV | OP_FREM => {
                 self.state.stack.pop();
             }
+            OP_LREM | OP_DREM => {
+                self.state.stack.pop();
+            }
             OP_FCMPL => {
                 self.state.stack.pop2();
                 self.state.stack.push(Type::Int);
