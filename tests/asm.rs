@@ -2,22 +2,6 @@ use kotlin::compile::asm;
 use std::path::Path;
 
 #[test]
-fn print_hello_world() {
-    let src = "println(\"hello, world!\")";
-    let path = Path::new("HelloWorldAsm.kts");
-    let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "hello, world!");
-}
-
-#[test]
-fn print_int() {
-    let src = "println(10)";
-    let path = Path::new("PrintIntAsm.kts");
-    let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "10");
-}
-
-#[test]
 fn print_neg_int() {
     let src = "println(-10)";
     let path = Path::new("PrintNegIntAsm.kts");
@@ -63,14 +47,6 @@ fn rem_int() {
     let path = Path::new("RemIntAsm.kts");
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
-}
-
-#[test]
-fn print_long() {
-    let src = "println(10L)";
-    let path = Path::new("PrintLongAsm.kts");
-    let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "10");
 }
 
 #[test]
@@ -306,39 +282,4 @@ fn fn_two_args_ret() {
     let path = Path::new("FnTwoArgsRetAsm.kts");
     let output = asm(src, &path).unwrap().unwrap().stdout;
     assert_eq!(String::from_utf8_lossy(&output).trim(), "199");
-}
-
-#[test]
-fn fn_rec() {
-    let src = "fun sum(n: Int, acc: Int): Int = if (n == 0) acc else sum(n - 1, n + acc); println(sum(20, 0))";
-    let path = Path::new("FnRecAsm.kts");
-    let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "210");
-}
-
-#[test]
-fn add_int_int() {
-    let src = "println(1 + 2)";
-
-    let path = Path::new("AddIntIntAsm.kts");
-    let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
-}
-
-#[test]
-fn add_long_long() {
-    let src = "println(1L + 2L)";
-
-    let path = Path::new("AddLongLongAsm.kts");
-    let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
-}
-
-#[test]
-fn complex_int_math_expr() {
-    let src = "println(-9 / 2 + 5 * 3)";
-
-    let path = Path::new("ComplexIntMathExprAsm.kts");
-    let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "11");
 }
