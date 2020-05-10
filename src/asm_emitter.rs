@@ -399,7 +399,7 @@ extern _printf ; might be unused but that is ok
         self.newline();
     }
 
-    fn fn_call(&mut self, fn_name: &AstExpr, args: &[AstExpr]) {
+    fn fn_call(&mut self, fn_name: &AstExpr, args: &[AstExpr], register: Register) {
         let fn_name_s = match fn_name {
             AstExpr::VarRef(span, _) => &self.session.src[span.start..span.end],
             _ => unreachable!(),
@@ -420,13 +420,13 @@ extern _printf ; might be unused but that is ok
             .map(|(i, _)| Registers::register_fn_arg(1 + i as u16).unwrap())
             .collect::<Vec<_>>();
 
-        // Preserve argument registers before the call if they are already in use
+        self.comment("Preserve argument registers before the call if they are already in use");
         let copy_args_registers = standard_args_registers
             .iter()
             .map(|r| self.spill_to_register(*r))
             .collect::<Vec<_>>();
 
-        // Set argument registers before the call
+        self.comment("Set argument registers before the call");
         for (i, arg_register) in standard_args_registers.iter().enumerate() {
             self.registers.reserve(*arg_register);
 
@@ -437,13 +437,16 @@ extern _printf ; might be unused but that is ok
 
         self.call_function(fn_name_s, args.len());
 
-        // Restore argument registers like they were before the call
+        self.comment("Restore argument registers like they were before the call");
         standard_args_registers
             .iter()
             .zip(copy_args_registers)
             .for_each(|(standard_args_register, copy_args_register)| {
                 self.transfer_register(copy_args_register, *standard_args_register)
             });
+
+        self.comment("Assign return value to current register");
+        self.transfer_register(REGISTER_RETURN_VALUE, register);
     }
 
     fn expr(&mut self, expr: &AstExpr, register: Register) {
@@ -454,7 +457,7 @@ extern _printf ; might be unused but that is ok
             AstExpr::Unary { .. } => self.unary(expr, register),
             AstExpr::Binary { .. } => self.binary(expr, register),
             AstExpr::Grouping(expr, _) => self.expr(expr, register),
-            AstExpr::FnCall { fn_name, args, .. } => self.fn_call(fn_name, args),
+            AstExpr::FnCall { fn_name, args, .. } => self.fn_call(fn_name, args, register),
             AstExpr::IfExpr {
                 cond,
                 if_body,
