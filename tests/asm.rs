@@ -2,14 +2,6 @@ use kotlin::compile::asm;
 use std::path::Path;
 
 #[test]
-fn div_long() {
-    let src = "println(11L / -4L)";
-    let path = Path::new("DivLongAsm.kts");
-    let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "-2");
-}
-
-#[test]
 fn rem_long() {
     let src = "println(11L % 4L)";
     let path = Path::new("RemLongAsm.kts");
