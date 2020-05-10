@@ -2,22 +2,6 @@ use kotlin::compile::asm;
 use std::path::Path;
 
 #[test]
-fn div_int() {
-    let src = "println(11 / -4)";
-    let path = Path::new("DivIntAsm.kts");
-    let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "-2");
-}
-
-#[test]
-fn rem_int() {
-    let src = "println(11 % 4)";
-    let path = Path::new("RemIntAsm.kts");
-    let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "3");
-}
-
-#[test]
 fn print_neg_long() {
     let src = "println(-10L)";
     let path = Path::new("PrintNegLongAsm.kts");
