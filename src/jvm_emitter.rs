@@ -1345,26 +1345,4 @@ mod tests {
         }
         emitter_assert("while (true) { 5 }", assert).unwrap();
     }
-
-    #[test]
-    fn hello_world_dup() {
-        fn assert(emitter: JvmEmitter) {
-            assert_eq!(emitter.methods.len(), 2);
-
-            let count = emitter
-                .pool
-                .iter()
-                .fold(0, |count, constant| match constant {
-                    Constant::Utf8(s) if s == "hello, world!" => count + 1,
-                    _ => count,
-                });
-            assert_eq!(count, 1);
-        }
-
-        emitter_assert(
-            "println(\"hello, world!\"); println(\"hello, world!\")",
-            assert,
-        )
-        .unwrap();
-    }
 }
