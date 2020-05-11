@@ -354,10 +354,12 @@ impl Code {
                 self.state.stack.pop();
             }
             OP_LSTORE => {
-                todo!();
+                self.state.locals.push((0, Type::Long));
+                self.state.locals.push((0, Type::Long));
             }
             OP_DSTORE => {
-                todo!();
+                self.state.locals.push((0, Type::Double));
+                self.state.locals.push((0, Type::Double));
             }
             OP_ILOAD => {
                 self.state.stack.push(Type::Int);
