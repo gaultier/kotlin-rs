@@ -386,14 +386,6 @@ fn int_ge_false() {
 }
 
 #[test]
-fn print_char() {
-    let src = "println('ᾯ')";
-    let path = Path::new("PrintChar.kts");
-    let output = jvm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "ᾯ");
-}
-
-#[test]
 fn print_float() {
     let src = "println(10f)";
     let path = Path::new("PrintFloat.kts");

@@ -741,7 +741,7 @@ extern _printf ; might be unused but that is ok
         let t = self.types.get(&expr.id()).unwrap();
         let fmt_string_label = match t {
             Type::Boolean | Type::Int => self.synthetic_literal_string(PRINTF_FMT_INT),
-            Type::TString => self.synthetic_literal_string(PRINTF_FMT_STRING),
+            Type::Char | Type::TString => self.synthetic_literal_string(PRINTF_FMT_STRING),
             Type::Long => self.synthetic_literal_string(PRINTF_FMT_LONG),
             _ => todo!(),
         };
@@ -783,12 +783,7 @@ extern _printf ; might be unused but that is ok
                 self.add_code("0");
                 self.newline();
             }
-            TokenKind::Char(c) => {
-                self.assign_register(register);
-                self.add_code(&format!("'{}'", c));
-                self.newline();
-            }
-            TokenKind::TString => {
+            TokenKind::Char(_) | TokenKind::TString => {
                 let s = String::from(&self.session.src[token.span.start..token.span.end]);
                 let label = self.constants.find_or_create_string(&s);
 
