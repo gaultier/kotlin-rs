@@ -79,6 +79,7 @@ pub fn jvm(src: &str, file_name: &Path) -> Result<Option<Output>, Error> {
         Ok(Some(
             command
                 // TODO: should be a fully qualified class name once we support packages
+                .arg("-noverify") // FIXME
                 .arg(class_name)
                 .output()?,
         ))

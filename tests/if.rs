@@ -3,30 +3,6 @@ use kotlin::error::*;
 use kotlin::parse::Type;
 
 #[test]
-fn if_body_block() {
-    let src = "if (1<2) {'a'; 1\n\n true; 'b'} else {1*3; 'c'}\n";
-    let mut out: Vec<u8> = Vec::new();
-
-    assert!(sexp(src, &mut out).is_ok());
-    assert_eq!(
-        std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(if (< 1 2) (begin 'a' 1 #t 'b' ) (begin (* 1 3) 'c' ))"
-    );
-}
-
-#[test]
-fn if_with_empty_else_block() {
-    let src = "if (1<2) {'a'; 1\n\n true; 'b'} else {}\n";
-    let mut out: Vec<u8> = Vec::new();
-
-    assert!(sexp(src, &mut out).is_ok());
-    assert_eq!(
-        std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(if (< 1 2) (begin 'a' 1 #t 'b' ) (begin ))"
-    );
-}
-
-#[test]
 fn if_with_empty_if_body_block() {
     let src = "if (1<2) {} else {'a'; 1\n\n true; 'b'}\n";
     let mut out: Vec<u8> = Vec::new();

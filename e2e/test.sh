@@ -10,7 +10,7 @@ MODE="$2"
 
 if ! ${DIFF_TOOL} \
     <(awk -F '// Expect: ' '/Expect/{print $2}' "$FILE") \
-    <(${BIN} -f "$FILE" "$MODE"); then
+    <(${BIN} -f "$FILE" "$MODE" 2> /dev/null); then
         printf "ERR\t$MODE\t$FILE\n"
         exit 1
 else
