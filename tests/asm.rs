@@ -109,22 +109,6 @@ fn while_loop() {
 }
 
 #[test]
-fn int_lesser_true() {
-    let src = "println( 1 < 2)";
-    let path = Path::new("IntLesserTrueAsm.kts");
-    let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "1");
-}
-
-#[test]
-fn int_lesser_false() {
-    let src = "println( 2 < 2)";
-    let path = Path::new("IntLesserFalseAsm.kts");
-    let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "0");
-}
-
-#[test]
 fn fn_zero_args() {
     let src = "fun foo() {println(\"foo\")}; foo()";
     let path = Path::new("FnZeroArgsAsm.kts");

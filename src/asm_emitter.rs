@@ -62,10 +62,11 @@ pub(crate) struct AsmEmitter<'a> {
     labels: Vec<Label>,
     current_label_index: usize,
 }
-
-const PRINTF_FMT_STRING: &str = "\"%s\", 0xa"; // 0xa = \n
-const PRINTF_FMT_INT: &str = "\"%d\", 0xa"; // 0xa = \n
-const PRINTF_FMT_LONG: &str = "\"%ld\", 0xa"; // 0xa = \n
+// 0xa = \n
+const PRINTF_FMT_STRING: &str = "\"%s\", 0xa";
+const PRINTF_FMT_INT: &str = "\"%d\", 0xa";
+const PRINTF_FMT_LONG: &str = "\"%ld\", 0xa";
+const STR_FALSE_TRUE: &str = r##""false", 0, "true", 0 "##;
 
 fn logic_op(kind: &TokenKind) -> &'static str {
     match kind {
@@ -740,8 +741,10 @@ extern _printf ; might be unused but that is ok
 
         let t = self.types.get(&expr.id()).unwrap();
         let fmt_string_label = match t {
-            Type::Boolean | Type::Int => self.synthetic_literal_string(PRINTF_FMT_INT),
-            Type::Char | Type::TString => self.synthetic_literal_string(PRINTF_FMT_STRING),
+            Type::Int => self.synthetic_literal_string(PRINTF_FMT_INT),
+            Type::Boolean | Type::Char | Type::TString => {
+                self.synthetic_literal_string(PRINTF_FMT_STRING)
+            }
             Type::Long => self.synthetic_literal_string(PRINTF_FMT_LONG),
             _ => todo!(),
         };
@@ -751,6 +754,25 @@ extern _printf ; might be unused but that is ok
             self.assign_register(arg2_register);
             self.add_code(register.as_str());
             self.newline();
+        }
+
+        if t == &Type::Boolean {
+            // Compute index for `true/false` string
+            let true_false_label = self.synthetic_literal_string(STR_FALSE_TRUE);
+            self.deref_string_from_label(arg2_register, &true_false_label);
+            self.newline();
+
+            let index_register = self.registers.allocate().unwrap();
+            self.assign_register(index_register); // `register` = 0|1
+            self.add_code(register.as_str());
+            self.newline();
+            // `true` and `false` are 6 bytes apart
+            self.add_code(&format!("imul {}, 6", index_register));
+            self.newline();
+
+            self.add_code(&format!("add {}, {}\n", arg2_register, index_register));
+            self.newline();
+            self.registers.free(index_register);
         }
 
         self.call_function("_printf", 2);
