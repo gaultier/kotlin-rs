@@ -1,13 +1,13 @@
-use kotlin::compile::sexp;
+use kotlin::compile::{jvm, sexp};
 use kotlin::error::*;
 use kotlin::parse::Type;
+use std::path::Path;
 
 #[test]
 fn check_both_branches_types_match() -> Result<(), String> {
     let src = "if (1<2) \n 'a'\n\n else 1 \n";
-    let mut out: Vec<u8> = Vec::new();
 
-    match sexp(src, &mut out) {
+    match jvm(src, &Path::new("check_both_branches_types_match.kts")) {
         Err(Error {
             kind: ErrorKind::IncompatibleTypes(Type::Char, Type::Int),
             location:
