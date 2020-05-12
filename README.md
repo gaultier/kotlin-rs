@@ -82,8 +82,13 @@ $ cargo run -- sexp -f /path/to/file.kt
 ## Tests
 
 ```sh
+# Unit tests
 $ cargo test
-# optional: clean up test files
+
+# End-to-end tests, requires GNU parallel
+$ ./test.sh
+
+# Optional: clean up test artifacts
 $ make clean
 ```
 
