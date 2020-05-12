@@ -3,30 +3,6 @@ use kotlin::error::*;
 use kotlin::parse::Type;
 
 #[test]
-fn if_with_no_if_body_block() {
-    let src = "if (1<2) \n else {'a'; 1\n\n true; 'b'}\n";
-    let mut out: Vec<u8> = Vec::new();
-
-    assert!(sexp(src, &mut out).is_ok());
-    assert_eq!(
-        std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(if (< 1 2) (begin ) (begin 'a' 1 #t 'b' ))"
-    );
-}
-
-#[test]
-fn if_with_no_else_block() {
-    let src = "if (1==2) {'a'; 1\n\n true; 'b'} else ; \n";
-    let mut out: Vec<u8> = Vec::new();
-
-    assert!(sexp(src, &mut out).is_ok());
-    assert_eq!(
-        std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(if (== 1 2) (begin 'a' 1 #t 'b' ) (begin ))"
-    );
-}
-
-#[test]
 fn check_both_branches_types_match() -> Result<(), String> {
     let src = "if (1<2) \n 'a'\n\n else 1 \n";
     let mut out: Vec<u8> = Vec::new();
