@@ -2,7 +2,7 @@
 
 set -eu
 
-DIFF_TOOL="${DIFF_TOOL:-diff}"
+DIFF_TOOL="${DIFF_TOOL:-diff --ignore-blank-lines}"
 BIN="${BIN:-../target/debug/kotlin}"
 
 FILE="$1"
