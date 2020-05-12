@@ -3,31 +3,6 @@ use kotlin::error::*;
 use kotlin::parse::Type;
 
 #[test]
-#[test]
-fn multi_if_expr() {
-    let src = "if (1<2) 'o' else 'x'\nif (true) \n\n 42 \n else 99";
-    let mut out: Vec<u8> = Vec::new();
-
-    assert!(sexp(src, &mut out).is_ok());
-    assert_eq!(
-        std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(begin (if (< 1 2) 'o' 'x') (if #t 42 99) )"
-    );
-}
-
-#[test]
-fn nested_if_expr() {
-    let src = "if (1<2) if (99 < 100) 'a' else 'b' else 'c'\n";
-    let mut out: Vec<u8> = Vec::new();
-
-    assert!(sexp(src, &mut out).is_ok());
-    assert_eq!(
-        std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(if (< 1 2) (if (< 99 100) 'a' 'b') 'c')"
-    );
-}
-
-#[test]
 fn if_body_block() {
     let src = "if (1<2) {'a'; 1\n\n true; 'b'} else {1*3; 'c'}\n";
     let mut out: Vec<u8> = Vec::new();
