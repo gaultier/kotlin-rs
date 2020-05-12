@@ -3,17 +3,6 @@ use kotlin::error::*;
 use kotlin::parse::Type;
 
 #[test]
-fn simple_if_expr() {
-    let src = "if (1<2) 'o' else 'x';";
-    let mut out: Vec<u8> = Vec::new();
-
-    assert!(sexp(src, &mut out).is_ok());
-    assert_eq!(
-        std::str::from_utf8(&out).as_mut().unwrap().trim(),
-        "(if (< 1 2) 'o' 'x')"
-    );
-}
-
 #[test]
 fn multi_if_expr() {
     let src = "if (1<2) 'o' else 'x'\nif (true) \n\n 42 \n else 99";
