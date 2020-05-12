@@ -39,6 +39,16 @@ impl Locals {
         &self.values[i as usize]
     }
 
+    pub(crate) fn upsert(&mut self, index: u16, l: Local) -> u16 {
+        if self.values.len() <= index as usize {
+            assert!(index as usize - 1 <= self.values.len());
+            self.push(l)
+        } else {
+            self.values[index as usize] = l;
+            index
+        }
+    }
+
     pub(crate) fn push(&mut self, l: Local) -> u16 {
         assert!(self.values.len() <= std::u16::MAX as usize);
 
@@ -59,30 +69,12 @@ impl Locals {
         i as u16
     }
 
-    pub(crate) fn insert(&mut self, i: u16, l: Local) {
-        if i > std::u8::MAX as u16 {
-            unimplemented!()
-        }
-        let t = &l.1;
-        let size = if t == &Type::Long || t == &Type::Double {
-            2
-        } else {
-            1
-        };
-
-        let new_len = u16::max(i + size, self.values.len() as u16);
-        self.values.resize(new_len as usize, (0, Type::Any));
-
-        if l.1 == Type::Long || l.1 == Type::Double {
-            self.values[i as usize] = l.clone();
-            self.values[i as usize + 1] = l;
-        } else {
-            self.values[i as usize] = l;
-        };
-    }
-
     pub(crate) fn count_max(&self) -> u16 {
         self.count_max
+    }
+
+    pub(crate) fn last(&self) -> Option<&Local> {
+        self.values.last()
     }
 
     #[cfg(feature = "jvm_stack_map_frames")]

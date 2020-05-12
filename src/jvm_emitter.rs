@@ -510,6 +510,7 @@ impl<'a> JvmEmitter<'a> {
         let t = self.types.get(&id).unwrap();
 
         let ref_id = self.resolution.get(&id).unwrap().node_ref_id;
+        dbg!(ref_id, &code.state.locals);
         let (i, _) = code.state.locals.find_by_id(ref_id).unwrap();
         debug!("var_ref: id={} i={} t={} ref_id={}", id, i, t, ref_id);
 
@@ -663,7 +664,7 @@ impl<'a> JvmEmitter<'a> {
         ))?;
 
         self.expr(expr, code)?;
-        code.spill1()?;
+        code.spill1(expr_t)?;
 
         code.push3(
             OP_GET_STATIC,

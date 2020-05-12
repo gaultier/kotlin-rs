@@ -296,40 +296,16 @@ impl Code {
                 self.state.stack.pop2();
                 self.state.stack.push(Type::Int);
             }
-            OP_FSTORE_0 | OP_ASTORE_0 | OP_ISTORE_0 => {
-                let t = self.state.stack.pop();
-                self.state.locals.insert(0, (0, t));
-            }
-            OP_FSTORE_1 | OP_ASTORE_1 | OP_ISTORE_1 => {
-                let t = self.state.stack.pop();
-                self.state.locals.insert(1, (0, t));
-            }
+            OP_FSTORE_0 | OP_ASTORE_0 | OP_ISTORE_0 => todo!(),
+            OP_FSTORE_1 | OP_ASTORE_1 | OP_ISTORE_1 => todo!(),
             OP_FLOAD_0 | OP_ALOAD_0 | OP_ILOAD_0 => {
-                let (_, t) = &self.state.locals.at(0);
-
-                self.state.stack.push(t.clone());
+                todo!();
             }
-            OP_FLOAD_1 | OP_ALOAD_1 | OP_ILOAD_1 => {
-                let (_, t) = &self.state.locals.at(1);
-
-                self.state.stack.push(t.clone());
-            }
-            OP_DSTORE_0 | OP_LSTORE_0 => {
-                self.state.stack.pop();
-                self.state.locals.insert(0, (0, t));
-            }
-            OP_DSTORE_1 | OP_LSTORE_1 => {
-                self.state.stack.pop();
-                self.state.locals.insert(1, (0, t));
-            }
-            OP_DLOAD_0 | OP_LLOAD_0 => {
-                self.state.stack.push(t.clone()); // FIXME: top
-                self.state.stack.push(t);
-            }
-            OP_DLOAD_1 | OP_LLOAD_1 => {
-                self.state.stack.push(t.clone()); // FIXME: top
-                self.state.stack.push(t);
-            }
+            OP_FLOAD_1 | OP_ALOAD_1 | OP_ILOAD_1 => todo!(),
+            OP_DSTORE_0 | OP_LSTORE_0 => todo!(),
+            OP_DSTORE_1 | OP_LSTORE_1 => todo!(),
+            OP_DLOAD_0 | OP_LLOAD_0 => todo!(),
+            OP_DLOAD_1 | OP_LLOAD_1 => todo!(),
             _ => {
                 dbg!(op);
                 unimplemented!()
@@ -346,30 +322,31 @@ impl Code {
                 self.state.stack.push(Type::Int);
             }
             OP_ISTORE => {
-                self.state.locals.push((0xbeef, Type::Int));
+                self.state.locals.upsert(operand1 as u16, (0, Type::Int));
                 self.state.stack.pop();
             }
             OP_FSTORE => {
-                self.state.locals.push((0xbeef, Type::Float));
+                self.state.locals.upsert(operand1 as u16, (0, Type::Float));
                 self.state.stack.pop();
             }
             OP_LSTORE => {
-                self.state.locals.push((0, Type::Long));
-                self.state.locals.push((0, Type::Long));
+                self.state.locals.upsert(operand1 as u16, (0, Type::Long));
+                self.state.locals.upsert(operand1 as u16, (0, Type::Long));
+                self.state.stack.pop();
             }
             OP_DSTORE => {
-                self.state.locals.push((0, Type::Double));
-                self.state.locals.push((0, Type::Double));
+                self.state.locals.upsert(operand1 as u16, (0, Type::Double));
+                self.state.locals.upsert(operand1 as u16, (0, Type::Double));
+                self.state.stack.pop();
             }
-            OP_ILOAD => {
-                self.state.stack.push(Type::Int);
-            }
-            OP_FLOAD => {
-                self.state.stack.push(Type::Float);
+            OP_ILOAD | OP_FLOAD | OP_ALOAD => {
+                self.state.stack.push(t);
             }
             OP_LLOAD => {
-                self.state.stack.push(Type::Long); // FIXME: top
                 self.state.stack.push(Type::Long);
+            }
+            OP_DLOAD => {
+                self.state.stack.push(Type::Double);
             }
             OP_LDC | OP_LDC_W => {
                 self.state.stack.push(t);
@@ -513,14 +490,20 @@ impl Code {
         Ok(self.code.clone())
     }
 
-    pub(crate) fn spill1(&mut self) -> Result<(), Error> {
-        let t = self.state.stack.iter().last().unwrap().clone();
+    pub(crate) fn spill1(&mut self, t: &Type) -> Result<(), Error> {
+        let locals_len = self.state.locals.len();
+        if locals_len >= 255 {
+            todo!()
+        }
+
         match t {
-            Type::Char | Type::Boolean | Type::Int => self.push1(OP_ISTORE_1, t),
-            Type::TString => self.push1(OP_ASTORE_1, t),
-            Type::Float => self.push1(OP_FSTORE_1, t),
-            Type::Long => self.push1(OP_LSTORE_1, Type::Long),
-            Type::Double => self.push1(OP_DSTORE_1, Type::Double),
+            Type::Char | Type::Boolean | Type::Int => {
+                self.push2(OP_ISTORE, locals_len as u8, t.clone())
+            }
+            Type::TString => self.push2(OP_ASTORE, locals_len as u8, t.clone()),
+            Type::Float => self.push2(OP_FSTORE, locals_len as u8, Type::Float),
+            Type::Long => self.push2(OP_LSTORE, locals_len as u8, Type::Long),
+            Type::Double => self.push2(OP_DSTORE, locals_len as u8, Type::Double),
             _ => {
                 dbg!(t);
                 unimplemented!()
@@ -529,13 +512,19 @@ impl Code {
     }
 
     pub(crate) fn unspill1(&mut self) -> Result<(), Error> {
-        let (_, t) = self.state.locals.at(1).clone();
+        let (_, t) = self.state.locals.last().unwrap().clone();
+
+        let locals_len = self.state.locals.len();
+        if locals_len >= 255 {
+            todo!()
+        }
+
         match t {
-            Type::Char | Type::Boolean | Type::Int => self.push1(OP_ILOAD_1, t),
-            Type::TString => self.push1(OP_ALOAD_1, t),
-            Type::Float => self.push1(OP_FLOAD_1, t),
-            Type::Long => self.push1(OP_LLOAD_1, t),
-            Type::Double => self.push1(OP_DLOAD_1, t),
+            Type::Char | Type::Boolean | Type::Int => self.push2(OP_ILOAD, locals_len as u8 - 1, t),
+            Type::TString => self.push2(OP_ALOAD, locals_len as u8 - 1, t),
+            Type::Float => self.push2(OP_FLOAD, locals_len as u8 - 1, t),
+            Type::Long => self.push2(OP_LLOAD, locals_len as u8 - 1, t),
+            Type::Double => self.push2(OP_DLOAD, locals_len as u8 - 1, t),
             _ => {
                 dbg!(t);
                 unimplemented!()
