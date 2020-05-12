@@ -6,7 +6,7 @@ fn int_eq_true() {
     let src = "println((2 + 3) == 5)";
     let path = Path::new("IntEqTrueAsm.kts");
     let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "1");
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "true");
 }
 
 #[test]
@@ -14,7 +14,7 @@ fn int_eq_false() {
     let src = "println((3 + 3) == 5)";
     let path = Path::new("IntEqFalseAsm.kts");
     let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "0");
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "false");
 }
 
 #[test]
@@ -22,7 +22,7 @@ fn long_eq_true() {
     let src = "println((2L + 3L) == 5L)";
     let path = Path::new("LongEqTrueAsm.kts");
     let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "1");
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "true");
 }
 
 #[test]
@@ -30,7 +30,7 @@ fn long_eq_false() {
     let src = "println((3L + 3L) == 5L)";
     let path = Path::new("LongEqFalseAsm.kts");
     let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "0");
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "false");
 }
 
 #[test]
@@ -38,7 +38,7 @@ fn int_ne_true() {
     let src = "println((2 + 3) != 6)";
     let path = Path::new("IntNeTrueAsm.kts");
     let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "1");
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "true");
 }
 
 #[test]
@@ -46,7 +46,7 @@ fn int_ne_false() {
     let src = "println((2 + 3) != 5)";
     let path = Path::new("IntNeFalseAsm.kts");
     let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "0");
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "false");
 }
 
 #[test]
@@ -54,7 +54,7 @@ fn long_ne_true() {
     let src = "println((2L + 3L) != 6L)";
     let path = Path::new("LongNeTrueAsm.kts");
     let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "1");
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "true");
 }
 
 #[test]
@@ -62,7 +62,7 @@ fn long_ne_false() {
     let src = "println((2L + 3L) != 5L)";
     let path = Path::new("LongNeFalseAsm.kts");
     let output = asm(src, &path).unwrap().unwrap().stdout;
-    assert_eq!(String::from_utf8_lossy(&output).trim(), "0");
+    assert_eq!(String::from_utf8_lossy(&output).trim(), "false");
 }
 
 #[test]
