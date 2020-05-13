@@ -1,6 +1,7 @@
 #[cfg(feature = "jvm_stack_map_frames")]
 use crate::jvm_stack_map_frame::VerificationTypeInfo;
 use crate::parse::{Id, Type};
+use log::debug;
 #[cfg(feature = "jvm_stack_map_frames")]
 use std::slice::Iter;
 
@@ -40,16 +41,18 @@ impl Locals {
     }
 
     pub(crate) fn upsert(&mut self, index: u16, l: Local) -> u16 {
+        debug!("upsert: index={} l={:?}", index, l);
         if self.values.len() <= index as usize {
             assert!(index as usize - 1 <= self.values.len());
             self.push(l)
         } else {
-            self.values[index as usize] = l;
+            self.values[index as usize].1 = l.1;
             index
         }
     }
 
     pub(crate) fn push(&mut self, l: Local) -> u16 {
+        debug!("push: l={:?}", l);
         assert!(self.values.len() <= std::u16::MAX as usize);
 
         if self.values.len() > std::u8::MAX as usize {
@@ -69,6 +72,7 @@ impl Locals {
         i as u16
     }
 
+    #[cfg(feature = "jvm_stack_map_frames")]
     pub(crate) fn count_max(&self) -> u16 {
         self.count_max
     }

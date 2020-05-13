@@ -325,6 +325,10 @@ impl Code {
                 self.state.locals.upsert(operand1 as u16, (0, Type::Int));
                 self.state.stack.pop();
             }
+            OP_ASTORE => {
+                self.state.locals.upsert(operand1 as u16, (0, t.clone()));
+                self.state.stack.pop();
+            }
             OP_FSTORE => {
                 self.state.locals.upsert(operand1 as u16, (0, Type::Float));
                 self.state.stack.pop();
