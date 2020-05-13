@@ -42,10 +42,18 @@ impl Locals {
 
     pub(crate) fn upsert(&mut self, index: u16, l: Local) -> u16 {
         debug!("upsert: index={} l={:?}", index, l);
+        let size = l.1.jvm_size();
+
         if self.values.len() <= index as usize {
-            assert!(index as usize - 1 <= self.values.len());
+            assert!(index as usize - size as usize <= self.values.len());
+            if size == 2u8 {
+                self.push(l.clone());
+            }
             self.push(l)
         } else {
+            if size == 2u8 {
+                self.values[1 + index as usize].1 = l.1.clone();
+            }
             self.values[index as usize].1 = l.1;
             index
         }

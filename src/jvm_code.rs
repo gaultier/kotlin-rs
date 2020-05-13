@@ -201,6 +201,15 @@ pub(crate) struct Code {
     pub(crate) jump_targets: BTreeMap<u16, JumpTarget>,
 }
 
+impl Type {
+    pub(crate) fn jvm_size(&self) -> u8 {
+        match self {
+            Type::Long | Type::Double => 2,
+            _ => 1,
+        }
+    }
+}
+
 impl Code {
     pub(crate) fn new() -> Code {
         Code {
